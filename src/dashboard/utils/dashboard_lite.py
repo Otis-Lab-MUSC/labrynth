@@ -1,11 +1,11 @@
 import panel as pn
-from utils.tools import *
-from reacher_api.toolkit import REACHER
 import os, sys, datetime, time
 import pandas as pd
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import numpy as np
+from utils.tools import *
+from utils.api.toolkit import REACHER
 
 class LDashboard:
     def __init__(self):
@@ -224,13 +224,6 @@ class ProgramTab:
             self.dashboard.add_error(f"Failed to set program limit", e)
 
     def set_custom(self):
-        self.limit_type_radiobutton.value = None
-        self.time_limit_hour_intslider.value = 0
-        self.time_limit_min_intslider.value = 0
-        self.time_limit_sec_intslider.value = 0
-        self.infusion_limit_intslider.value = 0
-        self.stop_delay_intslider.value = 0
-
         self.reacher.set_limit_type(self.limit_type_radiobutton.value)
         self.reacher.set_infusion_limit(self.infusion_limit_intslider.value)
         self.reacher.set_time_limit((self.time_limit_hour_intslider.value * 60 * 60) + (self.time_limit_min_intslider.value * 60) + self.time_limit_sec_intslider.value)
@@ -839,7 +832,7 @@ class MonitorTab:
                 self.reacher.set_logging_stream_destination(reacher_log_path)
 
             self.reacher.start_program()
-            self.dashboard.add_response(f"Started program")
+            self.dashboard.add_response(f"Started program at {self.get_time()}")
 
             if pn.state.curdoc:
                 if self.periodic_callback is None:  
@@ -851,6 +844,7 @@ class MonitorTab:
             self.start_program_button.disabled = True
         except Exception as e:
             self.dashboard.add_error("Failed to start program", e)
+
     def pause_program(self, _):
         try:
             if self.reacher.program_flag.is_set():
@@ -865,15 +859,18 @@ class MonitorTab:
                 self.pause_program_button.icon = "player-play"
         except Exception as e:
             self.dashboard.add_error("Failed to pause program", e)
+
     def stop_program(self, _):
         try:
             self.reacher.stop_program()
+            self.dashboard.add_response(f"Ended program at {self.get_time()}")
             self.animation_image.object = self.img_path
             self.periodic_callback.stop() 
             self.periodic_callback = None
             self.animation_markdown.object = f"""`Finished.`"""
         except Exception as e:
             self.dashboard.add_error("Failed to end program", e)
+
     def download(self, _):
         try:
             start_time = datetime.datetime.fromtimestamp(self.reacher.get_start_time()).strftime('%H:%M:%S')
@@ -919,10 +916,12 @@ class MonitorTab:
             self.dashboard.add_response(f"Data saved successfully at '{destination}'")
         except Exception as e:
             self.dashboard.add_error("Failed to save data", e)
+
     def get_time(self):
         local_time = time.localtime()
         formatted_time = time.strftime("%Y-%m-%d_%H-%M-%S", local_time)
         return formatted_time
+    
     def reset(self):
         self.dashboard.add_response("Resetting monitor tab")
 
@@ -930,6 +929,7 @@ class MonitorTab:
         self.plotly_pane.object = None
         self.animation_image.object = self.img_path
         self.animation_markdown.object = f"""`Waiting...`"""
+        
     def layout(self):
         program_control_area = pn.Column(
             pn.pane.Markdown("### Program Controls"), 

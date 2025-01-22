@@ -2,9 +2,7 @@ import panel as pn
 from utils import dashboard, dashboard_lite
 import tkinter as tk
 from tkinter import messagebox
-import pkg_resources
-import sys, os
-import multiprocessing
+import sys, os, multiprocessing, pkg_resources
 
 pn.extension('plotly')
 
@@ -97,13 +95,13 @@ def create_window():
     Creates a minimal tkinter window with a taskbar icon.
     """
     root = tk.Tk()
-    root.title("REACHER Dashboard")
+    root.title("REACHER Launcher")
     root.geometry("300x100")
 
     icon_path = pkg_resources.resource_filename(__name__, 'utils/assets/reacher-app-icon.ico')
     root.iconbitmap(icon_path)
 
-    label = tk.Label(root, text="Opening REACHER Dashboard in browser...")
+    label = tk.Label(root, text="Opening REACHER Dashboard in browser...\n(keep this window open)")
     label.pack(pady=20)
 
     def on_closing():
