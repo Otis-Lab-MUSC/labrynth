@@ -13,7 +13,7 @@ make_new_local_instance_tab_button = pn.widgets.Button(name="New local session")
 make_new_network_instance_tab_button = pn.widgets.Button(name="New network session (BETA)", disabled=True) 
 
 start_area = pn.Column(
-    pn.pane.Markdown("## Start here"),
+    pn.pane.Markdown("## Create a session"),
     pn.Row(box_name_TextInput, pn.Column(
         make_new_local_instance_tab_button,
         make_new_network_instance_tab_button),
@@ -65,7 +65,8 @@ footer = pn.pane.HTML(
     """
     <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
         <p>© 2025 LogisTech. All rights reserved.</p><br>
-        <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork.<br>Day to day pours out speech, and night to night reveals knowledge."</i><br><br>Psalm 19:1 & 2</p>
+        <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
+        <p>Psalm 19:1</p>
         <p>Mapping the brain, marveling at the Creator.</p>
     </div>
     """,
@@ -82,7 +83,6 @@ interface = pn.Column(
 def serve_interface():
     template = pn.template.BootstrapTemplate(
         title="REACHER Dashboard", 
-        site="LogisTech",
         logo=pkg_resources.resource_filename(__name__, 'utils/assets/reacher-app-icon.png'),
         main=interface, 
         theme="dark",

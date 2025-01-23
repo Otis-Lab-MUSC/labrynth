@@ -10,6 +10,7 @@ from utils.api.toolkit import REACHER
 class LDashboard:
     def __init__(self):
         self.reacher = REACHER()
+        self.header = pn.pane.Alert("Program not started...", alert_type="info")
         self.home_tab = HomeTab(self, self.reacher)
         self.program_tab = ProgramTab(self,  self.reacher)
         self.hardware_tab = HardwareTab(self,  self.reacher)
@@ -32,7 +33,10 @@ class LDashboard:
         )    
 
     def layout(self):
-        layout = pn.Row(self.dashboard, self.response_textarea)
+        layout = pn.Column(
+            self.header,
+            pn.Row(self.dashboard, self.response_textarea)
+        )
         return layout
 
     def get_response_terminal(self):
@@ -357,6 +361,12 @@ class HardwareTab:
             "Laser": self.arm_laser,
             "Imaging Timestamp Receptor": self.arm_frames    
         }
+
+        self.active_lever_button = pn.widgets.MenuButton(
+            name="Active Lever", items=[("LH Lever", "LH Lever"), ("RH Lever", "RH Lever")], button_type="primary"
+        )
+        self.active_lever_button.on_click(self.set_active_lever)
+
         self.rh_lever_armed = False
         self.arm_rh_lever_button = pn.widgets.Toggle(
             name="Arm RH Lever",
@@ -479,6 +489,14 @@ class HardwareTab:
             stim_duration=self.stim_duration_slider
         )
 
+    def set_active_lever(self, event):
+        if event.new == "LH Lever":
+            self.reacher.send_serial_command("ACTIVE_LEVER_LH")
+            self.dashboard.add_response("Set active lever to LH lever")
+        elif event.new == "RH Lever":
+            self.reacher.send_serial_command("ACTIVE_LEVER_RH")
+            self.dashboard.add_response("Set active lever to RH lever")
+
     def arm_rh_lever(self, _):
         try:
             if not self.rh_lever_armed:
@@ -488,7 +506,7 @@ class HardwareTab:
                 self.arm_rh_lever_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_LEVER_RH")
-                self.dashboard.add_response("Armed RH Lever")
+                self.dashboard.add_response("Disarmed RH Lever")
                 self.rh_lever_armed = False
                 self.arm_rh_lever_button.icon = "lock"
         except Exception as e:
@@ -649,6 +667,7 @@ class HardwareTab:
 
         levers_area = pn.Column(
             pn.pane.Markdown("### Levers"),
+            self.active_lever_button,
             self.arm_rh_lever_button,
             self.arm_lh_lever_button,
         )
@@ -727,6 +746,13 @@ class MonitorTab:
             sizing_mode="stretch_width",
             height=600
         )
+        self.summary_pane = pn.pane.DataFrame(
+            index=False, 
+            max_rows=10, 
+            border=1,
+            bold_rows=True,
+            styles={"background-color": "#1e1e1e", "color": "white"}
+            )
         self.start_program_button = pn.widgets.Button(
             icon="player-play"
         )
@@ -752,6 +778,18 @@ class MonitorTab:
         except Exception as e:
             self.dashboard.add_error(f"Unexpected error fetching data", e)
         return pd.DataFrame() 
+    
+    def update_summary_table(self, df: pd.DataFrame):
+        if df.empty:
+            self.dashboard.add_response("No data available to summarize.")
+            return pd.DataFrame(columns=["Action", "Component", "Count"])
+        
+        try:
+            summary = df.groupby(["Action", "Component"]).size().reset_index(name="Count")
+            return summary
+        except KeyError as e:
+            self.dashboard.add_error("KeyError: Missing column(s) in DataFrame.", str(e))
+            return pd.DataFrame(columns=["Action", "Component", "Count"])
 
     def generate_plotly_plot(self):
         if self.df.empty:
@@ -812,6 +850,7 @@ class MonitorTab:
         if not new_data.empty:
             self.df = new_data
         self.plotly_pane.object = self.generate_plotly_plot()
+        self.summary_pane.object = self.update_summary_table(new_data)
 
     def apply_preset(self):
         """
@@ -832,7 +871,9 @@ class MonitorTab:
                 self.reacher.set_logging_stream_destination(reacher_log_path)
 
             self.reacher.start_program()
-            self.dashboard.add_response(f"Started program at {self.get_time()}")
+            local_time = time.localtime()
+            formatted_time = time.strftime("%Y-%m-%d, %H:%M:%S", local_time)
+            self.dashboard.add_response(f"Started program at {formatted_time}")
 
             if pn.state.curdoc:
                 if self.periodic_callback is None:  
@@ -842,6 +883,8 @@ class MonitorTab:
             self.hardware_tab.arm_devices(self.program_tab.get_hardware())
             self.animation_markdown.object = f"""`Running...`"""
             self.start_program_button.disabled = True
+            self.dashboard.header.alert_type = "warning"
+            self.dashboard.header.object = "WARNING: Program in progress..."
         except Exception as e:
             self.dashboard.add_error("Failed to start program", e)
 
@@ -863,11 +906,15 @@ class MonitorTab:
     def stop_program(self, _):
         try:
             self.reacher.stop_program()
-            self.dashboard.add_response(f"Ended program at {self.get_time()}")
+            local_time = time.localtime()
+            formatted_time = time.strftime("%Y-%m-%d, %H:%M:%S", local_time)
+            self.dashboard.add_response(f"Ended program at {formatted_time}")
             self.animation_image.object = self.img_path
             self.periodic_callback.stop() 
             self.periodic_callback = None
             self.animation_markdown.object = f"""`Finished.`"""
+            self.dashboard.header.alert_type = "success"
+            self.dashboard.header.object = "Program finished."
         except Exception as e:
             self.dashboard.add_error("Failed to end program", e)
 
@@ -935,15 +982,19 @@ class MonitorTab:
             pn.pane.Markdown("### Program Controls"), 
             pn.Row(self.start_program_button, self.pause_program_button, self.stop_program_button, self.download_button)
         )
-        plot_area = pn.Row(
-            self.plotly_pane, pn.Column(
-                pn.VSpacer(),
-                self.animation_image,
-                self.animation_markdown,
-                pn.VSpacer(),
-                width=210
+        plot_area = pn.Column(
+            pn.Row(
+                self.plotly_pane, 
+                pn.Column(
+                    pn.VSpacer(),
+                    self.animation_image,
+                    self.animation_markdown,
+                    pn.VSpacer(),
+                    width=210
+                ),
+                styles=dict(background="white")
             ),
-            styles=dict(background="white")
+            self.summary_pane
         )
 
         return pn.Column(
