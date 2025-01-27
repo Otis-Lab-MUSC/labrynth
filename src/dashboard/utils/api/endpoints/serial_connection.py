@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from utils.api.toolkit import REACHER
+from dashboard.utils.api.framework import REACHER
 
 def create_serial_bp(reacher: REACHER):
     bp = Blueprint('serial', __name__)
