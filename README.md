@@ -1,7 +1,12 @@
+<div style="text-align: center;">
+    <img src="src/dashboard/utils/assets/reacher-icon.png" alt="REACHER logo" width="200px" height="200px">
+</div>
+<br>
+<br>
 
 # **REACHER Suite**
 
-The **REACHER Suite** (Rodent Event Acquisition Control Heuristic Ecosystem for Research) is an open-source application framework designed for experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems. 
+The **REACHER Suite** (Rodent Experiment Application Controls and Handling Ecosystem for Research) is an open-source application framework designed for experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems. 
 
 ---
 
