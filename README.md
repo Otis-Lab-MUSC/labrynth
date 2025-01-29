@@ -6,9 +6,9 @@
 
 # **REACHER Suite**
 
-The **REACHER Suite** (Rodent Experiment Application Controls and Handling Ecosystem for Research) is an open-source application framework designed for experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems. Click [here]() to download.
+The **REACHER Suite** (Rodent Experiment Application Controls and Handling Ecosystem for Research) is an open-source application framework designed for experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems.
 
-[![Download REACHER](https://img.shields.io/badge/Download-REACHER-blue?style=for-the-badge)](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/REACHER_Installer.exe)
+[![Download REACHER](https://img.shields.io/badge/Download-REACHER-blue?style=for-the-badge)](#download-options)
 
 ---
 
