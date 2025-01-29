@@ -6,7 +6,9 @@
 
 # **REACHER Suite**
 
-The **REACHER Suite** (Rodent Experiment Application Controls and Handling Ecosystem for Research) is an open-source application framework designed for experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems. 
+The **REACHER Suite** (Rodent Experiment Application Controls and Handling Ecosystem for Research) is an open-source application framework designed for experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems. Click [here]() to download.
+
+[![Download REACHER](https://img.shields.io/badge/Download-REACHER-blue?style=for-the-badge)](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/REACHER_Installer.exe)
 
 ---
 
@@ -123,7 +125,21 @@ The Arduino framework is modular, enabling easy integration of new hardware comp
 - Comprehensive error handling for both Python and Arduino frameworks.
 - Logs provide clear diagnostics for troubleshooting.
 
----
+<br>
+
+## **Download Options**
+
+You can download the latest version of the **REACHER Suite** for your operating system below:
+
+| **Operating System** | **Download Link** |
+|----------------------|------------------|
+| **Windows (64-bit)** | [Download REACHER for Windows](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/REACHER_Installer.exe) |
+| **Linux** | [Download REACHER for Linux](#) *(Coming soon...)* |
+| **macOS** | [Download REACHER for macOS](#) *(Coming soon...)* |
+
+Click on the appropriate link to begin the installation.
+
+<br>
 
 ## **Recommended Specifications**
 
