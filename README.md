@@ -154,4 +154,17 @@ Click on the appropriate link to begin the installation.
 
 ---
 
-This document outlines the REACHER Suite's key features and configurations, enabling researchers to optimize their experimental setups efficiently. For further details or troubleshooting, refer to the [documentation repository]().
+This document outlines the REACHER Suite's key features and configurations, enabling researchers to optimize their experimental setups efficiently. 
+or further details or troubleshooting, refer to the [documentation repository]().
+
+## Copyright & License
+
+© 2025 LogisTech. All rights reserved.
+
+This project is licensed under the **LICENSE** (see [LICENSE](LICENSE) for details). 
+
+<br><br>
+    <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
+        <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
+        <p>Psalm 19:1</p>
+    </div>
