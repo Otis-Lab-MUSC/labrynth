@@ -161,7 +161,7 @@ or further details or troubleshooting, refer to the [documentation repository]()
 
 © 2025 LogisTech. All rights reserved.
 
-This project is licensed under the **LICENSE** (see [LICENSE](LICENSE) for details). 
+This project is licensed under the **LICENSE** (see [LICENSE](https://github.com/LogisTechLLC/REACHER-Suite?tab=MIT-1-ov-file) for details). 
 
 <br><br>
     <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
