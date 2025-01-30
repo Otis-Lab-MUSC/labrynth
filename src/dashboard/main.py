@@ -24,7 +24,7 @@ if getattr(sys, 'frozen', False):
     base_dir = sys._MEIPASS
 else:
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-icon_file_path = os.path.join(base_dir, 'utils/assets', 'reacher-icon.png')
+icon_file_path = os.path.join(base_dir, 'assets', 'reacher-icon.png')
 icon = pn.Row(pn.HSpacer(), pn.pane.PNG(icon_file_path, width=400), pn.HSpacer())
 tab_1 = pn.Column(
     pn.pane.Markdown("# Welcom to the REACHER Suite!"),
@@ -83,10 +83,10 @@ interface = pn.Column(
 def serve_interface():
     template = pn.template.BootstrapTemplate(
         title="REACHER Dashboard", 
-        logo=pkg_resources.resource_filename(__name__, 'utils/assets/reacher-app-icon.png'),
+        logo=pkg_resources.resource_filename(__name__, 'assets/reacher-app-icon.png'),
         main=interface, 
         theme="dark",
-        favicon=pkg_resources.resource_filename(__name__, 'utils/assets/reacher-app-icon.ico')
+        favicon=pkg_resources.resource_filename(__name__, 'assets/reacher-app-icon.ico')
     )
     pn.serve(template, show=True)   
 
@@ -98,7 +98,7 @@ def create_window():
     root.title("REACHER Launcher")
     root.geometry("300x100")
 
-    icon_path = pkg_resources.resource_filename(__name__, 'utils/assets/reacher-app-icon.ico')
+    icon_path = pkg_resources.resource_filename(__name__, 'assets/reacher-app-icon.ico')
     root.iconbitmap(icon_path)
 
     label = tk.Label(root, text="Opening REACHER Dashboard in browser...\n(keep this window open)")

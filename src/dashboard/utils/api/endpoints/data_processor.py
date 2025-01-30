@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify
-from dashboard.utils.api.framework import REACHER
+from utils.api.framework import REACHER
 
 def create_data_processor_bp(reacher: REACHER):
     bp = Blueprint('processor', __name__)

@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from dashboard.utils.api.framework import REACHER
+from utils.api.framework import REACHER
 
 def create_file_bp(reacher: REACHER):
     bp = Blueprint('file', __name__)
