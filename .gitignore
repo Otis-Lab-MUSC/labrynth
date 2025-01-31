@@ -1,5 +1,7 @@
+/src/build/
+/src/build/setup/
 /src/dist/
-/src/dist/REACHER_Dashboard
+/src/dist/REACHER_Dashboard/
 /src/dist/REACHER_Dashboard/_internal
-/installers
+/installers/
 /venv/
