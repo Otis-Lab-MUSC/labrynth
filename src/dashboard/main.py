@@ -3,6 +3,7 @@ from utils import dashboard, dashboard_lite
 import tkinter as tk
 from tkinter import messagebox
 import sys, os, multiprocessing, pkg_resources
+from PIL import Image, ImageTk
 
 pn.extension('plotly')
 
@@ -21,11 +22,14 @@ start_area = pn.Column(
 )
 
 if getattr(sys, 'frozen', False):
-    base_dir = sys._MEIPASS
+    assets_dir = os.path.join(sys._MEIPASS, 'assets')
 else:
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-icon_file_path = os.path.join(base_dir, 'assets', 'reacher-icon.png')
-icon = pn.Row(pn.HSpacer(), pn.pane.PNG(icon_file_path, width=400), pn.HSpacer())
+    assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'utils/assets'))
+
+if os.path.isfile(os.path.join(assets_dir, 'reacher-app-icon.png')):
+    icon_path = os.path.join(assets_dir, 'reacher-app-icon.png')
+
+icon = pn.Row(pn.HSpacer(), pn.pane.PNG(os.path.join(assets_dir, 'reacher-icon.png'), width=400), pn.HSpacer())
 tab_1 = pn.Column(
     pn.pane.Markdown("# Welcom to the REACHER Suite!"),
     icon
@@ -83,10 +87,10 @@ interface = pn.Column(
 def serve_interface():
     template = pn.template.BootstrapTemplate(
         title="REACHER Dashboard", 
-        logo=pkg_resources.resource_filename(__name__, 'assets/reacher-app-icon.png'),
+        logo=icon_path,
         main=interface, 
         theme="dark",
-        favicon=pkg_resources.resource_filename(__name__, 'assets/reacher-app-icon.ico')
+        favicon=icon_path
     )
     pn.serve(template, show=True)   
 
@@ -98,8 +102,9 @@ def create_window():
     root.title("REACHER Launcher")
     root.geometry("300x100")
 
-    icon_path = pkg_resources.resource_filename(__name__, 'assets/reacher-app-icon.ico')
-    root.iconbitmap(icon_path)
+    icon_image = Image.open(icon_path)  # Replace with your image path
+    icon_photo = ImageTk.PhotoImage(icon_image)
+    root.wm_iconphoto(True, icon_photo) 
 
     label = tk.Label(root, text="Opening REACHER Dashboard in browser...\n(keep this window open)")
     label.pack(pady=20)
