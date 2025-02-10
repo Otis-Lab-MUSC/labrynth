@@ -845,6 +845,8 @@ class MonitorTab:
             self.periodic_callback = None  
             self.animation_image.object = self.img_path
             self.animation_markdown.object = """`Finished.`"""
+            self.dashboard.header.alert_type = "success"
+            self.dashboard.header.object = "Program finished."
             self.dashboard.add_response("Program finished")
         new_data = self.fetch_data()
         if not new_data.empty:

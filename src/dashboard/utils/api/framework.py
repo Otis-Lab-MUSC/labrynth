@@ -229,21 +229,27 @@ class REACHER:
     def get_program_running(self):
         return not self.program_flag.is_set()
 
-    def check_limit_met(self): # FIXME: infusion limit doesn't work
+    def check_limit_met(self): 
         current_time = time.time()
         if self.limit_type == "Time":
             elapsed_time = current_time - self.program_start_time - self.paused_time
             if elapsed_time >= self.time_limit:
                 self.stop_program()
         elif self.limit_type == "Infusion":
-            if self.last_infusion_time:
-                if time.time() - self.last_infusion_time >= self.stop_delay:
+            count = sum(1 for entry in self.behavior_data if entry['Component'] == 'PUMP' and entry['Action'] == 'INFUSION')
+            if count >= self.infusion_limit:
+                if self.last_infusion_time is None:
+                    self.last_infusion_time = current_time
+                if self.last_infusion_time and (current_time - self.last_infusion_time >= self.stop_delay):
                     self.stop_program()
         elif self.limit_type == "Both":
+            count = sum(1 for entry in self.behavior_data if entry['Component'] == 'PUMP' and entry['Action'] == 'INFUSION')
+            if count >= self.infusion_limit:
+                if self.last_infusion_time is None:
+                    self.last_infusion_time = current_time
             elapsed_time = current_time - self.program_start_time - self.paused_time
-            if self.last_infusion_time:
-                if (current_time - self.last_infusion_time) >= self.stop_delay or (elapsed_time >= self.time_limit):
-                    self.stop_program()
+            if (self.last_infusion_time and (current_time - self.last_infusion_time) >= self.stop_delay) or (elapsed_time >= self.time_limit):
+                self.stop_program()
 
     # Configuration functions
     def set_data_destination(self, folder: str):
