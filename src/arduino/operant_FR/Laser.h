@@ -5,24 +5,24 @@
 #include <Arduino.h>
 
 // Enum to define the laser modes (oscillating or based on active press)
-enum StimMode { CYCLE, REWARD };
-enum StimState { ACTIVE, INACTIVE };
-enum LaserMode { OSCILLATE, CONSTANT };
-enum LaserState { ON, OFF };
+enum MODE { CYCLE, REWARD };
+enum SETTING { OSCILLATE, CONSTANT };
+enum STATE { ACTIVE, INACTIVE };
+enum ACTION { ON, OFF };
 
 class Laser : public Device {
 private:
     unsigned long int duration;   // Total duration of the stimulation period (ms)
     unsigned long int frequency;  // Frequency of laser pulses (e.g., 40Hz)
-    unsigned long int previousStim;   // Timestamp of the last pulse
-    unsigned long int rewardStimEndTimestamp;
-    unsigned long int previousHalfCycle;
-    unsigned long stimStartTimestamp; // Stores when the laser turns ON
-    unsigned long stimEndTimestamp;   // Stores when the laser turns OFF
-    StimMode stimMode;
-    StimState stimState;
-    LaserMode laserMode;
-    LaserState laserState;
+    unsigned long int stimStart;
+    unsigned long int stimEnd;
+    unsigned long int halfCycleStart;
+    unsigned long int halfCycleEnd;
+    bool logged;
+    MODE laserMode;
+    SETTING laserSetting;
+    STATE laserState;
+    ACTION laserAction;
 
 public:
     Laser(byte initPin);
@@ -30,28 +30,26 @@ public:
     // Setters
     void setDuration(unsigned long int initDuration);
     void setFrequency(unsigned long int frequency);
-    void setPreviousStim(unsigned long int timestamp);
-    void setPreviousHalfCycle(unsigned long int timestamp);
-    void setRewardStimEndTimestamp(unsigned long int timestamp);
-    void setStimMode(StimMode mode);
-    void setStimState(StimState state);
-    void setLaserMode(LaserMode mode);
-    void setLaserState(LaserState state);
-    void setStimStartTimestamp(unsigned long int timestamp);
-    void setStimEndTimestamp(unsigned long int timestamp);
+    void setStimPeriod(unsigned long int currentMills);
+    void setStimHalfCyclePeriod(unsigned long int currentMillis);
+    void setStimLogged(bool log);
+    void setStimMode(MODE mode);
+    void setStimSetting(SETTING setting);
+    void setStimState(STATE state);
+    void setStimAction(ACTION action);
 
     // Getters
     unsigned long int getDuration();
     unsigned long int getFrequency();
-    unsigned long int getPreviousStim();
-    unsigned long int getPreviousHalfCycle();
-    unsigned long int getRewardStimEndTimestamp();
-    unsigned long int getStimStartTimestamp() const;
-    unsigned long int getStimEndTimestamp() const;
-    StimMode getStimMode();
-    StimState getStimState();
-    LaserMode getLaserMode();
-    LaserState getLaserState();
+    unsigned long int getStimStart();
+    unsigned long int getStimEnd();
+    unsigned long int getStimHalfCycleStart();
+    unsigned long int getStimHalfCycleEnd();
+    bool getStimLog();
+    MODE getStimMode();
+    SETTING getStimSetting();
+    STATE getStimState();
+    ACTION getStimAction();
 
     // Laser control
     void on();

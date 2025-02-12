@@ -1,6 +1,6 @@
 #include "Laser.h"
 
-Laser::Laser(byte initPin) : Device(initPin), duration(3000), frequency(1), previousStim(0), rewardStimEndTimestamp(0), previousHalfCycle(0), stimMode(CYCLE), stimState(ACTIVE), laserMode(OSCILLATE), laserState(ON) {}
+Laser::Laser(byte initPin) : Device(initPin), duration(3000), frequency(1), stimStart(0), stimEnd(0), halfCycleStart(0), halfCycleEnd(0), logged(true), laserMode(REWARD), laserSetting(CONSTANT), laserState(INACTIVE), laserAction(OFF) {}
 
 void Laser::setDuration(unsigned long int initDuration) {
     duration = initDuration;
@@ -10,40 +10,35 @@ void Laser::setFrequency(unsigned long int initFrequency) {
     frequency = initFrequency;
 }
 
-void Laser::setPreviousStim(unsigned long int timestamp) {
-    previousStim = timestamp;
+void Laser::setStimPeriod(unsigned long int currentMillis) {
+  stimStart = currentMillis;
+  stimEnd = currentMillis + duration;
 }
 
-void Laser::setPreviousHalfCycle(unsigned long int timestamp) {
-    previousHalfCycle = timestamp;
+void Laser::setStimHalfCyclePeriod(unsigned long int currentMillis) {
+  unsigned long int halfCycleLength = duration / frequency;
+  halfCycleStart = currentMillis;
+  halfCycleEnd = currentMillis + halfCycleLength;
 }
 
-void Laser::setStimMode(StimMode mode) {
-  stimMode = mode;
+void Laser::setStimLogged(bool log) {
+  logged = log;
 }
 
-void Laser::setStimState(StimState state) {
-  stimState = state;
+void Laser::setStimMode(MODE mode) {
+  laserMode = mode;
 }
 
-void Laser::setRewardStimEndTimestamp(unsigned long int timestamp) {
-  rewardStimEndTimestamp = timestamp + duration;
+void Laser::setStimSetting(SETTING setting) {
+  laserSetting = setting;
 }
 
-void Laser::setStimStartTimestamp(unsigned long int timestamp) {
-    stimStartTimestamp = timestamp;
-}
-
-void Laser::setStimEndTimestamp(unsigned long int timestamp) {
-    stimEndTimestamp = timestamp;
-}
-
-void Laser::setLaserMode(LaserMode mode) {
-    laserMode = mode;
-}
-
-void Laser::setLaserState(LaserState state) {
+void Laser::setStimState(STATE state) {
   laserState = state;
+}
+
+void Laser::setStimAction(ACTION action) {
+  laserAction = action;
 }
 
 unsigned long int Laser::getDuration() {
@@ -54,40 +49,40 @@ unsigned long int Laser::getFrequency() {
     return frequency;
 }
 
-unsigned long int Laser::getPreviousStim() {
-    return previousStim;
+unsigned long int Laser::getStimStart() {
+  return stimStart;
 }
 
-unsigned long int Laser::getPreviousHalfCycle() {
-  return previousHalfCycle;
+unsigned long int Laser::getStimEnd() {
+  return stimEnd;
 }
 
-StimMode Laser::getStimMode() {
-  return stimMode;
+unsigned long int Laser::getStimHalfCycleStart() {
+  return halfCycleStart;
 }
 
-StimState Laser::getStimState() {
-  return stimState;
+unsigned long int Laser::getStimHalfCycleEnd() {
+  return halfCycleEnd;
 }
 
-unsigned long int Laser::getRewardStimEndTimestamp() {
-  return rewardStimEndTimestamp;
+bool Laser::getStimLog() {
+  return logged;
 }
 
-unsigned long int Laser::getStimStartTimestamp() const {
-    return stimStartTimestamp;
-}
-
-unsigned long int Laser::getStimEndTimestamp() const {
-    return stimEndTimestamp;
-}
-
-LaserMode Laser::getLaserMode() {
+MODE Laser::getStimMode() {
   return laserMode;
 }
 
-LaserState Laser::getLaserState() {
+SETTING Laser::getStimSetting() {
+  return laserSetting;
+}
+
+STATE Laser::getStimState() {
   return laserState;
+}
+
+ACTION Laser::getStimAction() {
+  return laserAction;
 }
 
 void Laser::on() {

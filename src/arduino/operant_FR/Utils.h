@@ -15,10 +15,7 @@ extern long unsigned int differenceFromStartTime;
 
 void manageCue(Cue *cue);
 void managePump(Pump *pump);
-void pulseLaser(Laser &laser, unsigned long currentMillis);
-void oscillateLaser(unsigned long currentMillis);
-void rewardLaser(Lever *&lever, unsigned long currentMillis);
-void manageLaser(Laser &laser);
+void manageStim(Laser &laser);
 void monitorPressing(bool programRunning, Lever *&lever, Cue *cue, Pump *pump, Laser *laser);
 
 #endif

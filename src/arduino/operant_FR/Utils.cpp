@@ -98,79 +98,72 @@ void managePump(Pump *pump)
   }
 }
 
-void pulseLaser(Laser &laser, unsigned long currentMillis) {
-  unsigned long halfCycle = laser.getDuration() / laser.getFrequency() / 2;
-
-  if (laser.getStimState() == ACTIVE) {
-    if (currentMillis - laser.getPreviousHalfCycle() >= halfCycle) {
-      laser.setPreviousHalfCycle(currentMillis);
-      if (laser.getLaserState() == OFF) {
-        laser.setLaserState(ON);
-      }
-      else {
-        laser.setLaserState(OFF);
-      }
-    }
-    if (laser.getLaserState() == ON) {
-      laser.on();
-    } else {
-      laser.off();
-    }
-  }
-  else {
-    laser.setLaserState(OFF);
+void manageLaser(Laser &laser) {
+  if (laser.getStimState() == ACTIVE && laser.getStimAction() == ON) {
+    laser.on();
+  } else {
     laser.off();
-  } 
+  }
 }
 
-void oscillateLaser(unsigned long currentMillis) {
-    if (currentMillis - laser.getPreviousStim() >= laser.getDuration()) {
-        if (laser.getStimState() == ACTIVE) { 
-            laser.setStimState(INACTIVE);
-            laser.setStimEndTimestamp(currentMillis);
-            String laserEntry = "LASER,STIM," + String(laser.getStimStartTimestamp() - differenceFromStartTime) + ",";
-            laserEntry += String(laser.getStimEndTimestamp() - differenceFromStartTime);
-            Serial.println(laserEntry);
-        } 
-        else if (laser.getStimState() == INACTIVE) { 
-            laser.setStimState(ACTIVE);
-            laser.setStimStartTimestamp(currentMillis);
-        }
+void logStim(Laser &laser) {
+  if (laser.getStimLog() == false) {
+    String log = "LASER,STIM,";
+    log += String(laser.getStimStart()) + ",";
+    log += String(laser.getStimEnd());
+    Serial.println(log);
+    laser.setStimLogged(true);
+  }
+}
+
+void constantStim(Laser &laser) {
+  if (millis() > laser.getStimStart() && millis() < laser.getStimEnd()) {
+    laser.setStimState(ACTIVE);
+    laser.setStimLogged(false);
+    laser.setStimAction(ON);
+  } else {
+    laser.setStimState(INACTIVE);
+    laser.setStimAction(OFF);
+    logStim(laser);
+  }
+  manageLaser(laser);
+}
+
+void oscillateStim(Laser &laser) {
+  if (millis() > laser.getStimStart() && millis() < laser.getStimEnd()) {
+    laser.setStimState(ACTIVE);
+    laser.setStimLogged(false);
+    if (millis() > laser.getStimHalfCycleStart() && millis() < laser.getStimHalfCycleEnd()) {
+      if (laser.getStimAction() == ON) {
+        laser.setStimAction(OFF);
+      } else {
+        laser.setStimAction(ON);
+      }
+    } else {
+      laser.setStimHalfCyclePeriod(millis());
     }
-    pulseLaser(laser, currentMillis);
+  } else {
+    laser.setStimState(INACTIVE);
+    laser.setStimAction(OFF);
+    logStim(laser);
+  }
+  manageLaser(laser);
 }
 
-void rewardLaser(Lever *&lever, unsigned long currentMillis) {
-    if (laser.getStimState() == ACTIVE) {
-        if (currentMillis <= laser.getRewardStimEndTimestamp()) {
-            if (laser.getLaserState() == OFF) {
-                laser.setStimStartTimestamp(currentMillis);
-                laser.setLaserState(ON);
-            }
-            laser.on();
-        } 
-        else {
-            laser.setStimState(INACTIVE);
-            laser.setStimEndTimestamp(currentMillis);
-            String laserEntry = "LASER,STIM," + String(laser.getStimStartTimestamp() - differenceFromStartTime) + ",";
-            laserEntry += String(laser.getStimEndTimestamp() - differenceFromStartTime);
-            Serial.println(laserEntry);
-        }
-    } 
-    else {
-        laser.setLaserState(OFF);
-        laser.off();
-    }
-}
-
-void manageLaser(Laser &laser) {    
+void manageStim(Laser &laser) {    
   if (laser.isArmed() && programIsRunning) {
     unsigned long currentMillis = millis();
     if (laser.getStimMode() == CYCLE) {
-      oscillateLaser(currentMillis);
+      if (laser.getStimSetting() == CONSTANT) {}
+      else if (laser.getStimSetting() == OSCILLATE) {}
     }
-    if (laser.getStimMode() == REWARD) {
-      rewardLaser(activeLever, currentMillis);
+    else if (laser.getStimMode() == REWARD) {
+      if (laser.getStimSetting() == CONSTANT) {
+        constantStim(laser);
+      }
+      else if (laser.getStimSetting() == OSCILLATE) {
+        oscillateStim(laser);
+      }
     }
   }
 }

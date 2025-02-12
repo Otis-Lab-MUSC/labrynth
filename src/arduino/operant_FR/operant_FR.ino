@@ -127,8 +127,8 @@ void setup()
   laser.setFrequency(5);    // Set 40Hz pulsing frequency
   laser.setStimMode(REWARD);
   laser.setStimState(INACTIVE);
-  laser.setLaserMode(OSCILLATE);
-  laser.setLaserState(OFF); 
+  laser.setStimSetting(OSCILLATE);
+  laser.setStimAction(OFF); 
 
   // RH lever setup
   pinMode(leverRH.getPin(), INPUT_PULLUP);
@@ -205,58 +205,19 @@ void pressingDataEntry(Lever *&lever, Pump *pump)
   Serial.println(pressEntry); // send data to serial connection
 }
 
-// void setReward(Lever *&lever, Cue *cue, Pump *pump, Laser *laser) {
-//   long int timestamp = millis();
-//   if (cue && cue->isArmed()) {
-//     cue->setOnTimestamp(timestamp);
-//     cue->setOffTimestamp(timestamp);
-//   }
-//   if (pump && pump->isArmed()) {
-//     pump->setInfusionPeriod(cue->getOffTimestamp(), traceIntervalLength);
-//   }
-//   if (laser && laser->isArmed()) {
-//     laser->setStimState(ACTIVE);
-//     laser->setRewardStimEndTimestamp(timestamp);
-//   }
-// }
-
-void setReward(Lever *&lever, Cue *cue, Pump *pump, Laser *laser) {
-    long int timestamp = millis();
-
-    if (cue && cue->isArmed()) {
-        cue->setOnTimestamp(timestamp);
-        cue->setOffTimestamp(timestamp);
-    }
-
-    if (pump && pump->isArmed()) {
-        pump->setInfusionPeriod(cue->getOffTimestamp(), traceIntervalLength);
-    }
-
-    if (laser && laser->isArmed() && laser->getStimMode() == REWARD) {
-        unsigned long stimStart = timestamp;
-        unsigned long stimEnd = stimStart + laser->getDuration();
-
-        // 🔹 Print output ONCE when stim starts
-        Serial.println("LASER,STIM," + String(stimStart - differenceFromStartTime) + "," + String(stimEnd - differenceFromStartTime));
-
-        if (laser->getLaserMode() == CONSTANT) {
-            laser.on();
-            delay(laser->getDuration()); // Keep laser ON for full duration
-            laser.off();
-        } else {  // OSCILLATE mode
-            unsigned long halfCycle = (1000 / (laser->getFrequency() * 2));
-            for (unsigned long t = millis(); millis() - t < laser->getDuration();) {
-                laser.on();
-                delay(halfCycle);
-                laser.off();
-                delay(halfCycle);
-            }
-        }
-    }
+void deliverReward(Lever *&lever, Cue *cue, Pump *pump, Laser *laser) {
+  long int timestamp = millis();
+  if (cue && cue->isArmed()) {
+    cue->setOnTimestamp(timestamp);
+    cue->setOffTimestamp(timestamp);
+  }
+  if (pump && pump->isArmed()) {
+    pump->setInfusionPeriod(cue->getOffTimestamp(), traceIntervalLength);
+  }
+  if (laser && laser->isArmed()) {
+    laser->setStimPeriod(timestamp);
+  }
 }
-
-
-
 
 void definePressActivity(bool programRunning, Lever *&lever, Cue *cue, Pump *pump, Laser *laser)
 {
@@ -283,9 +244,7 @@ void definePressActivity(bool programRunning, Lever *&lever, Cue *cue, Pump *pum
       if (pressCount == fRatio - 1) 
       {
         pressCount = 0;
-        // cue->setOnTimestamp(timestamp); // set the cue tone period
-        // cue->setOffTimestamp(timestamp);
-        setReward(activeLever, cue, pump, laser);
+        deliverReward(activeLever, cue, pump, laser);
         if (programRunning)
         {
           timeoutIntervalStart = cue->getOffTimestamp();
@@ -310,10 +269,7 @@ void definePressActivity(bool programRunning, Lever *&lever, Cue *cue, Pump *pum
       if (pressCount == fRatio - 1) 
       {
         pressCount = 0;
-        // cue->setOnTimestamp(timestamp);
-        // cue->setOffTimestamp(timestamp);
-        // pump->setInfusionPeriod(cue->getOffTimestamp(), traceIntervalLength);
-        setReward(activeLever, cue, pump, laser);
+        deliverReward(activeLever, cue, pump, laser);
         String infusionEntry = "PUMP,INFUSION,";
         infusionEntry += differenceFromStartTime ? String(pump->getInfusionStartTimestamp() - differenceFromStartTime) : String(pump->getInfusionStartTimestamp());
         infusionEntry += ",";
@@ -354,7 +310,6 @@ void startProgram(byte pin)
   delay(50);                          // short delay to make sure data is fully transmitted
   digitalWrite(pin, LOW);             // finish trigger
   differenceFromStartTime = millis(); // set offset to calculate timestamps from program start
-  laser.setPreviousStim(millis());
 }
 
 void endProgram(byte pin)
@@ -401,6 +356,9 @@ void sendSetupJSON()
   doc["CS FREQUENCY"] = cs.getFrequency();
   doc["PUMP INFUSION LENGTH"] = pump.getInfusionDuration();
   doc["LASER STIM LENGTH"] = laser.getDuration();
+  doc["LASER STIM FREQUENCY"] = laser.getFrequency();
+  doc["LASER STIM MODE"] = laser.getStimMode();
+  doc["LASER MODE"] = laser.getStimSetting();
 
   serializeJson(doc, Serial);
   Serial.println('\n');
@@ -488,12 +446,7 @@ void monitorLicking(LickCircuit &lickSpout)
         else
         {
           lickSpout.setLickReleaseTimestamp(millis());
-          String deviceID = F("LICK_CIRCUIT");  // Using F() macro to store in flash memory
-          String eventType = F("LICK");
-          String touchTime = String(lickSpout.getLickTouchTimestamp() - differenceFromStartTime);
-          String releaseTime = String(lickSpout.getLickReleaseTimestamp() - differenceFromStartTime);
-          
-          String lickEntry = deviceID + "," + eventType + "," + touchTime + "," + releaseTime;
+          String lickEntry = "LICK_CIRCUIT,LICK," + String(lickSpout.getLickTouchTimestamp() - differenceFromStartTime) + "," + String(lickSpout.getLickReleaseTimestamp() - differenceFromStartTime);
           Serial.println(lickEntry);
         }
       }
@@ -501,93 +454,6 @@ void monitorLicking(LickCircuit &lickSpout)
     lickSpout.setPreviousLickState(currentLickState);
   }
 }
-
-// void manageLaser(Laser &laser)
-// {
-//   unsigned long currentMillis = millis();
-//   String stimEntry;
-
-//   if (laser.isArmed() && programIsRunning) {
-//     if (currentMillis - laser.getPreviousStim() >= laser.getStimDuration()) {
-//       laser.setPreviousStim(currentMillis);
-//       if (laser.getIsRunning()) {
-//         laser.setIsRunning(false);
-//       }
-//       else if (!laser.getIsRunning()) {
-//         laser.setIsRunning(true);
-//         stimEntry = "LASER,STIM,";
-//         stimEntry += differenceFromStartTime ? String(laser.getPreviousStim() - differenceFromStartTime) : String(laser.getPreviousStim());
-//         stimEntry += ",";
-//         stimEntry += differenceFromStartTime ? String(laser.getPreviousStim() - differenceFromStartTime + laser.getStimDuration()) : String(laser.getPreviousStim() + laser.getStimDuration());
-//         Serial.println(stimEntry);
-//       }
-//     }
-//     if (laser.getIsRunning()) {
-//       laser.off();
-//     }
-//     else if (!laser.getIsRunning()) {
-//       laser.on();
-//     }
-//   }
-//   else {
-//     laser.setIsRunning(false);
-//     laser.off();
-//   }
-// }
-
-void manageLaser(Laser &laser) {
-    unsigned long currentMillis = millis();
-    static bool stimActive = false;     // Tracks whether a stimulation event is ongoing
-    static unsigned long stimStart = 0; // Stores the start time of the stim
-    static unsigned long stimEnd = 0;   // Stores the end time of the stim
-    static bool oscillateState = false; // Tracks ON/OFF state for oscillation
-
-    // If laser is disarmed or program isn't running, ensure it's OFF
-    if (!laser.isArmed() || !programIsRunning) {
-        laser.off();
-        stimActive = false;
-        return;
-    }
-
-    // === CYCLE MODE: Start stim automatically at intervals ===
-    if (laser.getStimMode() == CYCLE) {
-        if (!stimActive && (currentMillis - laser.getPreviousStim() >= laser.getDuration())) {
-            // Start new stim event
-            laser.setPreviousStim(currentMillis);
-            stimStart = currentMillis;
-            stimEnd = stimStart + laser.getDuration();
-            stimActive = true;
-
-            // 🔹 Print output ONCE when stim starts
-            Serial.println("LASER,STIM," + String(stimStart - differenceFromStartTime) + "," + String(stimEnd - differenceFromStartTime));
-        }
-    }
-
-    // If a stim event is ongoing, control the laser behavior
-    if (stimActive) {
-        // 🔹 If the stim duration is over, turn off the laser and reset
-        if (currentMillis >= stimEnd) {
-            laser.off();
-            stimActive = false;
-            return;
-        }
-
-        // === LASER MODE HANDLING ===
-        if (laser.getLaserMode() == OSCILLATE) {
-            unsigned long halfCycle = (1000 / (laser.getFrequency() * 2)); // Half cycle duration
-
-            if (currentMillis - laser.getPreviousHalfCycle() >= halfCycle) {
-                laser.setPreviousHalfCycle(currentMillis);
-                oscillateState = !oscillateState;
-                digitalWrite(laser.getPin(), oscillateState ? HIGH : LOW);
-            }
-        } else {  
-            laser.on(); // CONSTANT mode: Just keep it ON
-        }
-    }
-}
-
-
 
 void monitorSerialCommands()
 {
@@ -747,19 +613,19 @@ void monitorSerialCommands()
         laser.setStimMode(REWARD);
       }
       else if (command == "LASER_MODE_OSCILLATE") {
-        laser.setLaserMode(OSCILLATE);
+        laser.setStimSetting(OSCILLATE);
       }
       else if (command == "LASER_MODE_CONSTANT") {
-        laser.setLaserMode(CONSTANT);
+        laser.setStimSetting(CONSTANT);
       }
-      else if (command.startsWith("SET_LASER_DURATION:"))
+      else if (command.startsWith("LASER_DURATION:"))
       {
-        long duration = command.substring(String("SET_LASER_DURATION:").length()).toInt();
+        long duration = command.substring(String("LASER_DURATION:").length()).toInt();
         laser.setDuration(duration);
       }
-      else if (command.startsWith("SET_LASER_FREQUENCY:"))
+      else if (command.startsWith("LASER_FREQUENCY:"))
       {
-        long frequency = command.substring(String("SET_LASER_FREQUENCY:").length()).toInt();
+        long frequency = command.substring(String("LASER_FREQUENCY:").length()).toInt();
         laser.setFrequency(frequency);
       }
 
@@ -831,7 +697,7 @@ void PROGRAM()
     monitorPressing(programIsRunning, activeLever, &cs, &pump, &laser);         // monitor pressing for active lever requires cs and pump parameter
     monitorPressing(programIsRunning, inactiveLever, nullptr, nullptr, nullptr); // monitor pressing for inactive lever does not require cs or pump parameter
     monitorLicking(lickCircuit);
-    manageLaser(laser);
+    manageStim(laser);
     handleFrameSignal();
     pingDevice(previousPing, pingInterval);
   }

@@ -137,7 +137,7 @@ class ProgramTab:
         self.reacher = reacher
         self.hardware_checkbuttongroup = pn.widgets.CheckButtonGroup(
             name="Select hardware to use:",
-            options=["LH Lever", "RH Lever", "Cue", "Pump", "Lick Circuit", "Imaging Microscope"],
+            options=["LH Lever", "RH Lever", "Cue", "Pump", "Lick Circuit", "Laser", "Imaging Microscope"],
             value=["LH Lever", "RH Lever", "Cue", "Pump"],
             orientation='vertical',
             button_style="outline"
@@ -442,12 +442,12 @@ class HardwareTab:
         self.arm_microscope_button.param.watch(self.arm_frames, 'value')
 
         self.laser_armed = False
-        self.arm_laser_button = pn.widgets.Toggle( # FIXME: enable later
+        self.arm_laser_button = pn.widgets.Toggle(
             name="Arm Laser",
             button_type="danger",
             value=False,
             icon="lock",
-            disabled=True
+            disabled=False
         )
         self.arm_laser_button.param.watch(self.arm_laser, 'value')
 
@@ -475,11 +475,11 @@ class HardwareTab:
             step=5,
             value=30
         )
-        self.send_laser_config_button = pn.widgets.Button( # FIXME: enable later
+        self.send_laser_config_button = pn.widgets.Button(
             name="Send",
             button_type="primary",
             icon="upload",
-            disabled=True
+            disabled=False
         )
         self.send_laser_config_button.on_click(self.send_laser_configuration)
 
@@ -594,19 +594,18 @@ class HardwareTab:
         except Exception as e:
             self.dashboard.add_error(f"{e}") 
 
-    def arm_laser(self, _): # FIXME: enable later
+    def arm_laser(self, _):
         try:
-            pass
-            # if not self.laser_armed:
-            #     self.reacher.send_serial_command("ARM_LASER")
-            #     self.dashboard.add_response("Armed laser")
-            #     self.laser_armed = True
-            #     self.arm_laser_button.icon = "unlock"
-            # else:
-            #     self.reacher.send_serial_command("DISARM_LASER")
-            #     self.dashboard.add_response("Disarmed laser")  
-            #     self.laser_armed = False
-            #     self.arm_laser_button.icon = "lock"
+            if not self.laser_armed:
+                self.reacher.send_serial_command("ARM_LASER")
+                self.dashboard.add_response("Armed laser")
+                self.laser_armed = True
+                self.arm_laser_button.icon = "unlock"
+            else:
+                self.reacher.send_serial_command("DISARM_LASER")
+                self.dashboard.add_response("Disarmed laser")  
+                self.laser_armed = False
+                self.arm_laser_button.icon = "lock"
         except Exception as e:
             self.dashboard.add_error(f"{e}") 
 
@@ -615,16 +614,16 @@ class HardwareTab:
         Function to send laser configuration to the Arduino.
         """
         try:
-            self.reacher.send_serial_command(f"SET_STIM_MODE_{str(self.stim_mode_widget.value).upper()}")
+            self.reacher.send_serial_command(f"LASER_STIM_MODE_{str(self.stim_mode_widget.value).upper()}")
             self.dashboard.add_response(f"Set stim mode to {str(self.stim_mode_widget.value)}")
 
             self.reacher.send_serial_command(f"LASER_MODE_{str(self.laser_mode_widget.value).upper()}")
             self.dashboard.add_response(f"Set laser mode to {str(self.laser_mode_widget.value)}")
 
-            self.reacher.send_serial_command(f"SET_LASER_DURATION:{str(self.stim_duration_slider.value)}")
+            self.reacher.send_serial_command(f"LASER_DURATION:{str(self.stim_duration_slider.value * 1000)}")
             self.dashboard.add_response(f"Set laser duration to {str(self.stim_duration_slider.value)} seconds")
 
-            self.reacher.send_serial_command(f"SET_LASER_FREQUENCY:{str(self.pulse_slider.value)}")
+            self.reacher.send_serial_command(f"LASER_FREQUENCY:{str(self.pulse_slider.value)}")
             self.dashboard.add_response(f"Set laser frequency to {str(self.pulse_slider.value)}")
         except Exception as e:
             self.dashboard.add_error("Failed to send laser configuration", str(e))
