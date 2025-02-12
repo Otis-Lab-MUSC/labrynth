@@ -16,7 +16,7 @@ void Laser::setStimPeriod(unsigned long int currentMillis) {
 }
 
 void Laser::setStimHalfCyclePeriod(unsigned long int currentMillis) {
-  unsigned long int halfCycleLength = duration / frequency;
+  float halfCycleLength = (1.0/frequency)/2.0*1000;
   halfCycleStart = currentMillis;
   halfCycleEnd = currentMillis + halfCycleLength;
 }

@@ -41,7 +41,8 @@ void pingDevice(unsigned long &previousPing, const unsigned long pingInterval) {
 
 extern Lever *activeLever; 
 extern Lever *inactiveLever;
-extern Laser laser;      
+extern Laser laser;    
+extern unsigned long int differenceFromStartTime;  
 
 void manageCue(Cue *cue)
 {
@@ -109,10 +110,17 @@ void manageLaser(Laser &laser) {
 void logStim(Laser &laser) {
   if (laser.getStimLog() == false) {
     String log = "LASER,STIM,";
-    log += String(laser.getStimStart()) + ",";
-    log += String(laser.getStimEnd());
-    Serial.println(log);
-    laser.setStimLogged(true);
+    if (differenceFromStartTime) {
+      log += String(laser.getStimStart() - differenceFromStartTime) + ",";
+      log += String(laser.getStimEnd() - differenceFromStartTime);
+      Serial.println(log);
+      laser.setStimLogged(true);
+    } else {
+        log += String(laser.getStimStart()) + ",";
+        log += String(laser.getStimEnd());
+        Serial.println(log);
+        laser.setStimLogged(true);  
+    }
   }
 }
 
@@ -133,14 +141,13 @@ void oscillateStim(Laser &laser) {
   if (millis() > laser.getStimStart() && millis() < laser.getStimEnd()) {
     laser.setStimState(ACTIVE);
     laser.setStimLogged(false);
-    if (millis() > laser.getStimHalfCycleStart() && millis() < laser.getStimHalfCycleEnd()) {
+    if (millis() > laser.getStimHalfCycleEnd()) {
+      laser.setStimHalfCyclePeriod(millis());
       if (laser.getStimAction() == ON) {
         laser.setStimAction(OFF);
       } else {
         laser.setStimAction(ON);
       }
-    } else {
-      laser.setStimHalfCyclePeriod(millis());
     }
   } else {
     laser.setStimState(INACTIVE);
