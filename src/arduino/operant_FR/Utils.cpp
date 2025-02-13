@@ -162,7 +162,9 @@ void manageStim(Laser &laser) {
     unsigned long currentMillis = millis();
     if (laser.getStimMode() == CYCLE) {
       if (laser.getStimSetting() == CONSTANT) {}
-      else if (laser.getStimSetting() == OSCILLATE) {}
+      else if (laser.getStimSetting() == OSCILLATE) {
+        oscillateStim(laser);
+      }
     }
     else if (laser.getStimMode() == REWARD) {
       if (laser.getStimSetting() == CONSTANT) {
