@@ -216,6 +216,7 @@ void deliverReward(Lever *&lever, Cue *cue, Pump *pump, Laser *laser) {
   }
   if (laser && laser->isArmed()) {
     laser->setStimPeriod(timestamp);
+    laser->setStimState(ACTIVE);
   }
 }
 

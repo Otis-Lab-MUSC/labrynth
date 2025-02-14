@@ -124,8 +124,12 @@ void logStim(Laser &laser) {
   }
 }
 
+bool inStimPeriod() {
+  return millis() > laser.getStimStart() && millis() < laser.getStimEnd();
+}
+
 void constantStim(Laser &laser) {
-  if (millis() > laser.getStimStart() && millis() < laser.getStimEnd()) {
+  if (inStimPeriod() && laser.getCycleUp()) {
     laser.setStimState(ACTIVE);
     laser.setStimLogged(false);
     laser.setStimAction(ON);
@@ -138,7 +142,7 @@ void constantStim(Laser &laser) {
 }
 
 void oscillateStim(Laser &laser) {
-  if (millis() > laser.getStimStart() && millis() < laser.getStimEnd()) {
+  if (inStimPeriod() && laser.getCycleUp()) {
     laser.setStimState(ACTIVE);
     laser.setStimLogged(false);
     if (millis() > laser.getStimHalfCycleEnd()) {
@@ -157,22 +161,37 @@ void oscillateStim(Laser &laser) {
   manageLaser(laser);
 }
 
+void cycleStim(Laser &laser) {
+  unsigned long currentMillis = millis();
+  if (!inStimPeriod()) { 
+    laser.setStimPeriod(currentMillis); 
+    laser.setCycleUp(!laser.getCycleUp());
+  }
+  if (laser.getStimSetting() == CONSTANT) {
+    constantStim(laser);
+  }
+  else if (laser.getStimSetting() == OSCILLATE) {
+    oscillateStim(laser);
+  }
+}
+
+void rewardStim(Laser &laser) {
+  laser.setCycleUp(true);
+  if (laser.getStimSetting() == CONSTANT) {
+    constantStim(laser);
+  }
+  else if (laser.getStimSetting() == OSCILLATE) {
+    oscillateStim(laser);
+  }
+}
+
 void manageStim(Laser &laser) {    
   if (laser.isArmed() && programIsRunning) {
-    unsigned long currentMillis = millis();
     if (laser.getStimMode() == CYCLE) {
-      if (laser.getStimSetting() == CONSTANT) {}
-      else if (laser.getStimSetting() == OSCILLATE) {
-        oscillateStim(laser);
-      }
+      cycleStim(laser);
     }
     else if (laser.getStimMode() == REWARD) {
-      if (laser.getStimSetting() == CONSTANT) {
-        constantStim(laser);
-      }
-      else if (laser.getStimSetting() == OSCILLATE) {
-        oscillateStim(laser);
-      }
+      rewardStim(laser);
     }
   }
 }

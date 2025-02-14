@@ -19,6 +19,7 @@ private:
     unsigned long int halfCycleStart;
     unsigned long int halfCycleEnd;
     bool logged;
+    bool cycleUp;
     MODE laserMode;
     SETTING laserSetting;
     STATE laserState;
@@ -33,6 +34,7 @@ public:
     void setStimPeriod(unsigned long int currentMills);
     void setStimHalfCyclePeriod(unsigned long int currentMillis);
     void setStimLogged(bool log);
+    void setCycleUp(bool cycle);
     void setStimMode(MODE mode);
     void setStimSetting(SETTING setting);
     void setStimState(STATE state);
@@ -46,6 +48,7 @@ public:
     unsigned long int getStimHalfCycleStart();
     unsigned long int getStimHalfCycleEnd();
     bool getStimLog();
+    bool getCycleUp();
     MODE getStimMode();
     SETTING getStimSetting();
     STATE getStimState();

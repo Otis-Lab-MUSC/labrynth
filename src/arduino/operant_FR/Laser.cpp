@@ -1,6 +1,6 @@
 #include "Laser.h"
 
-Laser::Laser(byte initPin) : Device(initPin), duration(3000), frequency(1), stimStart(0), stimEnd(0), halfCycleStart(0), halfCycleEnd(0), logged(true), laserMode(REWARD), laserSetting(CONSTANT), laserState(INACTIVE), laserAction(OFF) {}
+Laser::Laser(byte initPin) : Device(initPin), duration(3000), frequency(1), stimStart(0), stimEnd(0), halfCycleStart(0), halfCycleEnd(0), logged(true), cycleUp(false), laserMode(REWARD), laserSetting(CONSTANT), laserState(INACTIVE), laserAction(OFF) {}
 
 void Laser::setDuration(unsigned long int initDuration) {
     duration = initDuration;
@@ -23,6 +23,10 @@ void Laser::setStimHalfCyclePeriod(unsigned long int currentMillis) {
 
 void Laser::setStimLogged(bool log) {
   logged = log;
+}
+
+void Laser::setCycleUp(bool cycle) {
+  cycleUp = cycle;
 }
 
 void Laser::setStimMode(MODE mode) {
@@ -69,6 +73,10 @@ bool Laser::getStimLog() {
   return logged;
 }
 
+bool Laser::getCycleUp() {
+  return cycleUp;
+}
+
 MODE Laser::getStimMode() {
   return laserMode;
 }
@@ -87,10 +95,10 @@ ACTION Laser::getStimAction() {
 
 void Laser::on() {
     digitalWrite(pin, HIGH);  // Turn the laser ON
-    // Serial.println("ON");
+    // Serial.println("ON"); // Uncomment for debugging
 }
 
 void Laser::off() {
     digitalWrite(pin, LOW);   // Turn the laser OFF
-    // Serial.println("OFF");
+    // Serial.println("OFF"); // Uncomment for debugging
 }
