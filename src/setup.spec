@@ -10,7 +10,7 @@ a = Analysis(
         # Include external assets
         ('dashboard/utils/assets/*', 'assets'), 
     ],
-    hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests'],
+    hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk',],
     hookspath=[],
     runtime_hooks=[],
     excludes=[],
