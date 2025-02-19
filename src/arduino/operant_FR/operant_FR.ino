@@ -123,12 +123,6 @@ void setup()
   // laser setup
   pinMode(laser.getPin(), OUTPUT);
   laser.disarm(); 
-  laser.setDuration(30000);  // Set 30 seconds of stimulation
-  laser.setFrequency(5);    // Set 40Hz pulsing frequency
-  laser.setStimMode(REWARD);
-  laser.setStimState(INACTIVE);
-  laser.setStimSetting(OSCILLATE);
-  laser.setStimAction(OFF); 
 
   // RH lever setup
   pinMode(leverRH.getPin(), INPUT_PULLUP);

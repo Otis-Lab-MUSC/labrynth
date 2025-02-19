@@ -1,6 +1,6 @@
 #include "Laser.h"
 
-Laser::Laser(byte initPin) : Device(initPin), duration(3000), frequency(1), stimStart(0), stimEnd(0), halfCycleStart(0), halfCycleEnd(0), logged(true), cycleUp(false), laserMode(REWARD), laserSetting(CONSTANT), laserState(INACTIVE), laserAction(OFF) {}
+Laser::Laser(byte initPin) : Device(initPin), duration(10000), frequency(20), stimStart(0), stimEnd(0), halfCycleStart(0), halfCycleEnd(0), logged(true), cycleUp(false), laserMode(CYCLE), laserSetting(OSCILLATE), laserState(INACTIVE), laserAction(OFF) {}
 
 void Laser::setDuration(unsigned long int initDuration) {
     duration = initDuration;
@@ -95,10 +95,10 @@ ACTION Laser::getStimAction() {
 
 void Laser::on() {
     digitalWrite(pin, HIGH);  // Turn the laser ON
-    // Serial.println("ON"); // Uncomment for debugging
+     Serial.println("ON"); // Uncomment for debugging
 }
 
 void Laser::off() {
     digitalWrite(pin, LOW);   // Turn the laser OFF
-    // Serial.println("OFF"); // Uncomment for debugging
+     Serial.println("OFF"); // Uncomment for debugging
 }
