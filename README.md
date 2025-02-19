@@ -134,7 +134,7 @@ You can download the latest version of the **REACHER Suite** for your operating 
 | **Operating System** | **Download Link** |
 |----------------------|------------------|
 | **Windows (64-bit)** | [Download reacher-suite-installer_x64.exe](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-suite-installer_x64.exe) |
-| **Linux** | [Download reacher-suite-installer_x64.deb]((https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-suite-installer_x64.deb)) |
+| **Linux** | [Download reacher-suite-installer_amd64.deb](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-suite-installer_amd64.deb) |
 | **macOS** | [Download REACHER for macOS](#) *(Coming soon...)* |
 
 Click on the appropriate link to begin the installation.
