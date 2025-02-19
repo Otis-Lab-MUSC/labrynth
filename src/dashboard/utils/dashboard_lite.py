@@ -399,14 +399,15 @@ class HardwareTab:
             button_type="primary"
         )
         self.send_cue_configuration_button.on_click(self.send_cue_configuration)
-        self.cue_frequency_intslider = pn.widgets.IntSlider(
+        
+        self.cue_frequency_intslider = pn.widgets.IntInput(
             name="Cue Frequency",
             start=0,
             end=20000,
             value=8000,
             step=50
         )
-        self.cue_duration_intslider = pn.widgets.IntSlider(
+        self.cue_duration_intslider = pn.widgets.IntInput(
             name="Cue Duration",
             start=0,
             end=10000,
@@ -451,26 +452,21 @@ class HardwareTab:
         )
         self.arm_laser_button.param.watch(self.arm_laser, 'value')
 
-        self.laser_mode_widget = pn.widgets.Select(
-            name="Laser Mode",
-            options=["Oscillate", "Constant"],
-            value="Oscillate"
-        )
         self.stim_mode_widget = pn.widgets.Select(
             name="Stim Mode",
             options=["Cycle", "Reward"],
             value="Cycle"
         )
-        self.pulse_slider = pn.widgets.IntSlider(
-            name="Frequency",
-            start=2,
+        self.pulse_slider = pn.widgets.IntInput(
+            name="Frequency (Hz)",
+            start=0,
             end=50,
             step=1,
-            value=2
+            value=20
         )
-        self.stim_duration_slider = pn.widgets.IntSlider(
+        self.stim_duration_slider = pn.widgets.IntInput(
             name="Stim Duration (sec)",
-            start=5,
+            start=0,
             end=300,
             step=5,
             value=30
@@ -617,9 +613,6 @@ class HardwareTab:
             self.reacher.send_serial_command(f"LASER_STIM_MODE_{str(self.stim_mode_widget.value).upper()}")
             self.dashboard.add_response(f"Set stim mode to {str(self.stim_mode_widget.value)}")
 
-            self.reacher.send_serial_command(f"LASER_MODE_{str(self.laser_mode_widget.value).upper()}")
-            self.dashboard.add_response(f"Set laser mode to {str(self.laser_mode_widget.value)}")
-
             self.reacher.send_serial_command(f"LASER_DURATION:{str(self.stim_duration_slider.value * 1000)}")
             self.dashboard.add_response(f"Set laser duration to {str(self.stim_duration_slider.value)} seconds")
 
@@ -637,19 +630,16 @@ class HardwareTab:
         initial_low_duration = 1
         square_wave = np.zeros_like(t)
 
-        if self.laser_mode_widget.value == "Oscillate":
-            period = (total_duration - initial_low_duration) / pulses
-            for i, time_point in enumerate(t):
-                if time_point >= initial_low_duration:
-                    relative_time = time_point - initial_low_duration
-                    if (relative_time // (period / 2)) % 2 == 0:
-                        square_wave[i] = 1
-        elif self.laser_mode_widget.value == "Constant":
-            square_wave[t >= initial_low_duration] = 1
+        period = (total_duration - initial_low_duration) / pulses
+        for i, time_point in enumerate(t):
+            if time_point >= initial_low_duration:
+                relative_time = time_point - initial_low_duration
+                if (relative_time // (period / 2)) % 2 == 0:
+                    square_wave[i] = 1
 
         plt.figure(figsize=(5, 2))
         plt.plot(t, square_wave)
-        plt.title(f'Square Wave - Pulses: {pulses if self.laser_mode_widget.value == "Oscillate" else 1}, Stim Duration: {stim_duration} sec')
+        plt.title(f'Square Wave - Pulses: {pulses}, Stim Duration: {stim_duration} sec')
         plt.xlabel('Time [s]')
         plt.ylabel('Amplitude')
         plt.ylim([-0.1, 1.1])
@@ -694,7 +684,6 @@ class HardwareTab:
             pn.pane.Markdown("### Laser (BETA)"),
             self.arm_laser_button,
             self.stim_mode_widget,
-            self.laser_mode_widget,
             self.pulse_slider,
             self.stim_duration_slider,
             self.send_laser_config_button,

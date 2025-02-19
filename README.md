@@ -133,11 +133,23 @@ You can download the latest version of the **REACHER Suite** for your operating 
 
 | **Operating System** | **Download Link** |
 |----------------------|------------------|
-| **Windows (64-bit)** | [Download REACHER for Windows](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-suite-installer_x64.exe) |
+| **Windows (64-bit)** | [Download reacher-suite-installer_x64.exe](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-suite-installer_x64.exe) |
 | **Linux** | [Download REACHER for Linux](#) *(Coming soon...)* |
 | **macOS** | [Download REACHER for macOS](#) *(Coming soon...)* |
 
 Click on the appropriate link to begin the installation.
+
+<br>
+
+You can download the latest version any of the accompanying Arduino projects here as well:
+
+| **Training Schedule** | **Download Link** |
+|----------------------|------------------|
+| **All Sketches** | [Download reacher_arduino_sketches.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher_arduino_sketches.zip) |
+| **Operant Fixed Ratio** | [Download operant_FR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_FR.zip) |
+| **Operant Progressive Ratio** | [Download operant_PR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_PR.zip) |
+| **Operant Variable Ratio** | [Download operant_VR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_VR.zip) |
+| **Omission** | [Download omission.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/omission.zip) |
 
 <br>
 
