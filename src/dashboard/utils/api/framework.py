@@ -139,12 +139,12 @@ class REACHER:
             parts = str(line).split(',')
             handler = event_handlers.get(len(parts))
             if handler:
-                print(f"[handle_data] Processing parts: {parts}")
+                print(f"[handle_data]: Processing parts: {parts}")
                 handler(parts)
             else:
-                print(f"[handle_data] No handler found for data: {line}")
+                print(f"[handle_data]: No handler found for data: {line}")
         except Exception as e:
-            print(f"[handle_data] Error processing data: {e}")
+            print(f"[handle_data]: Error processing data: {e}")
 
     def update_behavioral_events(self, parts):
         """Reflects lever press occurences in GUI."""

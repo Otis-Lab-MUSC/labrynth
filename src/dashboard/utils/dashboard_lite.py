@@ -401,14 +401,14 @@ class HardwareTab:
         self.send_cue_configuration_button.on_click(self.send_cue_configuration)
         
         self.cue_frequency_intslider = pn.widgets.IntInput(
-            name="Cue Frequency",
+            name="Cue Frequency (Hz)",
             start=0,
             end=20000,
             value=8000,
             step=50
         )
         self.cue_duration_intslider = pn.widgets.IntInput(
-            name="Cue Duration",
+            name="Cue Duration (ms)",
             start=0,
             end=10000,
             value=1600,
@@ -457,17 +457,17 @@ class HardwareTab:
             options=["Cycle", "Reward"],
             value="Cycle"
         )
-        self.pulse_slider = pn.widgets.IntInput(
+        self.stim_frequency_slider = pn.widgets.IntInput(
             name="Frequency (Hz)",
-            start=0,
-            end=50,
+            start=1,
+            end=100,
             step=1,
             value=20
         )
         self.stim_duration_slider = pn.widgets.IntInput(
-            name="Stim Duration (sec)",
-            start=0,
-            end=300,
+            name="Stim Duration (s)",
+            start=1,
+            end=60,
             step=5,
             value=30
         )
@@ -481,8 +481,7 @@ class HardwareTab:
 
         self.interactive_plot = pn.bind(
             self.plot_square_wave, 
-            pulses=self.pulse_slider, 
-            stim_duration=self.stim_duration_slider
+            frequency=self.stim_frequency_slider, 
         )
 
     def set_active_lever(self, event):
@@ -549,12 +548,12 @@ class HardwareTab:
         try:
             if not self.pump_armed:
                 self.reacher.send_serial_command("ARM_PUMP")
-                self.dashboard.add_response("Armed pump")
+                self.dashboard.add_response("Armed Pump")
                 self.pump_armed = True
                 self.arm_pump_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_PUMP")
-                self.dashboard.add_response("Disarmed pump")  
+                self.dashboard.add_response("Disarmed Pump")  
                 self.pump_armed = False
                 self.arm_pump_button.icon = "lock"
         except Exception as e:
@@ -564,12 +563,12 @@ class HardwareTab:
         try:
             if not self.lick_circuit_armed:
                 self.reacher.send_serial_command("ARM_LICK_CIRCUIT")
-                self.dashboard.add_response("Armed lick circuit")
+                self.dashboard.add_response("Armed Lick Circuit")
                 self.lick_circuit_armed = True
                 self.arm_lick_circuit_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_LICK_CIRCUIT")
-                self.dashboard.add_response("Disarmed lick circuit")  
+                self.dashboard.add_response("Disarmed Lick Circuit")  
                 self.lick_circuit_armed = False
                 self.arm_lick_circuit_button.icon = "lock"
         except Exception as e:
@@ -594,12 +593,12 @@ class HardwareTab:
         try:
             if not self.laser_armed:
                 self.reacher.send_serial_command("ARM_LASER")
-                self.dashboard.add_response("Armed laser")
+                self.dashboard.add_response("Armed Laser")
                 self.laser_armed = True
                 self.arm_laser_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_LASER")
-                self.dashboard.add_response("Disarmed laser")  
+                self.dashboard.add_response("Disarmed Laser")  
                 self.laser_armed = False
                 self.arm_laser_button.icon = "lock"
         except Exception as e:
@@ -613,33 +612,34 @@ class HardwareTab:
             self.reacher.send_serial_command(f"LASER_STIM_MODE_{str(self.stim_mode_widget.value).upper()}")
             self.dashboard.add_response(f"Set stim mode to {str(self.stim_mode_widget.value)}")
 
-            self.reacher.send_serial_command(f"LASER_DURATION:{str(self.stim_duration_slider.value * 1000)}")
+            self.reacher.send_serial_command(f"LASER_DURATION:{str(self.stim_duration_slider.value)}")
             self.dashboard.add_response(f"Set laser duration to {str(self.stim_duration_slider.value)} seconds")
 
-            self.reacher.send_serial_command(f"LASER_FREQUENCY:{str(self.pulse_slider.value)}")
-            self.dashboard.add_response(f"Set laser frequency to {str(self.pulse_slider.value)}")
+            self.reacher.send_serial_command(f"LASER_FREQUENCY:{str(self.stim_frequency_slider.value)}")
+            self.dashboard.add_response(f"Set laser frequency to {str(self.stim_frequency_slider.value)} Hz")
         except Exception as e:
             self.dashboard.add_error("Failed to send laser configuration", str(e))
 
-    def plot_square_wave(self, pulses, stim_duration):
+    def plot_square_wave(self, frequency):
         """
-        Function to plot a square wave.
+        Function to plot a square wave for one second.
+        Frequency represents the number of pulses per second.
         """
-        total_duration = stim_duration
+        total_duration = 1
         t = np.linspace(0, total_duration, 1000)
-        initial_low_duration = 1
         square_wave = np.zeros_like(t)
-
-        period = (total_duration - initial_low_duration) / pulses
-        for i, time_point in enumerate(t):
-            if time_point >= initial_low_duration:
-                relative_time = time_point - initial_low_duration
-                if (relative_time // (period / 2)) % 2 == 0:
+        
+        if frequency == 1:
+            square_wave[1:999] = 1
+        else:
+            period = 1 / frequency
+            for i, time_point in enumerate(t):
+                if (time_point % period) < (period / 2):
                     square_wave[i] = 1
-
+        
         plt.figure(figsize=(5, 2))
-        plt.plot(t, square_wave)
-        plt.title(f'Square Wave - Pulses: {pulses}, Stim Duration: {stim_duration} sec')
+        plt.plot(t, square_wave, drawstyle='steps-pre')
+        plt.title(f'Square Wave - {frequency} Hz')
         plt.xlabel('Time [s]')
         plt.ylabel('Amplitude')
         plt.ylim([-0.1, 1.1])
@@ -684,7 +684,7 @@ class HardwareTab:
             pn.pane.Markdown("### Laser (BETA)"),
             self.arm_laser_button,
             self.stim_mode_widget,
-            self.pulse_slider,
+            self.stim_frequency_slider,
             self.stim_duration_slider,
             self.send_laser_config_button,
             pn.pane.Matplotlib(self.interactive_plot, width=500, height=200)
