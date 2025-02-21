@@ -16,4 +16,4 @@ public:
     bool isArmed() const;
 };
 
-#endif // DEVICE_H
+#endif 

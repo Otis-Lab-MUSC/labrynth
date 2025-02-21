@@ -147,9 +147,9 @@ You can download the latest version any of the accompanying Arduino projects her
 |----------------------|------------------|
 | **All Sketches** | [Download reacher_arduino_sketches.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher_arduino_sketches.zip) |
 | **Operant Fixed Ratio** | [Download operant_FR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_FR.zip) |
-| **Operant Progressive Ratio** | [Download operant_PR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_PR.zip) |
-| **Operant Variable Ratio** | [Download operant_VR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_VR.zip) |
-| **Omission** | [Download omission.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/omission.zip) |
+| **Operant Progressive Ratio *(BETA)*** | [Download operant_PR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_PR.zip) |
+| **Operant Variable Ratio *(BETA)*** | [Download operant_VR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_VR.zip) |
+| **Omission *(BETA)*** | [Download omission.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/omission.zip) |
 
 <br>
 

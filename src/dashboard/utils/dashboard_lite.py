@@ -681,7 +681,7 @@ class HardwareTab:
             pn.pane.Markdown("### Scope"),
             self.arm_microscope_button,
             pn.Spacer(height=50),
-            pn.pane.Markdown("### Laser (BETA)"),
+            pn.pane.Markdown("### Laser"),
             self.arm_laser_button,
             self.stim_mode_widget,
             self.stim_frequency_slider,

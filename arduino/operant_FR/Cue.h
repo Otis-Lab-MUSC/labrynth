@@ -27,5 +27,4 @@ public:
     long int getOffTimestamp() const;
 };
 
-#endif // CUE_H
-
+#endif 

@@ -6,8 +6,8 @@
 
 // Enum to define the laser modes (oscillating or based on active press)
 enum MODE { CYCLE, ACTIVE_PRESS };
-enum STATE { ACTIVE, INACTIVE };
-enum ACTION { ON, OFF };
+enum STATE { INACTIVE, ACTIVE };
+enum ACTION { OFF, ON };
 
 class Laser : public Device {
 private:
@@ -55,4 +55,4 @@ public:
     void off();
 };
 
-#endif // LASER_H
+#endif 
