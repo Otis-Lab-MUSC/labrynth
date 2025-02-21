@@ -17,11 +17,14 @@ class LDashboard:
         self.monitor_tab = MonitorTab(self,  self.reacher)
         self.schedule_tab = ScheduleTab(self,  self.reacher)
         self.response_textarea = pn.pane.HTML(
-            f"REACHER Output:<br><br>",
+            "REACHER Output:<br><br>",
             styles={"background-color": "#1e1e1e", "color": "white"},
             width=450,
             height=600,
+            visible=True
         )
+        self.toggle_button = pn.widgets.Button(name="Hide Response", button_type="primary")
+        self.toggle_button.on_click(self.toggle_response_visibility)
 
         self.dashboard = pn.Tabs(
             ("Home", self.home_tab.layout()),
@@ -31,12 +34,11 @@ class LDashboard:
             ("Schedule", self.schedule_tab.layout()),
             tabs_location="left",
         )    
-
+    
     def layout(self):
-        layout = pn.Column(
-            self.header,
-            pn.Row(self.dashboard, self.response_textarea)
-        )
+        header_row = pn.Row(self.header, self.toggle_button)
+        main_row = pn.Row(self.dashboard, self.response_textarea)
+        layout = pn.Column(header_row, main_row)
         return layout
 
     def get_response_terminal(self):
@@ -70,8 +72,16 @@ class LDashboard:
         <span style="color: white;"> {response}</span><br>
         <span style="color: grey;">     Details - {details}</span><br>
         """
-
         self.response_textarea.object += writeout
+
+    def toggle_response_visibility(self, event):
+        """Toggle the visibility of the response_textarea and update button label."""
+        if self.response_textarea.visible:
+            self.response_textarea.visible = False
+            self.toggle_button.name = "Show Response"
+        else:
+            self.response_textarea.visible = True
+            self.toggle_button.name = "Hide Response"
 
 class HomeTab:
     def __init__(self, dashboard: LDashboard, reacher: REACHER):
