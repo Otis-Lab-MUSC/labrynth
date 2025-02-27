@@ -26,7 +26,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: reacher-dashboard-1.0-x64
-          path: dist/reacher-dashboard/
+          path: src/dist/reacher-dashboard/
 
   build-macos:
     runs-on: macos-latest
@@ -82,4 +82,4 @@ jobs:
           cp -r src/dist/reacher-dashboard/* reacher_dashboard_1.0_amd64/opt/reacher-dashboard/
           ln -s /opt/reacher-dashboard/reacher-dashboard reacher_dashboard_1.0_amd64/usr/local/bin/reacher-dashboard
       - name: Build DEB package
-        run: dpkg-deb --build reacher_dashboard_1.0_amd64
+        run: dpkg-deb --build src/reacher_dashboard_1.0_amd64
