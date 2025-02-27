@@ -1,5 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import sys
+
 block_cipher = None
 
 a = Analysis(
@@ -8,9 +10,9 @@ a = Analysis(
     binaries=[],
     datas=[
         # Include external assets
-        ('dashboard/utils/assets/*', 'assets'), 
+        ('dashboard/utils/assets/*', 'assets'),
     ],
-    hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk',],
+    hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk'],
     hookspath=[],
     runtime_hooks=[],
     excludes=[],
@@ -32,17 +34,28 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False, 
-    icon='dashboard/utils/assets/reacher-app-icon.ico',
+    console=False,
+    icon='dashboard/utils/assets/reacher-app-icon.ico' if sys.platform != 'darwin' else 'dashboard/utils/assets/reacher-app-icon.icns',
 )
 
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='reacher-dashboard',
-)
+if sys.platform == 'darwin':
+    app = BUNDLE(
+        exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        name='REACHER Dashboard.app',
+        icon='dashboard/utils/assets/reacher-app-icon.icns',
+        bundle_identifier='com.yourname.reacher-dashboard',  # Replace with your identifier
+    )
+else:
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        name='reacher-dashboard',
+    )
