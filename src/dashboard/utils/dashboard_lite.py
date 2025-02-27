@@ -464,7 +464,7 @@ class HardwareTab:
 
         self.stim_mode_widget = pn.widgets.Select(
             name="Stim Mode",
-            options=["Cycle", "Reward"],
+            options=["Cycle", "Active-Press"],
             value="Cycle"
         )
         self.stim_frequency_slider = pn.widgets.IntInput(
