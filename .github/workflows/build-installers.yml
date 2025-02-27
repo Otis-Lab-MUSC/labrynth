@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -23,18 +23,18 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable with PyInstaller
-        run: pyinstaller setup.spec
+        run: pyinstaller src/setup.spec
 
       - name: Install Inno Setup
         run: choco install innosetup -y
         shell: cmd
 
       - name: Build Windows installer
-        run: "C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe" setup.iss
+        run: '"C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe" setup.iss'
         shell: cmd
 
       - name: Upload Windows installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: reacher_suite_windows_installer
           path: dist/reacher_suite_setup.exe
@@ -43,7 +43,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -56,7 +56,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable with PyInstaller
-        run: pyinstaller setup.spec
+        run: pyinstaller src/setup.spec
 
       - name: Install create-dmg
         run: brew install create-dmg
@@ -73,7 +73,7 @@ jobs:
             "dist/reacher_suite.app"
 
       - name: Upload macOS installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: reacher_suite_macos_installer
           path: reacher_suite.dmg
@@ -82,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -95,7 +95,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable with PyInstaller
-        run: pyinstaller setup.spec
+        run: pyinstaller src/setup.spec
 
       - name: Install makeself
         run: sudo apt-get update && sudo apt-get install -y makeself
@@ -109,7 +109,7 @@ jobs:
           makeself temp_installer reacher_suite.run "REACHER Suite Installer" ./install.sh
 
       - name: Upload Linux installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: reacher_suite_linux_installer
           path: reacher_suite.run
