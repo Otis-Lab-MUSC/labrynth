@@ -10,10 +10,11 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4  # Updated to v4 for consistency
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -21,22 +22,20 @@ jobs:
       - name: Build with PyInstaller using spec
         working-directory: src
         run: pyinstaller setup.spec
-      - name: Rename EXE
-        run: |
-          mv dist/reacher-dashboard dist/reacher-dashboard-1.0-x64.exe
-      - name: Upload Windows EXE
-        uses: actions/upload-artifact@v4  # Updated to v4
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: reacher-dashboard-1.0-x64.exe
-          path: dist/reacher-dashboard-1.0-x64.exe
+          name: reacher-dashboard-1.0-x64
+          path: dist/reacher-dashboard/
 
   build-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4  # Updated to v4
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
@@ -44,32 +43,11 @@ jobs:
       - name: Build with PyInstaller using spec
         working-directory: src
         run: pyinstaller setup.spec
-      - name: Create APP bundle
-        run: |
-          mkdir -p "REACHER Dashboard.app/Contents/MacOS"
-          mkdir -p "REACHER Dashboard.app/Contents/Resources"
-          mv dist/reacher-dashboard "REACHER Dashboard.app/Contents/MacOS/REACHER Dashboard"
-      - name: Create Info.plist
-        run: |
-          echo '<?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN">
-          <plist version="1.0">
-          <dict>
-            <key>CFBundleExecutable</key>
-            <string>REACHER Dashboard</string>
-            <key>CFBundleIdentifier</key>
-            <string>com.yourname.reacher-dashboard</string>
-            <key>CFBundleName</key>
-            <string>REACHER Dashboard</string>
-            <key>CFBundleVersion</key>
-            <string>1.0</string>
-          </dict>
-          </plist>' > "REACHER Dashboard.app/Contents/Info.plist"
       - name: Create DMG
         run: |
-          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "REACHER Dashboard.app" -ov -format UDZO reacher-dashboard-1.0-macos.dmg
+          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "dist/REACHER Dashboard.app" -ov -format UDZO reacher-dashboard-1.0-macos.dmg
       - name: Upload macOS DMG
-        uses: actions/upload-artifact@v4  # Updated to v4
+        uses: actions/upload-artifact@v4
         with:
           name: reacher-dashboard-1.0-macos.dmg
           path: reacher-dashboard-1.0-macos.dmg
@@ -77,10 +55,11 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4  # Updated to v4
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
-        with: { python-version: '3.11' }
+        with:
+          python-version: '3.11'
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y python3-tk
       - name: Install Python dependencies
@@ -93,6 +72,7 @@ jobs:
       - name: Create DEB structure
         run: |
           mkdir -p reacher_dashboard_1.0_amd64/DEBIAN
+          mkdir -p reacher_dashboard_1.0_amd64/opt/reacher-dashboard
           mkdir -p reacher_dashboard_1.0_amd64/usr/local/bin
           echo "Package: reacher-dashboard
           Version: 1.0
@@ -102,12 +82,12 @@ jobs:
           Depends: python3 (>= 3.11), python3-tk
           Maintainer: Your Name <your.email@example.com>
           Description: REACHER Dashboard - A dashboard application" > reacher_dashboard_1.0_amd64/DEBIAN/control
-          cp dist/reacher-dashboard reacher_dashboard_1.0_amd64/usr/local/bin/reacher-dashboard
-          chmod +x reacher_dashboard_1.0_amd64/usr/local/bin/reacher-dashboard
+          cp -r dist/reacher-dashboard/* reacher_dashboard_1.0_amd64/opt/reacher-dashboard/
+          ln -s /opt/reacher-dashboard/reacher-dashboard reacher_dashboard_1.0_amd64/usr/local/bin/reacher-dashboard
       - name: Build DEB
         run: dpkg-deb --build reacher_dashboard_1.0_amd64
       - name: Upload Linux DEB
-        uses: actions/upload-artifact@v4  # Updated to v4
+        uses: actions/upload-artifact@v4
         with:
           name: reacher_dashboard_1.0_amd64.deb
           path: reacher_dashboard_1.0_amd64.deb
