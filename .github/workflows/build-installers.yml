@@ -103,7 +103,7 @@ jobs:
       - name: Create Linux installer
         run: |
           mkdir temp_installer
-          cp dist/REACHER_Suite temp_installer/
+          cp dist/reacher_suite temp_installer/
           cp install.sh temp_installer/
           chmod +x temp_installer/install.sh
           makeself temp_installer reacher_suite.run "REACHER Suite Installer" ./install.sh
