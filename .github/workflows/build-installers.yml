@@ -39,18 +39,19 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          pip3 install pyinstaller -r requirements.txt
-      - name: Build with PyInstaller using spec
+          pip3 install pyinstaller
+      - name: Build with PyInstaller
         working-directory: src
         run: pyinstaller setup.spec
       - name: Create DMG
         run: |
-          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "dist/REACHER Dashboard.app" -ov -format UDZO reacher-dashboard-1.0-macos.dmg
-      - name: Upload macOS DMG
+          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "src/dist/REACHER Dashboard.app" -ov -format UDZO reacher-dashboard-1.0-macos.dmg
+      - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
           name: reacher-dashboard-1.0-macos.dmg
           path: reacher-dashboard-1.0-macos.dmg
+          
   build-linux:
     runs-on: ubuntu-latest
     steps:
