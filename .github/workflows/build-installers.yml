@@ -23,7 +23,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable with PyInstaller
-        run: pyinstaller setup.spec
+        run: pyinstaller src/setup.spec
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -56,7 +56,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable with PyInstaller
-        run: pyinstaller setup.spec
+        run: pyinstaller src/setup.spec
 
       - name: Install create-dmg
         run: brew install create-dmg
@@ -95,7 +95,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Build executable with PyInstaller
-        run: pyinstaller setup.spec
+        run: pyinstaller src/setup.spec
 
       - name: Install makeself
         run: sudo apt-get update && sudo apt-get install -y makeself
