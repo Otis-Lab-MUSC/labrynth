@@ -129,15 +129,13 @@ The Arduino framework is modular, enabling easy integration of new hardware comp
 
 ## **Download Options**
 
-You can download the latest version of the **REACHER Suite** for your operating system below:
+You can download the latest version of the **REACHER Suite Dashboard** for your operating system below:
 
 | **Operating System** | **Download Link** |
 |----------------------|------------------|
-| **Windows (64-bit)** | [Download reacher-suite-installer_x64.exe](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-suite-installer_x64.exe) |
-| **Linux** | [Download reacher-suite-installer_amd64.deb](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-suite-installer_amd64.deb) |
-| **macOS** | [Download REACHER for macOS](#) *(Coming soon...)* |
-
-Click on the appropriate link to begin the installation.
+| **Windows** | [Download reacher-dashboard-1.0_win64-setup.exe](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-suite-installer_x64.exe) |
+| **Linux** | [Download reacher_dashboard_1.0_amd64.deb](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-dashboard-1.0_amd64.deb) |
+| **macOS** | [Download reacher-dashboard-1.0-macos-x86_64.dmg](#) *(Coming soon...)* |
 
 <br>
 
