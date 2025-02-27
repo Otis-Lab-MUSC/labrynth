@@ -8,7 +8,7 @@ Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "dist\reacher_suite.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "src\dist\REACHER_Suite.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{autoprograms}\REACHER Suite"; Filename: "{app}\reacher_suite.exe"
