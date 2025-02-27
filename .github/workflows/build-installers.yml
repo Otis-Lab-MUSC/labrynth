@@ -34,7 +34,7 @@ jobs:
         shell: cmd
 
       - name: Upload Windows installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: reacher_suite_windows_installer
           path: dist/reacher_suite_setup.exe
