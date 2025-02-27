@@ -51,21 +51,17 @@ jobs:
         with:
           name: reacher-dashboard-1.0-macos.dmg
           path: reacher-dashboard-1.0-macos.dmg
-
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y python3-tk
-      - name: Install Python dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          pip3 install pyinstaller -r requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
       - name: Build with PyInstaller using spec
         working-directory: src
         run: pyinstaller setup.spec
@@ -80,14 +76,9 @@ jobs:
           Priority: optional
           Architecture: amd64
           Depends: python3 (>= 3.11), python3-tk
-          Maintainer: Your Name <your.email@example.com>
+          Maintainer: Joshua Boquiren <boquiren@musc.edu>
           Description: REACHER Dashboard - A dashboard application" > reacher_dashboard_1.0_amd64/DEBIAN/control
-          cp -r dist/reacher-dashboard/* reacher_dashboard_1.0_amd64/opt/reacher-dashboard/
+          cp -r src/dist/reacher-dashboard/* reacher_dashboard_1.0_amd64/opt/reacher-dashboard/
           ln -s /opt/reacher-dashboard/reacher-dashboard reacher_dashboard_1.0_amd64/usr/local/bin/reacher-dashboard
-      - name: Build DEB
+      - name: Build DEB package
         run: dpkg-deb --build reacher_dashboard_1.0_amd64
-      - name: Upload Linux DEB
-        uses: actions/upload-artifact@v4
-        with:
-          name: reacher_dashboard_1.0_amd64.deb
-          path: reacher_dashboard_1.0_amd64.deb
