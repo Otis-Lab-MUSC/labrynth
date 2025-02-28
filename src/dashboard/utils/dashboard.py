@@ -42,7 +42,6 @@ class Dashboard:
             ("Home", self.home_tab.layout()),
             ("Program", self.program_tab.layout()),
             ("Monitor", self.monitor_tab.layout()),
-            
             ("Schedule", self.schedule_tab.layout()),
             tabs_location="left",
         )    
@@ -158,7 +157,7 @@ class HomeTab():
             self.api_thread.start()
             time.sleep(1)
 
-            response = requests.get(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/home/connection")
+            response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/home/connection")
             response_data = handle_response(response)
             connected = response_data.get('connected')
 
@@ -166,13 +165,13 @@ class HomeTab():
             if connected:
                 self.dashboard.add_response(status)
         except Exception as e:
-            self.dashboard.add_error(f"Failed to connect to host {api_config["host"]}", e)
+            self.dashboard.add_error(f"Failed to connect to host {api_config['host']}", e)
 
     def search_for_microcontrollers(self, _):
         self.dashboard.add_response("Searching for microcontrollers...")
         api_config = self.dashboard.get_api_config()
         available_ports = []
-        response = requests.get(timeout=5, url=f"http://{api_config["host"]}:{api_config["port"]}/serial/comports")
+        response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/comports")
         response_data = handle_response(response)
         available_ports = response_data.get('ports')
 
@@ -187,7 +186,7 @@ class HomeTab():
     def set_COM(self):
         api_config = self.dashboard.get_api_config()
         try:
-            response = requests.post(url=f"http://{api_config["host"]}:{api_config["port"]}/serial/port", json={'port': str(self.microcontroller_menu.value)})
+            response = requests.post(url=f"http://{api_config['host']}:{api_config['port']}/serial/port", json={'port': str(self.microcontroller_menu.value)})
             response_data = handle_response(response)
 
             status = response_data.get('status')
@@ -199,7 +198,7 @@ class HomeTab():
         api_config = self.dashboard.get_api_config()
         self.set_COM()
         try:
-            response = requests.post(url=f"http://{api_config["host"]}:{api_config["port"]}/serial/transmission")
+            response = requests.post(url=f"http://{api_config['host']}:{api_config['port']}/serial/transmission")
             response_data = handle_response(response)
 
             status = response_data.get('status')
@@ -210,7 +209,7 @@ class HomeTab():
     def disconnect_from_microcontroller(self, _):
         api_config = self.dashboard.get_api_config()
         try:
-            response = requests.post(url=f"http://{api_config["host"]}:{api_config["port"]}/serial/termination")
+            response = requests.post(url=f"http://{api_config['host']}:{api_config['port']}/serial/termination")
             response_data = handle_response(response)
 
             status = response_data.get('status')
@@ -231,13 +230,13 @@ class HomeTab():
         self.dashboard.add_response("Resetting home tab")
         if self.api_connected:
             try:
-                response = requests.post(url=f"http://{api_config["host"]}:{api_config["port"]}/serial/termination")
+                response = requests.post(url=f"http://{api_config['host']}:{api_config['port']}/serial/termination")
                 response_data = handle_response(response)
 
                 status = response_data.get('status')
                 self.dashboard.add_response(status)
             except Exception as e:
-                self.dashboard.add_error(f"Failed to disconnect from {self.microcontroller_menu.value if self.microcontroller_menu.value else "COM"}", e)
+                self.dashboard.add_error(f"Failed to disconnect from {self.microcontroller_menu.value if self.microcontroller_menu.value else 'COM'}", e)
             self.api_connected = False
         self.server_select.options = []
         self.start_api_button.disabled = True
@@ -349,13 +348,13 @@ class ProgramTab:
             'delay': self.stop_delay_intslider.value
         }
         try:
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/program/limit", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/program/limit", json=data)
             response_data = handle_response(response)
 
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
-            self.dashboard.add_error(f"Failed to get file desitination", e)
+            self.dashboard.add_error(f"Failed to get file destination", e)
 
     def format_time(self, hours, minutes, seconds):
         total_minutes = minutes
@@ -370,7 +369,7 @@ class ProgramTab:
         api_config = self.dashboard.get_api_config()
         data = {'name': self.filename_textinput.value}
         try:
-            response = requests.post(timeout=5, url=f"http://{api_config["host"]}:{api_config["port"]}/file/filename", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/file/filename", json=data)
             response_data = handle_response(response)
 
             status = response_data.get('status')
@@ -378,19 +377,17 @@ class ProgramTab:
         except Exception as e:
             self.dashboard.add_error(f"Failed to get file name", e)
         data = {'destination': self.file_destination_textinput.value}
-
         try:
-            response = requests.post(timeout=5, url=f"http://{api_config["host"]}:{api_config["port"]}/file/destination", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/file/destination", json=data)
             response_data = handle_response(response)
 
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
-            self.dashboard.add_error(f"Failed to get file desitination", e)
+            self.dashboard.add_error(f"Failed to get file destination", e)
 
     def reset(self):
         self.dashboard.add_response("Resetting program tab")
-
         self.hardware_checkbuttongroup.value = ["LH Lever", "RH Lever", "Cue", "Pump"]
         self.presets_menubutton.name = "Select a preset:"
         self.limit_type_radiobutton.value = None
@@ -412,12 +409,11 @@ class ProgramTab:
             self.stop_delay_intslider, 
         )
         file_configuration_area = pn.Column(
-                pn.pane.Markdown("### File Configuration"), 
-                self.filename_textinput, 
-                self.file_destination_textinput,
-                self.set_file_config_button
+            pn.pane.Markdown("### File Configuration"), 
+            self.filename_textinput, 
+            self.file_destination_textinput,
+            self.set_file_config_button
         )
-
         return pn.Column(
             pn.Row(self.presets_menubutton, self.set_program_limit_button),
             pn.Spacer(height=50),
@@ -431,12 +427,10 @@ class MonitorTab:
         self.dashboard = dashboard
         self.program_tab = self.dashboard.get_program_tab()
         self.hardware_tab = self.dashboard.get_hardware_tab()
-
         if getattr(sys, 'frozen', False):
             base_dir = sys._MEIPASS
         else:
             base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-
         assets_dir = os.path.join(base_dir, 'assets')
         self.img_path = os.path.join(assets_dir, 'mouse_still.jpg')
         self.gif_path = os.path.join(assets_dir, 'mouse.gif')
@@ -469,14 +463,11 @@ class MonitorTab:
     def fetch_data(self):
         api_config = self.dashboard.get_api_config()
         try:
-            response = requests.get(f"http://{api_config["host"]}:{api_config["port"]}/processor/behavior_data", timeout=5)
+            response = requests.get(f"http://{api_config['host']}:{api_config['port']}/processor/behavior_data", timeout=5)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
-
             return pd.DataFrame(response_data.get('data', []))
-
         except requests.exceptions.RequestException as e:
             self.dashboard.add_error(f"RequestException caught while attempting to fetch data", e)
         except Exception as e:
@@ -488,7 +479,6 @@ class MonitorTab:
             fig = go.Figure()
             fig.add_annotation(text="No data available", showarrow=False, x=0.5, y=0.5, xref="paper", yref="paper")
             return fig
-
         components = self.df['Component'].unique()
         y_positions = {component: i for i, component in enumerate(components)}
         colors = {
@@ -499,7 +489,6 @@ class MonitorTab:
             'INFUSION': 'red',
             'STIM': 'green'
         }
-
         fig = go.Figure(layout=dict(height=600))
         for _, row in self.df.iterrows():
             component = row['Component']
@@ -507,7 +496,6 @@ class MonitorTab:
             start = row['Start Timestamp']
             end = row['End Timestamp']
             y_pos = y_positions[component]
-
             fig.add_trace(go.Scatter(
                 x=[start, end],
                 y=[y_pos, y_pos],
@@ -516,7 +504,6 @@ class MonitorTab:
                 marker=dict(symbol='line-ew-open', size=10),
                 name=component
             ))
-
         fig.update_layout(
             title="Event Timeline",
             xaxis_title="Timestamp",
@@ -527,18 +514,15 @@ class MonitorTab:
             ),
             showlegend=False,
         )
-
         return fig
 
     def update_plot(self):
         api_config = self.dashboard.get_api_config()
-        response = requests.get(timeout=5, url=f"http://{api_config["host"]}:{api_config["port"]}/program/activity")
+        response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/program/activity")
         response_data = handle_response(response)
         is_active = response_data.get('activity')
-
         status = response_data.get('status')
         self.dashboard.add_response(status)
-
         if not is_active:
             self.periodic_callback.stop() 
             self.periodic_callback = None  
@@ -549,29 +533,17 @@ class MonitorTab:
             self.df = new_data
         self.plotly_pane.object = self.generate_plotly_plot()
 
-    # def apply_preset(self): # FIXME: add presets
-    #     """
-    #     Applies the selected program preset.
-    #     """
-    #     self.preset_name = self.presets_menubutton.value
-    #     # preset_action = preset_functions.get(preset_name)
-    #     # if preset_action:
-    #     #     preset_action()
-
     def start_program(self, _):
         api_config = self.dashboard.get_api_config()
         try:
-            response = requests.post(timeout=5, url=f"http://{api_config["host"]}:{api_config["port"]}/program/start")
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/program/start")
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
-
             if pn.state.curdoc:  # Ensure running in a Bokeh/Panel server environment
                 if self.periodic_callback is None:  # Avoid duplicate callbacks
                     self.periodic_callback = pn.state.add_periodic_callback(self.update_plot, period=5000)
             self.animation_image.object = self.gif_path
-            # apply_preset() # FIXME: coming soon
             self.hardware_tab.arm_devices(self.program_tab.get_hardware())
             self.animation_markdown.object = f"""`Running...`"""
         except Exception as e:
@@ -580,9 +552,8 @@ class MonitorTab:
     def pause_program(self, _):
         api_config = self.dashboard.get_api_config()
         try:
-            response = requests.post(timeout=5, url=f"http://{api_config["host"]}:{api_config["port"]}/program/interim")
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/program/interim")
             response_data = handle_response(response)
-
             pause = response_data.get('state')
             if pause:
                 status = response_data.get('status')
@@ -600,12 +571,10 @@ class MonitorTab:
     def stop_program(self, _):
         api_config = self.dashboard.get_api_config()
         try:
-            response = requests.post(timeout=5, url=f"http://{api_config["host"]}:{api_config["port"]}/program/end")
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/program/end")
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
-
             self.animation_image.object = self.img_path
             self.periodic_callback.stop() 
             self.periodic_callback = None
@@ -616,37 +585,31 @@ class MonitorTab:
     def download(self, _):
         api_config = self.dashboard.get_api_config()
         try:
-            response = requests.get(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/program/start_time")
+            response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/program/start_time")
             response_data = handle_response(response)
             start_time = datetime.datetime.fromtimestamp(response_data.get('start_time')).strftime('%H:%M:%S')
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         
-            response = requests.get(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/program/end_time")
+            response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/program/end_time")
             response_data = handle_response(response)
             end_time = datetime.datetime.fromtimestamp(response_data.get('end_time')).strftime('%H:%M:%S')
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
 
-            response = requests.get(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/processor/arduino_configuration")
+            response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/processor/arduino_configuration")
             response_data = handle_response(response)
             arduino_configuration = response_data.get('arduino_configuration')
-
             arduino_configuration_summary = pd.Series(arduino_configuration)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
 
-            response = requests.get(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/processor/data")
+            response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/processor/data")
             response_data = handle_response(response)
             data = response_data.get('data')
             frames = response_data.get('frames')
-
             df = pd.DataFrame.from_records(data, columns=['Component', 'Action', 'Start Timestamp', 'End Timestamp'])
             series = pd.Series(frames)
-
             rh_active_data = df[(df['Component'] == 'RH_LEVER') & (df['Action'] == 'ACTIVE_PRESS')]
             rh_timeout_data = df[(df['Component'] == 'RH_LEVER') & (df['Action'] == 'TIMEOUT_PRESS')]
             rh_inactive_data = df[(df['Component'] == 'RH_LEVER') & (df['Action'] == 'INACTIVE_PRESS')]
@@ -670,23 +633,19 @@ class MonitorTab:
                 'Stims': len(laser_data['Action' == 'STIM']) if not laser_data.empty else 0,
                 'Frames Collected': len(frames)
             }
-            
             summary = pd.Series(summary_dict)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
 
-            response = requests.get(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/file/filename")
+            response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/file/filename")
             response_data = handle_response(response)
             name = response_data.get('name')
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
 
-            response = requests.get(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/file/destination_folder")
+            response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/file/destination_folder")
             response_data = handle_response(response)
             destination = response_data.get('destination')
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
 
@@ -706,7 +665,6 @@ class MonitorTab:
 
     def reset(self):
         self.dashboard.add_response("Resetting monitor tab")
-
         self.df = pd.DataFrame(data=[])
         self.plotly_pane.object = None
         self.animation_image.object = self.img_path
@@ -727,7 +685,6 @@ class MonitorTab:
             ),
             styles=dict(background="white")
         )
-
         return pn.Column(
             program_control_area,
             plot_area
@@ -751,42 +708,34 @@ class HardwareTab:
             icon="lock"
         )
         self.arm_rh_lever_button.on_click(self.arm_rh_lever)
-
         self.lh_lever_armed = False
         self.arm_lh_lever_button = pn.widgets.Button(
             name="Arm LH Lever",
             icon="lock"
         )
         self.arm_lh_lever_button.on_click(self.arm_lh_lever)
-
         self.cue_armed = False
         self.arm_cue_button = pn.widgets.Button(
             name="Arm Cue",
             icon="lock"
         )
-        self.cue_frequency_intslider = pn.widgets.IntSlider(
-        )
-        self.cue_duration_intslider = pn.widgets.IntSlider(
-        )
-
+        self.cue_frequency_intslider = pn.widgets.IntSlider()
+        self.cue_duration_intslider = pn.widgets.IntSlider()
         self.pump_armed = False
         self.arm_pump_button = pn.widgets.Button(
             name="Arm Pump",
             icon="lock"
         )
-
         self.lick_circuit_armed = False
         self.arm_lick_circuit_button = pn.widgets.Button(
             name="Arm Lick Circuit",
             icon="lock"
         )
-
         self.microscope_armed = False
         self.arm_microscope_button = pn.widgets.Button(
             name="Arm Scope",
             icon="lock"
         )
-
         self.laser_armed = False
         self.arm_laser_button = pn.widgets.Button(
             name="Arm Laser",
@@ -802,14 +751,12 @@ class HardwareTab:
             else:
                 data = {'command': "DISARM_LEVER_RH"}
                 self.rh_lever_armed = False
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
             self.dashboard.add_error(f"{e}")
- 
 
     def arm_lh_lever(self, _):
         api_config = self.dashboard.get_api_config()
@@ -820,9 +767,8 @@ class HardwareTab:
             else:
                 data = {'command': "DISARM_LEVER_LH"}
                 self.lh_lever_armed = False
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
@@ -837,9 +783,8 @@ class HardwareTab:
             else:
                 data = {'command': "DISARM_CS"}
                 self.cue_armed = False
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
@@ -854,9 +799,8 @@ class HardwareTab:
             else:
                 data = {'command': "DISARM_PUMP"}
                 self.pump_armed = False
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
@@ -869,11 +813,10 @@ class HardwareTab:
                 data = {'command': "ARM_LICK_CIRCUIT"}
                 self.lick_circuit_armed = True
             else:
-                data = {'command': "ARM_LICK_CIRCUIT"}
+                data = {'command': "DISARM_LICK_CIRCUIT"}  # Fixed typo from original
                 self.lick_circuit_armed = False
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
@@ -888,9 +831,8 @@ class HardwareTab:
             else:
                 data = {'command': "DISARM_FRAME"}
                 self.microscope_armed = False
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
@@ -905,9 +847,8 @@ class HardwareTab:
             else:
                 data = {'command': "DISARM_LASER"}
                 self.laser_armed = False
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
@@ -958,9 +899,8 @@ class ScheduleTab:
         api_config = self.dashboard.get_api_config()
         data = {'command': f"SET_TIMEOUT_PERIOD_LENGTH:{self.timeout_intslider.value * 1000}"}
         try:
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
@@ -970,9 +910,8 @@ class ScheduleTab:
         api_config = self.dashboard.get_api_config()
         try:
             data = {'command': f"SET_TRACE_INTERVAL:{self.trace_intslider.value * 1000}"}
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
@@ -981,24 +920,22 @@ class ScheduleTab:
     def send_fixed_ratio(self, _):
         api_config = self.dashboard.get_api_config()
         try:
-                data = {'command': f"SET_RATIO:{self.fixed_ratio_intslider.value}"}
-                response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
-                response_data = handle_response(response)
-
-                status = response_data.get('status')
-                self.dashboard.add_response(status)
+            data = {'command': f"SET_RATIO:{self.fixed_ratio_intslider.value}"}
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response_data = handle_response(response)
+            status = response_data.get('status')
+            self.dashboard.add_response(status)
         except Exception as e:
             self.dashboard.add_error("Failed to send fixed ratio interval", e)
 
     def send_progressive_ratio(self, _):
         api_config = self.dashboard.get_api_config()
         try:
-                data = {'command': f"SET_RATIO:{self.progressive_ratio_intslider.value}"}
-                response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
-                response_data = handle_response(response)
-
-                status = response_data.get('status')
-                self.dashboard.add_response(status)
+            data = {'command': f"SET_RATIO:{self.progressive_ratio_intslider.value}"}
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response_data = handle_response(response)
+            status = response_data.get('status')
+            self.dashboard.add_response(status)
         except Exception as e:
             self.dashboard.add_error("Failed to send progressive ratio interval", e)
 
@@ -1006,9 +943,8 @@ class ScheduleTab:
         api_config = self.dashboard.get_api_config()
         try:
             data = {'command': f"SET_VARIABLE_INTERVAL:{self.variable_interval_intslider.value}"}
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
@@ -1018,9 +954,8 @@ class ScheduleTab:
         api_config = self.dashboard.get_api_config()
         try:
             data = {'command': f"SET_OMISSION_INTERVAL:{self.omission_interval_intslider.value * 1000}"}
-            response = requests.post(timeout=5, url=f"{f'http://{api_config["host"]}:{api_config["port"]}'}/serial/command", json=data)
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response_data = handle_response(response)
-
             status = response_data.get('status')
             self.dashboard.add_response(status)
         except Exception as e:
@@ -1028,7 +963,6 @@ class ScheduleTab:
 
     def reset(self):
         self.dashboard.add_response("Resetting schedule tab")
-
         self.timeout_intslider.value = 20
         self.trace_intslider.value = 0
         self.fixed_ratio_intslider.value = 1
@@ -1049,7 +983,6 @@ class ScheduleTab:
             pn.Row(self.variable_interval_intslider, self.send_variable_interval_button),
             pn.Row(self.omission_interval_intslider, self.send_omission_interval_button),
         )
-
         return pn.Row(within_trial_dynamics_area, pn.Spacer(width=100), training_schedule_area)
   
 if __name__ == "__main__":
