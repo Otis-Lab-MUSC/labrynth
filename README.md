@@ -135,9 +135,9 @@ You can download the latest version of the **REACHER Suite Dashboard** for your 
 
 | **Operating System** | **Download Link** |
 |----------------------|------------------|
-| **Windows** | [Download reacher-dashboard-1.0_win64-setup.exe](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-suite-installer_x64.exe) |
-| **Linux (Ubuntu/Debian)** | [Download reacher_dashboard_1.0_amd64.deb](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher-dashboard-1.0_amd64.deb) |
-| **macOS** | [Download reacher-dashboard-1.0-macos-x86_64.dmg](#) *(Coming soon...)* |
+| **Windows** | [Download reacher-dashboard-1.0_win64-setup.exe](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-x64.exe) |
+| **Linux (Ubuntu/Debian)** | [Download reacher_dashboard_1.0_amd64.deb](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher_dashboard_1.0_amd64.deb) |
+| **macOS** | [Download reacher-dashboard-1.0-macos.dmg](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-macos.dmg) |
 
 > **Note:** Linux machines require `python3-tk` for  to run. Before unpacking the .deb file, run `sudo apt install python3-tk`.
 
