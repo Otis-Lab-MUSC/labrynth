@@ -13,7 +13,7 @@ DefaultGroupName=REACHER Dashboard
 OutputBaseFilename=reacher-dashboard-1.0-x64
 Compression=lzma
 SolidCompression=yes
-SetupIconFile=\dashboard\utils\assets\reacher-app-icon.ico
+; SetupIconFile=dashboard\utils\assets\reacher-app-icon.ico
 
 ; Optional: Uncomment to allow user to change install directory
 ; DisableDirPage=no
