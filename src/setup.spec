@@ -10,8 +10,9 @@ a = Analysis(
     binaries=[],
     datas=[
         ('dashboard/utils/assets/*', 'assets'),
+        ('dashboard/utils/*', 'utils')
     ],
-    hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk', 'dashboard.utils.dashboard'],
+    hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk'],
     hookspath=[],
     runtime_hooks=[],
     excludes=[],
