@@ -25,13 +25,14 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup
       - name: Build Installer
+        working-directory: src
         run: |
-          iscc /O"dist" /F"reacher-dashboard-1.0-x64" src/setup.iss
+          iscc /O"dist" /F"reacher-dashboard-1.0-x64" setup.iss
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
           name: reacher-dashboard-1.0-x64.exe
-          path: dist/reacher-dashboard-1.0-x64.exe
+          path: src/dist/reacher-dashboard-1.0-x64.exe
 
   build-macos:
     runs-on: macos-latest
