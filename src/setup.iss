@@ -13,7 +13,7 @@ DefaultGroupName=REACHER Dashboard
 OutputBaseFilename=reacher-dashboard-1.0-x64
 Compression=lzma
 SolidCompression=yes
-SetupIconFile=dashboard\utils\assets\reacher-app-icon.ico  ; Corrected path
+SetupIconFile=\dashboard\utils\assets\reacher-app-icon.ico
 
 ; Optional: Uncomment to allow user to change install directory
 ; DisableDirPage=no
@@ -23,7 +23,7 @@ SetupIconFile=dashboard\utils\assets\reacher-app-icon.ico  ; Corrected path
 
 [Files]
 ; Include all files from PyInstaller output
-Source: "dist\reacher-dashboard\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs  ; Corrected path
+Source: "dist\reacher-dashboard\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 ; Start menu shortcut
