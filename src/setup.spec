@@ -6,13 +6,12 @@ block_cipher = None
 
 a = Analysis(
     ['dashboard/main.py'],  # Entry-point script
-    pathex=['.'],  # Add current directory to path
+    pathex=['.'],  # Add current directory (src/) to path
     binaries=[],
     datas=[
-        # Include external assets
         ('dashboard/utils/assets/*', 'assets'),
     ],
-    hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk'],
+    hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk', 'utils.dashboard'],  # Add utils.dashboard
     hookspath=[],
     runtime_hooks=[],
     excludes=[],
@@ -46,7 +45,7 @@ if sys.platform == 'darwin':
         a.datas,
         name='REACHER Dashboard.app',
         icon='dashboard/utils/assets/reacher-app-icon.icns',
-        bundle_identifier='com.yourname.reacher-dashboard',  # Replace with your identifier
+        bundle_identifier='com.yourname.reacher-dashboard',
     )
 else:
     coll = COLLECT(
