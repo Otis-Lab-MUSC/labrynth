@@ -96,64 +96,21 @@ jobs:
         with:
           name: reacher_dashboard_1.0_amd64.deb
           path: reacher_dashboard_1.0_amd64.deb
-
   release:
-    needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
-    permissions:  # Added permissions for this job
-      contents: write
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
           name: reacher-dashboard-1.0-x64.exe
-          path: dist/reacher-dashboard-1.0-x64.exe
-      - name: Download macOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: reacher-dashboard-1.0-macos.dmg
-          path: reacher-dashboard-1.0-macos.dmg
-      - name: Download Linux artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: reacher_dashboard_1.0_amd64.deb
-          path: reacher_dashboard_1.0_amd64.deb
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v1.0.${{ github.run_number }}
-          release_name: Release v1.0.${{ github.run_number }}
-          draft: false
-          prerelease: false
+          path: dist/windows
       - name: Upload Windows Installer
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/reacher-dashboard-1.0-x64.exe
+          upload_url: https://uploads.github.com/repos/LogisTechLLC/REACHER-Suite/releases/203077386/assets{?name,label}
+          asset_path: dist/windows/reacher-dashboard-1.0-x64.exe
           asset_name: reacher-dashboard-1.0-x64.exe
           asset_content_type: application/octet-stream
-      - name: Upload macOS DMG
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: reacher-dashboard-1.0-macos.dmg
-          asset_name: reacher-dashboard-1.0-macos.dmg
-          asset_content_type: application/x-diskcopy
-      - name: Upload Linux DEB
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: reacher_dashboard_1.0_amd64.deb
-          asset_name: reacher_dashboard_1.0_amd64.deb
-          asset_content_type: application/vnd.debian.binary-package
