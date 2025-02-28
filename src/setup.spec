@@ -5,12 +5,12 @@ import sys
 block_cipher = None
 
 a = Analysis(
-    ['dashboard/main.py'],  # Entry-point script
-    pathex=['.'],  # Add current directory (src/) to path
+    ['dashboard/main.py'],
+    pathex=['.'], 
     binaries=[],
     datas=[
         ('dashboard/utils/assets/*', 'assets'),
-        ('dashboard/utils/*', 'utils')
+        ('dashboard/utils/*', 'utils'),
     ],
     hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk'],
     hookspath=[],
