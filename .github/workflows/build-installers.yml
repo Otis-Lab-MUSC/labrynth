@@ -22,11 +22,16 @@ jobs:
       - name: Build with PyInstaller using spec
         working-directory: src
         run: pyinstaller setup.spec
-      - name: Upload Windows artifact
+      - name: Install Inno Setup
+        run: choco install innosetup
+      - name: Build Installer
+        run: |
+          iscc /O"dist" /F"reacher-dashboard-1.0-x64" setup.iss
+      - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: reacher-dashboard-1.0-x64
-          path: src/dist/reacher-dashboard/
+          name: reacher-dashboard-1.0-x64.exe
+          path: dist/reacher-dashboard-1.0-x64.exe
 
   build-macos:
     runs-on: macos-latest
@@ -51,7 +56,7 @@ jobs:
         with:
           name: reacher-dashboard-1.0-macos.dmg
           path: reacher-dashboard-1.0-macos.dmg
-          
+
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -80,6 +85,7 @@ jobs:
           Maintainer: Joshua Boquiren <boquiren@musc.edu>
           Description: REACHER Dashboard - A dashboard application" > reacher_dashboard_1.0_amd64/DEBIAN/control
           cp -r src/dist/reacher-dashboard/* reacher_dashboard_1.0_amd64/opt/reacher-dashboard/
+          chmod +x reacher_dashboard_1.0_amd64/opt/reacher-dashboard/reacher-dashboard
           ln -s /opt/reacher-dashboard/reacher-dashboard reacher_dashboard_1.0_amd64/usr/local/bin/reacher-dashboard
       - name: Build DEB package
         run: dpkg-deb --build reacher_dashboard_1.0_amd64
@@ -88,3 +94,62 @@ jobs:
         with:
           name: reacher_dashboard_1.0_amd64.deb
           path: reacher_dashboard_1.0_amd64.deb
+
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: reacher-dashboard-1.0-x64.exe
+          path: dist/reacher-dashboard-1.0-x64.exe
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: reacher-dashboard-1.0-macos.dmg
+          path: reacher-dashboard-1.0-macos.dmg
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: reacher_dashboard_1.0_amd64.deb
+          path: reacher_dashboard_1.0_amd64.deb
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          release_name: Release v1.0.${{ github.run_number }}
+          draft: false
+          prerelease: false
+      - name: Upload Windows Installer
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/reacher-dashboard-1.0-x64.exe
+          asset_name: reacher-dashboard-1.0-x64.exe
+          asset_content_type: application/octet-stream
+      - name: Upload macOS DMG
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: reacher-dashboard-1.0-macos.dmg
+          asset_name: reacher-dashboard-1.0-macos.dmg
+          asset_content_type: application/x-diskcopy
+      - name: Upload Linux DEB
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: reacher_dashboard_1.0_amd64.deb
+          asset_name: reacher_dashboard_1.0_amd64.deb
+          asset_content_type: application/vnd.debian.binary-package
