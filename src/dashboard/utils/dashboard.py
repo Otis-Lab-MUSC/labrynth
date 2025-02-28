@@ -143,7 +143,7 @@ class HomeTab():
                 "key": self.devices_dict[str(self.server_select.value)]["key"]
             }
             self.dashboard.set_api_config(new_api_config)
-            self.dashboard.add_response(f"Set API host to {new_api_config["host"]} and port to {new_api_config["port"]}")
+            self.dashboard.add_response(f'Set API host to {new_api_config["host"]} and port to {new_api_config["port"]}')
         except Exception as e:
             self.dashboard.add_error(f"Unable to set API address", e)
 
