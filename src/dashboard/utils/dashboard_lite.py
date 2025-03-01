@@ -990,11 +990,12 @@ class MonitorTab:
                     self.animation_image,
                     self.animation_markdown,
                     pn.VSpacer(),
+                    self.summary_pane,
                     width=210
                 ),
                 styles=dict(background="white")
             ),
-            self.summary_pane
+            # self.summary_pane
         )
 
         return pn.Column(
