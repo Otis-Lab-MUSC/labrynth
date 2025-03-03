@@ -1,14 +1,13 @@
 <div style="text-align: center;">
-    <img src="src/dashboard/utils/assets/reacher-icon.png" alt="REACHER logo" width="200px" height="200px">
+    <img src="src/dashboard/utils/assets/reacher-icon-banner.png" alt="REACHER logo">
 </div>
 <br>
 <br>
 
-# **REACHER Suite**
+[![Download REACHER](https://img.shields.io/badge/Download-REACHER_Dashboard-cyan?style=for-the-badge)](#download-options)
 
 The **REACHER Suite** (Rodent Experiment Application Controls and Handling Ecosystem for Research) is an open-source application framework designed for experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems.
 
-[![Download REACHER](https://img.shields.io/badge/Download-REACHER-blue?style=for-the-badge)](#download-options)
 
 ---
 
@@ -170,17 +169,15 @@ You can download the latest version any of the accompanying Arduino projects her
 
 ---
 
-This document outlines the REACHER Suite's key features and configurations, enabling researchers to optimize their experimental setups efficiently. 
-or further details or troubleshooting, refer to the [documentation repository]().
-
-## Copyright & License
-
-© 2025 LogisTech. All rights reserved.
-
-This project is licensed under the **LICENSE** (see [LICENSE](https://github.com/LogisTechLLC/REACHER-Suite?tab=MIT-1-ov-file) for details). 
+<br><br>
+<div style="text-align: center; padding: 10px;">
+  <h2>Copyright & License</h2>
+  <p>© 2025 LogisTech. All rights reserved.</p>
+  <p>This project is licensed under the <a href="https://github.com/LogisTechLLC/REACHER-Suite?tab=MIT-1-ov-file"><strong>LICENSE</strong></a>.</p>
+</div>
 
 <br><br>
-    <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
-        <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
-        <p>Psalm 19:1</p>
-    </div>
+<div style="text-align: center; padding: 10px; background-color: #333; color: white;">
+    <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
+    <p>Psalm 19:1</p>
+</div>
