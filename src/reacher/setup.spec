@@ -9,8 +9,8 @@ a = Analysis(
     pathex=['.'], 
     binaries=[],
     datas=[
-        ('/core/assets/*', 'assets'),
-        ('/core/*', 'core'),
+        ('core/assets/*', 'assets'),
+        ('core/*', 'core'),
     ],
     hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk'],
     hookspath=[],

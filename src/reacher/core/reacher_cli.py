@@ -1,7 +1,7 @@
 import curses
 import sys
 import json
-from core.hardware.reacher import REACHER  # Assuming your class is in a file named REACHER.py
+from core.reacher import REACHER  # Assuming your class is in a file named REACHER.py
 
 def draw_menu(stdscr, selected_row_idx, menu, title="REACHER CLI"):
     stdscr.clear()

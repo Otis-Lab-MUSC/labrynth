@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import numpy as np
 from core.tools import *
-from core.hardware.reacher import REACHER
+from core.reacher import REACHER
 
 class Dashboard:
     def __init__(self):
