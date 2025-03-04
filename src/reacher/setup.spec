@@ -36,7 +36,7 @@ if sys.platform == 'darwin':
         strip=False,
         upx=True,
         console=False,
-        icon='/core/assets/reacher-app-icon.icns',
+        icon='core/assets/reacher-app-icon.icns',
     )
     app = BUNDLE(
         exe,
@@ -44,7 +44,7 @@ if sys.platform == 'darwin':
         a.zipfiles,
         a.datas,
         name='REACHER Dashboard.app',
-        icon='/core/assets/reacher-app-icon.icns',
+        icon='core/assets/reacher-app-icon.icns',
         bundle_identifier='com.yourname.reacher-dashboard',
     )
 else:
@@ -60,7 +60,7 @@ else:
             strip=False,
             upx=True,
             console=False,
-            icon='/core/assets/reacher-app-icon.ico',
+            icon='core/assets/reacher-app-icon.ico',
         )
     except:
         exe = EXE(
@@ -74,7 +74,7 @@ else:
             strip=False,
             upx=True,
             console=False,
-            icon='/core/assets/reacher-app-icon.png',
+            icon='core/assets/reacher-app-icon.png',
         )
     finally:
         coll = COLLECT(
