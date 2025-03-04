@@ -1,6 +1,6 @@
 import requests, socket, time, json
 from typing import Dict
-from utils.config import REACHER_KEY, REACHER_BROADCAST
+from core.api.config import REACHER_KEY, REACHER_BROADCAST
 
 def discover_reacher_services(timeout: int = 5) -> Dict[str, Dict[str, str]]:
     services = {}

@@ -7,7 +7,7 @@ import logging
 import sys
 import os
 import json, uuid
-from .framework import REACHER
+from ..reacher import REACHER
 from .endpoints import home, serial_connection, program, file, data_processor
 
 logging.basicConfig(level=logging.INFO)

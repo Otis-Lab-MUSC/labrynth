@@ -3,9 +3,9 @@ import time
 import requests
 import socket
 from threading import Thread
-from utils.tools import *
-from utils.api.wsgi import serve_flask
-from utils.api.app import run_service, end_service
+from core.tools import *
+from core.api.wsgi import serve_flask
+from core.api.app import run_service, end_service
 import os, sys, datetime
 import pandas as pd
 import plotly.graph_objects as go

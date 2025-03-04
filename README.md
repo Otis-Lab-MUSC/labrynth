@@ -1,14 +1,13 @@
 <div style="text-align: center;">
-    <img src="src/dashboard/utils/assets/reacher-icon.png" alt="REACHER logo" width="200px" height="200px">
+    <img src="src/reacher/core/assets/reacher-icon-banner.png" alt="REACHER logo">
 </div>
 <br>
 <br>
 
-# **REACHER Suite**
+[![Download REACHER](https://img.shields.io/badge/Download-REACHER_Dashboard-cyan?style=for-the-badge)](#download-options)
 
 The **REACHER Suite** (Rodent Experiment Application Controls and Handling Ecosystem for Research) is an open-source application framework designed for experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems.
 
-[![Download REACHER](https://img.shields.io/badge/Download-REACHER-blue?style=for-the-badge)](#download-options)
 
 ---
 
@@ -147,7 +146,7 @@ You can download the latest version of the **REACHER Suite Dashboard** for your 
 
 You can download the latest version any of the accompanying Arduino projects here as well:
 
-| **Training Schedule** | **Download Link** |
+| **Reinforcement Paradigm** | **Download Link** |
 |----------------------|------------------|
 | **All Sketches** | [Download reacher_arduino_sketches.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher_arduino_sketches.zip) |
 | **Operant Fixed Ratio** | [Download operant_FR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_FR.zip) |
@@ -159,7 +158,7 @@ You can download the latest version any of the accompanying Arduino projects her
 
 ## **Recommended Specifications**
 
-| **Component**         | **Minimum Specs**                        | **Recommended Specs**                   | **High-Performance Specs**             |
+| **Component** | **Minimum Specs** | **Recommended Specs** | **High-Performance Specs** |
 |------------------------|------------------------------------------|------------------------------------------|-----------------------------------------|
 | **CPU**               | Quad-core processor (e.g., Intel i3)     | 6-core or 8-core processor (e.g., Intel i5/i7, AMD Ryzen 5) | 12-core or higher (e.g., AMD Ryzen 9, Intel i9) |
 | **RAM**               | 8 GB                                     | 16 GB                                    | 32 GB or higher                         |
@@ -170,17 +169,15 @@ You can download the latest version any of the accompanying Arduino projects her
 
 ---
 
-This document outlines the REACHER Suite's key features and configurations, enabling researchers to optimize their experimental setups efficiently. 
-or further details or troubleshooting, refer to the [documentation repository]().
-
-## Copyright & License
-
-© 2025 LogisTech. All rights reserved.
-
-This project is licensed under the **LICENSE** (see [LICENSE](https://github.com/LogisTechLLC/REACHER-Suite?tab=MIT-1-ov-file) for details). 
-
 <br><br>
-    <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
-        <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
-        <p>Psalm 19:1</p>
-    </div>
+<div style="text-align: center; padding: 10px;">
+  <h2>Copyright & License</h2>
+  <p>© 2025 LogisTech. All rights reserved.</p>
+  <p>This project is licensed under the <a href="https://github.com/LogisTechLLC/REACHER-Suite?tab=MIT-1-ov-file"><strong>LICENSE</strong></a>.</p>
+  <p>For more information, please visit the official <a href="https://github.com/LogisTechLLC/REACHER-Suite/tree/develop/docs#readme"><strong>documentation repository</strong></a>, or contact the author at <a href="mailto:thejoshbq@proton.me"><i>thejoshbq@proton.me</i></a>
+</div>
+
+<div style="text-align: center; padding: 10px; background-color: #333; color: white;">
+    <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
+    <p>Psalm 19:1</p>
+</div>
