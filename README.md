@@ -1,5 +1,5 @@
 <div style="text-align: center;">
-    <img src="src/dashboard/utils/assets/reacher-icon-banner.png" alt="REACHER logo">
+    <img src="src/reacher/core/assets/reacher-icon-banner.png" alt="REACHER logo">
 </div>
 <br>
 <br>
@@ -146,7 +146,7 @@ You can download the latest version of the **REACHER Suite Dashboard** for your 
 
 You can download the latest version any of the accompanying Arduino projects here as well:
 
-| **Training Schedule** | **Download Link** |
+| **Reinforcement Paradigm** | **Download Link** |
 |----------------------|------------------|
 | **All Sketches** | [Download reacher_arduino_sketches.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher_arduino_sketches.zip) |
 | **Operant Fixed Ratio** | [Download operant_FR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_FR.zip) |
@@ -158,7 +158,7 @@ You can download the latest version any of the accompanying Arduino projects her
 
 ## **Recommended Specifications**
 
-| **Component**         | **Minimum Specs**                        | **Recommended Specs**                   | **High-Performance Specs**             |
+| **Component** | **Minimum Specs** | **Recommended Specs** | **High-Performance Specs** |
 |------------------------|------------------------------------------|------------------------------------------|-----------------------------------------|
 | **CPU**               | Quad-core processor (e.g., Intel i3)     | 6-core or 8-core processor (e.g., Intel i5/i7, AMD Ryzen 5) | 12-core or higher (e.g., AMD Ryzen 9, Intel i9) |
 | **RAM**               | 8 GB                                     | 16 GB                                    | 32 GB or higher                         |
@@ -174,9 +174,9 @@ You can download the latest version any of the accompanying Arduino projects her
   <h2>Copyright & License</h2>
   <p>© 2025 LogisTech. All rights reserved.</p>
   <p>This project is licensed under the <a href="https://github.com/LogisTechLLC/REACHER-Suite?tab=MIT-1-ov-file"><strong>LICENSE</strong></a>.</p>
+  <p>For more information, please visit the official <a href=""><strong>documentation repository</strong></a>, or contact the author at <a href="mailto:thejoshbq@proton.me"><i>thejoshbq@proton.me</i></a>
 </div>
 
-<br><br>
 <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
     <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
     <p>Psalm 19:1</p>

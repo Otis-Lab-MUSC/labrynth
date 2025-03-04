@@ -5,12 +5,12 @@ import sys
 block_cipher = None
 
 a = Analysis(
-    ['dashboard/main.py'],
+    ['main.py'],
     pathex=['.'], 
     binaries=[],
     datas=[
-        ('dashboard/utils/assets/*', 'assets'),
-        ('dashboard/utils/*', 'utils'),
+        ('/core/assets/*', 'assets'),
+        ('/core/*', 'core'),
     ],
     hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk'],
     hookspath=[],
@@ -36,7 +36,7 @@ if sys.platform == 'darwin':
         strip=False,
         upx=True,
         console=False,
-        icon='dashboard/utils/assets/reacher-app-icon.icns',
+        icon='/core/assets/reacher-app-icon.icns',
     )
     app = BUNDLE(
         exe,
@@ -44,7 +44,7 @@ if sys.platform == 'darwin':
         a.zipfiles,
         a.datas,
         name='REACHER Dashboard.app',
-        icon='dashboard/utils/assets/reacher-app-icon.icns',
+        icon='/core/assets/reacher-app-icon.icns',
         bundle_identifier='com.yourname.reacher-dashboard',
     )
 else:
@@ -60,7 +60,7 @@ else:
             strip=False,
             upx=True,
             console=False,
-            icon='dashboard/utils/assets/reacher-app-icon.ico',
+            icon='/core/assets/reacher-app-icon.ico',
         )
     except:
         exe = EXE(
@@ -74,7 +74,7 @@ else:
             strip=False,
             upx=True,
             console=False,
-            icon='dashboard/utils/assets/reacher-app-icon.png',
+            icon='/core/assets/reacher-app-icon.png',
         )
     finally:
         coll = COLLECT(

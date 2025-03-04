@@ -4,10 +4,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import numpy as np
-from utils.tools import *
-from utils.api.framework import REACHER
+from core.tools import *
+from core.hardware.reacher import REACHER
 
-class LDashboard:
+class Dashboard:
     def __init__(self):
         self.reacher = REACHER()
         self.header = pn.pane.Alert("Program not started...", alert_type="info")
@@ -84,7 +84,7 @@ class LDashboard:
             self.toggle_button.name = "Hide Response"
 
 class HomeTab:
-    def __init__(self, dashboard: LDashboard, reacher: REACHER):
+    def __init__(self, dashboard: Dashboard, reacher: REACHER):
         self.dashboard = dashboard
         self.reacher = reacher
         self.search_microcontrollers_button = pn.widgets.Button(name="Search Microcontrollers", icon="search")
@@ -142,7 +142,7 @@ class HomeTab:
         ) 
 
 class ProgramTab:
-    def __init__(self, dashboard: LDashboard, reacher: REACHER):
+    def __init__(self, dashboard: Dashboard, reacher: REACHER):
         self.dashboard = dashboard
         self.reacher = reacher
         self.hardware_checkbuttongroup = pn.widgets.CheckButtonGroup(
@@ -359,7 +359,7 @@ class ProgramTab:
         )
 
 class HardwareTab:
-    def __init__(self, dashboard: LDashboard, reacher: REACHER):
+    def __init__(self, dashboard: Dashboard, reacher: REACHER):
         self.dashboard = dashboard
         self.reacher = reacher
         self.hardware_components = {
@@ -713,7 +713,7 @@ class HardwareTab:
         )
 
 class MonitorTab:
-    def __init__(self, dashboard: LDashboard, reacher: REACHER):
+    def __init__(self, dashboard: Dashboard, reacher: REACHER):
         self.dashboard = dashboard
         self.reacher = reacher
         self.program_tab = self.dashboard.get_program_tab()
@@ -1004,7 +1004,7 @@ class MonitorTab:
         )   
 
 class ScheduleTab:
-    def __init__(self, dashboard: LDashboard, reacher: REACHER):
+    def __init__(self, dashboard: Dashboard, reacher: REACHER):
         self.dashboard = dashboard
         self.reacher = reacher
         self.timeout_intslider = pn.widgets.IntSlider(name="Timeout Duration(s)", value=20, start=0, end=600, step=5)
@@ -1095,5 +1095,5 @@ class ScheduleTab:
         return pn.Row(within_trial_dynamics_area, pn.Spacer(width=100), training_schedule_area)
     
 if __name__ == "__main__":
-    dashboard = LDashboard()
+    dashboard = Dashboard()
     pn.serve(dashboard.layout())
