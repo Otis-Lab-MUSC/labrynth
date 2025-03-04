@@ -174,7 +174,7 @@ You can download the latest version any of the accompanying Arduino projects her
   <h2>Copyright & License</h2>
   <p>© 2025 LogisTech. All rights reserved.</p>
   <p>This project is licensed under the <a href="https://github.com/LogisTechLLC/REACHER-Suite?tab=MIT-1-ov-file"><strong>LICENSE</strong></a>.</p>
-  <p>For more information, please visit the official <a href=""><strong>documentation repository</strong></a>, or contact the author at <a href="mailto:thejoshbq@proton.me"><i>thejoshbq@proton.me</i></a>
+  <p>For more information, please visit the official <a href="https://github.com/LogisTechLLC/REACHER-Suite/tree/develop/docs#readme"><strong>documentation repository</strong></a>, or contact the author at <a href="mailto:thejoshbq@proton.me"><i>thejoshbq@proton.me</i></a>
 </div>
 
 <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
