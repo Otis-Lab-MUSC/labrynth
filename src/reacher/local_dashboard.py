@@ -4,8 +4,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import numpy as np
-from core.tools import *
-from core.reacher import REACHER
+import requests
+from reacher.reacher import REACHER
 
 class Dashboard:
     def __init__(self):
@@ -90,7 +90,7 @@ class HomeTab:
         self.search_microcontrollers_button = pn.widgets.Button(name="Search Microcontrollers", icon="search")
         self.search_microcontrollers_button.on_click(self.search_for_microcontrollers)
         self.microcontroller_menu = pn.widgets.Select(name="Microcontroller", options=[])
-        self.serial_connect_button = pn.widgets.Button(name="Connect")
+        self.serial_connect_button = pn.widgets.Button(name="Connect", icon="plug")
         self.serial_connect_button.on_click(self.connect_to_microcontroller)
         self.serial_disconnect_button = pn.widgets.Button(name="Disconnect")
         self.serial_disconnect_button.on_click(self.disconnect_from_microcontroller)
@@ -982,22 +982,19 @@ class MonitorTab:
             pn.pane.Markdown("### Program Controls"), 
             pn.Row(self.start_program_button, self.pause_program_button, self.stop_program_button, self.download_button)
         )
-        plot_area = pn.Column(
-            pn.Row(
-                self.plotly_pane, 
-                pn.Column(
-                    pn.VSpacer(),
-                    self.animation_image,
-                    self.animation_markdown,
-                    pn.VSpacer(),
-                    self.summary_pane,
-                    width=210
-                ),
-                styles=dict(background="white")
+        plot_area = pn.Row(
+            self.plotly_pane, 
+            pn.Column(
+                pn.VSpacer(),
+                self.animation_image,
+                self.animation_markdown,
+                pn.VSpacer(),
+                self.summary_pane,
+                width=250
             ),
-            # self.summary_pane
+            styles=dict(background="white")
         )
-
+        
         return pn.Column(
             program_control_area,
             plot_area
