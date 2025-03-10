@@ -6,7 +6,9 @@ import socket
 from threading import Thread
 import os, sys, datetime
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
 pn.extension('plotly')
 
@@ -18,11 +20,21 @@ class Dashboard:
         self.hardware_tab = HardwareTab(self)
         self.monitor_tab = MonitorTab(self)
         self.schedule_tab = ScheduleTab(self)
-        self.response_textarea = pn.pane.HTML(
+        self.response_html = pn.pane.HTML(
             "REACHER Output:<br><br>",
-            styles={"background-color": "#1e1e1e", "color": "white"},
+            styles={
+                "background-color": "#1e1e1e",
+                "color": "white",
+                "white-space": "pre-wrap",
+                "padding": "10px",
+            },
             width=450,
+        )
+        self.response_textarea = pn.Column(
+            self.response_html,
+            scroll=True,
             height=600,
+            width=450,
             visible=True
         )
         self.toggle_button = pn.widgets.Button(name="Hide Response", button_type="primary")
@@ -41,7 +53,7 @@ class Dashboard:
 
     def toggle_response_visibility(self, event):
         self.response_textarea.visible = not self.response_textarea.visible
-        self.toggle_button.name = "Show Response" if not self.response_textarea.visible else "Hide Response"
+        self.toggle_button.name = "Show Responses" if not self.response_textarea.visible else "Hide Responses"
 
     def layout(self):
         header_row = pn.Row(self.header, self.toggle_button)
@@ -53,28 +65,18 @@ class Dashboard:
 
     def set_api_config(self, config: dict):
         self.api_config = config
-
+        
     def add_response(self, response: str):
         local_time = time.localtime()
         formatted_time = time.strftime("%H:%M:%S", local_time)
-        writeout = f"""
-        <span style="color: cyan;">>>></span>
-        <span style="color: grey;"> [{formatted_time}]:</span>
-        <span style="color: white;"> {response}</span><br>
-        """
-        self.response_textarea.object += writeout
+        writeout = f"""<span style="color: cyan;">>>></span><span style="color: grey;"> [{formatted_time}]:</span><span style="color: white;"> {response}</span><br>"""
+        self.response_html.object += writeout
 
     def add_error(self, response: str, details: str):
         local_time = time.localtime()
         formatted_time = time.strftime("%H:%M:%S", local_time)
-        writeout = f"""
-        <span style="color: red;">>>></span>
-        <span style="color: grey;"> [{formatted_time}]:</span>
-        <span style="color: red; font-weight: bold;"> !!!ERROR!!!</span>
-        <span style="color: white;"> {response}</span><br>
-        <span style="color: grey;">     Details - {details}</span><br>
-        """
-        self.response_textarea.object += writeout
+        writeout = f"""<span style="color: red;">>>></span><span style="color: grey;"> [{formatted_time}]:</span><span style="color: red; font-weight: bold;"> !!!ERROR!!!</span><span style="color: white;"> {response}</span><br><span style="color: grey;">     Details - {details}</span><br>"""
+        self.response_html.object += writeout
 
 class HomeTab:
     def __init__(self, dashboard: Dashboard):
@@ -82,8 +84,6 @@ class HomeTab:
         self.server_select = pn.widgets.Select(name="Discovered Devices", options=[])
         self.search_server_button = pn.widgets.Button(icon="search", name="Search Devices")
         self.search_server_button.on_click(self.search_reacher_devices)
-        self.set_api_address_button = pn.widgets.Button(name="Set IP Address", icon="address-card")
-        self.set_api_address_button.on_click(self.set_ip_address)
         self.verify_connection_button = pn.widgets.Button(name="Verify", icon="link")
         self.verify_connection_button.on_click(self.connect_to_api)
         self.search_microcontrollers_button = pn.widgets.Button(name="Search Microcontrollers", icon="search")
@@ -140,7 +140,7 @@ class HomeTab:
                     self.dashboard.add_error("Error receiving broadcast", str(e))
         return services
 
-    def set_ip_address(self, _):
+    def set_ip_address(self):
         try:
             selected_device = self.server_select.value
             if selected_device:
@@ -152,6 +152,7 @@ class HomeTab:
             self.dashboard.add_error("Unable to set API address", str(e))
 
     def connect_to_api(self, _):
+        self.set_ip_address()
         self.dashboard.add_response("Verifying connection to API...")
         api_config = self.dashboard.get_api_config()
         if not api_config['host'] or not api_config['port']:
@@ -222,12 +223,14 @@ class HomeTab:
     def layout(self):
         server_layout = pn.Column(
             pn.pane.Markdown("### API Connection"),
-            pn.Row(self.search_server_button, self.server_select),
-            pn.Row(self.set_api_address_button, self.verify_connection_button)
+            self.search_server_button,
+            self.server_select,
+            self.verify_connection_button
         )
         microcontroller_layout = pn.Column(
             pn.pane.Markdown("### COM Connection"),
-            pn.Row(self.microcontroller_menu, self.search_microcontrollers_button),
+            self.microcontroller_menu,
+            self.search_microcontrollers_button,
             pn.Row(self.serial_connect_button, self.serial_disconnect_button)
         )
         return pn.Column(server_layout, pn.Spacer(height=50), microcontroller_layout)
@@ -346,43 +349,402 @@ class HardwareTab:
     def __init__(self, dashboard: Dashboard):
         self.dashboard = dashboard
         self.hardware_components = {
-            "LH Lever": ("ARM_LEVER_LH", "DISARM_LEVER_LH"),
-            "RH Lever": ("ARM_LEVER_RH", "DISARM_LEVER_RH"),
-            "Cue": ("ARM_CS", "DISARM_CS"),
-            "Pump": ("ARM_PUMP", "DISARM_PUMP"),
-            "Lick Circuit": ("ARM_LICK_CIRCUIT", "DISARM_LICK_CIRCUIT"),
-            "Laser": ("ARM_LASER", "DISARM_LASER"),
-            "Imaging Microscope": ("ARM_FRAME", "DISARM_FRAME")
+            "LH Lever": self.arm_lh_lever,
+            "RH Lever": self.arm_rh_lever,
+            "Cue": self.arm_cs,
+            "Pump": self.arm_pump,
+            "Lick Circuit": self.arm_lick_circuit,
+            "Laser": self.arm_laser,
+            "Imaging Timestamp Receptor": self.arm_frames    
         }
-        self.state = {key: False for key in self.hardware_components}
-        self.buttons = {}
-        for name in self.hardware_components:
-            self.buttons[name] = pn.widgets.Toggle(name=name, button_type="danger", icon="lock")
-            self.buttons[name].param.watch(lambda event, n=name: self.toggle_device(n, event.new), 'value')
 
-    def toggle_device(self, device, value):
+        self.active_lever_button = pn.widgets.MenuButton(
+            name="Active Lever", items=[("LH Lever", "LH Lever"), ("RH Lever", "RH Lever")], button_type="primary"
+        )
+        self.active_lever_button.on_click(self.set_active_lever)
+
+        self.rh_lever_armed = False
+        self.arm_rh_lever_button = pn.widgets.Toggle(
+            name="Arm RH Lever",
+            icon="lock",
+            value=False,
+            button_type="danger"
+        )
+        self.arm_rh_lever_button.param.watch(self.arm_rh_lever, 'value')
+
+        self.lh_lever_armed = False
+        self.arm_lh_lever_button = pn.widgets.Toggle(
+            name="Arm LH Lever",
+            icon="lock",
+            value=False,
+            button_type="danger"
+        )
+        self.arm_lh_lever_button.param.watch(self.arm_lh_lever, 'value')
+
+        self.cue_armed = False
+        self.arm_cue_button = pn.widgets.Toggle(
+            name="Arm Cue",
+            icon="lock",
+            value=False,
+            button_type="danger"
+        )
+        self.arm_cue_button.param.watch(self.arm_cs, 'value')
+        self.send_cue_configuration_button = pn.widgets.Button(
+            name="Send",
+            icon="upload",
+            button_type="primary"
+        )
+        self.send_cue_configuration_button.on_click(self.send_cue_configuration)
+        
+        self.cue_frequency_intslider = pn.widgets.IntInput(
+            name="Cue Frequency (Hz)",
+            start=0,
+            end=20000,
+            value=8000,
+            step=50
+        )
+        self.cue_duration_intslider = pn.widgets.IntInput(
+            name="Cue Duration (ms)",
+            start=0,
+            end=10000,
+            value=1600,
+            step=50
+        )
+
+        self.pump_armed = False
+        self.arm_pump_button = pn.widgets.Toggle(
+            name="Arm Pump",
+            icon="lock",
+            value=False,
+            button_type="danger"
+        )
+        self.arm_pump_button.param.watch(self.arm_pump, 'value')
+
+        self.lick_circuit_armed = False
+        self.arm_lick_circuit_button = pn.widgets.Toggle(
+            name="Arm Lick Circuit",
+            icon="lock",
+            value=False,
+            button_type="danger"
+        )
+        self.arm_lick_circuit_button.param.watch(self.arm_lick_circuit, 'value')
+
+        self.microscope_armed = False
+        self.arm_microscope_button = pn.widgets.Toggle(
+            name="Arm Scope",
+            icon="lock",
+            value=False,
+            button_type="danger"
+        )
+        self.arm_microscope_button.param.watch(self.arm_frames, 'value')
+
+        self.laser_armed = False
+        self.arm_laser_button = pn.widgets.Toggle(
+            name="Arm Laser",
+            button_type="danger",
+            value=False,
+            icon="lock",
+            disabled=False
+        )
+        self.arm_laser_button.param.watch(self.arm_laser, 'value')
+
+        self.stim_mode_widget = pn.widgets.Select(
+            name="Stim Mode",
+            options=["Cycle", "Active-Press"],
+            value="Cycle"
+        )
+        self.stim_frequency_slider = pn.widgets.IntInput(
+            name="Frequency (Hz)",
+            start=1,
+            end=100,
+            step=1,
+            value=20
+        )
+        self.stim_duration_slider = pn.widgets.IntInput(
+            name="Stim Duration (s)",
+            start=1,
+            end=60,
+            step=5,
+            value=30
+        )
+        self.send_laser_config_button = pn.widgets.Button(
+            name="Send",
+            button_type="primary",
+            icon="upload",
+            disabled=False
+        )
+        self.send_laser_config_button.on_click(self.send_laser_configuration)
+
+        self.interactive_plot = pn.bind(
+            self.plot_square_wave, 
+            frequency=self.stim_frequency_slider, 
+        )
+
+    def set_active_lever(self, event):
         if not self.dashboard.api_connected:
             self.dashboard.add_response("Please connect to the API first.")
             return
         api_config = self.dashboard.get_api_config()
-        command = self.hardware_components[device][0 if value else 1]
+        if event.new == "LH Lever":
+            data = {'command': 'ACTIVE_LEVER_LH'}
+        elif event.new == "RH Lever":
+            data = {'command': 'ACTIVE_LEVER_RH'}
         try:
-            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", 
-                                    json={'command': command})
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
             response.raise_for_status()
-            self.state[device] = value
-            self.buttons[device].icon = "unlock" if value else "lock"
-            self.dashboard.add_response(response.json().get('status', f"{device} {'armed' if value else 'disarmed'}"))
         except Exception as e:
-            self.dashboard.add_error(f"Failed to toggle {device}", str(e))
+            self.dashboard.add_error("Failed to set active lever", str(e))
+            
+    def arm_rh_lever(self, _):
+        if not self.dashboard.api_connected:
+            self.dashboard.add_response("Please connect to the API first.")
+            return
+        api_config = self.dashboard.get_api_config()
+        try:
+            if not self.rh_lever_armed:
+                data = {'command': 'ARM_LEVER_RH'}
+                self.rh_lever_armed = True
+                self.arm_rh_lever_button.icon = "unlock"
+            else:
+                data = {'command': 'DISARM_LEVER_RH'}
+                self.rh_lever_armed = False
+                self.arm_rh_lever_button.icon = "lock"
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+        except Exception as e:
+            self.dashboard.add_error("Failed to arm or disarm RH lever", str(e))
+
+    def arm_lh_lever(self, _):
+        if not self.dashboard.api_connected:
+            self.dashboard.add_response("Please connect to the API first.")
+            return
+        api_config = self.dashboard.get_api_config()
+        try:
+            if not self.lh_lever_armed:
+                data = {'command': 'ARM_LEVER_LH'}
+                self.lh_lever_armed = True
+                self.arm_lh_lever_button.icon = "unlock"
+            else:
+                data = {'command': 'DISARM_LEVER_LH'}
+                self.lh_lever_armed = False
+                self.arm_lh_lever_button.icon = "lock"
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+        except Exception as e:
+            self.dashboard.add_error("Failed to arm or disarm LH lever", str(e))
+
+    def arm_cs(self, _):
+        if not self.dashboard.api_connected:
+            self.dashboard.add_response("Please connect to the API first.")
+            return
+        api_config = self.dashboard.get_api_config()
+        try:
+            if not self.cue_armed:
+                data = {'command': 'ARM_CS'}
+                self.cue_armed = True
+                self.arm_cue_button.icon = "unlock"
+            else:
+                data = {'command': 'DISARM_CS'}
+                self.cue_armed = False
+                self.arm_cue_button.icon = "lock"
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+        except Exception as e:
+            self.dashboard.add_error("Failed to arm or disarm CS", str(e)) 
+
+    def send_cue_configuration(self, _):
+        if not self.dashboard.api_connected:
+            self.dashboard.add_response("Please connect to the API first.")
+            return
+        api_config = self.dashboard.get_api_config()
+        try:
+            data = {'command': f"SET_FREQUENCY_CS:{self.cue_frequency_intslider.value}"}
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+            
+            data = {'command': f"SET_DURATION_CS:{self.cue_duration_intslider.value}"}
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+        except Exception as e:
+            self.dashboard.add_error("Failed to send CS configuration", str(e)) 
+            
+    def arm_pump(self, _):
+        if not self.dashboard.api_connected:
+            self.dashboard.add_response("Please connect to the API first.")
+            return
+        api_config = self.dashboard.get_api_config()
+        try:
+            if not self.pump_armed:
+                data = {'command': 'ARM_PUMP'}
+                self.pump_armed = True
+                self.arm_pump_button.icon = "unlock"
+            else:
+                data = {'command': 'DISARM_PUMP'}
+                self.pump_armed = False
+                self.arm_pump_button.icon = "lock"
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+        except Exception as e:
+            self.dashboard.add_error("Failed to arm or disarm pump", str(e)) 
+
+    def arm_lick_circuit(self, _):
+        if not self.dashboard.api_connected:
+            self.dashboard.add_response("Please connect to the API first.")
+            return
+        api_config = self.dashboard.get_api_config()
+        try:
+            if not self.lick_circuit_armed:
+                data = {'command': 'ARM_LICK_CIRCUIT'}
+                self.lick_circuit_armed = True
+                self.arm_lick_circuit_button.icon = "unlock"
+            else:
+                data = {'command': 'DISARM_LICK_CIRCUIT'}
+                self.lick_circuit_armed = False
+                self.arm_lick_circuit_button.icon = "lock"
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+        except Exception as e:
+            self.dashboard.add_error("Failed to arm or disarm lick circuit", str(e)) 
+
+    def arm_frames(self, _):
+        if not self.dashboard.api_connected:
+            self.dashboard.add_response("Please connect to the API first.")
+            return
+        api_config = self.dashboard.get_api_config()
+        try:
+            if not self.microscope_armed:
+                data = {'command': 'ARM_FRAME'}
+                self.microscope_armed = True
+                self.arm_microscope_button.icon = "unlock"
+            else:
+                data = {'command': 'DISARM_FRAME'}
+                self.microscope_armed = False
+                self.arm_microscope_button.icon = "lock"
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+        except Exception as e:
+            self.dashboard.add_error("Failed to arm or disarm 2P", str(e)) 
+
+    def arm_laser(self, _):
+        if not self.dashboard.api_connected:
+            self.dashboard.add_response("Please connect to the API first.")
+            return
+        api_config = self.dashboard.get_api_config()
+        try:
+            if not self.laser_armed:
+                data = {'command': 'ARM_LASER'}
+                self.laser_armed = True
+                self.arm_laser_button.icon = "unlock"
+            else:
+                data = {'command': 'DISARM_LASER'}
+                self.laser_armed = False
+                self.arm_laser_button.icon = "lock"
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+        except Exception as e:
+            self.dashboard.add_error("Failed to arm or disarm laser", str(e)) 
+
+    def send_laser_configuration(self, _):
+        if not self.dashboard.api_connected:
+            self.dashboard.add_response("Please connect to the API first.")
+            return
+        api_config = self.dashboard.get_api_config()
+        try:
+            data = {'command': f"LASER_STIM_MODE_{str(self.stim_mode_widget.value).upper()}"}
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+            
+            data = {'command': f"LASER_DURATION:{str(self.stim_duration_slider.value)}"}
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+            
+            data = {'command': f"LASER_FREQUENCY:{str(self.stim_frequency_slider.value)}"}
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/serial/command", json=data)
+            response.raise_for_status()
+        except Exception as e:
+            self.dashboard.add_error("Failed to send laser configuration", str(e))
+
+    def plot_square_wave(self, frequency):
+        """
+        Function to plot a square wave for one second.
+        Frequency represents the number of pulses per second.
+        """
+        total_duration = 1
+        t = np.linspace(0, total_duration, 1000)
+        square_wave = np.zeros_like(t)
+        
+        if frequency == 1:
+            square_wave[1:999] = 1
+        else:
+            period = 1 / frequency
+            for i, time_point in enumerate(t):
+                if (time_point % period) < (period / 2):
+                    square_wave[i] = 1
+        
+        plt.figure(figsize=(5, 2))
+        plt.plot(t, square_wave, drawstyle='steps-pre')
+        plt.title(f'Square Wave - {frequency} Hz')
+        plt.xlabel('Time [s]')
+        plt.ylabel('Amplitude')
+        plt.ylim([-0.1, 1.1])
+        plt.grid(True)
+        return plt.gcf()
 
     def arm_devices(self, devices: list):
         for device in devices:
-            if device in self.hardware_components and not self.state[device]:
-                self.buttons[device].value = True
+            arm_device = self.hardware_components.get(device)
+            if arm_device:
+                arm_device(None)
 
     def layout(self):
-        return pn.Column(pn.pane.Markdown("### Hardware Control"), *[self.buttons[name] for name in self.hardware_components])
+
+        levers_area = pn.Column(
+            pn.pane.Markdown("### Levers"),
+            self.active_lever_button,
+            self.arm_rh_lever_button,
+            self.arm_lh_lever_button,
+        )
+
+        cue_area = pn.Column(
+            pn.pane.Markdown("### Cue"),
+            self.arm_cue_button,
+            self.cue_duration_intslider,
+            self.cue_frequency_intslider,
+            self.send_cue_configuration_button
+        )
+
+        reward_area = pn.Column(
+            pn.pane.Markdown("### Pump"),
+            self.arm_pump_button,
+            pn.Spacer(height=50),
+            pn.pane.Markdown("### Lick Circuit"),
+            self.arm_lick_circuit_button,
+        )
+
+        opto_area = pn.Column(
+            pn.pane.Markdown("### Scope"),
+            self.arm_microscope_button,
+            pn.Spacer(height=50),
+            pn.pane.Markdown("### Laser"),
+            self.arm_laser_button,
+            self.stim_mode_widget,
+            self.stim_frequency_slider,
+            self.stim_duration_slider,
+            self.send_laser_config_button,
+            pn.pane.Matplotlib(self.interactive_plot, width=500, height=200)
+        )
+
+        return pn.Row(
+            pn.Column(
+                levers_area,
+                pn.Spacer(height=50),
+                cue_area,
+                pn.Spacer(height=50),
+                reward_area
+            ),
+            pn.Spacer(width=100),
+            opto_area
+        )
 
 class MonitorTab:
     def __init__(self, dashboard: Dashboard):
@@ -545,19 +907,17 @@ class MonitorTab:
             responses = {
                 'start_time': requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/program/start_time"),
                 'end_time': requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/program/end_time"),
-                'config': requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/processor/arduino_configuration"),
+                'arduino_configuration': requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/processor/arduino_configuration"),
                 'data': requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/processor/data"),
                 'filename': requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/file/filename"),
             }
+            
             for key, resp in responses.items():
                 resp.raise_for_status()
                 self.dashboard.add_response(resp.json().get('status', f'{key} retrieved'))
 
             filename = responses['filename'].json().get('name')
-            if not filename:
-                filename = f"REX_00{int(time.time())}.csv"
             filename_root = filename.split('.')[0]
-
             downloads_dir = os.path.expanduser(f'~/Downloads/{filename_root}')
             if not os.path.exists(downloads_dir):
                 os.makedirs(downloads_dir, exist_ok=True)
@@ -592,13 +952,13 @@ class MonitorTab:
                 'LH Inactive Presses': len(lh_inactive_data) if not lh_inactive_data.empty else 0,
                 'Infusions': len(pump_data['Action'] == 'INFUSION') if not pump_data.empty else 0,
                 'Licks': len(lick_data['Action'] == 'LICK') if not lick_data.empty else 0,
-                'Stims': len(laser_data['Action' == 'STIM']) if not laser_data.empty else 0,
+                'Stims': len(laser_data['Action'] == 'STIM') if not laser_data.empty else 0,
                 'Frames Collected': len(frame_data)
             }
             summary_filepath = os.path.join(downloads_dir, "summary.csv")
             pd.Series(summary_dict).to_csv(summary_filepath, index=False)
 
-            config = pd.Series(responses['config'].json()['arduino_configuration'])
+            config = pd.Series(responses['arduino_configuration'].json()['arduino_configuration'])
             config_filepath = os.path.join(downloads_dir, "arduino_configuration.csv")
             config.to_csv(config_filepath, index=False)
 
@@ -666,17 +1026,20 @@ class ScheduleTab:
         self.send_command("SET_OMISSION_INTERVAL", self.omission_interval_intslider.value * 1000)
 
     def layout(self):
-        return pn.Row(
-            pn.Column(pn.pane.Markdown("### Within-Trial Dynamics"),
-                      pn.Row(self.timeout_intslider, self.send_timeout_button),
-                      pn.Row(self.trace_intslider, self.send_trace_button)),
-            pn.Spacer(width=100),
-            pn.Column(pn.pane.Markdown("### Training Schedule"),
-                      pn.Row(self.fixed_ratio_intslider, self.send_fixed_ratio_button),
-                      pn.Row(self.progressive_ratio_intslider, self.send_progressive_ratio_button),
-                      pn.Row(self.variable_interval_intslider, self.send_variable_interval_button),
-                      pn.Row(self.omission_interval_intslider, self.send_omission_interval_button))
+        within_trial_dynamics_area = pn.Column(
+            pn.pane.Markdown("### Within-Trial Dynamics"),
+            pn.Row(self.timeout_intslider, self.send_timeout_button),
+            pn.Row(self.trace_intslider, self.send_trace_button)
         )
+        training_schedule_area = pn.Column(
+            pn.pane.Markdown("### Training Schedule"),
+            pn.Row(self.fixed_ratio_intslider, self.send_fixed_ratio_button),
+            pn.Row(self.progressive_ratio_intslider, self.send_progressive_ratio_button),
+            pn.Row(self.variable_interval_intslider, self.send_variable_interval_button),
+            pn.Row(self.omission_interval_intslider, self.send_omission_interval_button),
+        )
+
+        return pn.Row(within_trial_dynamics_area, pn.Spacer(width=100), training_schedule_area)
 
 if __name__ == "__main__":
     dashboard = Dashboard()

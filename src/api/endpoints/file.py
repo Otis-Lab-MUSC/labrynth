@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from reacher.reacher import REACHER
+import time
 
 def create_file_bp(reacher: REACHER):
     bp = Blueprint('file', __name__)
@@ -32,8 +33,10 @@ def create_file_bp(reacher: REACHER):
         """
         try:
             filename = reacher.get_filename()
+            if not filename:
+                filename = f"REX_00{int(time.time())}.csv"
             return_dict = {
-                'status': "Successfully accessed filename" if filename else "No filename set",
+                'status': "Successfully accessed filename" if filename else f"No filename set, defaulting to {filename}",
                 'name': filename
             }
             return jsonify(return_dict), 200

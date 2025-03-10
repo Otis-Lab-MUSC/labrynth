@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+
 with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
 
@@ -8,11 +9,12 @@ setup(
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     install_requires=[],
+    package_data={'reacher': ['assets/*']},
     
     author='Joshua Boquiren',
     author_email='thejoshbq@proton.me',
     
-    description='A package necessary to run the REACHER Suiter protocols.',
+    description='A package necessary to run the REACHER Suite protocols.',
     long_description=long_description,
     long_description_content_type='text/markdown', 
     

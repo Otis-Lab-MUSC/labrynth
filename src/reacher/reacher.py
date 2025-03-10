@@ -294,7 +294,7 @@ class REACHER:
     
     def get_arduino_configuration(self):
         with self.thread_lock:
-            return self.arduino_configuration.copy() 
+            return self.arduino_configuration
     
     def get_start_time(self):
         return self.program_start_time

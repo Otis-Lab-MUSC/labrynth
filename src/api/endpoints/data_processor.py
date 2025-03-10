@@ -47,8 +47,6 @@ def create_data_processor_bp(reacher: REACHER):
         """
         try:
             config = reacher.get_arduino_configuration()
-            if not isinstance(config, dict):
-                raise ValueError("Arduino configuration is not a dict")
             return_dict = {
                 'status': "Successfully accessed Arduino configuration",
                 'arduino_configuration': config

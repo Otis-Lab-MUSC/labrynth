@@ -10,3 +10,11 @@ src/reacher.egg-info/PKG-INFO
 src/reacher.egg-info/SOURCES.txt
 src/reacher.egg-info/dependency_links.txt
 src/reacher.egg-info/top_level.txt
+src/reacher/assets/mouse.gif
+src/reacher/assets/mouse_still.jpg
+src/reacher/assets/reacher-app-icon.icns
+src/reacher/assets/reacher-app-icon.ico
+src/reacher/assets/reacher-app-icon.png
+src/reacher/assets/reacher-icon-banner.png
+src/reacher/assets/reacher-icon.ico
+src/reacher/assets/reacher-icon.png
