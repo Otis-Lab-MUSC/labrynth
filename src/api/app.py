@@ -10,7 +10,11 @@ import json, uuid
 from reacher.reacher import REACHER
 from endpoints import home, serial_connection, program, file, data_processor
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 stop_event = threading.Event()
 UDP_PORT = int(os.getenv("REACHER_UDP_PORT", 7899))
 HTTP_PORT = int(os.getenv("REACHER_HTTP_PORT", 6229))
@@ -76,6 +80,8 @@ def create_app() -> Flask:
 if __name__ == "__main__":
     from waitress import serve
     import threading
+    print("Initializing application...")
+    sys.stdout.flush()
     logging.info("Starting Flask app with Waitress...")
     app = create_app()
     broadcast_thread = threading.Thread(target=run_service, daemon=True)

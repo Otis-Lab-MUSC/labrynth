@@ -5,13 +5,11 @@ import sys
 block_cipher = None
 
 a = Analysis(
-    ['main.py'],
+    ['app.py'],
     pathex=['.'], 
     binaries=[],
-    datas=[
-        ('assets/*', 'assets'),
-    ],
-    hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk'],
+    datas=[],
+    hiddenimports=['flask', 'socket', 'json', 'uuid', 'signal', 'threading'],
     hookspath=[],
     runtime_hooks=[],
     excludes=[],
@@ -29,21 +27,19 @@ if sys.platform == 'darwin':
         a.scripts,
         [],
         exclude_binaries=True,
-        name='reacher-dashboard',
+        name='reacher-api',
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
         upx=True,
-        console=False,
-        icon='assets/reacher-app-icon.icns',
+        console=True,
     )
     app = BUNDLE(
         exe,
         a.binaries,
         a.zipfiles,
         a.datas,
-        name='REACHER Dashboard.app',
-        icon='assets/reacher-app-icon.icns',
+        name='REACHER API.app',
         bundle_identifier='com.yourname.reacher-dashboard',
     )
 else:
@@ -53,13 +49,12 @@ else:
             a.scripts,
             [],
             exclude_binaries=True,
-            name='reacher-dashboard',
+            name='reacher-api',
             debug=False,
             bootloader_ignore_signals=False,
             strip=False,
             upx=True,
-            console=False,
-            icon='assets/reacher-app-icon.ico',
+            console=True,
         )
     except:
         exe = EXE(
@@ -67,13 +62,12 @@ else:
             a.scripts,
             [],
             exclude_binaries=True,
-            name='reacher-dashboard',
+            name='reacher-api',
             debug=False,
             bootloader_ignore_signals=False,
             strip=False,
             upx=True,
-            console=False,
-            icon='assets/reacher-app-icon.png',
+            console=True,
         )
     finally:
         coll = COLLECT(
@@ -84,5 +78,5 @@ else:
             strip=False,
             upx=True,
             upx_exclude=[],
-            name='reacher-dashboard',
+            name='reacher-api',
         )
