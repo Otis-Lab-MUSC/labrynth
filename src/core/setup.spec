@@ -11,7 +11,7 @@ a = Analysis(
     datas=[
         ('assets/*', 'assets'),
     ],
-    hiddenimports=['panel', 'plotly', 'pkg_resources', 'requests', 'PIL._tkinter_finder', 'PIL.ImageTk'],
+    hiddenimports=['panel', 'plotly', 'requests', 'PySide6'],
     hookspath=[],
     runtime_hooks=[],
     excludes=[],

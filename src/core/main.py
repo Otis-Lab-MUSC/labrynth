@@ -1,17 +1,16 @@
 import panel as pn
 from reacher.local_dashboard import Dashboard as local_dash
 from reacher.network_dashboard import Dashboard as network_dash
-import tkinter as tk
-from tkinter import messagebox
-import sys, os, multiprocessing, pkg_resources
-from PIL import Image, ImageTk
+import sys, os, multiprocessing
+
+from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QMessageBox
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import Qt
 
 pn.extension('plotly')
 
 box_name_TextInput = pn.widgets.TextInput(placeholder="Enter a box name")
 make_new_local_instance_tab_button = pn.widgets.Button(name="New local session")
-
-# FIXME: home tab should not launch API locally - make that a separate application
 make_new_network_instance_tab_button = pn.widgets.Button(name="New network session (BETA)") 
 
 start_area = pn.Column(
@@ -138,33 +137,44 @@ def serve_interface():
         theme="dark",
         favicon=icon_path
     )
-    pn.serve(template, show=True)   
+    pn.serve(template, show=True)
 
 def create_window():
     """
-    Creates a minimal tkinter window with a taskbar icon.
+    Creates a minimal PySide6 window with a taskbar icon.
     """
-    root = tk.Tk()
-    root.title("REACHER Dashboard Launcher")
-    root.geometry("300x100")
+    app = QApplication(sys.argv)
+    
+    window = QMainWindow()
+    window.setWindowTitle("REACHER Dashboard Launcher")
+    window.setGeometry(100, 100, 300, 100)
 
-    icon_image = Image.open(icon_path)
-    icon_photo = ImageTk.PhotoImage(icon_image)
-    root.wm_iconphoto(True, icon_photo) 
+    window.setWindowIcon(QIcon(icon_path))
 
-    label = tk.Label(root, text="Opening REACHER Dashboard in browser...\n(keep this window open)")
-    label.pack(pady=20)
+    label = QLabel("Opening REACHER Dashboard in browser...\n(keep this window open)")
+    label.setAlignment(Qt.AlignCenter)
+    window.setCentralWidget(label)
 
-    def on_closing():
-        if messagebox.askokcancel("Quit REACHER Dashboard", "Do you really want to quit? This action is irreversible."):
-            root.destroy()
+    def on_closing(event=None):
+        reply = QMessageBox.question(
+            window,
+            "Quit REACHER Dashboard",
+            "Do you really want to quit? This action is irreversible.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            window.close()
             if panel_process.is_alive():
                 panel_process.terminate()
                 panel_process.join()
             sys.exit(0)
 
-    root.protocol("WM_DELETE_WINDOW", on_closing)
-    return root
+    window.closeEvent = on_closing
+    
+    window.show()  
+    return app  
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
@@ -172,7 +182,5 @@ if __name__ == "__main__":
     panel_process = multiprocessing.Process(target=serve_interface, daemon=True)
     panel_process.start()  
 
-    application = create_window()
-    application.mainloop()
-
-    panel_process.join()
+    app = create_window()
+    sys.exit(app.exec()) 
