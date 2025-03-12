@@ -127,8 +127,10 @@ class REACHER:
     def handle_data(self, line):
         print(f"[handle_data]: {line}")
         try:
-            self.arduino_configuration = json.loads(line)
-            return 
+            with self.thread_lock:
+                self.arduino_configuration = json.loads(line)
+                print(f"[handle_data]: Updated arduino_configuration: {self.arduino_configuration}")
+            return
         except json.JSONDecodeError:
             pass
         try:
@@ -291,7 +293,8 @@ class REACHER:
         return self.frame_data
     
     def get_arduino_configuration(self):
-        return self.arduino_configuration
+        with self.thread_lock:
+            return self.arduino_configuration
     
     def get_start_time(self):
         return self.program_start_time
