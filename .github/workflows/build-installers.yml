@@ -18,6 +18,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller -r requirements.txt
+          pip install .
       - name: Build with PyInstaller using spec
         working-directory: src/core
         run: pyinstaller setup.spec
@@ -46,6 +47,7 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           pip3 install pyinstaller
+          pip3 install .
       - name: Build with PyInstaller
         working-directory: src/core
         run: pyinstaller setup.spec
@@ -70,6 +72,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          pip install .
           sudo apt install python3-tk
       - name: Build with PyInstaller using spec
         working-directory: src/core
