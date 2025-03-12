@@ -24,9 +24,10 @@ start_area = pn.Column(
 if getattr(sys, 'frozen', False): # Packaged (frozen) environment: assets are in 'assets' relative to sys._MEIPASS
     assets_dir = os.path.join(sys._MEIPASS, 'assets')
 else: # Development environment: assets are in 'assets' relative to main.py (src/core/assets)
-    assets_dir = os.path.join('..', 'reacher', 'assets')
+    assets_dir = os.path.join('src', 'core', 'assets')
 
 icon_path = os.path.join(assets_dir, 'reacher-app-icon.png')
+
 
 if not os.path.isfile(icon_path):
     print(f"Warning: Icon file not found at {icon_path}. Proceeding without custom icon.")
@@ -183,4 +184,4 @@ if __name__ == "__main__":
     panel_process.start()  
 
     app = create_window()
-    sys.exit(app.exec()) 
+    sys.exit(app.exec())
