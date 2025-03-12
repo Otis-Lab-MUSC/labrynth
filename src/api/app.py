@@ -63,6 +63,7 @@ def shutdown_service(signal, frame):
     sys.exit(0)
 
 signal.signal(signal.SIGINT, shutdown_service)
+signal.signal(signal.SIGTERM, shutdown_service) 
 
 def create_app() -> Flask:
     app = Flask(__name__)
