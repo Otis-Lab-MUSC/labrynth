@@ -138,8 +138,6 @@ You can download the latest version of the **REACHER Suite Dashboard** for your 
 | **Linux (Ubuntu/Debian)** | [Download reacher_dashboard_1.0_amd64.deb](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher_dashboard_1.0_amd64.deb) |
 | **macOS** | [Download reacher-dashboard-1.0-macos.dmg](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-macos.dmg) |
 
-> **Note:** Linux machines require `python3-tk` for  to run. Before unpacking the .deb file, run `sudo apt install python3-tk`.
-
 <br>
 
 ### Arduino Frameworks
