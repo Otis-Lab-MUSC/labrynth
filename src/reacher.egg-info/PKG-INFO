@@ -1,5 +1,33 @@
+Metadata-Version: 2.2
+Name: reacher
+Version: 0.1
+Summary: A package necessary to run the REACHER Suite protocols.
+Home-page: https://github.com/LogisTechLLC/REACHER-Suite
+Author: Joshua Boquiren
+Author-email: thejoshbq@proton.me
+License: MIT
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: license
+Dynamic: requires-python
+Dynamic: summary
+
 <div style="text-align: center;">
-    <img src="src/core/assets/reacher-icon-banner.png" alt="REACHER logo">
+    <img src="src/reacher/core/assets/reacher-icon-banner.png" alt="REACHER logo">
 </div>
 <br>
 <br>

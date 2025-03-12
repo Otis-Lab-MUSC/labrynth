@@ -4,10 +4,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import numpy as np
-from utils.tools import *
-from utils.api.framework import REACHER
+import requests
+from reacher.reacher import REACHER
 
-class LDashboard:
+class Dashboard:
     def __init__(self):
         self.reacher = REACHER()
         self.header = pn.pane.Alert("Program not started...", alert_type="info")
@@ -84,13 +84,13 @@ class LDashboard:
             self.toggle_button.name = "Hide Response"
 
 class HomeTab:
-    def __init__(self, dashboard: LDashboard, reacher: REACHER):
+    def __init__(self, dashboard: Dashboard, reacher: REACHER):
         self.dashboard = dashboard
         self.reacher = reacher
         self.search_microcontrollers_button = pn.widgets.Button(name="Search Microcontrollers", icon="search")
         self.search_microcontrollers_button.on_click(self.search_for_microcontrollers)
         self.microcontroller_menu = pn.widgets.Select(name="Microcontroller", options=[])
-        self.serial_connect_button = pn.widgets.Button(name="Connect")
+        self.serial_connect_button = pn.widgets.Button(name="Connect", icon="plug")
         self.serial_connect_button.on_click(self.connect_to_microcontroller)
         self.serial_disconnect_button = pn.widgets.Button(name="Disconnect")
         self.serial_disconnect_button.on_click(self.disconnect_from_microcontroller)
@@ -133,7 +133,8 @@ class HomeTab:
     def layout(self):
         microcontroller_layout = pn.Column(
             pn.pane.Markdown("### COM Connection"),
-            pn.Row(self.microcontroller_menu, self.search_microcontrollers_button),
+            self.microcontroller_menu,
+            self.search_microcontrollers_button,
             pn.Row(self.serial_connect_button, self.serial_disconnect_button)
         )
 
@@ -142,7 +143,7 @@ class HomeTab:
         ) 
 
 class ProgramTab:
-    def __init__(self, dashboard: LDashboard, reacher: REACHER):
+    def __init__(self, dashboard: Dashboard, reacher: REACHER):
         self.dashboard = dashboard
         self.reacher = reacher
         self.hardware_checkbuttongroup = pn.widgets.CheckButtonGroup(
@@ -153,11 +154,11 @@ class ProgramTab:
             button_style="outline"
         )
         self.presets_dict = {
-            "Custom": self.set_custom,
-            "SA High": self.set_sa_high,
-            "SA Mid": self.set_sa_mid,
-            "SA Low": self.set_sa_low,
-            "SA Extinction": self.set_sa_extinction
+            "Custom": lambda: None,
+            "SA High": lambda: self.set_preset("Both", 10, 3600, 10),
+            "SA Mid": lambda: self.set_preset("Both", 20, 3600, 10),
+            "SA Low": lambda: self.set_preset("Both", 40, 3600, 10),
+            "SA Extinction": lambda: self.set_preset("Time", 0, 3600, 0)
         }
         self.presets_menubutton = pn.widgets.Select(
             name="Select a preset:",
@@ -167,62 +168,32 @@ class ProgramTab:
             name="Limit Type",
             options=["Time", "Infusion", "Both"]
         )
-        self.time_limit_hour_intslider = pn.widgets.IntInput(
-            name="Hour(s)",
-            value=0,
-            start=0,
-            end=10,
-            step=1
-        )
-        self.time_limit_min_intslider = pn.widgets.IntInput(
-            name="Minute(s)",
-            value=0,
-            start=0,
-            end=59,
-            step=1
-        )
-        self.time_limit_sec_intslider = pn.widgets.IntInput(
-            name="Second(s)",
-            value=0,
-            start=0,
-            end=59,
-            step=5
-        )
-        self.formatted_time_limit_output = pn.bind(self.format_time, self.time_limit_hour_intslider, self.time_limit_min_intslider, self.time_limit_sec_intslider)
+        self.time_limit_hour = pn.widgets.IntInput(name="Hour(s)", value=0, start=0, end=10, step=1)
+        self.time_limit_min = pn.widgets.IntInput(name="Minute(s)", value=0, start=0, end=59, step=1)
+        self.time_limit_sec = pn.widgets.IntInput(name="Second(s)", value=0, start=0, end=59, step=5)
+        self.formatted_time_limit_output = pn.bind(self.format_time, self.time_limit_hour, self.time_limit_min, self.time_limit_sec)
         self.time_limit_area = pn.Row(
-            pn.Column(self.time_limit_hour_intslider, self.time_limit_min_intslider, self.time_limit_sec_intslider),
+            pn.Column(self.time_limit_hour, self.time_limit_min, self.time_limit_sec),
             pn.pane.Markdown(pn.bind(lambda x: f"**{x}**", self.formatted_time_limit_output))
         )
-        self.infusion_limit_intslider = pn.widgets.IntInput(
-            name="Infusion(s)",
-            value=0,
-            start=0,
-            end=100,
-            step=1
-        )
-        self.stop_delay_intslider = pn.widgets.IntInput(
-            name="Stop Delay",
-            value=0,
-            start=0,
-            end=59,
-            step=1
-        )
-        self.set_program_limit_button = pn.widgets.Button(
-            name="Set Program Limit"
-        )
+        self.infusion_limit_intslider = pn.widgets.IntInput(name="Infusion(s)", value=0, start=0, end=100, step=1)
+        self.stop_delay_intslider = pn.widgets.IntInput(name="Stop Delay (s)", value=0, start=0, end=59, step=1)
+        self.set_program_limit_button = pn.widgets.Button(name="Set Program Limit", icon="gear")
         self.set_program_limit_button.on_click(self.set_program_limit)
-        self.filename_textinput = pn.widgets.TextInput(
-            name="File name:",
-            placeholder="What do you want to name your file?",
-        )
-        self.file_destination_textinput = pn.widgets.TextInput(
-            name="Folder name:",
-            placeholder="Where do you want to save your file?",
-        )
-        self.set_file_config_button = pn.widgets.Button(
-            name="Set File Configuration"
-        )
+        self.filename_textinput = pn.widgets.TextInput(name="File name:", placeholder="e.g., experiment1.csv")
+        self.file_destination_textinput = pn.widgets.TextInput(name="Folder name:", placeholder="e.g., ~/REACHER/DATA")
+        self.set_file_config_button = pn.widgets.Button(name="Set File Configuration", icon="file")
         self.set_file_config_button.on_click(self.set_file_configuration)
+        
+    def set_preset(self, limit_type, infusion_limit, time_limit, stop_delay):
+        self.limit_type_radiobutton.value = limit_type
+        self.infusion_limit_intslider.value = infusion_limit
+        hours, remainder = divmod(time_limit, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        self.time_limit_hour.value = hours
+        self.time_limit_min.value = minutes
+        self.time_limit_sec.value = seconds
+        self.stop_delay_intslider.value = stop_delay
 
     def set_program_limit(self, _):
         try:
@@ -232,72 +203,10 @@ class ProgramTab:
 
             self.dashboard.add_response(f"Set limit type to {self.limit_type_radiobutton.value}")
             self.dashboard.add_response(f"Set infusion limit to {self.infusion_limit_intslider.value}")
-            self.dashboard.add_response(f"Set time limit to {(self.time_limit_hour_intslider.value * 60 * 60) + (self.time_limit_min_intslider.value * 60) + self.time_limit_sec_intslider.value}")
+            self.dashboard.add_response(f"Set time limit to {(self.time_limit_hour.value * 60 * 60) + (self.time_limit_min.value * 60) + self.time_limit_sec.value}")
             self.dashboard.add_response(f"Set stop delay to {self.stop_delay_intslider.value}")
         except Exception as e:
             self.dashboard.add_error(f"Failed to set program limit", e)
-
-    def set_custom(self):
-        self.reacher.set_limit_type(self.limit_type_radiobutton.value)
-        self.reacher.set_infusion_limit(self.infusion_limit_intslider.value)
-        self.reacher.set_time_limit((self.time_limit_hour_intslider.value * 60 * 60) + (self.time_limit_min_intslider.value * 60) + self.time_limit_sec_intslider.value)
-        self.reacher.set_stop_delay(self.stop_delay_intslider.value)
-
-    def set_sa_high(self):
-        self.limit_type_radiobutton.value = "Both"
-        self.hardware_checkbuttongroup.value = ["LH Lever", "RH Lever", "Cue", "Pump"]
-        self.time_limit_hour_intslider.value = 1
-        self.time_limit_min_intslider.value = 0
-        self.time_limit_sec_intslider.value = 0
-        self.infusion_limit_intslider.value = 10
-        self.stop_delay_intslider.value = 10
-
-        self.reacher.set_limit_type(self.limit_type_radiobutton.value)
-        self.reacher.set_infusion_limit(self.infusion_limit_intslider.value)
-        self.reacher.set_time_limit((self.time_limit_hour_intslider.value * 60 * 60) + (self.time_limit_min_intslider.value * 60) + self.time_limit_sec_intslider.value)
-        self.reacher.set_stop_delay(self.stop_delay_intslider.value)
-
-    def set_sa_mid(self):
-        self.limit_type_radiobutton.value = "Both"
-        self.hardware_checkbuttongroup.value = ["LH Lever", "RH Lever", "Cue", "Pump"]
-        self.time_limit_hour_intslider.value = 1
-        self.time_limit_min_intslider.value = 0
-        self.time_limit_sec_intslider.value = 0
-        self.infusion_limit_intslider.value = 20
-        self.stop_delay_intslider.value = 10
-
-        self.reacher.set_limit_type(self.limit_type_radiobutton.value)
-        self.reacher.set_infusion_limit(self.infusion_limit_intslider.value)
-        self.reacher.set_time_limit((self.time_limit_hour_intslider.value * 60 * 60) + (self.time_limit_min_intslider.value * 60) + self.time_limit_sec_intslider.value)
-        self.reacher.set_stop_delay(self.stop_delay_intslider.value)
-
-    def set_sa_low(self):
-        self.limit_type_radiobutton.value = "Both"
-        self.hardware_checkbuttongroup.value = ["LH Lever", "RH Lever", "Cue", "Pump"]
-        self.time_limit_hour_intslider.value = 1
-        self.time_limit_min_intslider.value = 0
-        self.time_limit_sec_intslider.value = 0
-        self.infusion_limit_intslider.value = 40
-        self.stop_delay_intslider.value = 10
-
-        self.reacher.set_limit_type(self.limit_type_radiobutton.value)
-        self.reacher.set_infusion_limit(self.infusion_limit_intslider.value)
-        self.reacher.set_time_limit((self.time_limit_hour_intslider.value * 60 * 60) + (self.time_limit_min_intslider.value * 60) + self.time_limit_sec_intslider.value)
-        self.reacher.set_stop_delay(self.stop_delay_intslider.value)
-
-    def set_sa_extinction(self):
-        self.limit_type_radiobutton.value = "Time"
-        self.hardware_checkbuttongroup.value = ["LH Lever", "RH Lever", "Cue", "Pump"]
-        self.time_limit_hour_intslider.value = 1
-        self.time_limit_min_intslider.value = 0
-        self.time_limit_sec_intslider.value = 0
-        self.infusion_limit_intslider.value = 0
-        self.stop_delay_intslider.value = 0
-
-        self.reacher.set_limit_type(self.limit_type_radiobutton.value)
-        self.reacher.set_infusion_limit(self.infusion_limit_intslider.value)
-        self.reacher.set_time_limit((self.time_limit_hour_intslider.value * 60 * 60) + (self.time_limit_min_intslider.value * 60) + self.time_limit_sec_intslider.value)
-        self.reacher.set_stop_delay(self.stop_delay_intslider.value)
 
     def format_time(self, hours, minutes, seconds):
         total_minutes = minutes
@@ -326,9 +235,9 @@ class ProgramTab:
         self.hardware_checkbuttongroup.value = ["LH Lever", "RH Lever", "Cue", "Pump"]
         self.presets_menubutton.name = "Select a preset:"
         self.limit_type_radiobutton.value = None
-        self.time_limit_hour_intslider.value = 0
-        self.time_limit_min_intslider.value = 0
-        self.time_limit_sec_intslider.value = 0
+        self.time_limit_hour.value = 0
+        self.time_limit_min.value = 0
+        self.time_limit_sec.value = 0
         self.infusion_limit_intslider.value = 0
     
     def layout(self):
@@ -359,7 +268,7 @@ class ProgramTab:
         )
 
 class HardwareTab:
-    def __init__(self, dashboard: LDashboard, reacher: REACHER):
+    def __init__(self, dashboard: Dashboard, reacher: REACHER):
         self.dashboard = dashboard
         self.reacher = reacher
         self.hardware_components = {
@@ -497,21 +406,17 @@ class HardwareTab:
     def set_active_lever(self, event):
         if event.new == "LH Lever":
             self.reacher.send_serial_command("ACTIVE_LEVER_LH")
-            self.dashboard.add_response("Set active lever to LH lever")
         elif event.new == "RH Lever":
             self.reacher.send_serial_command("ACTIVE_LEVER_RH")
-            self.dashboard.add_response("Set active lever to RH lever")
 
     def arm_rh_lever(self, _):
         try:
             if not self.rh_lever_armed:
                 self.reacher.send_serial_command("ARM_LEVER_RH")
-                self.dashboard.add_response("Armed RH Lever")
                 self.rh_lever_armed = True
                 self.arm_rh_lever_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_LEVER_RH")
-                self.dashboard.add_response("Disarmed RH Lever")
                 self.rh_lever_armed = False
                 self.arm_rh_lever_button.icon = "lock"
         except Exception as e:
@@ -521,12 +426,10 @@ class HardwareTab:
         try:
             if not self.lh_lever_armed:
                 self.reacher.send_serial_command("ARM_LEVER_LH")
-                self.dashboard.add_response("Armed LH Lever")
                 self.lh_lever_armed = True
                 self.arm_lh_lever_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_LEVER_LH")
-                self.dashboard.add_response("Disarmed LH Lever")
                 self.lh_lever_armed = False
                 self.arm_lh_lever_button.icon = "lock"
         except Exception as e:
@@ -536,12 +439,10 @@ class HardwareTab:
         try:
             if not self.cue_armed:
                 self.reacher.send_serial_command("ARM_CS")
-                self.dashboard.add_response("Armed CS")
                 self.cue_armed = True
                 self.arm_cue_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_CS")
-                self.dashboard.add_response("Disarmed CS")  
                 self.cue_armed = False
                 self.arm_cue_button.icon = "lock"
         except Exception as e:
@@ -549,21 +450,16 @@ class HardwareTab:
 
     def send_cue_configuration(self, _):
         self.reacher.send_serial_command(f"SET_FREQUENCY_CS:{self.cue_frequency_intslider.value}")
-        self.dashboard.add_response(f"Changed cue frequency to {self.cue_frequency_intslider.value}")
-
         self.reacher.send_serial_command(f"SET_DURATION_CS:{self.cue_duration_intslider.value}")
-        self.dashboard.add_response(f"Changed cue duration to {self.cue_duration_intslider.value}")
 
     def arm_pump(self, _):
         try:
             if not self.pump_armed:
                 self.reacher.send_serial_command("ARM_PUMP")
-                self.dashboard.add_response("Armed Pump")
                 self.pump_armed = True
                 self.arm_pump_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_PUMP")
-                self.dashboard.add_response("Disarmed Pump")  
                 self.pump_armed = False
                 self.arm_pump_button.icon = "lock"
         except Exception as e:
@@ -573,12 +469,10 @@ class HardwareTab:
         try:
             if not self.lick_circuit_armed:
                 self.reacher.send_serial_command("ARM_LICK_CIRCUIT")
-                self.dashboard.add_response("Armed Lick Circuit")
                 self.lick_circuit_armed = True
                 self.arm_lick_circuit_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_LICK_CIRCUIT")
-                self.dashboard.add_response("Disarmed Lick Circuit")  
                 self.lick_circuit_armed = False
                 self.arm_lick_circuit_button.icon = "lock"
         except Exception as e:
@@ -588,12 +482,10 @@ class HardwareTab:
         try:
             if not self.microscope_armed:
                 self.reacher.send_serial_command("ARM_FRAME")
-                self.dashboard.add_response("Armed microscope")
                 self.microscope_armed = True
                 self.arm_microscope_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_FRAME")
-                self.dashboard.add_response("Disarmed microscope")  
                 self.microscope_armed = False
                 self.arm_microscope_button.icon = "lock"
         except Exception as e:
@@ -603,12 +495,10 @@ class HardwareTab:
         try:
             if not self.laser_armed:
                 self.reacher.send_serial_command("ARM_LASER")
-                self.dashboard.add_response("Armed Laser")
                 self.laser_armed = True
                 self.arm_laser_button.icon = "unlock"
             else:
                 self.reacher.send_serial_command("DISARM_LASER")
-                self.dashboard.add_response("Disarmed Laser")  
                 self.laser_armed = False
                 self.arm_laser_button.icon = "lock"
         except Exception as e:
@@ -620,13 +510,8 @@ class HardwareTab:
         """
         try:
             self.reacher.send_serial_command(f"LASER_STIM_MODE_{str(self.stim_mode_widget.value).upper()}")
-            self.dashboard.add_response(f"Set stim mode to {str(self.stim_mode_widget.value)}")
-
             self.reacher.send_serial_command(f"LASER_DURATION:{str(self.stim_duration_slider.value)}")
-            self.dashboard.add_response(f"Set laser duration to {str(self.stim_duration_slider.value)} seconds")
-
             self.reacher.send_serial_command(f"LASER_FREQUENCY:{str(self.stim_frequency_slider.value)}")
-            self.dashboard.add_response(f"Set laser frequency to {str(self.stim_frequency_slider.value)} Hz")
         except Exception as e:
             self.dashboard.add_error("Failed to send laser configuration", str(e))
 
@@ -713,59 +598,27 @@ class HardwareTab:
         )
 
 class MonitorTab:
-    def __init__(self, dashboard: LDashboard, reacher: REACHER):
+    def __init__(self, dashboard: Dashboard, reacher: REACHER):
         self.dashboard = dashboard
-        self.reacher = reacher
-        self.program_tab = self.dashboard.get_program_tab()
-        self.hardware_tab = self.dashboard.get_hardware_tab()
-
-        if getattr(sys, 'frozen', False):
-            base_dir = sys._MEIPASS
-        else:
-            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-
-        assets_dir = os.path.join(base_dir, 'assets')
+        self.program_tab = dashboard.program_tab
+        self.hardware_tab = dashboard.hardware_tab
+        assets_dir = os.path.join(sys._MEIPASS if getattr(sys, 'frozen', False) else os.path.dirname(__file__), 'assets')
         self.img_path = os.path.join(assets_dir, 'mouse_still.jpg')
         self.gif_path = os.path.join(assets_dir, 'mouse.gif')
-        self.animation_image = pn.pane.Image(
-            self.img_path,
-            width=200
-        )
-        self.animation_markdown = pn.pane.Markdown(f"""`Waiting...`""")
-        self.img_path = os.path.join(assets_dir, 'mouse_still.jpg')
-        self.gif_path = os.path.join(assets_dir, 'mouse.gif')
-        self.animation_image = pn.pane.Image(
-            self.img_path,
-            width=200
-        )
-        self.animation_markdown = pn.pane.Markdown(f"""`Waiting...`""")
-        self.df = pd.DataFrame()
-        self.plotly_pane = pn.pane.Plotly(
-            sizing_mode="stretch_width",
-            height=600
-        )
-        self.summary_pane = pn.pane.DataFrame(
-            index=False, 
-            max_rows=10, 
-            border=1,
-            bold_rows=True,
-            styles={"background-color": "#1e1e1e", "color": "white"}
-            )
-        self.start_program_button = pn.widgets.Button(
-            icon="player-play"
-        )
+        self.animation_image = pn.pane.Image(self.img_path, width=200)
+        self.animation_markdown = pn.pane.Markdown("`Waiting...`")
+        self.behavior_data = pd.DataFrame()
+        self.plotly_pane = pn.pane.Plotly(sizing_mode="stretch_width", height=600)
+        self.summary_pane = pn.pane.DataFrame(index=False, max_rows=10, styles={"background-color": "#1e1e1e", "color": "white"})
+        self.start_program_button = pn.widgets.Button(icon="player-play")
         self.start_program_button.on_click(self.start_program)
-        self.pause_program_button = pn.widgets.Button(
-            icon="player-pause"
-        )
+        self.pause_program_button = pn.widgets.Button(icon="player-pause")
         self.pause_program_button.on_click(self.pause_program)
-        self.stop_program_button = pn.widgets.Button(
-            icon="player-stop"
-        )
+        self.stop_program_button = pn.widgets.Button(icon="player-stop")
         self.stop_program_button.on_click(self.stop_program)
-        self.periodic_callback = None
         self.download_button = pn.widgets.Button(name="Export data", icon="download")
         self.download_button.on_click(self.download)
+        self.periodic_callback = None
 
     def fetch_data(self):
         try:
@@ -982,29 +835,26 @@ class MonitorTab:
             pn.pane.Markdown("### Program Controls"), 
             pn.Row(self.start_program_button, self.pause_program_button, self.stop_program_button, self.download_button)
         )
-        plot_area = pn.Column(
-            pn.Row(
-                self.plotly_pane, 
-                pn.Column(
-                    pn.VSpacer(),
-                    self.animation_image,
-                    self.animation_markdown,
-                    pn.VSpacer(),
-                    self.summary_pane,
-                    width=210
-                ),
-                styles=dict(background="white")
+        plot_area = pn.Row(
+            self.plotly_pane, 
+            pn.Column(
+                pn.VSpacer(),
+                self.animation_image,
+                self.animation_markdown,
+                pn.VSpacer(),
+                self.summary_pane,
+                width=250
             ),
-            # self.summary_pane
+            styles=dict(background="white")
         )
-
+        
         return pn.Column(
             program_control_area,
             plot_area
         )   
 
 class ScheduleTab:
-    def __init__(self, dashboard: LDashboard, reacher: REACHER):
+    def __init__(self, dashboard: Dashboard, reacher: REACHER):
         self.dashboard = dashboard
         self.reacher = reacher
         self.timeout_intslider = pn.widgets.IntSlider(name="Timeout Duration(s)", value=20, start=0, end=600, step=5)
@@ -1095,5 +945,5 @@ class ScheduleTab:
         return pn.Row(within_trial_dynamics_area, pn.Spacer(width=100), training_schedule_area)
     
 if __name__ == "__main__":
-    dashboard = LDashboard()
+    dashboard = Dashboard()
     pn.serve(dashboard.layout())
