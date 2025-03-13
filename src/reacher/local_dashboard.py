@@ -2,6 +2,8 @@ import panel as pn
 import os, sys, datetime, time
 import pandas as pd
 import plotly.graph_objects as go
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
