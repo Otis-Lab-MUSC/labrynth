@@ -18,7 +18,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown', 
     
-    url='https://github.com/LogisTechLLC/REACHER-Suite',
+    url='https://github.com/Otis-Lab-MUSC/REACHER-Suite',
     license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
