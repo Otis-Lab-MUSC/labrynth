@@ -3,7 +3,6 @@ import time
 import requests
 import json
 import socket
-from threading import Thread
 import os, sys, datetime
 import pandas as pd
 import numpy as np
@@ -785,7 +784,7 @@ class MonitorTab:
             self.dashboard.add_error("Failed to fetch data", str(e))
             return pd.DataFrame()
 
-    def update_summary_table(self, behavior_data):
+    def update_summary_table(self, behavior_data: pd.DataFrame):
         if behavior_data.empty:
             return pd.DataFrame(columns=["Action", "Component", "Count"])
         return behavior_data.groupby(["Action", "Component"]).size().reset_index(name="Count")
