@@ -1,17 +1,18 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import sys
+from PyInstaller.utils.hooks import collect_data_files
 
 block_cipher = None
 
 a = Analysis(
     ['main.py'],
-    pathex=['.'], 
+    pathex=['.'],
     binaries=[],
     datas=[
         ('assets/*', 'assets'),
-    ],
-    hiddenimports=['panel', 'plotly', 'requests', 'PySide6'],
+    ] + collect_data_files('reacher'),
+    hiddenimports=['panel', 'plotly', 'requests', 'PySide6', 'reacher'],
     hookspath=[],
     runtime_hooks=[],
     excludes=[],
