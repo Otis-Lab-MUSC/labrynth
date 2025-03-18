@@ -601,6 +601,7 @@ class HardwareTab:
 
 class MonitorTab:
     def __init__(self, dashboard: Dashboard, reacher: REACHER):
+        self.reacher = reacher
         self.dashboard = dashboard
         self.program_tab = dashboard.program_tab
         self.hardware_tab = dashboard.hardware_tab

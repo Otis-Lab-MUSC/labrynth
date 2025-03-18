@@ -2,7 +2,7 @@ Metadata-Version: 2.2
 Name: reacher
 Version: 0.1
 Summary: A package necessary to run the REACHER Suite protocols.
-Home-page: https://github.com/LogisTechLLC/REACHER-Suite
+Home-page: https://github.com/Otis-Lab-MUSC/REACHER-Suite
 Author: Joshua Boquiren
 Author-email: thejoshbq@proton.me
 License: MIT
@@ -27,7 +27,7 @@ Dynamic: requires-python
 Dynamic: summary
 
 <div style="text-align: center;">
-    <img src="src/reacher/core/assets/reacher-icon-banner.png" alt="REACHER logo">
+    <img src="src/core/assets/reacher-icon-banner.png" alt="REACHER logo">
 </div>
 <br>
 <br>
@@ -165,8 +165,6 @@ You can download the latest version of the **REACHER Suite Dashboard** for your 
 | **Windows** | [Download reacher-dashboard-1.0_win64-setup.exe](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-x64.exe) |
 | **Linux (Ubuntu/Debian)** | [Download reacher_dashboard_1.0_amd64.deb](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher_dashboard_1.0_amd64.deb) |
 | **macOS** | [Download reacher-dashboard-1.0-macos.dmg](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-macos.dmg) |
-
-> **Note:** Linux machines require `python3-tk` for  to run. Before unpacking the .deb file, run `sudo apt install python3-tk`.
 
 <br>
 
