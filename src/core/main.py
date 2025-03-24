@@ -21,13 +21,12 @@ start_area = pn.Column(
     )
 )
 
-if getattr(sys, 'frozen', False): # Packaged (frozen) environment: assets are in 'assets' relative to sys._MEIPASS
+if getattr(sys, 'frozen', False):  # Packaged (frozen) environment
     assets_dir = os.path.join(sys._MEIPASS, 'assets')
-else: # Development environment: assets are in 'assets' relative to main.py (src/core/assets)
+else:  # Development environment
     assets_dir = os.path.join('src', 'core', 'assets')
 
 icon_path = os.path.join(assets_dir, 'reacher-app-icon.png')
-
 
 if not os.path.isfile(icon_path):
     print(f"Warning: Icon file not found at {icon_path}. Proceeding without custom icon.")
@@ -77,10 +76,7 @@ instructions = pn.pane.Markdown(
     """
 )
 
-tab_1 = pn.Column(
-    icon,
-    instructions
-)
+tab_1 = pn.Column(icon, instructions)
 session_tabs = pn.Tabs(("Welcome", tab_1))
 
 def make_new_local_instance_tab(_):
@@ -120,45 +116,44 @@ footer = pn.pane.HTML(
         <p>Psalm 19:1</p>
     </div>
     """,
-    sizing_mode="stretch_width", 
+    sizing_mode="stretch_width"
 )
 
 interface = pn.Column(
     start_area,
     pn.Spacer(height=75),
-    session_tabs, 
+    session_tabs,
     footer
 )
 
 def serve_interface():
     template = pn.template.BootstrapTemplate(
-        title="REACHER Dashboard", 
+        title="REACHER Dashboard",
         logo=icon_path,
-        main=interface, 
+        main=interface,
         theme="dark",
         favicon=icon_path
     )
     pn.serve(template, show=True)
 
-def create_window():
-    """
-    Creates a minimal PySide6 window with a taskbar icon.
-    """
-    app = QApplication(sys.argv)
-    
-    window = QMainWindow()
-    window.setWindowTitle("REACHER Dashboard Launcher")
-    window.setGeometry(100, 100, 300, 100)
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("REACHER Dashboard Launcher")
+        self.setGeometry(100, 100, 300, 100)
 
-    window.setWindowIcon(QIcon(icon_path))
+        self.setWindowIcon(QIcon(icon_path))
 
-    label = QLabel("Opening REACHER Dashboard in browser...\n(keep this window open)")
-    label.setAlignment(Qt.AlignCenter)
-    window.setCentralWidget(label)
+        label = QLabel("Opening REACHER Dashboard in browser...\n(keep this window open)")
+        label.setAlignment(Qt.AlignCenter)
+        self.setCentralWidget(label)
 
-    def on_closing(event=None):
+        self.panel_process = multiprocessing.Process(target=serve_interface, daemon=True)
+        self.panel_process.start()
+
+    def closeEvent(self, event):
         reply = QMessageBox.question(
-            window,
+            self,
             "Quit REACHER Dashboard",
             "Do you really want to quit? This action is irreversible.",
             QMessageBox.Yes | QMessageBox.No,
@@ -166,22 +161,18 @@ def create_window():
         )
         
         if reply == QMessageBox.Yes:
-            window.close()
-            if panel_process.is_alive():
-                panel_process.terminate()
-                panel_process.join()
-            sys.exit(0)
-
-    window.closeEvent = on_closing
-    
-    window.show()  
-    return app  
+            if self.panel_process.is_alive():
+                self.panel_process.terminate()
+                self.panel_process.join()
+            event.accept()
+        else:
+            event.ignore()
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     
-    panel_process = multiprocessing.Process(target=serve_interface, daemon=True)
-    panel_process.start()  
-
-    app = create_window()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    
     sys.exit(app.exec())
