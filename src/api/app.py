@@ -82,7 +82,7 @@ def create_app() -> Flask:
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("REACHER API Launcher")
+        self.setWindowTitle("REACHER API")
         self.setGeometry(100, 100, 300, 100)
 
         label = QLabel("Running REACHER API...\n(keep this window open)")
