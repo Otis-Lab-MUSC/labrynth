@@ -31,10 +31,22 @@ class BroadcastWorker(QThread):
         super().__init__()
         self.stop_event = threading.Event()
         self.unique_key = str(uuid.uuid4())
-        self.local_ip = socket.gethostbyname(socket.gethostname())
+        self.local_ip = self.get_local_ip() 
+        
+    def get_local_ip(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+        except Exception:
+            ip = "127.0.0.1" 
+        finally:
+            s.close()
+        return ip
         
     def run(self):
         logging.info("Starting reacher.REACHER broadcast service...")
+        logging.info(f"Using local IP: {self.local_ip}")
         logging.info(f"Generated unique key: {self.unique_key}")
 
         try:
@@ -82,7 +94,7 @@ def create_app() -> Flask:
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("REACHER API Launcher")
+        self.setWindowTitle("REACHER API")
         self.setGeometry(100, 100, 300, 100)
 
         label = QLabel("Running REACHER API...\n(keep this window open)")

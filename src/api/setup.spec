@@ -40,7 +40,7 @@ if sys.platform == 'darwin':
         a.zipfiles,
         a.datas,
         name='REACHER API.app',
-        bundle_identifier='com.yourname.reacher-dashboard',
+        bundle_identifier='com.yourname.reacher-api',
     )
 else:
     try:
