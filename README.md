@@ -1,4 +1,4 @@
-<div style="text-align: center;">
+<div align="center">
     <img src="src/core/assets/reacher-icon-banner.png" alt="REACHER logo">
 </div>
 <br>
@@ -180,14 +180,14 @@ You can download the latest version of the **REACHER API** for your operating sy
 ---
 
 <br><br>
-<div style="text-align: center; padding: 10px;">
+<div align="center">
   <h2>Copyright & License</h2>
   <p>© 2025 LogisTech. All rights reserved.</p>
   <p>This project is licensed under the <a href="https://github.com/LogisTechLLC/REACHER-Suite?tab=MIT-1-ov-file"><strong>LICENSE</strong></a>.</p>
   <p>For more information, please visit the official <a href="https://github.com/LogisTechLLC/REACHER-Suite/tree/develop/docs#readme"><strong>documentation repository</strong></a>, or contact the author at <a href="mailto:thejoshbq@proton.me"><i>thejoshbq@proton.me</i></a>
 </div>
 
-<div style="text-align: center; padding: 10px; background-color: #333; color: white;">
+<div align="center", style="padding: 10px; background-color: #333; color: white;">
     <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
     <p>Psalm 19:1</p>
 </div>
