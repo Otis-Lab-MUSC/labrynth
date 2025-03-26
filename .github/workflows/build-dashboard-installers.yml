@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -17,9 +18,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install -r requirements.txt
           cd lib
-          pip install .
+          python -m pip install .
           cd ..
       - name: Build with PyInstaller using spec
         working-directory: web/frontend/dashboard
@@ -47,11 +48,10 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          pip3 install pyinstaller
-          pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
           cd lib
-          pip install .
+          python -m pip install .
           cd ..
       - name: Build with PyInstaller
         working-directory: web/frontend/dashboard
@@ -76,10 +76,10 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
           cd lib
-          pip install .
+          python -m pip install .
           cd ..
           sudo apt install python3-tk
       - name: Build with PyInstaller using spec
@@ -95,7 +95,7 @@ jobs:
           Section: utils
           Priority: optional
           Architecture: amd64
-          Depends: python3 (>= 3.11), python3-tk
+          Depends: tk8.6
           Maintainer: Joshua Boquiren <boquiren@musc.edu>
           Description: REACHER Dashboard - A dashboard application" > reacher_dashboard_1.0_amd64/DEBIAN/control
           cp -r web/frontend/dashboard/dist/reacher-dashboard/* reacher_dashboard_1.0_amd64/opt/reacher-dashboard/
@@ -121,17 +121,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: reacher-dashboard-1.0-x64.exe
-          path: dist/windows  # Download to a directory
+          path: dist/windows
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
           name: reacher-dashboard-1.0-macos.dmg
-          path: dist/macos    # Download to a directory
+          path: dist/macos
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
           name: reacher_dashboard_1.0_amd64.deb
-          path: dist/linux    # Download to a directory
+          path: dist/linux
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -148,7 +148,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/windows/reacher-dashboard-1.0-x64.exe  # Updated to point to the file
+          asset_path: dist/windows/reacher-dashboard-1.0-x64.exe
           asset_name: reacher-dashboard-1.0-x64.exe
           asset_content_type: application/octet-stream
       - name: Upload macOS DMG
@@ -157,7 +157,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/macos/reacher-dashboard-1.0-macos.dmg  # Updated to point to the file
+          asset_path: dist/macos/reacher-dashboard-1.0-macos.dmg
           asset_name: reacher-dashboard-1.0-macos.dmg
           asset_content_type: application/x-diskcopy
       - name: Upload Linux DEB
@@ -166,6 +166,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/linux/reacher_dashboard_1.0_amd64.deb  # Updated to point to the file
+          asset_path: dist/linux/reacher_dashboard_1.0_amd64.deb
           asset_name: reacher_dashboard_1.0_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
