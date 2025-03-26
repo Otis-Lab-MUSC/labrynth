@@ -134,9 +134,9 @@ You can download the latest version of the **REACHER Suite Dashboard** for your 
 
 | **Operating System** | **Download Link** |
 |----------------------|------------------|
-| **Windows** | [Download reacher-dashboard-1.0_win64-setup.exe](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-x64.exe) |
-| **Linux (Ubuntu/Debian)** | [Download reacher_dashboard_1.0_amd64.deb](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher_dashboard_1.0_amd64.deb) |
-| **macOS** | [Download reacher-dashboard-1.0-macos.dmg](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-macos.dmg) |
+| **Windows** | [Download reacher-dashboard-1.0_win64-setup.exe](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-x64.exe) |
+| **Linux (Ubuntu/Debian)** | [Download reacher_dashboard_1.0_amd64.deb](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher_dashboard_1.0_amd64.deb) |
+| **macOS** | [Download reacher-dashboard-1.0-macos.dmg](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-macos.dmg) |
 
 <br>
 
@@ -146,11 +146,23 @@ You can download the latest version any of the accompanying Arduino projects her
 
 | **Reinforcement Paradigm** | **Download Link** |
 |----------------------|------------------|
-| **All Sketches** | [Download reacher_arduino_sketches.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/reacher_arduino_sketches.zip) |
-| **Operant Fixed Ratio** | [Download operant_FR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_FR.zip) |
-| **Operant Progressive Ratio *(BETA)*** | [Download operant_PR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_PR.zip) |
-| **Operant Variable Ratio *(BETA)*** | [Download operant_VR.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/operant_VR.zip) |
-| **Omission *(BETA)*** | [Download omission.zip](https://github.com/thejoshbq/REACHER-Suite/releases/download/v1.0.1-beta/omission.zip) |
+| **All Sketches** | [Download reacher_arduino_sketches.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/download/v1.0.1-beta/reacher_arduino_sketches.zip) |
+| **Operant Fixed Ratio** | [Download operant_FR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/download/v1.0.1-beta/operant_FR.zip) |
+| **Operant Progressive Ratio *(BETA)*** | [Download operant_PR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/download/v1.0.1-beta/operant_PR.zip) |
+| **Operant Variable Ratio *(BETA)*** | [Download operant_VR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/download/v1.0.1-beta/operant_VR.zip) |
+| **Omission *(BETA)*** | [Download omission.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/download/v1.0.1-beta/omission.zip) |
+
+<br>
+
+### REACHER API
+
+You can download the latest version of the **REACHER API** for your operating system below:
+
+| **Operating System** | **Download Link** |
+|----------------------|------------------|
+| **Windows *(BETA)*** | [Download reacher-dashboard-1.0_win64-setup.exe](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-x64.exe) |
+| **Linux (Ubuntu/Debian)** | [Download reacher_api_1.0_amd64.deb](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher_api_1.0_amd64.deb) |
+| **macOS *(BETA)*** | [Download reacher-dashboard-1.0-macos.dmg](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-macos.dmg) |
 
 <br>
 
@@ -182,9 +194,9 @@ You can download the latest version of the **REACHER API** for your operating sy
 <br><br>
 <div align="center">
   <h2>Copyright & License</h2>
-  <p>© 2025 LogisTech. All rights reserved.</p>
-  <p>This project is licensed under the <a href="https://github.com/LogisTechLLC/REACHER-Suite?tab=MIT-1-ov-file"><strong>LICENSE</strong></a>.</p>
-  <p>For more information, please visit the official <a href="https://github.com/LogisTechLLC/REACHER-Suite/tree/develop/docs#readme"><strong>documentation repository</strong></a>, or contact the author at <a href="mailto:thejoshbq@proton.me"><i>thejoshbq@proton.me</i></a>
+  <p>© 2025 Otis Lab. All rights reserved.</p>
+  <p>This project is licensed under the <a href=""><strong>LICENSE</strong></a>.</p>
+  <p>For more information, please visit the official <a href=""><strong>documentation repository</strong></a>, or contact the author at <a href="mailto:thejoshbq@proton.me"><i>thejoshbq@proton.me</i></a>
 </div>
 
 <div align="center", style="padding: 10px; background-color: #333; color: white;">

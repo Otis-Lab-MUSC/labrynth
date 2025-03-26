@@ -7,7 +7,7 @@ import logging
 import sys
 import os
 import json, uuid
-from reacher.reacher import REACHER
+from reacher.core import REACHER
 from endpoints import home, serial_connection, program, file, data_processor
 from waitress import serve
 

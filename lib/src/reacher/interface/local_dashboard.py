@@ -1,5 +1,8 @@
 import panel as pn
-import os, sys, datetime, time
+import os
+import sys
+import datetime
+import time
 import pandas as pd
 import plotly.graph_objects as go
 import matplotlib
@@ -7,7 +10,7 @@ matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
-from reacher.reacher import REACHER
+from ..core.reacher import REACHER 
 
 class Dashboard:
     def __init__(self):

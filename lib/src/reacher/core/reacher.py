@@ -1,4 +1,11 @@
-import serial, queue, threading, time, csv, json, os, logging # FIXME: incorporate formal logging file
+import serial
+import queue
+import threading
+import time
+import csv
+import json
+import os
+import logging
 from serial.tools import list_ports
 
 class REACHER:
