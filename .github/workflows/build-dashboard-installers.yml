@@ -22,7 +22,7 @@ jobs:
           pip install .
           cd ../..
       - name: Build with PyInstaller using spec
-        working-directory: web/frontend
+        working-directory: web/frontend/dashboard
         run: pyinstaller setup.spec
       - name: Install Inno Setup
         run: choco install innosetup
@@ -54,7 +54,7 @@ jobs:
           pip install .
           cd ../..
       - name: Build with PyInstaller
-        working-directory: web/frontend
+        working-directory: web/frontend/dashboard
         run: pyinstaller setup.spec
       - name: Create DMG
         run: |
@@ -83,7 +83,7 @@ jobs:
           cd ../..
           sudo apt install python3-tk
       - name: Build with PyInstaller using spec
-        working-directory: web/frontend
+        working-directory: web/frontend/dashboard
         run: pyinstaller setup.spec
       - name: Create DEB structure
         run: |
