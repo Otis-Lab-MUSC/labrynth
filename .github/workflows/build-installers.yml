@@ -20,12 +20,12 @@ jobs:
           pip install -r requirements.txt
           pip install .
       - name: Build with PyInstaller using spec
-        working-directory: src/core
+        working-directory: web/frontend
         run: pyinstaller setup.spec
       - name: Install Inno Setup
         run: choco install innosetup
       - name: Build Installer
-        working-directory: src/core
+        working-directory: web/frontend
         run: |
           dir  # Replaced 'ls' with 'dir' for Windows compatibility
           iscc /O"dist" /F"reacher-dashboard-1.0-x64" setup.iss
@@ -33,7 +33,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: reacher-dashboard-1.0-x64.exe
-          path: src/core/dist/reacher-dashboard-1.0-x64.exe
+          path: web/frontend/dist/reacher-dashboard-1.0-x64.exe
 
   build-macos:
     runs-on: macos-latest
@@ -49,11 +49,11 @@ jobs:
           pip3 install pyinstaller
           pip3 install .
       - name: Build with PyInstaller
-        working-directory: src/core
+        working-directory: web/frontend
         run: pyinstaller setup.spec
       - name: Create DMG
         run: |
-          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "src/core/dist/REACHER Dashboard.app" -ov -format UDZO reacher-dashboard-1.0-macos.dmg
+          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "web/frontend/dist/REACHER Dashboard.app" -ov -format UDZO reacher-dashboard-1.0-macos.dmg
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
@@ -75,7 +75,7 @@ jobs:
           pip install .
           sudo apt install python3-tk
       - name: Build with PyInstaller using spec
-        working-directory: src/core
+        working-directory: web/frontend
         run: pyinstaller setup.spec
       - name: Create DEB structure
         run: |
@@ -90,7 +90,7 @@ jobs:
           Depends: python3 (>= 3.11), python3-tk
           Maintainer: Joshua Boquiren <boquiren@musc.edu>
           Description: REACHER Dashboard - A dashboard application" > reacher_dashboard_1.0_amd64/DEBIAN/control
-          cp -r src/core/dist/reacher-dashboard/* reacher_dashboard_1.0_amd64/opt/reacher-dashboard/
+          cp -r web/frontend/dist/reacher-dashboard/* reacher_dashboard_1.0_amd64/opt/reacher-dashboard/
           chmod +x reacher_dashboard_1.0_amd64/opt/reacher-dashboard/reacher-dashboard
           ln -s /opt/reacher-dashboard/reacher-dashboard reacher_dashboard_1.0_amd64/usr/local/bin/reacher-dashboard
       - name: Build DEB package
