@@ -18,7 +18,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          cd lib/src
+          cd lib
           pip install .
           cd ../..
       - name: Build with PyInstaller using spec
@@ -50,7 +50,7 @@ jobs:
           python3 -m pip install --upgrade pip
           pip3 install pyinstaller
           pip install -r requirements.txt
-          cd lib/src
+          cd lib
           pip install .
           cd ../..
       - name: Build with PyInstaller
@@ -78,7 +78,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r requirements.txt
-          cd lib/src
+          cd lib
           pip install .
           cd ../..
           sudo apt install python3-tk
