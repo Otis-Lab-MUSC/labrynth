@@ -24,7 +24,11 @@ start_area = pn.Column(
 if getattr(sys, 'frozen', False):  # Packaged (frozen) environment
     assets_dir = os.path.join(sys._MEIPASS, 'assets')
 else:  # Development environment
+<<<<<<< HEAD:web/frontend/dashboard/src/main.py
     assets_dir = os.path.join('..', 'assets')
+=======
+    assets_dir = os.path.join('src', 'core', 'assets')
+>>>>>>> 8d6656bf02deb1b7e31466849b2b95e132ac3126:src/core/main.py
 
 icon_path = os.path.join(assets_dir, 'reacher-app-icon.png')
 
