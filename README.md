@@ -166,18 +166,6 @@ You can download the latest version of the **REACHER API** for your operating sy
 
 <br>
 
-### REACHER API
-
-You can download the latest version of the **REACHER API** for your operating system below:
-
-| **Operating System** | **Download Link** |
-|----------------------|------------------|
-| **Windows *(BETA)*** | [Download reacher-dashboard-1.0_win64-setup.exe](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-x64.exe) |
-| **Linux (Ubuntu/Debian)** | [Download reacher_api_1.0_amd64.deb](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher_api_1.0_amd64.deb) |
-| **macOS *(BETA)*** | [Download reacher-dashboard-1.0-macos.dmg](https://github.com/thejoshbq/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-macos.dmg) |
-
-<br>
-
 ## **Recommended Specifications**
 
 | **Component** | **Minimum Specs** | **Recommended Specs** | **High-Performance Specs** |
