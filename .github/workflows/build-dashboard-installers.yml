@@ -20,7 +20,7 @@ jobs:
           pip install -r requirements.txt
           cd lib
           pip install .
-          cd ../..
+          cd ..
       - name: Build with PyInstaller using spec
         working-directory: web/frontend/dashboard
         run: pyinstaller setup.spec
@@ -29,7 +29,7 @@ jobs:
       - name: Build Installer
         working-directory: web/frontend
         run: |
-          dir  # Replaced 'ls' with 'dir' for Windows compatibility
+          dir
           iscc /O"dist" /F"reacher-dashboard-1.0-x64" setup.iss
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
@@ -52,7 +52,7 @@ jobs:
           pip install -r requirements.txt
           cd lib
           pip install .
-          cd ../..
+          cd ..
       - name: Build with PyInstaller
         working-directory: web/frontend/dashboard
         run: pyinstaller setup.spec
@@ -80,7 +80,7 @@ jobs:
           pip install -r requirements.txt
           cd lib
           pip install .
-          cd ../..
+          cd ..
           sudo apt install python3-tk
       - name: Build with PyInstaller using spec
         working-directory: web/frontend/dashboard
