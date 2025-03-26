@@ -2,9 +2,9 @@ name: Build Installers for REACHER API
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
 
 jobs:
   build-linux:
@@ -21,7 +21,7 @@ jobs:
           pip install -r requirements.txt
           pip install .
       - name: Build with PyInstaller using spec
-        working-directory: src/api
+        working-directory: web/backend/api
         run: pyinstaller setup.spec
       - name: Create DEB structure
         run: |
