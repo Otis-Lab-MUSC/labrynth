@@ -38,7 +38,7 @@ jobs:
           Depends: python3 (>= 3.11), python3-tk
           Maintainer: Joshua Boquiren <boquiren@musc.edu>
           Description: REACHER API - A launcher application" > reacher_api_1.0_amd64/DEBIAN/control
-          cp -r src/api/dist/reacher-api/* reacher_api_1.0_amd64/opt/reacher-api/
+          cp -r web/backend/api/dist/reacher-api/* reacher_api_1.0_amd64/opt/reacher-api/
           chmod +x reacher_api_1.0_amd64/opt/reacher-api/reacher-api
           ln -s /opt/reacher-api/reacher-api reacher_api_1.0_amd64/usr/local/bin/reacher-api
       - name: Build DEB package
