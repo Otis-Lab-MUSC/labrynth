@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from reacher.reacher import REACHER
+from reacher.core import REACHER
 import time
 
 def create_file_bp(reacher: REACHER):

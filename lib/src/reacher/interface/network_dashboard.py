@@ -97,7 +97,9 @@ class HomeTab:
         self.devices_dict = {}
 
     def search_reacher_devices(self, _):
-        self.dashboard.add_response("Searching for REACHER devices...")
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        self.dashboard.add_response(f"Listening for REACHER devices broadcasting on {local_ip}")
         try:
             services = self.discover_reacher_services(timeout=5)
             if services:

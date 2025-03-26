@@ -6,11 +6,11 @@ from PyInstaller.utils.hooks import collect_data_files
 block_cipher = None
 
 a = Analysis(
-    ['main.py'],
+    ['src/main.py'],
     pathex=['.'],
     binaries=[],
     datas=[
-        ('assets/*', 'assets'),
+        ('src/assets/*', 'assets'),
     ] + collect_data_files('reacher'),
     hiddenimports=['panel', 'plotly', 'requests', 'PySide6', 'reacher'],
     hookspath=[],

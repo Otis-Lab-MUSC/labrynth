@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from reacher.reacher import REACHER
+from reacher.core import REACHER
 import os
 
 def create_program_bp(reacher: REACHER):

@@ -1,0 +1,33 @@
+Metadata-Version: 2.4
+Name: reacher
+Version: 0.1
+Summary: A package necessary to run the REACHER Suite protocols.
+Home-page: https://github.com/Otis-Lab-MUSC/REACHER
+Author: Joshua Boquiren
+Author-email: thejoshbq@proton.me
+License: MIT
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: pyserial>=3.5
+Requires-Dist: panel>=1.0.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: plotly>=5.0.0
+Requires-Dist: matplotlib>=3.5.0
+Requires-Dist: numpy>=1.22.0
+Requires-Dist: requests>=2.28.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: license
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

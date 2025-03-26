@@ -5,7 +5,7 @@ import sys
 block_cipher = None
 
 a = Analysis(
-    ['app.py'],
+    ['src/app.py'],
     pathex=['.'], 
     binaries=[],
     datas=[],
@@ -40,7 +40,7 @@ if sys.platform == 'darwin':
         a.zipfiles,
         a.datas,
         name='REACHER API.app',
-        bundle_identifier='com.yourname.reacher-dashboard',
+        bundle_identifier='com.yourname.reacher-api',
     )
 else:
     try:
