@@ -19,7 +19,9 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
+          cd lib
           pip install .
+          cd ..
       - name: Build with PyInstaller using spec
         working-directory: src/api
         run: pyinstaller setup.spec
