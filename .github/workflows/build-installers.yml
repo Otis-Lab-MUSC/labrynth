@@ -164,7 +164,7 @@ jobs:
           cd firmware
           zip -r ../operant_FR.zip operant_FR
           zip -r ../operant_PR.zip operant_PR
-          zip -r ../operant_VR.zip operant_VR
+          zip -r ../operant_VI.zip operant_VI
           zip -r ../omission.zip omission
           cd ..
 
