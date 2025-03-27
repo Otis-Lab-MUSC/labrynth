@@ -1,4 +1,4 @@
-name: Build Installers for REACHER Dashboard and API
+name: Build Installers for REACHER Dashboard, REACHER API, and Arduino sketch ZIPs
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
           cd lib
           python -m pip install .
           cd ..
-      - name: Build with PyInstaller using spec
+      - name: Build with PyInstaller
         working-directory: web/frontend/dashboard
         run: pyinstaller setup.spec
       - name: Install Inno Setup
@@ -30,12 +30,12 @@ jobs:
       - name: Build Installer
         working-directory: web/frontend/dashboard
         run: |
-          iscc /O"dist" /F"reacher_dashboard_1.0.1_x64" setup.iss
+          iscc /O"dist" /F"reacher-dashboard_win_x64" setup.iss
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: reacher_dashboard_1.0.1_x64.exe
-          path: web/frontend/dashboard/dist/reacher_dashboard_1.0.1_x64.exe
+          name: reacher-dashboard_win_x64.exe
+          path: web/frontend/dashboard/dist/reacher-dashboard_win_x64.exe
 
   build-dashboard-macos:
     runs-on: macos-latest
@@ -57,18 +57,17 @@ jobs:
         run: pyinstaller setup.spec
       - name: Create DMG
         run: |
-          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "web/frontend/dashboard/dist/REACHER Dashboard.app" -ov -format UDZO reacher_dashboard_1.0.1_macos.dmg
+          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "web/frontend/dashboard/dist/REACHER Dashboard.app" -ov -format UDZO reacher-dashboard_macos_x64.dmg
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: reacher_dashboard_1.0.1_macos.dmg
-          path: reacher_dashboard_1.0.1_macos.dmg
+          name: reacher-dashboard_macos_x64.dmg
+          path: reacher-dashboard_macos_x64.dmg
 
   build-dashboard-linux:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -80,75 +79,75 @@ jobs:
           cd lib
           python -m pip install .
           cd ..
-          sudo apt install python3-tk
-      - name: Build with PyInstaller using spec
+          sudo apt install -y python3-tk
+      - name: Build with PyInstaller
         working-directory: web/frontend/dashboard
         run: pyinstaller setup.spec
       - name: Create DEB structure
         run: |
-          mkdir -p reacher_dashboard_1.0.1_amd64/DEBIAN
-          mkdir -p reacher_dashboard_1.0.1_amd64/opt/reacher-dashboard
-          mkdir -p reacher_dashboard_1.0.1_amd64/usr/local/bin
+          mkdir -p reacher-dashboard_linux_amd64/DEBIAN
+          mkdir -p reacher-dashboard_linux_amd64/opt/reacher-dashboard
+          mkdir -p reacher-dashboard_linux_amd64/usr/local/bin
           echo "Package: reacher-dashboard
           Version: 1.0.1
           Section: utils
           Priority: optional
           Architecture: amd64
           Depends: tk8.6
-          Maintainer: Joshua Boquiren <boquiren@musc.edu>
-          Description: REACHER Dashboard - A dashboard application" > reacher_dashboard_1.0.1_amd64/DEBIAN/control
-          cp -r web/frontend/dashboard/dist/reacher-dashboard/* reacher_dashboard_1.0.1_amd64/opt/reacher-dashboard/
-          chmod +x reacher_dashboard_1.0.1_amd64/opt/reacher-dashboard/reacher-dashboard
-          ln -s /opt/reacher-dashboard/reacher-dashboard reacher_dashboard_1.0.1_amd64/usr/local/bin/reacher-dashboard
+          Maintainer: Your Name <your.email@example.com>
+          Description: REACHER Dashboard - A dashboard application" > reacher-dashboard_linux_amd64/DEBIAN/control
+          cp -r web/frontend/dashboard/dist/reacher-dashboard/* reacher-dashboard_linux_amd64/opt/reacher-dashboard/
+          chmod +x reacher-dashboard_linux_amd64/opt/reacher-dashboard/reacher-dashboard
+          ln -s /opt/reacher-dashboard/reacher-dashboard reacher-dashboard_linux_amd64/usr/local/bin/reacher-dashboard
       - name: Build DEB package
-        run: dpkg-deb --build reacher_dashboard_1.0.1_amd64
+        run: dpkg-deb --build reacher-dashboard_linux_amd64
       - name: Upload DEB
         uses: actions/upload-artifact@v4
         with:
-          name: reacher_dashboard_1.0.1_amd64.deb
-          path: reacher_dashboard_1.0.1_amd64.deb
+          name: reacher-dashboard_linux_amd64.deb
+          path: reacher-dashboard_linux_amd64.deb
 
   build-api-linux:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
           cd lib
-          pip install .
-          cd ../..
-      - name: Build with PyInstaller using spec
+          python -m pip install .
+          cd ..
+      - name: Build with PyInstaller
         working-directory: web/backend/api
         run: pyinstaller setup.spec
       - name: Create DEB structure
         run: |
-          mkdir -p reacher_api_1.0.1_amd64/DEBIAN
-          mkdir -p reacher_api_1.0.1_amd64/opt/reacher-api
-          mkdir -p reacher_api_1.0.1_amd64/usr/local/bin
+          mkdir -p reacher-api_linux_amd64/DEBIAN
+          mkdir -p reacher-api_linux_amd64/opt/reacher-api
+          mkdir -p reacher-api_linux_amd64/usr/local/bin
           echo "Package: reacher-api
           Version: 1.0.1
           Section: utils
           Priority: optional
           Architecture: amd64
           Depends: python3 (>= 3.11), python3-tk
-          Maintainer: Joshua Boquiren <boquiren@musc.edu>
-          Description: REACHER API - A launcher application" > reacher_api_1.0.1_amd64/DEBIAN/control
-          cp -r web/backend/api/dist/reacher-api/* reacher_api_1.0.1_amd64/opt/reacher-api/
-          chmod +x reacher_api_1.0.1_amd64/opt/reacher-api/reacher-api
-          ln -s /opt/reacher-api/reacher-api reacher_api_1.0.1_amd64/usr/local/bin/reacher-api
+          Maintainer: Your Name <your.email@example.com>
+          Description: REACHER API - A launcher application" > reacher-api_linux_amd64/DEBIAN/control
+          cp -r web/backend/api/dist/reacher-api/* reacher-api_linux_amd64/opt/reacher-api/
+          chmod +x reacher-api_linux_amd64/opt/reacher-api/reacher-api
+          ln -s /opt/reacher-api/reacher-api reacher-api_linux_amd64/usr/local/bin/reacher-api
       - name: Build DEB package
-        run: dpkg-deb --build reacher_api_1.0.1_amd64
+        run: dpkg-deb --build reacher-api_linux_amd64
       - name: Upload DEB
         uses: actions/upload-artifact@v4
         with:
-          name: reacher_api_1.0.1_amd64.deb
-          path: reacher_api_1.0.1_amd64.deb
+          name: reacher-api_linux_amd64.deb
+          path: reacher-api_linux_amd64.deb
 
   release:
     needs: [build-dashboard-windows, build-dashboard-macos, build-dashboard-linux, build-api-linux]
@@ -158,6 +157,17 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
+
+      - name: Zip Arduino sketches
+        run: |
+          zip -r reacher_arduino_sketches.zip firmware
+          cd firmware
+          zip -r ../operant_FR.zip operant_FR
+          zip -r ../operant_PR.zip operant_PR
+          zip -r ../operant_VR.zip operant_VR
+          zip -r ../omission.zip omission
+          cd ..
+
       - name: Delete existing release and tag
         uses: actions/github-script@v6
         with:
@@ -185,6 +195,7 @@ jobs:
             } catch (error) {
               if (error.status !== 404) throw error;
             }
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -195,59 +206,117 @@ jobs:
           release_name: Release v1.0.1
           draft: false
           prerelease: false
+
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher_dashboard_1.0.1_x64.exe
+          name: reacher-dashboard_win_x64.exe
           path: dist/windows
+
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher_dashboard_1.0.1_macos.dmg
+          name: reacher-dashboard_macos_x64.dmg
           path: dist/macos
+
       - name: Download Dashboard Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher_dashboard_1.0.1_amd64.deb
+          name: reacher-dashboard_linux_amd64.deb
           path: dist/linux-dashboard
+
       - name: Download API Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher_api_1.0.1_amd64.deb
+          name: reacher-api_linux_amd64.deb
           path: dist/linux-api
+
       - name: Upload Windows Installer
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/windows/reacher_dashboard_1.0.1_x64.exe
-          asset_name: reacher_dashboard_1.0.1_x64.exe
+          asset_path: dist/windows/reacher-dashboard_win_x64.exe
+          asset_name: reacher-dashboard_win_x64.exe
           asset_content_type: application/octet-stream
+
       - name: Upload macOS DMG
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/macos/reacher_dashboard_1.0.1_macos.dmg
-          asset_name: reacher_dashboard_1.0.1_macos.dmg
+          asset_path: dist/macos/reacher-dashboard_macos_x64.dmg
+          asset_name: reacher-dashboard_macos_x64.dmg
           asset_content_type: application/x-diskcopy
+
       - name: Upload Dashboard Linux DEB
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/linux-dashboard/reacher_dashboard_1.0.1_amd64.deb
-          asset_name: reacher_dashboard_1.0.1_amd64.deb
+          asset_path: dist/linux-dashboard/reacher-dashboard_linux_amd64.deb
+          asset_name: reacher-dashboard_linux_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
+
       - name: Upload API Linux DEB
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/linux-api/reacher_api_1.0.1_amd64.deb
-          asset_name: reacher_api_1.0.1_amd64.deb
+          asset_path: dist/linux-api/reacher-api_linux_amd64.deb
+          asset_name: reacher-api_linux_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
+
+      - name: Upload All Sketches Zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: reacher_arduino_sketches.zip
+          asset_name: reacher_arduino_sketches.zip
+          asset_content_type: application/zip
+
+      - name: Upload Operant FR Zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: operant_FR.zip
+          asset_name: operant_FR.zip
+          asset_content_type: application/zip
+
+      - name: Upload Operant PR Zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: operant_PR.zip
+          asset_name: operant_PR.zip
+          asset_content_type: application/zip
+
+      - name: Upload Operant VR Zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: operant_VR.zip
+          asset_name: operant_VR.zip
+          asset_content_type: application/zip
+
+      - name: Upload Omission Zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: omission.zip
+          asset_name: omission.zip
+          asset_content_type: application/zip

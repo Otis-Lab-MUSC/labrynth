@@ -128,29 +128,15 @@ The Arduino framework is modular, enabling easy integration of new hardware comp
 
 ## **Download Options**
 
-### REACHER Dasboard
+### REACHER Dashboard
 
 You can download the latest version of the **REACHER Suite Dashboard** for your operating system below:
 
-| **Operating System** | **Download Link** |
-|----------------------|------------------|
-| **Windows** | [Download reacher-dashboard-1.0_x64-setup.exe](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-x64.exe) |
-| **Linux (Ubuntu/Debian)** | [Download reacher_dashboard_1.0_amd64.deb](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher_dashboard_1.0_amd64.deb) |
-| **macOS** | [Download reacher-dashboard-1.0-macos.dmg](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-macos.dmg) |
-
-<br>
-
-### Arduino Frameworks
-
-You can download the latest version any of the accompanying Arduino projects here as well:
-
-| **Reinforcement Paradigm** | **Download Link** |
-|----------------------|------------------|
-| **All Sketches** | [Download reacher_arduino_sketches.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/v1.0.1-beta/reacher_arduino_sketches.zip) |
-| **Operant Fixed Ratio** | [Download operant_FR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/v1.0.1-beta/operant_FR.zip) |
-| **Operant Progressive Ratio *(BETA)*** | [Download operant_PR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/v1.0.1-beta/operant_PR.zip) |
-| **Operant Variable Ratio *(BETA)*** | [Download operant_VR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/v1.0.1-beta/operant_VR.zip) |
-| **Omission *(BETA)*** | [Download omission.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/v1.0.1-beta/omission.zip) |
+| **Operating System**       | **Download Link**                                                                                  |
+|----------------------------|----------------------------------------------------------------------------------------------------|
+| **Windows**               | [Download reacher-dashboard_win_x64.exe](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_win_x64.exe) |
+| **Linux (Ubuntu/Debian)** | [Download reacher-dashboard_linux_amd64.deb](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_linux_amd64.deb) |
+| **macOS**                 | [Download reacher-dashboard_macos_x64.dmg](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_macos_x64.dmg) |
 
 <br>
 
@@ -158,11 +144,25 @@ You can download the latest version any of the accompanying Arduino projects her
 
 You can download the latest version of the **REACHER API** for your operating system below:
 
-| **Operating System** | **Download Link** |
-|----------------------|------------------|
-| **Windows *(BETA)*** | [Download reacher-api-1.0_win64-setup.exe](#) |
-| **Linux (Ubuntu/Debian)** | [Download reacher_api_1.0_amd64.deb](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher_api_1.0_amd64.deb) |
-| **macOS *(BETA)*** | [Download reacher-api-1.0-macos.dmg](#) |
+| **Operating System**       | **Download Link**                                                                                  |
+|----------------------------|----------------------------------------------------------------------------------------------------|
+| **Windows *(BETA)***      | [Download reacher-api_win_x64.exe](#)                                                             |
+| **Linux (Ubuntu/Debian)** | [Download reacher-api_linux_amd64.deb](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-api_linux_amd64.deb) |
+| **macOS *(BETA)***        | [Download reacher-api_macos_x64.dmg](#)                                                           |
+
+<br>
+
+### Arduino Frameworks
+
+You can download the latest version of any of the accompanying Arduino projects here as well:
+
+| **Reinforcement Paradigm**       | **Download Link**                                                                                  |
+|----------------------------------|----------------------------------------------------------------------------------------------------|
+| **All Sketches**                | [Download reacher_arduino_sketches.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher_arduino_sketches.zip) |
+| **Operant Fixed Ratio**         | [Download operant_FR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/operant_FR.zip)           |
+| **Operant Progressive Ratio *(BETA)*** | [Download operant_PR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/operant_PR.zip)     |
+| **Operant Variable Ratio *(BETA)***    | [Download operant_VR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/operant_VR.zip)     |
+| **Omission *(BETA)***           | [Download omission.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/omission.zip)             |
 
 <br>
 
