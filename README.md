@@ -134,7 +134,7 @@ You can download the latest version of the **REACHER Suite Dashboard** for your 
 
 | **Operating System** | **Download Link** |
 |----------------------|------------------|
-| **Windows** | [Download reacher-dashboard-1.0_win64-setup.exe](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-x64.exe) |
+| **Windows** | [Download reacher-dashboard-1.0_x64-setup.exe](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-x64.exe) |
 | **Linux (Ubuntu/Debian)** | [Download reacher_dashboard_1.0_amd64.deb](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher_dashboard_1.0_amd64.deb) |
 | **macOS** | [Download reacher-dashboard-1.0-macos.dmg](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-macos.dmg) |
 
@@ -146,11 +146,11 @@ You can download the latest version any of the accompanying Arduino projects her
 
 | **Reinforcement Paradigm** | **Download Link** |
 |----------------------|------------------|
-| **All Sketches** | [Download reacher_arduino_sketches.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/download/v1.0.1-beta/reacher_arduino_sketches.zip) |
-| **Operant Fixed Ratio** | [Download operant_FR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/download/v1.0.1-beta/operant_FR.zip) |
-| **Operant Progressive Ratio *(BETA)*** | [Download operant_PR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/download/v1.0.1-beta/operant_PR.zip) |
-| **Operant Variable Ratio *(BETA)*** | [Download operant_VR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/download/v1.0.1-beta/operant_VR.zip) |
-| **Omission *(BETA)*** | [Download omission.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/download/v1.0.1-beta/omission.zip) |
+| **All Sketches** | [Download reacher_arduino_sketches.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/v1.0.1-beta/reacher_arduino_sketches.zip) |
+| **Operant Fixed Ratio** | [Download operant_FR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/v1.0.1-beta/operant_FR.zip) |
+| **Operant Progressive Ratio *(BETA)*** | [Download operant_PR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/v1.0.1-beta/operant_PR.zip) |
+| **Operant Variable Ratio *(BETA)*** | [Download operant_VR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/v1.0.1-beta/operant_VR.zip) |
+| **Omission *(BETA)*** | [Download omission.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/v1.0.1-beta/omission.zip) |
 
 <br>
 
@@ -160,9 +160,9 @@ You can download the latest version of the **REACHER API** for your operating sy
 
 | **Operating System** | **Download Link** |
 |----------------------|------------------|
-| **Windows *(BETA)*** | [Download reacher-dashboard-1.0_win64-setup.exe](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-x64.exe) |
+| **Windows *(BETA)*** | [Download reacher-api-1.0_win64-setup.exe](#) |
 | **Linux (Ubuntu/Debian)** | [Download reacher_api_1.0_amd64.deb](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher_api_1.0_amd64.deb) |
-| **macOS *(BETA)*** | [Download reacher-dashboard-1.0-macos.dmg](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard-1.0-macos.dmg) |
+| **macOS *(BETA)*** | [Download reacher-api-1.0-macos.dmg](#) |
 
 <br>
 

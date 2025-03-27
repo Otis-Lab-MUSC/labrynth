@@ -27,9 +27,9 @@ jobs:
         run: pyinstaller setup.spec
       - name: Create DEB structure
         run: |
-          mkdir -p reacher_api_1.0_amd64/DEBIAN
-          mkdir -p reacher_api_1.0_amd64/opt/reacher-api
-          mkdir -p reacher_api_1.0_amd64/usr/local/bin
+          mkdir -p reacher_api_1.0.${{ github.run_number }}_amd64/DEBIAN
+          mkdir -p reacher_api_1.0.${{ github.run_number }}_amd64/opt/reacher-api
+          mkdir -p reacher_api_1.0.${{ github.run_number }}_amd64/usr/local/bin
           echo "Package: reacher-api
           Version: 1.0
           Section: utils
@@ -37,17 +37,17 @@ jobs:
           Architecture: amd64
           Depends: python3 (>= 3.11), python3-tk
           Maintainer: Joshua Boquiren <boquiren@musc.edu>
-          Description: REACHER API - A launcher application" > reacher_api_1.0_amd64/DEBIAN/control
-          cp -r web/backend/api/dist/reacher-api/* reacher_api_1.0_amd64/opt/reacher-api/
-          chmod +x reacher_api_1.0_amd64/opt/reacher-api/reacher-api
-          ln -s /opt/reacher-api/reacher-api reacher_api_1.0_amd64/usr/local/bin/reacher-api
+          Description: REACHER API - A launcher application" > reacher_api_1.0.${{ github.run_number }}_amd64/DEBIAN/control
+          cp -r web/backend/api/dist/reacher-api/* reacher_api_1.0.${{ github.run_number }}_amd64/opt/reacher-api/
+          chmod +x reacher_api_1.0.${{ github.run_number }}_amd64/opt/reacher-api/reacher-api
+          ln -s /opt/reacher-api/reacher-api reacher_api_1.0.${{ github.run_number }}_amd64/usr/local/bin/reacher-api
       - name: Build DEB package
-        run: dpkg-deb --build reacher_api_1.0_amd64
+        run: dpkg-deb --build reacher_api_1.0.${{ github.run_number }}_amd64
       - name: Upload DEB
         uses: actions/upload-artifact@v4
         with:
-          name: reacher_api_1.0_amd64.deb
-          path: reacher_api_1.0_amd64.deb
+          name: reacher_api_1.0.${{ github.run_number }}_amd64.deb
+          path: reacher_api_1.0.${{ github.run_number }}_amd64.deb
 
   release:
     needs: [build-linux]
@@ -60,7 +60,7 @@ jobs:
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher_api_1.0_amd64.deb
+          name: reacher_api_1.0.${{ github.run_number }}_amd64.deb
           path: dist/linux
       - name: Create Release
         id: create_release
@@ -78,6 +78,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/linux/reacher_api_1.0_amd64.deb
-          asset_name: reacher_api_1.0_amd64.deb
+          asset_path: dist/linux/reacher_api_1.0.${{ github.run_number }}_amd64.deb
+          asset_name: reacher_api_1.0.${{ github.run_number }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package

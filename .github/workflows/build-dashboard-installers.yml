@@ -31,14 +31,14 @@ jobs:
         working-directory: web/frontend/dashboard
         run: |
           dir
-          iscc /O"dist" /F"reacher-dashboard-1.0-x64" setup.iss
+          iscc /O"dist" /F"reacher_dashboard_1.0.${{ github.run_number }}_x64" setup.iss
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: reacher-dashboard-1.0-x64.exe
-          path: web/frontend/dashboard/dist/reacher-dashboard-1.0-x64.exe
+          name: reacher_dashboard_1.0.${{ github.run_number }}_x64.exe
+          path: web/frontend/dashboard/dist/reacher_dashboard_1.0.${{ github.run_number }}_x64.exe
 
-  build-macos:
+  buildmacos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,12 +58,12 @@ jobs:
         run: pyinstaller setup.spec
       - name: Create DMG
         run: |
-          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "web/frontend/dashboard/dist/REACHER Dashboard.app" -ov -format UDZO reacher-dashboard-1.0-macos.dmg
+          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "web/frontend/dashboard/dist/REACHER Dashboard.app" -ov -format UDZO reacher_dashboard_1.0.${{ github.run_number }}_macos.dmg
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: reacher-dashboard-1.0-macos.dmg
-          path: reacher-dashboard-1.0-macos.dmg
+          name: reacher_dashboard_1.0.${{ github.run_number }}_macos.dmg
+          path: reacher_dashboard_1.0.${{ github.run_number }}_macos.dmg
 
   build-linux:
     runs-on: ubuntu-latest
@@ -87,9 +87,9 @@ jobs:
         run: pyinstaller setup.spec
       - name: Create DEB structure
         run: |
-          mkdir -p reacher_dashboard_1.0_amd64/DEBIAN
-          mkdir -p reacher_dashboard_1.0_amd64/opt/reacher-dashboard
-          mkdir -p reacher_dashboard_1.0_amd64/usr/local/bin
+          mkdir -p reacher_dashboard_1.0.${{ github.run_number }}_amd64/DEBIAN
+          mkdir -p reacher_dashboard_1.0.${{ github.run_number }}_amd64/opt/reacher-dashboard
+          mkdir -p reacher_dashboard_1.0.${{ github.run_number }}_amd64/usr/local/bin
           echo "Package: reacher-dashboard
           Version: 1.0
           Section: utils
@@ -97,20 +97,20 @@ jobs:
           Architecture: amd64
           Depends: tk8.6
           Maintainer: Joshua Boquiren <boquiren@musc.edu>
-          Description: REACHER Dashboard - A dashboard application" > reacher_dashboard_1.0_amd64/DEBIAN/control
-          cp -r web/frontend/dashboard/dist/reacher-dashboard/* reacher_dashboard_1.0_amd64/opt/reacher-dashboard/
-          chmod +x reacher_dashboard_1.0_amd64/opt/reacher-dashboard/reacher-dashboard
-          ln -s /opt/reacher-dashboard/reacher-dashboard reacher_dashboard_1.0_amd64/usr/local/bin/reacher-dashboard
+          Description: REACHER Dashboard - A dashboard application" > reacher_dashboard_1.0.${{ github.run_number }}_amd64/DEBIAN/control
+          cp -r web/frontend/dashboard/dist/reacher-dashboard/* reacher_dashboard_1.0.${{ github.run_number }}_amd64/opt/reacher-dashboard/
+          chmod +x reacher_dashboard_1.0.${{ github.run_number }}_amd64/opt/reacher-dashboard/reacher-dashboard
+          ln -s /opt/reacher-dashboard/reacher-dashboard reacher_dashboard_1.0.${{ github.run_number }}_amd64/usr/local/bin/reacher-dashboard
       - name: Build DEB package
-        run: dpkg-deb --build reacher_dashboard_1.0_amd64
+        run: dpkg-deb --build reacher_dashboard_1.0.${{ github.run_number }}_amd64
       - name: Upload DEB
         uses: actions/upload-artifact@v4
         with:
-          name: reacher_dashboard_1.0_amd64.deb
-          path: reacher_dashboard_1.0_amd64.deb
+          name: reacher_dashboard_1.0.${{ github.run_number }}_amd64.deb
+          path: reacher_dashboard_1.0.${{ github.run_number }}_amd64.deb
 
   release:
-    needs: [build-windows, build-macos, build-linux]
+    needs: [build-windows, buildmacos, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -120,17 +120,17 @@ jobs:
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher-dashboard-1.0-x64.exe
+          name: reacher_dashboard_1.0.${{ github.run_number }}_x64.exe
           path: dist/windows
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher-dashboard-1.0-macos.dmg
+          name: reacher_dashboard_1.0.${{ github.run_number }}_macos.dmg
           path: dist/macos
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher_dashboard_1.0_amd64.deb
+          name: reacher_dashboard_1.0.${{ github.run_number }}_amd64.deb
           path: dist/linux
       - name: Create Release
         id: create_release
@@ -148,8 +148,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/windows/reacher-dashboard-1.0-x64.exe
-          asset_name: reacher-dashboard-1.0-x64.exe
+          asset_path: dist/windows/reacher_dashboard_1.0.${{ github.run_number }}_x64.exe
+          asset_name: reacher_dashboard_1.0.${{ github.run_number }}_x64.exe
           asset_content_type: application/octet-stream
       - name: Upload macOS DMG
         uses: actions/upload-release-asset@v1
@@ -157,8 +157,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/macos/reacher-dashboard-1.0-macos.dmg
-          asset_name: reacher-dashboard-1.0-macos.dmg
+          asset_path: dist/macos/reacher_dashboard_1.0.${{ github.run_number }}_macos.dmg
+          asset_name: reacher_dashboard_1.0.${{ github.run_number }}_macos.dmg
           asset_content_type: application/x-diskcopy
       - name: Upload Linux DEB
         uses: actions/upload-release-asset@v1
@@ -166,6 +166,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/linux/reacher_dashboard_1.0_amd64.deb
-          asset_name: reacher_dashboard_1.0_amd64.deb
+          asset_path: dist/linux/reacher_dashboard_1.0.${{ github.run_number }}_amd64.deb
+          asset_name: reacher_dashboard_1.0.${{ github.run_number }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
