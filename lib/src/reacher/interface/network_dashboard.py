@@ -99,11 +99,7 @@ class HomeTab:
     def search_reacher_devices(self, _):
         hostname = socket.gethostname()
         local_ip = socket.gethostbyname(hostname)
-<<<<<<< HEAD:lib/src/reacher/interface/network_dashboard.py
         self.dashboard.add_response(f"Listening for REACHER devices broadcasting on {local_ip}")
-=======
-        self.dashboard.add_response(f"Listening for REACHER devices broadcasting on {hostname} ({local_ip})")
->>>>>>> 8d6656bf02deb1b7e31466849b2b95e132ac3126:src/reacher/network_dashboard.py
         try:
             services = self.discover_reacher_services(timeout=5)
             if services:

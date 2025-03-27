@@ -10,7 +10,7 @@ matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
-from ..core.reacher import REACHER 
+from reacher.core import REACHER 
 
 class Dashboard:
     def __init__(self):
