@@ -301,14 +301,14 @@ jobs:
           asset_name: operant_PR.zip
           asset_content_type: application/zip
 
-      - name: Upload Operant VR Zip
+      - name: Upload Operant VI Zip
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: operant_VR.zip
-          asset_name: operant_VR.zip
+          asset_path: operant_VI.zip
+          asset_name: operant_VI.zip
           asset_content_type: application/zip
 
       - name: Upload Omission Zip
