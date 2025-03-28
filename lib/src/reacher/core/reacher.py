@@ -45,6 +45,45 @@ class REACHER:
         self.data_destination = None
         self.behavior_filename = None
 
+    def reset(self):
+        print("[reset]: Resetting REACHER instance...")
+
+        if not self.program_flag.is_set():
+            self.stop_program()
+
+        self.clear_queue()
+        self.close_serial()
+
+        self.behavior_data = []
+        self.frame_data = []
+
+        self.program_start_time = None
+        self.program_end_time = None
+        self.paused_time = 0
+        self.paused_start_time = None
+        self.limit_type = None
+        self.infusion_limit = None
+        self.time_limit = None
+        self.stop_delay = None
+        self.last_infusion_time = None
+
+        self.arduino_configuration = {}
+        self.logging_stream_file = f"log-{self.get_time()}.csv"
+        self.data_destination = None
+        self.behavior_filename = None
+
+        self.ser = serial.Serial(baudrate=115200)
+        self.queue = queue.Queue()
+
+        self.serial_flag.clear()
+        self.program_flag.set()
+        self.serial_thread = threading.Thread(target=self.read_serial, daemon=True)
+        self.queue_thread = threading.Thread(target=self.handle_queue, daemon=True)
+        self.serial_thread.start()
+        self.queue_thread.start()
+
+        print("[reset]: REACHER instance reset complete.")
+
     # Serial functions
     def get_COM_ports(self):
         available_ports = [p.device for p in list_ports.comports() if p.vid and p.pid]

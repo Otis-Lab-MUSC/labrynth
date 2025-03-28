@@ -6,10 +6,10 @@ import socket
 import time
 import threading
 import logging
-from flask import Flask
+from flask import Flask, jsonify
 from waitress import serve
 from reacher.core import REACHER
-from endpoints import home, serial_connection, program, file, data_processor
+from endpoints import serial_connection, program, file, data_processor
 
 logging.basicConfig(
     level=logging.INFO,
@@ -73,11 +73,43 @@ class BroadcastWorker(threading.Thread):
     def stop(self):
         self.stop_event.set()
 
-def create_app() -> Flask:
+    def resume(self):
+        self.stop_event.clear()
+
+def create_app(broadcast_worker: BroadcastWorker) -> Flask:
     app = Flask(__name__)
     reacher = REACHER()
 
-    app.register_blueprint(home.bp)
+    @app.route('/')
+    def home():
+        return "REACHER API", 200
+
+    @app.route('/connection')
+    def connect():
+        if broadcast_worker:
+            broadcast_worker.stop()
+            broadcast_worker.join()
+        return_dict = {
+            'status': "Connected to REACHER API",
+            'connected': True
+        }
+        return jsonify(return_dict), 200
+    
+    @app.route('/reset', methods=['POST'])
+    def reset():
+        try:
+            if reacher:
+                reacher.reset()
+            return jsonify({
+                'status': 'Reset successful',
+                'message': 'REACHER instance has been reset'
+            }), 200
+        except Exception as e:
+            return jsonify({
+                'status': 'Reset failed',
+                'message': str(e)
+            }), 500
+
     app.register_blueprint(serial_connection.create_serial_bp(reacher))
     app.register_blueprint(data_processor.create_data_processor_bp(reacher))
     app.register_blueprint(program.create_program_bp(reacher))
@@ -88,10 +120,10 @@ def create_app() -> Flask:
 if __name__ == "__main__":
     sys.stdout.flush()
 
-    flask_app = create_app()
-
     broadcast_worker = BroadcastWorker()
     broadcast_worker.start()
+    
+    flask_app = create_app(broadcast_worker)
 
     logging.info(f"REACHER API is running on http://{broadcast_worker.local_ip}:{HTTP_PORT}")
     logging.info("Press Ctrl+C to stop the server.")

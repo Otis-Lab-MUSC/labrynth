@@ -40,6 +40,8 @@ class Dashboard:
         )
         self.toggle_button = pn.widgets.Button(name="Hide Response", button_type="primary")
         self.toggle_button.on_click(self.toggle_response_visibility)
+        self.reset_button = pn.widgets.Button(name="Reset", icon="reset", button_type="danger")
+        self.reset_button.on_click(self.reset_session)
         self.api_config = {"host": None, "port": None, "key": None}
         self.api_connected = False
 
@@ -59,7 +61,7 @@ class Dashboard:
     def layout(self):
         header_row = pn.Row(self.header, self.toggle_button)
         main_row = pn.Row(self.tabs, self.response_textarea)
-        return pn.Column(header_row, main_row)
+        return pn.Column(header_row, main_row, self.reset_button)
 
     def get_api_config(self):
         return self.api_config
@@ -78,6 +80,18 @@ class Dashboard:
         formatted_time = time.strftime("%H:%M:%S", local_time)
         writeout = f"""<span style="color: red;">>>></span><span style="color: grey;"> [{formatted_time}]:</span><span style="color: red; font-weight: bold;"> !!!ERROR!!!</span><span style="color: white;"> {response}</span><br><span style="color: grey;">     Details - {details}</span><br>"""
         self.response_html.object += writeout
+
+    def reset_session(self, _):
+        if not self.api_connected:
+            self.add_response("Please connect to the API first.")
+            return
+        api_config = self.get_api_config()
+        try:
+            response = requests.post(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/reset")
+            response_data = response.json()
+            self.add_response(response_data.get('status', 'Session reset.'))
+        except Exception as e:
+            self.add_error("Failed to reset session.", str(e))
 
 class HomeTab:
     def __init__(self, dashboard: Dashboard):
@@ -162,7 +176,7 @@ class HomeTab:
             self.dashboard.add_error("API configuration incomplete", "Host or port not set")
             return
         try:
-            response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/home/connection")
+            response = requests.get(timeout=5, url=f"http://{api_config['host']}:{api_config['port']}/connection")
             response.raise_for_status()
             response_data = response.json()
             if response_data.get('connected'):
