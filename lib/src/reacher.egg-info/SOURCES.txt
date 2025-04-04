@@ -16,6 +16,5 @@ src/reacher/assets/reacher-icon.png
 src/reacher/core/__init__.py
 src/reacher/core/reacher.py
 src/reacher/interface/__init__.py
-src/reacher/interface/cli.py
 src/reacher/interface/local_dashboard.py
 src/reacher/interface/network_dashboard.py
