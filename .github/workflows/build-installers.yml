@@ -93,8 +93,7 @@ jobs:
           Section: utils
           Priority: optional
           Architecture: amd64
-          Depends: tk8.6
-          Maintainer: Your Name <your.email@example.com>
+          Maintainer: Josh Boquiren <thejoshbq.proton@.me>
           Description: REACHER Dashboard - A dashboard application" > reacher-dashboard_linux_amd64/DEBIAN/control
           cp -r web/frontend/dashboard/dist/reacher-dashboard/* reacher-dashboard_linux_amd64/opt/reacher-dashboard/
           chmod +x reacher-dashboard_linux_amd64/opt/reacher-dashboard/reacher-dashboard
@@ -135,8 +134,8 @@ jobs:
           Section: utils
           Priority: optional
           Architecture: amd64
-          Depends: python3 (>= 3.11), python3-tk
-          Maintainer: Your Name <your.email@example.com>
+          Depends: python3 (>= 3.11)
+          Maintainer: Josh Boquiren <thejoshbq.proton@.me>
           Description: REACHER API - A launcher application" > reacher-api_linux_amd64/DEBIAN/control
           cp -r web/backend/api/dist/reacher-api/* reacher-api_linux_amd64/opt/reacher-api/
           chmod +x reacher-api_linux_amd64/opt/reacher-api/reacher-api
