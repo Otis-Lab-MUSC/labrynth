@@ -176,13 +176,13 @@ class MainWindow(QMainWindow):
         layout: QVBoxLayout = QVBoxLayout(central_widget)
 
         # Add label
-        label: QLabel = QLabel("Opening REACHER Dashboard in browser...\n(keep this window open)")
+        label: QLabel = QLabel("Opening session in browser...")
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
 
         # Add re-open button
         self.reopen_button: QPushButton = QPushButton("Re-open Dashboard")
-        self.reopen_button.clicked.connect(self.reopen_browser)
+        self.reopen_button.clicked.connect(self.reopen_session)
         layout.addWidget(self.reopen_button)
 
         # Start the Panel server process
@@ -190,8 +190,9 @@ class MainWindow(QMainWindow):
             target=serve_interface, daemon=True
         )
         self.panel_process.start()
+        label.setText("Session running in browser.\n(keep this window open)")
 
-    def reopen_browser(self) -> None:
+    def reopen_session(self) -> None:
         """Re-open the Panel dashboard in the default web browser.
 
         This method checks if the Panel server process is still running and, if so, opens the
