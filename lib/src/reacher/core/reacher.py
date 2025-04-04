@@ -37,11 +37,17 @@ class REACHER:
         # Thread variables
         self.serial_thread: threading.Thread = threading.Thread(target=self.read_serial, daemon=True)
         self.queue_thread: threading.Thread = threading.Thread(target=self.handle_queue, daemon=True)
+        self.time_check_thread: threading.Thread = threading.Thread(target=self.monitor_time_limit, daemon=True)
         self.thread_lock: threading.Lock = threading.Lock()
         self.serial_flag: threading.Event = threading.Event()
         self.program_flag: threading.Event = threading.Event()
+        self.time_check_flag: threading.Event = threading.Event()
         self.serial_flag.set()
         self.program_flag.set()
+        self.time_check_flag.set()
+        self.serial_thread.start()
+        self.queue_thread.start()
+        self.time_check_thread.start()
 
         # Data process variables
         self.behavior_data: List[Dict[str, Union[str, int]]] = []
@@ -77,6 +83,7 @@ class REACHER:
 
         self.clear_queue()
         self.close_serial()
+        self.time_check_flag.clear()  # Stop the time check thread
 
         self.behavior_data = []
         self.frame_data = []
@@ -101,10 +108,13 @@ class REACHER:
 
         self.serial_flag.clear()
         self.program_flag.set()
+        self.time_check_flag.set()
         self.serial_thread = threading.Thread(target=self.read_serial, daemon=True)
         self.queue_thread = threading.Thread(target=self.handle_queue, daemon=True)
+        self.time_check_thread = threading.Thread(target=self.monitor_time_limit, daemon=True)
         self.serial_thread.start()
         self.queue_thread.start()
+        self.time_check_thread.start()
 
         logger.info("REACHER instance reset complete.")
 
@@ -199,13 +209,12 @@ class REACHER:
         """
         while not self.serial_flag.is_set():
             if self.ser.is_open and self.ser.in_waiting > 0:
-                if self.ser.in_waiting > 0:
-                    with self.thread_lock:
-                        data = self.ser.readline().decode(encoding='utf-8', errors='replace').strip()
-                        logger.debug(f"Serial data received: {data}")
-                        self.queue.put(data)
-                else:
-                    time.sleep(.1)
+                with self.thread_lock:
+                    data = self.ser.readline().decode(encoding='utf-8', errors='replace').strip()
+                    logger.debug(f"Serial data received: {data}")
+                    self.queue.put(data)
+            else:
+                time.sleep(0.1)
 
     def handle_queue(self) -> None:
         """Process data from the queue.
@@ -223,13 +232,22 @@ class REACHER:
                 logger.debug(f"Processing queue data: {data}")
                 for line in str(data).split('\n'):
                     if not self.program_flag.is_set():
-                        self.check_limit_met()
-                    if not self.program_flag.is_set():
                         self.handle_data(line)
             except queue.Empty:
                 if self.serial_flag.is_set():
                     break
                 continue
+
+    def monitor_time_limit(self) -> None:
+        """Continuously monitor the time limit in a separate thread.
+
+        This method runs in a dedicated thread and checks if program limits are met,
+        ensuring timely stopping even when no serial data is received.
+        """
+        while self.time_check_flag.is_set():
+            if not self.program_flag.is_set():  # Program is running
+                self.check_limit_met()
+            time.sleep(0.1)  # Check every 100ms for responsiveness
 
     def handle_data(self, line: str) -> None:
         """Process a line of data from the queue.
@@ -300,9 +318,9 @@ class REACHER:
             logger.debug(f"Frame event: {timestamp}")
             self.frame_data.append(timestamp)
 
-        with open(self.frame_data, 'a', newline='\n') as file:
+        with open(self.logging_stream_file, 'a', newline='\n') as file:
             writer = csv.DictWriter(file, fieldnames=['Frame Timestamp'])
-            writer.writerow({'Frame Timestamp':timestamp})
+            writer.writerow({'Frame Timestamp': timestamp})
 
     def send_serial_command(self, command: str) -> None:
         """Send a command to the Arduino via serial.
@@ -409,27 +427,34 @@ class REACHER:
     def check_limit_met(self) -> None:
         """Check if program limits have been met and stop if necessary.
 
-        This method evaluates time and/or infusion limits based on limit_type.
+        This method evaluates time and/or infusion limits based on limit_type,
+        logging debug information for verification.
         """
         current_time = time.time()
+        if self.program_start_time is None or self.limit_type is None:
+            return  # No limits to check if program hasn't started or type unset
+
+        elapsed_time = current_time - self.program_start_time - self.paused_time
+        infusion_count = sum(1 for entry in self.behavior_data if entry['Component'] == 'PUMP' and entry['Action'] == 'INFUSION')
+        logger.debug(f"Checking limits: elapsed_time={elapsed_time:.2f}, time_limit={self.time_limit}, infusion_count={infusion_count}, infusion_limit={self.infusion_limit}")
+
         if self.limit_type == "Time":
-            elapsed_time = current_time - self.program_start_time - self.paused_time
             if elapsed_time >= self.time_limit:
+                logger.info("Time limit met, stopping program")
                 self.stop_program()
         elif self.limit_type == "Infusion":
-            count = sum(1 for entry in self.behavior_data if entry['Component'] == 'PUMP' and entry['Action'] == 'INFUSION')
-            if count >= self.infusion_limit:
+            if infusion_count >= self.infusion_limit:
                 if self.last_infusion_time is None:
                     self.last_infusion_time = current_time
                 if self.last_infusion_time and (current_time - self.last_infusion_time >= self.stop_delay):
+                    logger.info("Infusion limit met and stop delay elapsed, stopping program")
                     self.stop_program()
         elif self.limit_type == "Both":
-            count = sum(1 for entry in self.behavior_data if entry['Component'] == 'PUMP' and entry['Action'] == 'INFUSION')
-            if count >= self.infusion_limit:
+            if infusion_count >= self.infusion_limit:
                 if self.last_infusion_time is None:
                     self.last_infusion_time = current_time
-            elapsed_time = current_time - self.program_start_time - self.paused_time
             if (self.last_infusion_time and (current_time - self.last_infusion_time) >= self.stop_delay) or (elapsed_time >= self.time_limit):
+                logger.info("Either infusion limit with stop delay or time limit met, stopping program")
                 self.stop_program()
 
     def set_data_destination(self, folder: str) -> None:
