@@ -30,6 +30,8 @@ class Dashboard:
         )
         self.toggle_button = pn.widgets.Button(name="Hide Response", button_type="primary")
         self.toggle_button.on_click(self.toggle_response_visibility)
+        self.reset_button = pn.widgets.Button(name="Reset", icon="reset", button_type="danger")
+        self.reset_button.on_click(self.reset_session)
 
         self.dashboard = pn.Tabs(
             ("Home", self.home_tab.layout()),
@@ -43,7 +45,7 @@ class Dashboard:
     def layout(self):
         header_row = pn.Row(self.header, self.toggle_button)
         main_row = pn.Row(self.dashboard, self.response_textarea)
-        layout = pn.Column(header_row, main_row)
+        layout = pn.Column(header_row, main_row, self.reset_button)
         return layout
 
     def get_response_terminal(self):
@@ -87,6 +89,13 @@ class Dashboard:
         else:
             self.response_textarea.visible = True
             self.toggle_button.name = "Hide Response"
+
+    def reset_session(self, _):
+        try:
+            self.reacher.reset()
+            self.add_response("Session reset.")
+        except Exception as e:
+            self.add_error("Failed to reset session.")
 
 class HomeTab:
     def __init__(self, dashboard: Dashboard, reacher: REACHER):
