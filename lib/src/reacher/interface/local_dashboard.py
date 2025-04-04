@@ -215,6 +215,12 @@ class ProgramTab:
             if set_limit:
                 set_limit()
 
+            self.reacher.set_limit_type(self.limit_type_radiobutton.value)
+            self.reacher.set_infusion_limit(self.infusion_limit_intslider.value)
+            total_time_limit = (self.time_limit_hour.value * 3600) + (self.time_limit_min.value * 60) + self.time_limit_sec.value
+            self.reacher.set_time_limit(total_time_limit)
+            self.reacher.set_stop_delay(self.stop_delay_intslider.value)
+
             self.dashboard.add_response(f"Set limit type to {self.limit_type_radiobutton.value}")
             self.dashboard.add_response(f"Set infusion limit to {self.infusion_limit_intslider.value}")
             self.dashboard.add_response(f"Set time limit to {(self.time_limit_hour.value * 60 * 60) + (self.time_limit_min.value * 60) + self.time_limit_sec.value}")
