@@ -93,6 +93,8 @@ class Dashboard:
     def reset_session(self, _):
         try:
             self.reacher.reset()
+            self.home_tab.reset()
+            self.monitor_tab.reset()
             self.add_response("Session reset.")
         except Exception as e:
             self.add_error("Failed to reset session.")
@@ -141,7 +143,6 @@ class HomeTab:
             self.dashboard.add_error(f"Failed to disconnect from {self.microcontroller_menu.value}", e)
     
     def reset(self):
-        self.dashboard.add_response("Resetting home tab")
         self.microcontroller_menu.options = []
 
     def layout(self):
@@ -719,7 +720,8 @@ class MonitorTab:
             self.animation_markdown.object = """`Finished.`"""
             self.dashboard.header.alert_type = "success"
             self.dashboard.header.object = "Program finished."
-            self.dashboard.add_response("Program finished")
+            formatted_time = time.strftime("%Y-%m-%d, %H:%M:%S", time.localtime(self.reacher.get_end_time()))
+            self.dashboard.add_response(f"Ended program at {formatted_time}")
         new_data = self.fetch_data()
         if not new_data.empty:
             self.df = new_data
@@ -745,8 +747,7 @@ class MonitorTab:
                 self.reacher.set_logging_stream_destination(reacher_log_path)
 
             self.reacher.start_program()
-            local_time = time.localtime()
-            formatted_time = time.strftime("%Y-%m-%d, %H:%M:%S", local_time)
+            formatted_time = time.strftime("%Y-%m-%d, %H:%M:%S", time.localtime(self.reacher.get_start_time()))
             self.dashboard.add_response(f"Started program at {formatted_time}")
 
             if pn.state.curdoc:
@@ -780,15 +781,9 @@ class MonitorTab:
     def stop_program(self, _):
         try:
             self.reacher.stop_program()
-            local_time = time.localtime()
-            formatted_time = time.strftime("%Y-%m-%d, %H:%M:%S", local_time)
-            self.dashboard.add_response(f"Ended program at {formatted_time}")
-            self.animation_image.object = self.img_path
-            self.periodic_callback.stop() 
-            self.periodic_callback = None
-            self.animation_markdown.object = f"""`Finished.`"""
-            self.dashboard.header.alert_type = "success"
-            self.dashboard.header.object = "Program finished."
+            # self.animation_image.object = self.img_path
+            # self.periodic_callback.stop() 
+            # self.periodic_callback = None
         except Exception as e:
             self.dashboard.add_error("Failed to end program", e)
 
@@ -844,12 +839,12 @@ class MonitorTab:
         return formatted_time
     
     def reset(self):
-        self.dashboard.add_response("Resetting monitor tab")
-
         self.df = pd.DataFrame(data=[])
         self.plotly_pane.object = None
         self.animation_image.object = self.img_path
         self.animation_markdown.object = f"""`Waiting...`"""
+        self.start_program_button.disabled = False
+        self.start_program_button.icon = "player-play"
         
     def layout(self):
         program_control_area = pn.Column(
