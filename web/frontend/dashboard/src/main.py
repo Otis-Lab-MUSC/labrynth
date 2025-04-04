@@ -5,9 +5,10 @@ import sys
 import os
 import multiprocessing
 from typing import Any, Optional
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QMessageBox
+from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt
+import webbrowser
 
 pn.extension('plotly')
 
@@ -156,27 +157,56 @@ def serve_interface() -> None:
         theme="dark",
         favicon=icon_path
     )
-    pn.serve(template, show=True)
+    pn.serve(template, port=7007, show=True)
 
 class MainWindow(QMainWindow):
     """Main window for launching the REACHER Dashboard."""
 
     def __init__(self) -> None:
-        """Initialize the main window with a label and start the Panel server."""
+        """Initialize the main window with a label, button, and start the Panel server."""
         super().__init__()
         self.setWindowTitle("REACHER Dashboard Launcher")
-        self.setGeometry(100, 100, 300, 100)
+        self.setGeometry(100, 100, 300, 150)  # Adjusted size to fit button
 
         self.setWindowIcon(QIcon(icon_path))
 
-        label: QLabel = QLabel("Opening REACHER Dashboard in browser...\n(keep this window open)")
-        label.setAlignment(Qt.AlignCenter)
-        self.setCentralWidget(label)
+        # Create a central widget and layout
+        central_widget: QWidget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout: QVBoxLayout = QVBoxLayout(central_widget)
 
+        # Add label
+        label: QLabel = QLabel("Opening session in browser...")
+        label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(label)
+
+        # Add re-open button
+        self.reopen_button: QPushButton = QPushButton("Re-open Dashboard")
+        self.reopen_button.clicked.connect(self.reopen_session)
+        layout.addWidget(self.reopen_button)
+
+        # Start the Panel server process
         self.panel_process: multiprocessing.Process = multiprocessing.Process(
             target=serve_interface, daemon=True
         )
         self.panel_process.start()
+        label.setText("Session running in browser.\n(keep this window open)")
+
+    def reopen_session(self) -> None:
+        """Re-open the Panel dashboard in the default web browser.
+
+        This method checks if the Panel server process is still running and, if so, opens the
+        dashboard URL in the default browser. If the server is not running, it displays a warning.
+        """
+        if self.panel_process.is_alive():
+            url: str = "http://localhost:7007"
+            webbrowser.open(url)
+        else:
+            QMessageBox.warning(
+                self,
+                "Server Not Running",
+                "The dashboard server is not running. Please restart the application."
+            )
 
     def closeEvent(self, event: Any) -> None:
         """Handle the window close event with a confirmation dialog.
@@ -186,7 +216,7 @@ class MainWindow(QMainWindow):
 
         This method prompts the user to confirm quitting and terminates the Panel process if confirmed.
         """
-        reply: int = QMessageBox.question(
+        reply: QMessageBox.StandardButton = QMessageBox.question(
             self,
             "Quit REACHER Dashboard",
             "Do you really want to quit? This action is irreversible.",
