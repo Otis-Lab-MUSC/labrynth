@@ -1,4 +1,3 @@
-# reacher/wireless_controls/interface.py
 import panel as pn
 from typing import Any, Dict
 import time

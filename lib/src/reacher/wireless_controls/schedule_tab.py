@@ -1,4 +1,3 @@
-# reacher/wireless_controls/schedule_tab.py
 import panel as pn
 from typing import Any
 from .dashboard import Dashboard

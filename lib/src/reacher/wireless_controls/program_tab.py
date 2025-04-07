@@ -1,4 +1,3 @@
-# reacher/wireless_controls/program_tab.py
 import panel as pn
 from typing import List, Any, Dict
 from .dashboard import Dashboard

@@ -166,26 +166,22 @@ class MainWindow(QMainWindow):
         """Initialize the main window with a label, button, and start the Panel server."""
         super().__init__()
         self.setWindowTitle("REACHER Dashboard Launcher")
-        self.setGeometry(100, 100, 300, 150)  # Adjusted size to fit button
+        self.setGeometry(100, 100, 300, 150) 
 
         self.setWindowIcon(QIcon(icon_path))
 
-        # Create a central widget and layout
         central_widget: QWidget = QWidget()
         self.setCentralWidget(central_widget)
         layout: QVBoxLayout = QVBoxLayout(central_widget)
 
-        # Add label
         label: QLabel = QLabel("Opening session in browser...")
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
 
-        # Add re-open button
         self.reopen_button: QPushButton = QPushButton("Re-open Dashboard")
         self.reopen_button.clicked.connect(self.reopen_session)
         layout.addWidget(self.reopen_button)
 
-        # Start the Panel server process
         self.panel_process: multiprocessing.Process = multiprocessing.Process(
             target=serve_interface, daemon=True
         )

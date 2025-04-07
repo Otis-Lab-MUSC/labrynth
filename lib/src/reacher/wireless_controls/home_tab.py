@@ -1,4 +1,3 @@
-# reacher/wireless_controls/home_tab.py
 import panel as pn
 import time
 from typing import Any, Dict

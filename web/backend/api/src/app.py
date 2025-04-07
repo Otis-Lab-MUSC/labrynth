@@ -6,7 +6,7 @@ import socket
 import time
 import threading
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 from flask import Flask, jsonify
 from waitress import serve
 from reacher.core import REACHER 
@@ -27,7 +27,12 @@ class BroadcastWorker(threading.Thread):
     """A thread that broadcasts device discovery messages over UDP."""
 
     def __init__(self) -> None:
-        """Initialize the BroadcastWorker with a unique key and local IP."""
+        """Initialize the BroadcastWorker with a unique key and local IP.
+
+        **Description:**
+        - Sets up a thread for broadcasting UDP discovery messages.
+        - Generates a unique identifier and retrieves the local IP address.
+        """
         super().__init__()
         self.stop_event: threading.Event = threading.Event()
         self.unique_key: str = str(uuid.uuid4())
@@ -36,8 +41,12 @@ class BroadcastWorker(threading.Thread):
     def get_local_ip(self) -> str:
         """Retrieve the local IP address of the machine.
 
-        Returns:
-            str: The local IP address, defaults to "127.0.0.1" if detection fails.
+        **Description:**
+        - Uses a UDP socket to determine the local IP by connecting to an external server.
+        - Falls back to "127.0.0.1" if detection fails.
+
+        **Returns:**
+        - `str`: The local IP address.
         """
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
@@ -52,7 +61,9 @@ class BroadcastWorker(threading.Thread):
     def run(self) -> None:
         """Run the broadcast service, sending UDP discovery messages periodically.
 
-        This method broadcasts a discovery payload every 5 seconds until stopped.
+        **Description:**
+        - Continuously broadcasts a discovery payload every 5 seconds until stopped.
+        - Logs the start, operation, and any errors encountered.
         """
         logging.info("Starting reacher.REACHER broadcast service...")
         logging.info(f"Using local IP: {self.local_ip}")
@@ -86,40 +97,58 @@ class BroadcastWorker(threading.Thread):
             logging.info("Broadcast service stopped.")
 
     def stop(self) -> None:
-        """Stop the broadcast service by setting the stop event."""
+        """Stop the broadcast service by setting the stop event.
+
+        **Description:**
+        - Signals the broadcast thread to terminate.
+        """
         self.stop_event.set()
 
     def resume(self) -> None:
-        """Resume the broadcast service by clearing the stop event."""
+        """Resume the broadcast service by clearing the stop event.
+
+        **Description:**
+        - Allows the broadcast thread to resume operation.
+        """
         self.stop_event.clear()
 
 def create_app(broadcast_worker: BroadcastWorker) -> Flask:
     """Create and configure the Flask application.
 
-    Args:
-        broadcast_worker (BroadcastWorker): The broadcast worker instance to manage UDP broadcasts.
+    **Description:**
+    - Initializes a Flask app and registers API endpoints.
+    - Integrates a REACHER instance and broadcast worker for device discovery.
 
-    Returns:
-        Flask: The configured Flask application instance.
+    **Args:**
+    - `broadcast_worker (BroadcastWorker)`: The broadcast worker instance to manage UDP broadcasts.
+
+    **Returns:**
+    - `Flask`: The configured Flask application instance.
     """
     app: Flask = Flask(__name__)
     reacher: REACHER = REACHER()
 
     @app.route('/')
-    def home() -> tuple[str, int]:
+    def home() -> Tuple[str, int]:
         """Handle the root endpoint.
 
-        Returns:
-            tuple[str, int]: A tuple containing the response message and HTTP status code.
+        **Description:**
+        - Returns a simple welcome message for the API.
+
+        **Returns:**
+        - `Tuple[str, int]`: A tuple containing the response message and HTTP status code.
         """
         return "REACHER API", 200
 
     @app.route('/connection')
-    def connect() -> tuple[Dict[str, Any], int]:
+    def connect() -> Tuple[Dict[str, Any], int]:
         """Handle the connection endpoint, stopping the broadcast worker.
 
-        Returns:
-            tuple[Dict[str, Any], int]: A JSON response and HTTP status code.
+        **Description:**
+        - Confirms connection to the API and stops UDP broadcasting.
+
+        **Returns:**
+        - `Tuple[Dict[str, Any], int]`: A JSON response and HTTP status code.
         """
         if broadcast_worker:
             broadcast_worker.stop()
@@ -131,14 +160,17 @@ def create_app(broadcast_worker: BroadcastWorker) -> Flask:
         return jsonify(return_dict), 200
     
     @app.route('/reset', methods=['POST'])
-    def reset() -> tuple[Dict[str, str], int]:
+    def reset() -> Tuple[Dict[str, str], int]:
         """Reset the REACHER instance.
 
-        Returns:
-            tuple[Dict[str, str], int]: A JSON response with status and message, and HTTP status code.
+        **Description:**
+        - Resets the REACHER object to its initial state.
 
-        Raises:
-            Exception: If the reset operation fails.
+        **Returns:**
+        - `Tuple[Dict[str, str], int]`: A JSON response with status and message, and HTTP status code.
+
+        **Raises:**
+        - `Exception`: If the reset operation fails.
         """
         try:
             if reacher:
@@ -162,7 +194,12 @@ def create_app(broadcast_worker: BroadcastWorker) -> Flask:
     return app
 
 if __name__ == "__main__":
-    """Main entry point for the REACHER API server."""
+    """Main entry point for the REACHER API server.
+
+    **Description:**
+    - Starts the UDP broadcast worker and Flask server.
+    - Handles graceful shutdown on keyboard interrupt.
+    """
     sys.stdout.flush()
 
     broadcast_worker: BroadcastWorker = BroadcastWorker()
