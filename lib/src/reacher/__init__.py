@@ -1,5 +1,5 @@
 from .core.reacher import REACHER
-from .interface.local_dashboard import Dashboard as LocalDashboard
-from .interface.network_dashboard import Dashboard as NetworkDashboard
+from .wired_controls import Interface, Dashboard, HomeTab, ProgramTab, HardwareTab, MonitorTab, ScheduleTab
+from .wireless_controls import Interface, Dashboard, HomeTab, ProgramTab, HardwareTab, MonitorTab, ScheduleTab
 
 __version__ = "0.1"

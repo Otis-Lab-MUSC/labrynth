@@ -28,7 +28,14 @@ class REACHER:
     """A class to manage serial communication and data collection for REACHER experiments."""
 
     def __init__(self) -> None:
-        """Initialize a REACHER instance with default settings."""
+        """Initialize a REACHER instance with default settings.
+
+        **Description:**
+        - Sets up a new REACHER instance with default serial communication settings (baudrate: 115200).
+        - Initializes threads for serial reading and queue handling.
+        - Prepares data structures for behavioral and frame data logging.
+        - Configures program control flags and variables for experiment management.
+        """
         
         # Serial variables
         self.ser: serial.Serial = serial.Serial(baudrate=115200)
@@ -73,8 +80,11 @@ class REACHER:
     def reset(self) -> None:
         """Reset the REACHER instance to its initial state.
 
-        This method stops any running program, clears queues, closes serial connections,
-        and reinitializes all variables and threads.
+        **Description:**
+        - Stops any active program and clears the data queue.
+        - Closes the serial connection and reinitializes all variables.
+        - Restarts serial and queue handling threads.
+        - Ensures a clean slate for a new experiment session.
         """
         logger.info("Resetting REACHER instance...")
 
@@ -121,8 +131,13 @@ class REACHER:
     def get_COM_ports(self) -> List[str]:
         """Retrieve a list of available COM ports.
 
-        Returns:
-            List[str]: A list of available COM port names, or ["No available ports"] if none found.
+        **Description:**
+        - Scans the system for connected serial devices.
+        - Returns a list of COM port names (e.g., "COM1", "/dev/ttyUSB0").
+        - If no ports are found, returns ["No available ports"].
+
+        **Returns:**
+        - `List[str]`: Available COM port names or a placeholder if none are detected.
         """
         available_ports = [p.device for p in list_ports.comports() if p.vid and p.pid]
         return ["No available ports"] if len(available_ports) == 0 else available_ports
@@ -130,11 +145,12 @@ class REACHER:
     def set_COM_port(self, port: str) -> None:
         """Set the COM port for serial communication.
 
-        Args:
-            port (str): The COM port name to set (e.g., "COM1").
+        **Description:**
+        - Configures the serial port to the specified name (e.g., "COM3").
+        - Only applies if the port is valid and exists in the system.
 
-        Notes:
-            Only sets the port if it exists in the list of available ports.
+        **Args:**
+        - `port (str)`: The name of the COM port to use.
         """
         if port in [p.device for p in list_ports.comports() if p.vid and p.pid]:
             self.ser.port = port
@@ -142,8 +158,10 @@ class REACHER:
     def open_serial(self) -> None:
         """Open the serial connection and start communication threads.
 
-        This method initializes the serial port, starts reading and queue handling threads,
-        and sends a LINK command to establish communication.
+        **Description:**
+        - Establishes a serial connection using the configured port.
+        - Starts threads for reading serial data and processing the queue.
+        - Sends a "LINK" command to initiate communication with the microcontroller.
         """
         if self.ser.is_open:
             self.ser.close()
@@ -164,8 +182,10 @@ class REACHER:
     def clear_queue(self) -> None:
         """Clear the data queue and wait for processing to complete.
 
-        This method sends a sentinel value to terminate queue processing and waits
-        for all queued items to be handled.
+        **Description:**
+        - Empties the queue by adding a sentinel value (None).
+        - Waits for all queued items to be processed before proceeding.
+        - Ensures no residual data remains in the queue.
         """
         logger.debug("Sending sentinel...")
         self.queue.put_nowait(None)
@@ -181,8 +201,10 @@ class REACHER:
     def close_serial(self) -> None:
         """Close the serial connection and terminate related threads.
 
-        This method sends an UNLINK command, closes the serial port, and waits for
-        the serial thread to terminate.
+        **Description:**
+        - Sends an "UNLINK" command to the microcontroller.
+        - Closes the serial port and stops the serial thread.
+        - Handles any errors during closure with detailed logging.
         """
         try:
             self.serial_flag.set()
@@ -204,8 +226,10 @@ class REACHER:
     def read_serial(self) -> None:
         """Read data from the serial port and queue it for processing.
 
-        This method runs in a thread and continuously reads serial data when available,
-        placing it in the queue for handling.
+        **Description:**
+        - Runs in a thread to continuously monitor the serial port.
+        - Reads incoming data when available and adds it to the queue.
+        - Uses a lock to ensure thread-safe operations.
         """
         while not self.serial_flag.is_set():
             if self.ser.is_open and self.ser.in_waiting > 0:
@@ -219,8 +243,10 @@ class REACHER:
     def handle_queue(self) -> None:
         """Process data from the queue.
 
-        This method runs in a thread and handles queued data, either processing it
-        as configuration or events, or terminating on sentinel value.
+        **Description:**
+        - Runs in a thread to handle queued serial data.
+        - Processes each item as configuration or event data.
+        - Terminates when a sentinel value (None) is received or serial flag is set.
         """
         while True:
             try:
@@ -252,11 +278,13 @@ class REACHER:
     def handle_data(self, line: str) -> None:
         """Process a line of data from the queue.
 
-        Args:
-            line (str): The data line to process.
+        **Description:**
+        - Interprets a line of serial data.
+        - Attempts to parse as JSON for configuration or as comma-separated event data.
+        - Delegates to specific handlers based on data format.
 
-        This method attempts to parse the line as JSON configuration or as event data,
-        delegating to appropriate handlers.
+        **Args:**
+        - `line (str)`: The raw data line to process.
         """
         logger.debug(f"Handling data: {line}")
         try:
@@ -284,10 +312,13 @@ class REACHER:
     def update_behavioral_events(self, parts: List[str]) -> None:
         """Reflects lever press occurrences in GUI.
 
-        Args:
-            parts (List[str]): List containing [component, action, start_ts, end_ts].
+        **Description:**
+        - Processes behavioral events (e.g., lever presses) from serial data.
+        - Logs events to a CSV file with component, action, and timestamps.
+        - Thread-safe updates to the behavior_data list.
 
-        This method processes behavioral events and logs them to CSV.
+        **Args:**
+        - `parts (List[str])`: Event data as [component, action, start_ts, end_ts].
         """
         component, action, start_ts, end_ts = parts
         entry_dict: Dict[str, Union[str, int]] = {
@@ -308,10 +339,13 @@ class REACHER:
     def update_frame_events(self, parts: List[str]) -> None:
         """Updates frame counts.
 
-        Args:
-            parts (List[str]): List containing [_, timestamp].
+        **Description:**
+        - Processes frame events (e.g., timestamps) from serial data.
+        - Logs frame timestamps to a CSV file.
+        - Thread-safe updates to the frame_data list.
 
-        This method processes frame events and logs them to CSV.
+        **Args:**
+        - `parts (List[str])`: Frame data as [_, timestamp].
         """
         _, timestamp = parts
         with self.thread_lock:
@@ -325,11 +359,15 @@ class REACHER:
     def send_serial_command(self, command: str) -> None:
         """Send a command to the Arduino via serial.
 
-        Args:
-            command (str): The command to send.
+        **Description:**
+        - Transmits a string command to the connected microcontroller.
+        - Ensures the serial port is open before sending.
 
-        Raises:
-            Exception: If the serial port is not open.
+        **Args:**
+        - `command (str)`: The command to send (e.g., "START-PROGRAM").
+
+        **Raises:**
+        - `Exception`: If the serial port is not open.
         """
         with self.thread_lock:
             if not self.ser.is_open:
@@ -342,8 +380,12 @@ class REACHER:
     def set_limit_type(self, limit_type: str) -> None:
         """Set the type of limit for program execution.
 
-        Args:
-            limit_type (str): The limit type ('Time', 'Infusion', or 'Both').
+        **Description:**
+        - Defines the stopping condition for the experiment.
+        - Valid options: "Time", "Infusion", or "Both".
+
+        **Args:**
+        - `limit_type (str)`: The type of limit to enforce.
         """
         if limit_type in ['Time', 'Infusion', 'Both']: 
             self.limit_type = limit_type
@@ -354,31 +396,42 @@ class REACHER:
     def set_infusion_limit(self, limit: int) -> None:
         """Set the maximum number of infusions allowed.
 
-        Args:
-            limit (int): The infusion limit.
+        **Description:**
+        - Specifies the maximum number of infusions before stopping.
+
+        **Args:**
+        - `limit (int)`: The infusion limit.
         """
         self.infusion_limit = limit
 
     def set_time_limit(self, limit: int) -> None:
         """Set the maximum time allowed in seconds.
 
-        Args:
-            limit (int): The time limit in seconds.
+        **Description:**
+        - Specifies the maximum duration of the experiment in seconds.
+
+        **Args:**
+        - `limit (int)`: The time limit in seconds.
         """
         self.time_limit = limit
 
     def set_stop_delay(self, delay: int) -> None:
         """Set the delay after last infusion before stopping.
 
-        Args:
-            delay (int): The delay in seconds.
+        **Description:**
+        - Sets a delay in seconds after the last infusion before program termination.
+
+        **Args:**
+        - `delay (int)`: The delay in seconds.
         """
         self.stop_delay = delay
 
     def start_program(self) -> None:
         """Start the experimental program.
 
-        This method sends a START-PROGRAM command and records the start time.
+        **Description:**
+        - Initiates the experiment by sending "START-PROGRAM" to the microcontroller.
+        - Records the start time for limit checking.
         """
         if self.program_flag.is_set():
             self.program_flag.clear()
@@ -389,7 +442,9 @@ class REACHER:
     def stop_program(self) -> None:
         """Stop the experimental program.
 
-        This method sends an END-PROGRAM command, cleans up, and records the end time.
+        **Description:**
+        - Terminates the experiment by sending "END-PROGRAM".
+        - Cleans up resources and records the end time.
         """
         logger.info("Ending program...")
         self.send_serial_command("END-PROGRAM")
@@ -402,7 +457,8 @@ class REACHER:
     def pause_program(self) -> None:
         """Pause the experimental program.
 
-        This method sets the pause flag and records the pause start time.
+        **Description:**
+        - Temporarily halts the experiment and records the pause start time.
         """
         self.program_flag.set()
         self.paused_start_time = time.time()
@@ -410,7 +466,8 @@ class REACHER:
     def resume_program(self) -> None:
         """Resume the experimental program.
 
-        This method clears the pause flag and updates paused time.
+        **Description:**
+        - Resumes the experiment and calculates total paused time.
         """
         if self.program_flag.is_set():
             self.program_flag.clear()
@@ -419,16 +476,25 @@ class REACHER:
     def get_program_running(self) -> bool:
         """Check if the program is currently running.
 
-        Returns:
-            bool: True if the program is running, False otherwise.
+        **Description:**
+        - Returns the current state of the experiment.
+
+        **Returns:**
+        - `bool`: True if running, False if paused or stopped.
         """
         return not self.program_flag.is_set()
 
     def check_limit_met(self) -> None:
         """Check if program limits have been met and stop if necessary.
 
+<<<<<<< HEAD
         This method evaluates time and/or infusion limits based on limit_type,
         logging debug information for verification.
+=======
+        **Description:**
+        - Evaluates time and/or infusion limits based on `limit_type`.
+        - Automatically stops the program if limits are exceeded.
+>>>>>>> 64d4292c (REACHER library updates: redesigned library architecture supporting a more scalable design; enhanced typing and annotations)
         """
         current_time = time.time()
         if self.program_start_time is None or self.limit_type is None:
@@ -460,16 +526,23 @@ class REACHER:
     def set_data_destination(self, folder: str) -> None:
         """Set the destination folder for data files.
 
-        Args:
-            folder (str): The folder path.
+        **Description:**
+        - Specifies where data files (e.g., CSV logs) will be saved.
+
+        **Args:**
+        - `folder (str)`: The folder path.
         """
         self.data_destination = folder
 
     def set_filename(self, filename: str) -> None:
         """Set the filename for behavioral data.
 
-        Args:
-            filename (str): The filename (with or without .csv extension).
+        **Description:**
+        - Defines the name of the behavioral data file.
+        - Automatically appends ".csv" if not provided.
+
+        **Args:**
+        - `filename (str)`: The desired filename.
         """
         if filename.endswith('.csv'):
             self.behavior_filename = filename
@@ -479,8 +552,12 @@ class REACHER:
     def make_destination_folder(self) -> str:
         """Create a destination folder for data files.
 
-        Returns:
-            str: The path to the created folder.
+        **Description:**
+        - Creates a unique folder for storing data based on filename and timestamp.
+        - Uses a default path (`~/REACHER/DATA`) if not specified.
+
+        **Returns:**
+        - `str`: The path to the created folder.
         """
         if not self.behavior_filename and not self.data_destination:
             self.data_destination = os.path.expanduser(r'~/REACHER/DATA')
@@ -496,48 +573,67 @@ class REACHER:
     def get_data_destination(self) -> Optional[str]:
         """Get the current data destination folder.
 
-        Returns:
-            Optional[str]: The folder path or None if not set.
+        **Description:**
+        - Retrieves the folder where data files are stored.
+
+        **Returns:**
+        - `Optional[str]`: The folder path or None if not set.
         """
         return self.data_destination
     
     def get_filename(self) -> Optional[str]:
         """Get the current behavioral data filename.
 
-        Returns:
-            Optional[str]: The filename or None if not set.
+        **Description:**
+        - Retrieves the filename used for behavioral data logging.
+
+        **Returns:**
+        - `Optional[str]`: The filename or None if not set.
         """
         return self.behavior_filename
     
     def set_logging_stream_destination(self, path: str) -> None:
         """Set the destination for the logging stream CSV file.
 
-        Args:
-            path (str): The destination path.
+        **Description:**
+        - Specifies the location for the CSV log file.
+
+        **Args:**
+        - `path (str)`: The destination path.
         """
         self.logging_stream_file = os.path.join(path, self.logging_stream_file)
 
     def get_behavior_data(self) -> List[Dict[str, Union[str, int]]]:
         """Get the collected behavioral data.
 
-        Returns:
-            List[Dict[str, Union[str, int]]]: List of behavioral event dictionaries.
+        **Description:**
+        - Returns all recorded behavioral events (e.g., lever presses).
+
+        **Returns:**
+        - `List[Dict[str, Union[str, int]]]`: List of event dictionaries.
         """
         return self.behavior_data
     
     def get_frame_data(self) -> List[str]:
         """Get the collected frame data.
 
-        Returns:
-            List[str]: List of frame timestamps.
+        **Description:**
+        - Returns all recorded frame timestamps.
+
+        **Returns:**
+        - `List[str]`: List of frame timestamps.
         """
         return self.frame_data
     
     def get_arduino_configuration(self) -> Dict:
         """Get the current Arduino configuration.
 
-        Returns:
-            Dict: The configuration dictionary.
+        **Description:**
+        - Retrieves the configuration data received from the microcontroller.
+        - Thread-safe access to the configuration dictionary.
+
+        **Returns:**
+        - `Dict`: The configuration dictionary.
         """
         with self.thread_lock:
             return self.arduino_configuration
@@ -545,25 +641,39 @@ class REACHER:
     def get_start_time(self) -> Optional[float]:
         """Get the program start time.
 
-        Returns:
-            Optional[float]: The start time in seconds since epoch, or None if not started.
+        **Description:**
+        - Returns the timestamp when the experiment began.
+
+        **Returns:**
+        - `Optional[float]`: Start time in seconds since epoch, or None if not started.
         """
         return self.program_start_time
     
     def get_end_time(self) -> Optional[float]:
         """Get the program end time.
 
-        Returns:
-            Optional[float]: The end time in seconds since epoch, or None if not ended.
+        **Description:**
+        - Returns the timestamp when the experiment ended.
+
+        **Returns:**
+        - `Optional[float]`: End time in seconds since epoch, or None if not ended.
         """
         return self.program_end_time
     
     def get_time(self) -> str:
         """Get the current time as a formatted string.
 
-        Returns:
-            str: The current time in 'YYYY-MM-DD_HH-MM-SS' format.
+        **Description:**
+        - Provides the current local time in a readable format.
+
+        **Returns:**
+        - `str`: Time in "YYYY-MM-DD_HH-MM-SS" format.
         """
         local_time = time.localtime()
         formatted_time = time.strftime("%Y-%m-%d_%H-%M-%S", local_time)
         return formatted_time
+
+    """
+    **Contact:**
+    - For inquiries or support, please email: [thejoshbq@proton.me](mailto:thejoshbq@proton.me).
+    """

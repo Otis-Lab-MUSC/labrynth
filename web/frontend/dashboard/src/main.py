@@ -1,6 +1,6 @@
 import panel as pn
-from reacher.interface.local_dashboard import Dashboard as LocalDash
-from reacher.interface.network_dashboard import Dashboard as NetworkDash
+from reacher.wired_controls.interface import Interface as WiredInterface
+from reacher.wireless_controls.interface import Interface as WirelessInterface
 import sys
 import os
 import multiprocessing
@@ -98,7 +98,7 @@ def make_new_local_instance_tab(_: Any) -> None:
         box_name_TextInput.value = ""
         box_name_TextInput.placeholder = "Name entered already exists. Please enter a different name."
     else:
-        new_dashboard: LocalDash = LocalDash()
+        new_dashboard: WiredInterface = WiredInterface()
         session_tabs.append((f"LOCAL - {box_name_TextInput.value}", new_dashboard.layout()))
         session_tabs.active = len(session_tabs) - 1
         box_name_TextInput.value = ""
@@ -118,7 +118,7 @@ def make_new_network_instance_tab(_: Any) -> None:
         box_name_TextInput.value = ""
         box_name_TextInput.placeholder = "Name entered already exists. Please enter a different name."
     else:
-        new_dashboard: NetworkDash = NetworkDash()
+        new_dashboard: WirelessInterface = WirelessInterface()
         session_tabs.append((f"NETWORK - {box_name_TextInput.value}", new_dashboard.layout()))
         session_tabs.active = len(session_tabs) - 1
         box_name_TextInput.value = ""
