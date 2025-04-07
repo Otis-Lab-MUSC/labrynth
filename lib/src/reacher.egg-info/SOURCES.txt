@@ -15,9 +15,6 @@ src/reacher/assets/reacher-icon.ico
 src/reacher/assets/reacher-icon.png
 src/reacher/core/__init__.py
 src/reacher/core/reacher.py
-src/reacher/interface/__init__.py
-src/reacher/interface/local_dashboard.py
-src/reacher/interface/network_dashboard.py
 src/reacher/wired_controls/__init__.py
 src/reacher/wired_controls/dashboard.py
 src/reacher/wired_controls/hardware_tab.py

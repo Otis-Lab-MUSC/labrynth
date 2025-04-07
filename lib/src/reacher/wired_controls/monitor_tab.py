@@ -8,6 +8,8 @@ import plotly.graph_objects as go
 import requests
 from typing import Optional, Any
 from .dashboard import Dashboard
+from .program_tab import ProgramTab
+from .hardware_tab import HardwareTab
 
 class MonitorTab(Dashboard):
     """A class to manage the Monitor tab UI for real-time experiment monitoring, inheriting from Dashboard."""
@@ -40,8 +42,8 @@ class MonitorTab(Dashboard):
         self.download_button: pn.widgets.Button = pn.widgets.Button(name="Export data", icon="download")
         self.download_button.on_click(self.download)
         self.periodic_callback: Optional[Any] = None
-        self.program_tab: 'ProgramTab' = None
-        self.hardware_tab: 'HardwareTab' = None
+        self.program_tab: ProgramTab = None
+        self.hardware_tab: HardwareTab = None
 
     def fetch_data(self) -> pd.DataFrame:
         """Fetch behavioral data from the REACHER instance.
