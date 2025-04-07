@@ -1,6 +1,6 @@
 import panel as pn
-from reacher.interface.local_dashboard import Dashboard as LocalDash
-from reacher.interface.network_dashboard import Dashboard as NetworkDash
+from reacher.wired_controls.interface import Interface as WiredInterface
+from reacher.wireless_controls.interface import Interface as WirelessInterface
 import sys
 import os
 import multiprocessing
@@ -98,7 +98,7 @@ def make_new_local_instance_tab(_: Any) -> None:
         box_name_TextInput.value = ""
         box_name_TextInput.placeholder = "Name entered already exists. Please enter a different name."
     else:
-        new_dashboard: LocalDash = LocalDash()
+        new_dashboard: WiredInterface = WiredInterface()
         session_tabs.append((f"LOCAL - {box_name_TextInput.value}", new_dashboard.layout()))
         session_tabs.active = len(session_tabs) - 1
         box_name_TextInput.value = ""
@@ -118,7 +118,7 @@ def make_new_network_instance_tab(_: Any) -> None:
         box_name_TextInput.value = ""
         box_name_TextInput.placeholder = "Name entered already exists. Please enter a different name."
     else:
-        new_dashboard: NetworkDash = NetworkDash()
+        new_dashboard: WirelessInterface = WirelessInterface()
         session_tabs.append((f"NETWORK - {box_name_TextInput.value}", new_dashboard.layout()))
         session_tabs.active = len(session_tabs) - 1
         box_name_TextInput.value = ""
@@ -166,26 +166,22 @@ class MainWindow(QMainWindow):
         """Initialize the main window with a label, button, and start the Panel server."""
         super().__init__()
         self.setWindowTitle("REACHER Dashboard Launcher")
-        self.setGeometry(100, 100, 300, 150)  # Adjusted size to fit button
+        self.setGeometry(100, 100, 300, 150) 
 
         self.setWindowIcon(QIcon(icon_path))
 
-        # Create a central widget and layout
         central_widget: QWidget = QWidget()
         self.setCentralWidget(central_widget)
         layout: QVBoxLayout = QVBoxLayout(central_widget)
 
-        # Add label
         label: QLabel = QLabel("Opening session in browser...")
         label.setAlignment(Qt.AlignCenter)
         layout.addWidget(label)
 
-        # Add re-open button
         self.reopen_button: QPushButton = QPushButton("Re-open Dashboard")
         self.reopen_button.clicked.connect(self.reopen_session)
         layout.addWidget(self.reopen_button)
 
-        # Start the Panel server process
         self.panel_process: multiprocessing.Process = multiprocessing.Process(
             target=serve_interface, daemon=True
         )
