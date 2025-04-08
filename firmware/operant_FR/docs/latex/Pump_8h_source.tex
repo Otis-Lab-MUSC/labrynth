@@ -1,0 +1,50 @@
+\doxysection{Pump.\+h}
+\hypertarget{Pump_8h_source}{}\label{Pump_8h_source}\mbox{\hyperlink{Pump_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#ifndef\ PUMP\_H}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#define\ PUMP\_H}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{Device_8h}{Device.h}}"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <Arduino.h>}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00018\ \textcolor{keyword}{class\ }\mbox{\hyperlink{classPump}{Pump}}\ :\ \textcolor{keyword}{public}\ \mbox{\hyperlink{classDevice}{Device}}\ \{}
+\DoxyCodeLine{00019\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00020\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classPump_af0cf708df06a6ea072930baeff746ec8}{running}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00021\ \ \ \ \ int32\_t\ \mbox{\hyperlink{classPump_abc502ab4e92f74e1ef77dd630d976072}{infusionDuration}};\ \ \ \ \ }
+\DoxyCodeLine{00022\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{classPump_a16abcf8af41325786130edd4d1a2798d}{infusionAmount}};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00023\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{classPump_aa4181a5fb1a2048825411c0acc91f2ce}{motorRPMs}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00024\ \ \ \ \ int32\_t\ \mbox{\hyperlink{classPump_aea6b95c097ce7efdd45b0869a95e28aa}{infusionStartTimestamp}};\ }
+\DoxyCodeLine{00025\ \ \ \ \ int32\_t\ \mbox{\hyperlink{classPump_a2e949d08e940141b82e41edd9b0cf74f}{infusionEndTimestamp}};\ \ \ }
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00031\ \ \ \ \ \mbox{\hyperlink{classPump}{Pump}}(\textcolor{keywordtype}{byte}\ initPin);}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classPump_a9d36edd070844842cfd4834a35de1591}{setRunning}}(\textcolor{keywordtype}{bool}\ initRunning);}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classPump_a63ab215844d31f7eacff85329e8de0ed}{setInfusionDuration}}(int32\_t\ initDuration);}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classPump_a87aa44bec5d20f78f85e955cd7dfc68a}{setInfusionAmount}}(\textcolor{keywordtype}{float}\ initAmount);}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00055\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classPump_a6848f2621067fc4251f7a2d4def7cb26}{setMotorRPMs}}(\textcolor{keywordtype}{float}\ initRPMs);}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00062\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classPump_a8f793fca2594e1747f638488321b8453}{setInfusionPeriod}}(int32\_t\ cueOffTimestamp,\ int32\_t\ traceInterval);}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classPump_a0230c8879d5639f69d34d10d6247a982}{on}}();}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00072\ \ \ \ \ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{classPump_acbf91dd23dcce4c5462267a02ca4b738}{off}}();}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00078\ \ \ \ \ \textcolor{keywordtype}{bool}\ \mbox{\hyperlink{classPump_a0d3d4af44fca4f7b774c70afd71ee0f8}{isRunning}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00079\ }
+\DoxyCodeLine{00084\ \ \ \ \ int32\_t\ \mbox{\hyperlink{classPump_a19106969dec59c21ebd5072f78e9ae3e}{getInfusionDuration}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00085\ }
+\DoxyCodeLine{00090\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{classPump_abac576cbab57d97981a0cadee153dfa9}{getInfusionAmount}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00091\ }
+\DoxyCodeLine{00096\ \ \ \ \ \textcolor{keywordtype}{float}\ \mbox{\hyperlink{classPump_ab7853f1b64623d1e696f0e085fdaa00d}{getMotorRPMs}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00097\ }
+\DoxyCodeLine{00102\ \ \ \ \ int32\_t\ \mbox{\hyperlink{classPump_a1f89b1fc0f98a4552ea7d98d77bb662c}{getInfusionStartTimestamp}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00103\ }
+\DoxyCodeLine{00108\ \ \ \ \ int32\_t\ \mbox{\hyperlink{classPump_a5dbd95afa725d41fab630745c9d088e1}{getInfusionEndTimestamp}}()\ \textcolor{keyword}{const};}
+\DoxyCodeLine{00109\ \};}
+\DoxyCodeLine{00110\ }
+\DoxyCodeLine{00111\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{//\ PUMP\_H}}
+
+\end{DoxyCode}

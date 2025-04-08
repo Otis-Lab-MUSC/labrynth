@@ -1,0 +1,638 @@
+\doxysection{Laser Class Reference}
+\hypertarget{classLaser}{}\label{classLaser}\index{Laser@{Laser}}
+
+
+A subclass of \doxylink{classDevice}{Device} representing a laser with stimulation control.  
+
+
+
+
+{\ttfamily \#include $<$Laser.\+h$>$}
+
+
+
+Inheritance diagram for Laser\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=130pt]{classLaser__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Laser\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=130pt]{classLaser__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classLaser_ab800302af77fddc6043dc1367b28158b}{Laser}} (byte init\+Pin)
+\begin{DoxyCompactList}\small\item\em Constructor for the \doxylink{classLaser}{Laser} class. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_aef9421a40b00c286482867ff250d2342}{set\+Duration}} (uint32\+\_\+t init\+Duration)
+\begin{DoxyCompactList}\small\item\em Sets the stimulation duration in seconds (converted to ms). \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_adada3eca631d1c4013f6ecc5fc87d138}{set\+Frequency}} (uint32\+\_\+t init\+Frequency)
+\begin{DoxyCompactList}\small\item\em Sets the frequency of laser pulses. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_ab5cd0bed016577ddcf7a0758d19644fd}{set\+Stim\+Period}} (uint32\+\_\+t current\+Millis)
+\begin{DoxyCompactList}\small\item\em Sets the stimulation period start and end times. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_a7a969afb14ff3748f10928c231f8eda0}{set\+Stim\+Half\+Cycle\+Period}} (uint32\+\_\+t current\+Millis)
+\begin{DoxyCompactList}\small\item\em Sets the half-\/cycle period for oscillation. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_af38ad74257fa02f353995dd762d778ff}{set\+Stim\+Logged}} (bool log)
+\begin{DoxyCompactList}\small\item\em Sets the logged state of the stimulation. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_a4e012a63679a9e6b22013fca8455c947}{set\+Cycle\+Up}} (bool cycle)
+\begin{DoxyCompactList}\small\item\em Sets the cycle-\/up state. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_ad0c279243f27b8ed9013aee60b989b10}{set\+Stim\+Mode}} (\mbox{\hyperlink{Laser_8h_a7eabd788dcab19ca586663bf73deddf5}{MODE}} mode)
+\begin{DoxyCompactList}\small\item\em Sets the stimulation mode. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_add3f8ed8bb28d95b640869e5c47be1aa}{set\+Stim\+State}} (\mbox{\hyperlink{Laser_8h_a275a67132f10277ada3a0ee3d616b647}{STATE}} state)
+\begin{DoxyCompactList}\small\item\em Sets the stimulation state. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_a28a9eb7770672e8b73ad868a1a447c4a}{set\+Stim\+Action}} (\mbox{\hyperlink{Laser_8h_ae3a6b7e1199f276d75597e986e42c1a3}{ACTION}} action)
+\begin{DoxyCompactList}\small\item\em Sets the laser action. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{classLaser_a77f718a04368f1e365197e92cceeafdc}{get\+Duration}} ()
+\begin{DoxyCompactList}\small\item\em Gets the stimulation duration. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{classLaser_a3167595b150ae3b064d6decdb6e1aadd}{get\+Frequency}} ()
+\begin{DoxyCompactList}\small\item\em Gets the laser pulse frequency. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{classLaser_a6a3ad1b4ec4388618446dcf88750a888}{get\+Stim\+Start}} ()
+\begin{DoxyCompactList}\small\item\em Gets the stimulation start time. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{classLaser_a82807c0ec5c98bf7aa0d64e9d43508fa}{get\+Stim\+End}} ()
+\begin{DoxyCompactList}\small\item\em Gets the stimulation end time. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{classLaser_a90fbebd264493d6c46f879bfde1c90c9}{get\+Stim\+Half\+Cycle\+Start}} ()
+\begin{DoxyCompactList}\small\item\em Gets the half-\/cycle start time. \end{DoxyCompactList}\item 
+uint32\+\_\+t \mbox{\hyperlink{classLaser_aa10e3af3e1dca555ee84f09ad93ba219}{get\+Stim\+Half\+Cycle\+End}} ()
+\begin{DoxyCompactList}\small\item\em Gets the half-\/cycle end time. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classLaser_a83a98a76ccd435b134674f529d651892}{get\+Stim\+Log}} ()
+\begin{DoxyCompactList}\small\item\em Checks if the stimulation has been logged. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classLaser_a78c6fce82f25d716161cffc3ee30a03b}{get\+Cycle\+Up}} ()
+\begin{DoxyCompactList}\small\item\em Checks if the laser is in the active cycle phase. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{Laser_8h_a7eabd788dcab19ca586663bf73deddf5}{MODE}} \mbox{\hyperlink{classLaser_a7b97d95b15d47e04b3abfcc2fbf59f11}{get\+Stim\+Mode}} ()
+\begin{DoxyCompactList}\small\item\em Gets the current stimulation mode. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{Laser_8h_a275a67132f10277ada3a0ee3d616b647}{STATE}} \mbox{\hyperlink{classLaser_a636afb9728e9f064926c42bccf177581}{get\+Stim\+State}} ()
+\begin{DoxyCompactList}\small\item\em Gets the current stimulation state. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{Laser_8h_ae3a6b7e1199f276d75597e986e42c1a3}{ACTION}} \mbox{\hyperlink{classLaser_ae5304e2800e5e56a81e0f615fd9c0c4d}{get\+Stim\+Action}} ()
+\begin{DoxyCompactList}\small\item\em Gets the current laser action. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_a5591692df76c51c584f9dc5bbb563d04}{on}} ()
+\begin{DoxyCompactList}\small\item\em Turns the laser on. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classLaser_a246d8e4e16ffe74297f4b0c84b91ee2f}{off}} ()
+\begin{DoxyCompactList}\small\item\em Turns the laser off. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \mbox{\hyperlink{classDevice}{Device}}}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classDevice_ab0bd37dfa5b18937d0fc322c53aa34bb}{Device}} (byte init\+Pin)
+\begin{DoxyCompactList}\small\item\em Constructor for the \doxylink{classDevice}{Device} class. \end{DoxyCompactList}\item 
+virtual void \mbox{\hyperlink{classDevice_a6fae03bad4409e927ffa2d507ad80368}{arm}} ()
+\begin{DoxyCompactList}\small\item\em Arms the device to enable its operation. \end{DoxyCompactList}\item 
+virtual void \mbox{\hyperlink{classDevice_a5892284484274c1c7bb519205ede65c3}{disarm}} ()
+\begin{DoxyCompactList}\small\item\em Disarms the device to disable its operation. \end{DoxyCompactList}\item 
+byte \mbox{\hyperlink{classDevice_a59d40185f6ee06991eda620994339bc9}{get\+Pin}} () const
+\begin{DoxyCompactList}\small\item\em Gets the pin assigned to the device. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classDevice_ad11e00f9c5700db962ed3dede2ef9e0c}{is\+Armed}} () const
+\begin{DoxyCompactList}\small\item\em Checks if the device is armed. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Protected Attributes inherited from \mbox{\hyperlink{classDevice}{Device}}}
+\begin{DoxyCompactItemize}
+\item 
+const byte \mbox{\hyperlink{classDevice_a69c3f3be7a4bd2c8f5d7afa2b35bc904}{pin}}
+\begin{DoxyCompactList}\small\item\em The digital pin on the Arduino to which the device is connected. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classDevice_abff0d14798b4f0a11926cbf9ce350f23}{armed}}
+\begin{DoxyCompactList}\small\item\em Indicates whether the device is armed and able to operate. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A subclass of \doxylink{classDevice}{Device} representing a laser with stimulation control. 
+
+Manages a laser connected to a digital pin, providing methods to control stimulation duration, frequency, and on/off states with cycling behavior. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classLaser_ab800302af77fddc6043dc1367b28158b}\label{classLaser_ab800302af77fddc6043dc1367b28158b} 
+\index{Laser@{Laser}!Laser@{Laser}}
+\index{Laser@{Laser}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{Laser()}{Laser()}}
+{\footnotesize\ttfamily Laser\+::\+Laser (\begin{DoxyParamCaption}\item[{byte}]{init\+Pin }\end{DoxyParamCaption})}
+
+
+
+Constructor for the \doxylink{classLaser}{Laser} class. 
+
+Constructs a \doxylink{classLaser}{Laser} object with an initial pin and default settings.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Pin} & The digital pin to which the laser is connected.\\
+\hline
+\end{DoxyParams}
+Initializes a \doxylink{classLaser}{Laser} object as a subclass of \doxylink{classDevice}{Device}, setting the pin and default values for stimulation duration, frequency, timing, and state variables.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Pin} & The digital pin (byte) to which the laser is connected. \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classLaser_a78c6fce82f25d716161cffc3ee30a03b}\label{classLaser_a78c6fce82f25d716161cffc3ee30a03b} 
+\index{Laser@{Laser}!getCycleUp@{getCycleUp}}
+\index{getCycleUp@{getCycleUp}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getCycleUp()}{getCycleUp()}}
+{\footnotesize\ttfamily bool Laser\+::get\+Cycle\+Up (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Checks if the laser is in the active cycle phase. 
+
+\begin{DoxyReturn}{Returns}
+Boolean indicating cycle-\/up state. 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_a78c6fce82f25d716161cffc3ee30a03b_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_a77f718a04368f1e365197e92cceeafdc}\label{classLaser_a77f718a04368f1e365197e92cceeafdc} 
+\index{Laser@{Laser}!getDuration@{getDuration}}
+\index{getDuration@{getDuration}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getDuration()}{getDuration()}}
+{\footnotesize\ttfamily uint32\+\_\+t Laser\+::get\+Duration (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Gets the stimulation duration. 
+
+Retrieves the stimulation duration.
+
+\begin{DoxyReturn}{Returns}
+Duration in milliseconds. 
+\end{DoxyReturn}
+\Hypertarget{classLaser_a3167595b150ae3b064d6decdb6e1aadd}\label{classLaser_a3167595b150ae3b064d6decdb6e1aadd} 
+\index{Laser@{Laser}!getFrequency@{getFrequency}}
+\index{getFrequency@{getFrequency}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getFrequency()}{getFrequency()}}
+{\footnotesize\ttfamily uint32\+\_\+t Laser\+::get\+Frequency (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Gets the laser pulse frequency. 
+
+Retrieves the laser pulse frequency.
+
+\begin{DoxyReturn}{Returns}
+Frequency in Hz. 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_a3167595b150ae3b064d6decdb6e1aadd_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_ae5304e2800e5e56a81e0f615fd9c0c4d}\label{classLaser_ae5304e2800e5e56a81e0f615fd9c0c4d} 
+\index{Laser@{Laser}!getStimAction@{getStimAction}}
+\index{getStimAction@{getStimAction}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getStimAction()}{getStimAction()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{Laser_8h_ae3a6b7e1199f276d75597e986e42c1a3}{ACTION}} Laser\+::get\+Stim\+Action (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Gets the current laser action. 
+
+Retrieves the current laser action.
+
+\begin{DoxyReturn}{Returns}
+ACTION enum value (ON or OFF). 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_ae5304e2800e5e56a81e0f615fd9c0c4d_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_a82807c0ec5c98bf7aa0d64e9d43508fa}\label{classLaser_a82807c0ec5c98bf7aa0d64e9d43508fa} 
+\index{Laser@{Laser}!getStimEnd@{getStimEnd}}
+\index{getStimEnd@{getStimEnd}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getStimEnd()}{getStimEnd()}}
+{\footnotesize\ttfamily uint32\+\_\+t Laser\+::get\+Stim\+End (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Gets the stimulation end time. 
+
+Retrieves the stimulation end time.
+
+\begin{DoxyReturn}{Returns}
+End time in milliseconds. 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_a82807c0ec5c98bf7aa0d64e9d43508fa_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_aa10e3af3e1dca555ee84f09ad93ba219}\label{classLaser_aa10e3af3e1dca555ee84f09ad93ba219} 
+\index{Laser@{Laser}!getStimHalfCycleEnd@{getStimHalfCycleEnd}}
+\index{getStimHalfCycleEnd@{getStimHalfCycleEnd}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getStimHalfCycleEnd()}{getStimHalfCycleEnd()}}
+{\footnotesize\ttfamily uint32\+\_\+t Laser\+::get\+Stim\+Half\+Cycle\+End (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Gets the half-\/cycle end time. 
+
+Retrieves the half-\/cycle end time.
+
+\begin{DoxyReturn}{Returns}
+Half-\/cycle end time in milliseconds. 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_aa10e3af3e1dca555ee84f09ad93ba219_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_a90fbebd264493d6c46f879bfde1c90c9}\label{classLaser_a90fbebd264493d6c46f879bfde1c90c9} 
+\index{Laser@{Laser}!getStimHalfCycleStart@{getStimHalfCycleStart}}
+\index{getStimHalfCycleStart@{getStimHalfCycleStart}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getStimHalfCycleStart()}{getStimHalfCycleStart()}}
+{\footnotesize\ttfamily uint32\+\_\+t Laser\+::get\+Stim\+Half\+Cycle\+Start (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Gets the half-\/cycle start time. 
+
+Retrieves the half-\/cycle start time.
+
+\begin{DoxyReturn}{Returns}
+Half-\/cycle start time in milliseconds. 
+\end{DoxyReturn}
+\Hypertarget{classLaser_a83a98a76ccd435b134674f529d651892}\label{classLaser_a83a98a76ccd435b134674f529d651892} 
+\index{Laser@{Laser}!getStimLog@{getStimLog}}
+\index{getStimLog@{getStimLog}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getStimLog()}{getStimLog()}}
+{\footnotesize\ttfamily bool Laser\+::get\+Stim\+Log (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Checks if the stimulation has been logged. 
+
+\begin{DoxyReturn}{Returns}
+Boolean indicating logged state. 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_a83a98a76ccd435b134674f529d651892_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_a7b97d95b15d47e04b3abfcc2fbf59f11}\label{classLaser_a7b97d95b15d47e04b3abfcc2fbf59f11} 
+\index{Laser@{Laser}!getStimMode@{getStimMode}}
+\index{getStimMode@{getStimMode}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getStimMode()}{getStimMode()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{Laser_8h_a7eabd788dcab19ca586663bf73deddf5}{MODE}} Laser\+::get\+Stim\+Mode (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Gets the current stimulation mode. 
+
+Retrieves the current stimulation mode.
+
+\begin{DoxyReturn}{Returns}
+MODE enum value (CYCLE or ACTIVE\+\_\+\+PRESS). 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=309pt]{classLaser_a7b97d95b15d47e04b3abfcc2fbf59f11_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_a6a3ad1b4ec4388618446dcf88750a888}\label{classLaser_a6a3ad1b4ec4388618446dcf88750a888} 
+\index{Laser@{Laser}!getStimStart@{getStimStart}}
+\index{getStimStart@{getStimStart}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getStimStart()}{getStimStart()}}
+{\footnotesize\ttfamily uint32\+\_\+t Laser\+::get\+Stim\+Start (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Gets the stimulation start time. 
+
+Retrieves the stimulation start time.
+
+\begin{DoxyReturn}{Returns}
+Start time in milliseconds. 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_a6a3ad1b4ec4388618446dcf88750a888_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_a636afb9728e9f064926c42bccf177581}\label{classLaser_a636afb9728e9f064926c42bccf177581} 
+\index{Laser@{Laser}!getStimState@{getStimState}}
+\index{getStimState@{getStimState}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{getStimState()}{getStimState()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{Laser_8h_a275a67132f10277ada3a0ee3d616b647}{STATE}} Laser\+::get\+Stim\+State (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Gets the current stimulation state. 
+
+Retrieves the current stimulation state.
+
+\begin{DoxyReturn}{Returns}
+STATE enum value (ACTIVE or INACTIVE). 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_a636afb9728e9f064926c42bccf177581_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_a246d8e4e16ffe74297f4b0c84b91ee2f}\label{classLaser_a246d8e4e16ffe74297f4b0c84b91ee2f} 
+\index{Laser@{Laser}!off@{off}}
+\index{off@{off}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{off()}{off()}}
+{\footnotesize\ttfamily void Laser\+::off (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Turns the laser off. 
+
+Turns the laser off by setting the pin low. Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_a246d8e4e16ffe74297f4b0c84b91ee2f_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_a5591692df76c51c584f9dc5bbb563d04}\label{classLaser_a5591692df76c51c584f9dc5bbb563d04} 
+\index{Laser@{Laser}!on@{on}}
+\index{on@{on}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{on()}{on()}}
+{\footnotesize\ttfamily void Laser\+::on (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Turns the laser on. 
+
+Turns the laser on by setting the pin high. Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_a5591692df76c51c584f9dc5bbb563d04_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_a4e012a63679a9e6b22013fca8455c947}\label{classLaser_a4e012a63679a9e6b22013fca8455c947} 
+\index{Laser@{Laser}!setCycleUp@{setCycleUp}}
+\index{setCycleUp@{setCycleUp}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{setCycleUp()}{setCycleUp()}}
+{\footnotesize\ttfamily void Laser\+::set\+Cycle\+Up (\begin{DoxyParamCaption}\item[{bool}]{cycle }\end{DoxyParamCaption})}
+
+
+
+Sets the cycle-\/up state. 
+
+Sets the cycle-\/up state for stimulation cycling.
+
+
+\begin{DoxyParams}{Parameters}
+{\em cycle} & Boolean indicating cycle state.\\
+\hline
+{\em cycle} & Boolean indicating if the laser is in the active cycle phase. \\
+\hline
+\end{DoxyParams}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=299pt]{classLaser_a4e012a63679a9e6b22013fca8455c947_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_aef9421a40b00c286482867ff250d2342}\label{classLaser_aef9421a40b00c286482867ff250d2342} 
+\index{Laser@{Laser}!setDuration@{setDuration}}
+\index{setDuration@{setDuration}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{setDuration()}{setDuration()}}
+{\footnotesize\ttfamily void Laser\+::set\+Duration (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{init\+Duration }\end{DoxyParamCaption})}
+
+
+
+Sets the stimulation duration in seconds (converted to ms). 
+
+Sets the stimulation duration in milliseconds.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Duration} & Duration in seconds.\\
+\hline
+\end{DoxyParams}
+Converts the input duration from seconds to milliseconds.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Duration} & Duration in seconds to set for the stimulation period. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classLaser_adada3eca631d1c4013f6ecc5fc87d138}\label{classLaser_adada3eca631d1c4013f6ecc5fc87d138} 
+\index{Laser@{Laser}!setFrequency@{setFrequency}}
+\index{setFrequency@{setFrequency}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{setFrequency()}{setFrequency()}}
+{\footnotesize\ttfamily void Laser\+::set\+Frequency (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{init\+Frequency }\end{DoxyParamCaption})}
+
+
+
+Sets the frequency of laser pulses. 
+
+Sets the frequency of the laser pulses.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Frequency} & Frequency in Hz.\\
+\hline
+{\em init\+Frequency} & Frequency in Hz to set for the laser pulses. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classLaser_a28a9eb7770672e8b73ad868a1a447c4a}\label{classLaser_a28a9eb7770672e8b73ad868a1a447c4a} 
+\index{Laser@{Laser}!setStimAction@{setStimAction}}
+\index{setStimAction@{setStimAction}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{setStimAction()}{setStimAction()}}
+{\footnotesize\ttfamily void Laser\+::set\+Stim\+Action (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{Laser_8h_ae3a6b7e1199f276d75597e986e42c1a3}{ACTION}}}]{action }\end{DoxyParamCaption})}
+
+
+
+Sets the laser action. 
+
+Sets the laser action (ON or OFF).
+
+
+\begin{DoxyParams}{Parameters}
+{\em action} & ACTION enum value (ON or OFF).\\
+\hline
+{\em action} & The ACTION enum value to set (ON or OFF). \\
+\hline
+\end{DoxyParams}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_a28a9eb7770672e8b73ad868a1a447c4a_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_a7a969afb14ff3748f10928c231f8eda0}\label{classLaser_a7a969afb14ff3748f10928c231f8eda0} 
+\index{Laser@{Laser}!setStimHalfCyclePeriod@{setStimHalfCyclePeriod}}
+\index{setStimHalfCyclePeriod@{setStimHalfCyclePeriod}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{setStimHalfCyclePeriod()}{setStimHalfCyclePeriod()}}
+{\footnotesize\ttfamily void Laser\+::set\+Stim\+Half\+Cycle\+Period (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{current\+Millis }\end{DoxyParamCaption})}
+
+
+
+Sets the half-\/cycle period for oscillation. 
+
+Sets the half-\/cycle period for laser oscillation.
+
+
+\begin{DoxyParams}{Parameters}
+{\em current\+Millis} & Current time in milliseconds.\\
+\hline
+\end{DoxyParams}
+Calculates the half-\/cycle duration based on the frequency and updates the start and end times accordingly.
+
+
+\begin{DoxyParams}{Parameters}
+{\em current\+Millis} & Current time in milliseconds to base the half-\/cycle on. \\
+\hline
+\end{DoxyParams}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_a7a969afb14ff3748f10928c231f8eda0_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_af38ad74257fa02f353995dd762d778ff}\label{classLaser_af38ad74257fa02f353995dd762d778ff} 
+\index{Laser@{Laser}!setStimLogged@{setStimLogged}}
+\index{setStimLogged@{setStimLogged}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{setStimLogged()}{setStimLogged()}}
+{\footnotesize\ttfamily void Laser\+::set\+Stim\+Logged (\begin{DoxyParamCaption}\item[{bool}]{log }\end{DoxyParamCaption})}
+
+
+
+Sets the logged state of the stimulation. 
+
+Sets the logged state of the stimulation event.
+
+
+\begin{DoxyParams}{Parameters}
+{\em log} & Boolean indicating logged state.\\
+\hline
+{\em log} & Boolean indicating if the stimulation has been logged. \\
+\hline
+\end{DoxyParams}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_af38ad74257fa02f353995dd762d778ff_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_ad0c279243f27b8ed9013aee60b989b10}\label{classLaser_ad0c279243f27b8ed9013aee60b989b10} 
+\index{Laser@{Laser}!setStimMode@{setStimMode}}
+\index{setStimMode@{setStimMode}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{setStimMode()}{setStimMode()}}
+{\footnotesize\ttfamily void Laser\+::set\+Stim\+Mode (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{Laser_8h_a7eabd788dcab19ca586663bf73deddf5}{MODE}}}]{mode }\end{DoxyParamCaption})}
+
+
+
+Sets the stimulation mode. 
+
+Sets the stimulation mode (CYCLE or ACTIVE\+\_\+\+PRESS).
+
+
+\begin{DoxyParams}{Parameters}
+{\em mode} & MODE enum value (CYCLE or ACTIVE\+\_\+\+PRESS).\\
+\hline
+{\em mode} & The MODE enum value to set (CYCLE or ACTIVE\+\_\+\+PRESS). \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classLaser_ab5cd0bed016577ddcf7a0758d19644fd}\label{classLaser_ab5cd0bed016577ddcf7a0758d19644fd} 
+\index{Laser@{Laser}!setStimPeriod@{setStimPeriod}}
+\index{setStimPeriod@{setStimPeriod}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{setStimPeriod()}{setStimPeriod()}}
+{\footnotesize\ttfamily void Laser\+::set\+Stim\+Period (\begin{DoxyParamCaption}\item[{uint32\+\_\+t}]{current\+Millis }\end{DoxyParamCaption})}
+
+
+
+Sets the stimulation period start and end times. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em current\+Millis} & Current time in milliseconds.\\
+\hline
+{\em current\+Millis} & Current time in milliseconds to base the period on. \\
+\hline
+\end{DoxyParams}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_ab5cd0bed016577ddcf7a0758d19644fd_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classLaser_add3f8ed8bb28d95b640869e5c47be1aa}\label{classLaser_add3f8ed8bb28d95b640869e5c47be1aa} 
+\index{Laser@{Laser}!setStimState@{setStimState}}
+\index{setStimState@{setStimState}!Laser@{Laser}}
+\doxysubsubsection{\texorpdfstring{setStimState()}{setStimState()}}
+{\footnotesize\ttfamily void Laser\+::set\+Stim\+State (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{Laser_8h_a275a67132f10277ada3a0ee3d616b647}{STATE}}}]{state }\end{DoxyParamCaption})}
+
+
+
+Sets the stimulation state. 
+
+Sets the stimulation state (ACTIVE or INACTIVE).
+
+
+\begin{DoxyParams}{Parameters}
+{\em state} & STATE enum value (ACTIVE or INACTIVE).\\
+\hline
+{\em state} & The STATE enum value to set (ACTIVE or INACTIVE). \\
+\hline
+\end{DoxyParams}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classLaser_add3f8ed8bb28d95b640869e5c47be1aa_icgraph}
+\end{center}
+\end{figure}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{Laser_8h}{Laser.\+h}}\item 
+\mbox{\hyperlink{Laser_8cpp}{Laser.\+cpp}}\end{DoxyCompactItemize}

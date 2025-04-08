@@ -1,0 +1,110 @@
+\doxysection{Cue\+\_\+\+Utils.\+h File Reference}
+\hypertarget{Cue__Utils_8h}{}\label{Cue__Utils_8h}\index{Cue\_Utils.h@{Cue\_Utils.h}}
+{\ttfamily \#include $<$Arduino.\+h$>$}\newline
+{\ttfamily \#include "{}Cue.\+h"{}}\newline
+Include dependency graph for Cue\+\_\+\+Utils.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=217pt]{Cue__Utils_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=270pt]{Cue__Utils_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{Cue__Utils_8h_a94c5b0adb098686b0a7f26cb33815909}{connection\+Jingle}} (String connected, \mbox{\hyperlink{classCue}{Cue}} \&cue, bool \&linked\+To\+GUI)
+\begin{DoxyCompactList}\small\item\em Plays a connection or disconnection jingle. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{Cue__Utils_8h_a901134c3a67c6efb2830b4bc01521d43}{manage\+Cue}} (\mbox{\hyperlink{classCue}{Cue}} \texorpdfstring{$\ast$}{*}cue)
+\begin{DoxyCompactList}\small\item\em Manages the state of a cue based on time intervals. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{Cue__Utils_8h_a94c5b0adb098686b0a7f26cb33815909}\label{Cue__Utils_8h_a94c5b0adb098686b0a7f26cb33815909} 
+\index{Cue\_Utils.h@{Cue\_Utils.h}!connectionJingle@{connectionJingle}}
+\index{connectionJingle@{connectionJingle}!Cue\_Utils.h@{Cue\_Utils.h}}
+\doxysubsubsection{\texorpdfstring{connectionJingle()}{connectionJingle()}}
+{\footnotesize\ttfamily void connection\+Jingle (\begin{DoxyParamCaption}\item[{String}]{connected,  }\item[{\mbox{\hyperlink{classCue}{Cue}} \&}]{cue,  }\item[{bool \&}]{linked\+To\+GUI }\end{DoxyParamCaption})}
+
+
+
+Plays a connection or disconnection jingle. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em connected} & Connection status string ("{}\+LINK"{} or "{}\+UNLINK"{}). \\
+\hline
+{\em cue} & Reference to the \doxylink{classCue}{Cue} object for tone output. \\
+\hline
+{\em linked\+To\+GUI} & Reference to the GUI connection status flag.\\
+\hline
+\end{DoxyParams}
+Plays a connection or disconnection jingle.
+
+This function generates an audible feedback using tones to indicate whether a device has been linked or unlinked from a GUI. The pitch increases for connection and decreases for disconnection.
+
+
+\begin{DoxyParams}{Parameters}
+{\em connected} & A String indicating the connection status ("{}\+LINK"{} or "{}\+UNLINK"{}). \\
+\hline
+{\em cue} & Reference to a \doxylink{classCue}{Cue} object controlling the speaker output pin. \\
+\hline
+{\em linked\+To\+GUI} & Reference to a boolean flag tracking GUI connection status. \\
+\hline
+\end{DoxyParams}
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=300pt]{Cue__Utils_8h_a94c5b0adb098686b0a7f26cb33815909_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{Cue__Utils_8h_a901134c3a67c6efb2830b4bc01521d43}\label{Cue__Utils_8h_a901134c3a67c6efb2830b4bc01521d43} 
+\index{Cue\_Utils.h@{Cue\_Utils.h}!manageCue@{manageCue}}
+\index{manageCue@{manageCue}!Cue\_Utils.h@{Cue\_Utils.h}}
+\doxysubsubsection{\texorpdfstring{manageCue()}{manageCue()}}
+{\footnotesize\ttfamily void manage\+Cue (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classCue}{Cue}} \texorpdfstring{$\ast$}{*}}]{cue }\end{DoxyParamCaption})}
+
+
+
+Manages the state of a cue based on time intervals. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em cue} & Pointer to the \doxylink{classCue}{Cue} object to be managed (can be nullptr).\\
+\hline
+\end{DoxyParams}
+Manages the state of a cue based on time intervals.
+
+Controls the cue speaker by turning it on or off depending on whether the current time falls within the cue\textquotesingle{}s designated on/off timestamp interval. The cue must be armed for this function to take effect.
+
+
+\begin{DoxyParams}{Parameters}
+{\em cue} & Pointer to a \doxylink{classCue}{Cue} object (optional, nullptr if unused). \\
+\hline
+\end{DoxyParams}
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=317pt]{Cue__Utils_8h_a901134c3a67c6efb2830b4bc01521d43_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=287pt]{Cue__Utils_8h_a901134c3a67c6efb2830b4bc01521d43_icgraph}
+\end{center}
+\end{figure}

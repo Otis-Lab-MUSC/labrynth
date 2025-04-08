@@ -1,0 +1,449 @@
+\doxysection{Pump Class Reference}
+\hypertarget{classPump}{}\label{classPump}\index{Pump@{Pump}}
+
+
+A subclass of \doxylink{classDevice}{Device} representing a pump for infusion delivery.  
+
+
+
+
+{\ttfamily \#include $<$Pump.\+h$>$}
+
+
+
+Inheritance diagram for Pump\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=130pt]{classPump__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Pump\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=130pt]{classPump__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classPump_a2990b187d4e7b6c2400521d4a0763c10}{Pump}} (byte init\+Pin)
+\begin{DoxyCompactList}\small\item\em Constructor for the \doxylink{classPump}{Pump} class. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classPump_a9d36edd070844842cfd4834a35de1591}{set\+Running}} (bool init\+Running)
+\begin{DoxyCompactList}\small\item\em Sets the pump running state. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classPump_a63ab215844d31f7eacff85329e8de0ed}{set\+Infusion\+Duration}} (int32\+\_\+t init\+Duration)
+\begin{DoxyCompactList}\small\item\em Sets the infusion duration. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classPump_a87aa44bec5d20f78f85e955cd7dfc68a}{set\+Infusion\+Amount}} (float init\+Amount)
+\begin{DoxyCompactList}\small\item\em Sets the infusion amount. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classPump_a6848f2621067fc4251f7a2d4def7cb26}{set\+Motor\+RPMs}} (float init\+RPMs)
+\begin{DoxyCompactList}\small\item\em Sets the motor RPMs. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classPump_a8f793fca2594e1747f638488321b8453}{set\+Infusion\+Period}} (int32\+\_\+t cue\+Off\+Timestamp, int32\+\_\+t trace\+Interval)
+\begin{DoxyCompactList}\small\item\em Sets the infusion period. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classPump_a0230c8879d5639f69d34d10d6247a982}{on}} ()
+\begin{DoxyCompactList}\small\item\em Turns the pump on. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classPump_acbf91dd23dcce4c5462267a02ca4b738}{off}} ()
+\begin{DoxyCompactList}\small\item\em Turns the pump off. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classPump_a0d3d4af44fca4f7b774c70afd71ee0f8}{is\+Running}} () const
+\begin{DoxyCompactList}\small\item\em Checks if the pump is running. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classPump_a19106969dec59c21ebd5072f78e9ae3e}{get\+Infusion\+Duration}} () const
+\begin{DoxyCompactList}\small\item\em Gets the infusion duration. \end{DoxyCompactList}\item 
+float \mbox{\hyperlink{classPump_abac576cbab57d97981a0cadee153dfa9}{get\+Infusion\+Amount}} () const
+\begin{DoxyCompactList}\small\item\em Gets the infusion amount. \end{DoxyCompactList}\item 
+float \mbox{\hyperlink{classPump_ab7853f1b64623d1e696f0e085fdaa00d}{get\+Motor\+RPMs}} () const
+\begin{DoxyCompactList}\small\item\em Gets the motor RPMs. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classPump_a1f89b1fc0f98a4552ea7d98d77bb662c}{get\+Infusion\+Start\+Timestamp}} () const
+\begin{DoxyCompactList}\small\item\em Gets the infusion start timestamp. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classPump_a5dbd95afa725d41fab630745c9d088e1}{get\+Infusion\+End\+Timestamp}} () const
+\begin{DoxyCompactList}\small\item\em Gets the infusion end timestamp. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \mbox{\hyperlink{classDevice}{Device}}}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classDevice_ab0bd37dfa5b18937d0fc322c53aa34bb}{Device}} (byte init\+Pin)
+\begin{DoxyCompactList}\small\item\em Constructor for the \doxylink{classDevice}{Device} class. \end{DoxyCompactList}\item 
+virtual void \mbox{\hyperlink{classDevice_a6fae03bad4409e927ffa2d507ad80368}{arm}} ()
+\begin{DoxyCompactList}\small\item\em Arms the device to enable its operation. \end{DoxyCompactList}\item 
+virtual void \mbox{\hyperlink{classDevice_a5892284484274c1c7bb519205ede65c3}{disarm}} ()
+\begin{DoxyCompactList}\small\item\em Disarms the device to disable its operation. \end{DoxyCompactList}\item 
+byte \mbox{\hyperlink{classDevice_a59d40185f6ee06991eda620994339bc9}{get\+Pin}} () const
+\begin{DoxyCompactList}\small\item\em Gets the pin assigned to the device. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classDevice_ad11e00f9c5700db962ed3dede2ef9e0c}{is\+Armed}} () const
+\begin{DoxyCompactList}\small\item\em Checks if the device is armed. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{classPump_af0cf708df06a6ea072930baeff746ec8}{running}}
+\begin{DoxyCompactList}\small\item\em Indicates if the pump is running. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classPump_abc502ab4e92f74e1ef77dd630d976072}{infusion\+Duration}}
+\begin{DoxyCompactList}\small\item\em Duration of infusion (ms). \end{DoxyCompactList}\item 
+float \mbox{\hyperlink{classPump_a16abcf8af41325786130edd4d1a2798d}{infusion\+Amount}}
+\begin{DoxyCompactList}\small\item\em Amount of infusion (e.\+g., microliters). \end{DoxyCompactList}\item 
+float \mbox{\hyperlink{classPump_aa4181a5fb1a2048825411c0acc91f2ce}{motor\+RPMs}}
+\begin{DoxyCompactList}\small\item\em Motor speed in RPMs. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classPump_aea6b95c097ce7efdd45b0869a95e28aa}{infusion\+Start\+Timestamp}}
+\begin{DoxyCompactList}\small\item\em Start time of infusion (ms). \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classPump_a2e949d08e940141b82e41edd9b0cf74f}{infusion\+End\+Timestamp}}
+\begin{DoxyCompactList}\small\item\em End time of infusion (ms). \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Protected Attributes inherited from \mbox{\hyperlink{classDevice}{Device}}}
+\begin{DoxyCompactItemize}
+\item 
+const byte \mbox{\hyperlink{classDevice_a69c3f3be7a4bd2c8f5d7afa2b35bc904}{pin}}
+\begin{DoxyCompactList}\small\item\em The digital pin on the Arduino to which the device is connected. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classDevice_abff0d14798b4f0a11926cbf9ce350f23}{armed}}
+\begin{DoxyCompactList}\small\item\em Indicates whether the device is armed and able to operate. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A subclass of \doxylink{classDevice}{Device} representing a pump for infusion delivery. 
+
+Manages pump state, infusion timing, and motor settings. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classPump_a2990b187d4e7b6c2400521d4a0763c10}\label{classPump_a2990b187d4e7b6c2400521d4a0763c10} 
+\index{Pump@{Pump}!Pump@{Pump}}
+\index{Pump@{Pump}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{Pump()}{Pump()}}
+{\footnotesize\ttfamily Pump\+::\+Pump (\begin{DoxyParamCaption}\item[{byte}]{init\+Pin }\end{DoxyParamCaption})}
+
+
+
+Constructor for the \doxylink{classPump}{Pump} class. 
+
+Constructs a \doxylink{classPump}{Pump} object with an initial pin and default settings.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Pin} & The digital pin to which the pump is connected.\\
+\hline
+\end{DoxyParams}
+Initializes a \doxylink{classPump}{Pump} object as a subclass of \doxylink{classDevice}{Device} with default infusion settings.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Pin} & The digital pin (byte) to which the pump is connected. \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classPump_abac576cbab57d97981a0cadee153dfa9}\label{classPump_abac576cbab57d97981a0cadee153dfa9} 
+\index{Pump@{Pump}!getInfusionAmount@{getInfusionAmount}}
+\index{getInfusionAmount@{getInfusionAmount}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{getInfusionAmount()}{getInfusionAmount()}}
+{\footnotesize\ttfamily float Pump\+::get\+Infusion\+Amount (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Gets the infusion amount. 
+
+Retrieves the infusion amount.
+
+\begin{DoxyReturn}{Returns}
+Amount in arbitrary units. 
+\end{DoxyReturn}
+\Hypertarget{classPump_a19106969dec59c21ebd5072f78e9ae3e}\label{classPump_a19106969dec59c21ebd5072f78e9ae3e} 
+\index{Pump@{Pump}!getInfusionDuration@{getInfusionDuration}}
+\index{getInfusionDuration@{getInfusionDuration}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{getInfusionDuration()}{getInfusionDuration()}}
+{\footnotesize\ttfamily int32\+\_\+t Pump\+::get\+Infusion\+Duration (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Gets the infusion duration. 
+
+Retrieves the infusion duration.
+
+\begin{DoxyReturn}{Returns}
+Duration in milliseconds. 
+\end{DoxyReturn}
+\Hypertarget{classPump_a5dbd95afa725d41fab630745c9d088e1}\label{classPump_a5dbd95afa725d41fab630745c9d088e1} 
+\index{Pump@{Pump}!getInfusionEndTimestamp@{getInfusionEndTimestamp}}
+\index{getInfusionEndTimestamp@{getInfusionEndTimestamp}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{getInfusionEndTimestamp()}{getInfusionEndTimestamp()}}
+{\footnotesize\ttfamily int32\+\_\+t Pump\+::get\+Infusion\+End\+Timestamp (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Gets the infusion end timestamp. 
+
+Retrieves the infusion end timestamp.
+
+\begin{DoxyReturn}{Returns}
+End time in milliseconds. 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classPump_a5dbd95afa725d41fab630745c9d088e1_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classPump_a1f89b1fc0f98a4552ea7d98d77bb662c}\label{classPump_a1f89b1fc0f98a4552ea7d98d77bb662c} 
+\index{Pump@{Pump}!getInfusionStartTimestamp@{getInfusionStartTimestamp}}
+\index{getInfusionStartTimestamp@{getInfusionStartTimestamp}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{getInfusionStartTimestamp()}{getInfusionStartTimestamp()}}
+{\footnotesize\ttfamily int32\+\_\+t Pump\+::get\+Infusion\+Start\+Timestamp (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Gets the infusion start timestamp. 
+
+Retrieves the infusion start timestamp.
+
+\begin{DoxyReturn}{Returns}
+Start time in milliseconds. 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classPump_a1f89b1fc0f98a4552ea7d98d77bb662c_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classPump_ab7853f1b64623d1e696f0e085fdaa00d}\label{classPump_ab7853f1b64623d1e696f0e085fdaa00d} 
+\index{Pump@{Pump}!getMotorRPMs@{getMotorRPMs}}
+\index{getMotorRPMs@{getMotorRPMs}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{getMotorRPMs()}{getMotorRPMs()}}
+{\footnotesize\ttfamily float Pump\+::get\+Motor\+RPMs (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Gets the motor RPMs. 
+
+Retrieves the motor RPMs.
+
+\begin{DoxyReturn}{Returns}
+RPMs of the pump motor. 
+\end{DoxyReturn}
+\Hypertarget{classPump_a0d3d4af44fca4f7b774c70afd71ee0f8}\label{classPump_a0d3d4af44fca4f7b774c70afd71ee0f8} 
+\index{Pump@{Pump}!isRunning@{isRunning}}
+\index{isRunning@{isRunning}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{isRunning()}{isRunning()}}
+{\footnotesize\ttfamily bool Pump\+::is\+Running (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Checks if the pump is running. 
+
+\begin{DoxyReturn}{Returns}
+Boolean running state.
+
+Boolean indicating running state. 
+\end{DoxyReturn}
+\Hypertarget{classPump_acbf91dd23dcce4c5462267a02ca4b738}\label{classPump_acbf91dd23dcce4c5462267a02ca4b738} 
+\index{Pump@{Pump}!off@{off}}
+\index{off@{off}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{off()}{off()}}
+{\footnotesize\ttfamily void Pump\+::off (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Turns the pump off. 
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classPump_acbf91dd23dcce4c5462267a02ca4b738_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classPump_a0230c8879d5639f69d34d10d6247a982}\label{classPump_a0230c8879d5639f69d34d10d6247a982} 
+\index{Pump@{Pump}!on@{on}}
+\index{on@{on}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{on()}{on()}}
+{\footnotesize\ttfamily void Pump\+::on (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Turns the pump on. 
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classPump_a0230c8879d5639f69d34d10d6247a982_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classPump_a87aa44bec5d20f78f85e955cd7dfc68a}\label{classPump_a87aa44bec5d20f78f85e955cd7dfc68a} 
+\index{Pump@{Pump}!setInfusionAmount@{setInfusionAmount}}
+\index{setInfusionAmount@{setInfusionAmount}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{setInfusionAmount()}{setInfusionAmount()}}
+{\footnotesize\ttfamily void Pump\+::set\+Infusion\+Amount (\begin{DoxyParamCaption}\item[{float}]{init\+Amount }\end{DoxyParamCaption})}
+
+
+
+Sets the infusion amount. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Amount} & Amount in arbitrary units.\\
+\hline
+{\em init\+Amount} & Amount in arbitrary units (e.\+g., microliters). \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classPump_a63ab215844d31f7eacff85329e8de0ed}\label{classPump_a63ab215844d31f7eacff85329e8de0ed} 
+\index{Pump@{Pump}!setInfusionDuration@{setInfusionDuration}}
+\index{setInfusionDuration@{setInfusionDuration}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{setInfusionDuration()}{setInfusionDuration()}}
+{\footnotesize\ttfamily void Pump\+::set\+Infusion\+Duration (\begin{DoxyParamCaption}\item[{int32\+\_\+t}]{init\+Duration }\end{DoxyParamCaption})}
+
+
+
+Sets the infusion duration. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Duration} & Duration in milliseconds. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classPump_a8f793fca2594e1747f638488321b8453}\label{classPump_a8f793fca2594e1747f638488321b8453} 
+\index{Pump@{Pump}!setInfusionPeriod@{setInfusionPeriod}}
+\index{setInfusionPeriod@{setInfusionPeriod}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{setInfusionPeriod()}{setInfusionPeriod()}}
+{\footnotesize\ttfamily void Pump\+::set\+Infusion\+Period (\begin{DoxyParamCaption}\item[{int32\+\_\+t}]{cue\+Off\+Timestamp,  }\item[{int32\+\_\+t}]{trace\+Interval }\end{DoxyParamCaption})}
+
+
+
+Sets the infusion period. 
+
+Sets the infusion period based on cue offset and trace interval.
+
+
+\begin{DoxyParams}{Parameters}
+{\em cue\+Off\+Timestamp} & \doxylink{classCue}{Cue} off timestamp (ms). \\
+\hline
+{\em trace\+Interval} & Trace interval (ms).\\
+\hline
+{\em cue\+Off\+Timestamp} & \doxylink{classCue}{Cue} off timestamp in milliseconds. \\
+\hline
+{\em trace\+Interval} & Trace interval in milliseconds. \\
+\hline
+\end{DoxyParams}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classPump_a8f793fca2594e1747f638488321b8453_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classPump_a6848f2621067fc4251f7a2d4def7cb26}\label{classPump_a6848f2621067fc4251f7a2d4def7cb26} 
+\index{Pump@{Pump}!setMotorRPMs@{setMotorRPMs}}
+\index{setMotorRPMs@{setMotorRPMs}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{setMotorRPMs()}{setMotorRPMs()}}
+{\footnotesize\ttfamily void Pump\+::set\+Motor\+RPMs (\begin{DoxyParamCaption}\item[{float}]{init\+RPMs }\end{DoxyParamCaption})}
+
+
+
+Sets the motor RPMs. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+RPMs} & RPMs of the pump motor.\\
+\hline
+{\em init\+RPMs} & Revolutions per minute of the pump motor. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classPump_a9d36edd070844842cfd4834a35de1591}\label{classPump_a9d36edd070844842cfd4834a35de1591} 
+\index{Pump@{Pump}!setRunning@{setRunning}}
+\index{setRunning@{setRunning}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{setRunning()}{setRunning()}}
+{\footnotesize\ttfamily void Pump\+::set\+Running (\begin{DoxyParamCaption}\item[{bool}]{init\+Running }\end{DoxyParamCaption})}
+
+
+
+Sets the pump running state. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Running} & Boolean running state.\\
+\hline
+{\em init\+Running} & Boolean indicating if the pump is running. \\
+\hline
+\end{DoxyParams}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classPump_a9d36edd070844842cfd4834a35de1591_icgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{classPump_a16abcf8af41325786130edd4d1a2798d}\label{classPump_a16abcf8af41325786130edd4d1a2798d} 
+\index{Pump@{Pump}!infusionAmount@{infusionAmount}}
+\index{infusionAmount@{infusionAmount}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{infusionAmount}{infusionAmount}}
+{\footnotesize\ttfamily float Pump\+::infusion\+Amount}
+
+
+
+Amount of infusion (e.\+g., microliters). 
+
+\Hypertarget{classPump_abc502ab4e92f74e1ef77dd630d976072}\label{classPump_abc502ab4e92f74e1ef77dd630d976072} 
+\index{Pump@{Pump}!infusionDuration@{infusionDuration}}
+\index{infusionDuration@{infusionDuration}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{infusionDuration}{infusionDuration}}
+{\footnotesize\ttfamily int32\+\_\+t Pump\+::infusion\+Duration}
+
+
+
+Duration of infusion (ms). 
+
+\Hypertarget{classPump_a2e949d08e940141b82e41edd9b0cf74f}\label{classPump_a2e949d08e940141b82e41edd9b0cf74f} 
+\index{Pump@{Pump}!infusionEndTimestamp@{infusionEndTimestamp}}
+\index{infusionEndTimestamp@{infusionEndTimestamp}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{infusionEndTimestamp}{infusionEndTimestamp}}
+{\footnotesize\ttfamily int32\+\_\+t Pump\+::infusion\+End\+Timestamp}
+
+
+
+End time of infusion (ms). 
+
+\Hypertarget{classPump_aea6b95c097ce7efdd45b0869a95e28aa}\label{classPump_aea6b95c097ce7efdd45b0869a95e28aa} 
+\index{Pump@{Pump}!infusionStartTimestamp@{infusionStartTimestamp}}
+\index{infusionStartTimestamp@{infusionStartTimestamp}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{infusionStartTimestamp}{infusionStartTimestamp}}
+{\footnotesize\ttfamily int32\+\_\+t Pump\+::infusion\+Start\+Timestamp}
+
+
+
+Start time of infusion (ms). 
+
+\Hypertarget{classPump_aa4181a5fb1a2048825411c0acc91f2ce}\label{classPump_aa4181a5fb1a2048825411c0acc91f2ce} 
+\index{Pump@{Pump}!motorRPMs@{motorRPMs}}
+\index{motorRPMs@{motorRPMs}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{motorRPMs}{motorRPMs}}
+{\footnotesize\ttfamily float Pump\+::motor\+RPMs}
+
+
+
+Motor speed in RPMs. 
+
+\Hypertarget{classPump_af0cf708df06a6ea072930baeff746ec8}\label{classPump_af0cf708df06a6ea072930baeff746ec8} 
+\index{Pump@{Pump}!running@{running}}
+\index{running@{running}!Pump@{Pump}}
+\doxysubsubsection{\texorpdfstring{running}{running}}
+{\footnotesize\ttfamily bool Pump\+::running}
+
+
+
+Indicates if the pump is running. 
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{Pump_8h}{Pump.\+h}}\item 
+\mbox{\hyperlink{Pump_8cpp}{Pump.\+cpp}}\end{DoxyCompactItemize}

@@ -1,0 +1,152 @@
+\doxysection{Program\+\_\+\+Utils.\+h File Reference}
+\hypertarget{Program__Utils_8h}{}\label{Program__Utils_8h}\index{Program\_Utils.h@{Program\_Utils.h}}
+
+
+Utility functions for program control and reward delivery.  
+
+
+{\ttfamily \#include $<$Arduino.\+h$>$}\newline
+{\ttfamily \#include "{}Device.\+h"{}}\newline
+{\ttfamily \#include "{}Lever.\+h"{}}\newline
+{\ttfamily \#include "{}Laser.\+h"{}}\newline
+{\ttfamily \#include "{}Pump.\+h"{}}\newline
+{\ttfamily \#include "{}Cue.\+h"{}}\newline
+Include dependency graph for Program\+\_\+\+Utils.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{Program__Utils_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{Program__Utils_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{Program__Utils_8h_a87fad7607dff2088f82ed0b3232e85f7}{start\+Program}} (byte pin)
+\begin{DoxyCompactList}\small\item\em Starts the program and triggers imaging. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{Program__Utils_8h_abefe6a54b25cffa075a404b6fad27638}{end\+Program}} (byte pin)
+\begin{DoxyCompactList}\small\item\em Ends the program and disarms devices. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{Program__Utils_8h_a887f7b312e448ea678d8f5ca34f220a7}{deliver\+Reward}} (\mbox{\hyperlink{classLever}{Lever}} \texorpdfstring{$\ast$}{*}\&lever, \mbox{\hyperlink{classCue}{Cue}} \texorpdfstring{$\ast$}{*}cue, \mbox{\hyperlink{classPump}{Pump}} \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{Program__Utils_8cpp_a7baeb34b0eec2b69efd06c72c013b77c}{pump}}, \mbox{\hyperlink{classLaser}{Laser}} \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{Laser__Utils_8cpp_aa8caff3a540c333384c5af436f68d738}{laser}})
+\begin{DoxyCompactList}\small\item\em Delivers a reward by activating devices. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Utility functions for program control and reward delivery. 
+
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{Program__Utils_8h_a887f7b312e448ea678d8f5ca34f220a7}\label{Program__Utils_8h_a887f7b312e448ea678d8f5ca34f220a7} 
+\index{Program\_Utils.h@{Program\_Utils.h}!deliverReward@{deliverReward}}
+\index{deliverReward@{deliverReward}!Program\_Utils.h@{Program\_Utils.h}}
+\doxysubsubsection{\texorpdfstring{deliverReward()}{deliverReward()}}
+{\footnotesize\ttfamily void deliver\+Reward (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classLever}{Lever}} \texorpdfstring{$\ast$}{*}\&}]{lever,  }\item[{\mbox{\hyperlink{classCue}{Cue}} \texorpdfstring{$\ast$}{*}}]{cue,  }\item[{\mbox{\hyperlink{classPump}{Pump}} \texorpdfstring{$\ast$}{*}}]{pump,  }\item[{\mbox{\hyperlink{classLaser}{Laser}} \texorpdfstring{$\ast$}{*}}]{laser }\end{DoxyParamCaption})}
+
+
+
+Delivers a reward by activating devices. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em lever} & Reference to a pointer to the \doxylink{classLever}{Lever} object. \\
+\hline
+{\em cue} & Pointer to the \doxylink{classCue}{Cue} object (optional). \\
+\hline
+{\em pump} & Pointer to the \doxylink{classPump}{Pump} object (optional). \\
+\hline
+{\em laser} & Pointer to the \doxylink{classLaser}{Laser} object (optional).\\
+\hline
+\end{DoxyParams}
+Delivers a reward by activating devices.
+
+Triggers a reward sequence based on the current timestamp and device states.
+
+
+\begin{DoxyParams}{Parameters}
+{\em lever} & Reference to a pointer to the \doxylink{classLever}{Lever} object triggering the reward. \\
+\hline
+{\em cue} & Pointer to the \doxylink{classCue}{Cue} object (optional). \\
+\hline
+{\em pump} & Pointer to the \doxylink{classPump}{Pump} object (optional). \\
+\hline
+{\em laser} & Pointer to the \doxylink{classLaser}{Laser} object (optional). \\
+\hline
+\end{DoxyParams}
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=338pt]{Program__Utils_8h_a887f7b312e448ea678d8f5ca34f220a7_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{Program__Utils_8h_a887f7b312e448ea678d8f5ca34f220a7_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{Program__Utils_8h_abefe6a54b25cffa075a404b6fad27638}\label{Program__Utils_8h_abefe6a54b25cffa075a404b6fad27638} 
+\index{Program\_Utils.h@{Program\_Utils.h}!endProgram@{endProgram}}
+\index{endProgram@{endProgram}!Program\_Utils.h@{Program\_Utils.h}}
+\doxysubsubsection{\texorpdfstring{endProgram()}{endProgram()}}
+{\footnotesize\ttfamily void end\+Program (\begin{DoxyParamCaption}\item[{byte}]{pin }\end{DoxyParamCaption})}
+
+
+
+Ends the program and disarms devices. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pin} & The digital pin to trigger imaging end.\\
+\hline
+\end{DoxyParams}
+Ends the program and disarms devices.
+
+Signals the end of the program, stops imaging, and disarms all devices.
+
+
+\begin{DoxyParams}{Parameters}
+{\em pin} & The digital pin to trigger imaging end. \\
+\hline
+\end{DoxyParams}
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=282pt]{Program__Utils_8h_abefe6a54b25cffa075a404b6fad27638_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{Program__Utils_8h_a87fad7607dff2088f82ed0b3232e85f7}\label{Program__Utils_8h_a87fad7607dff2088f82ed0b3232e85f7} 
+\index{Program\_Utils.h@{Program\_Utils.h}!startProgram@{startProgram}}
+\index{startProgram@{startProgram}!Program\_Utils.h@{Program\_Utils.h}}
+\doxysubsubsection{\texorpdfstring{startProgram()}{startProgram()}}
+{\footnotesize\ttfamily void start\+Program (\begin{DoxyParamCaption}\item[{byte}]{pin }\end{DoxyParamCaption})}
+
+
+
+Starts the program and triggers imaging. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pin} & The digital pin to trigger imaging.\\
+\hline
+\end{DoxyParams}
+Signals the start of the program and sets the time offset for timestamps.
+
+
+\begin{DoxyParams}{Parameters}
+{\em pin} & The digital pin to trigger imaging. \\
+\hline
+\end{DoxyParams}

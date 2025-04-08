@@ -1,0 +1,55 @@
+\doxysection{Pump\+\_\+\+Utils.\+cpp File Reference}
+\hypertarget{Pump__Utils_8cpp}{}\label{Pump__Utils_8cpp}\index{Pump\_Utils.cpp@{Pump\_Utils.cpp}}
+{\ttfamily \#include "{}Pump.\+h"{}}\newline
+{\ttfamily \#include $<$Arduino.\+h$>$}\newline
+Include dependency graph for Pump\+\_\+\+Utils.\+cpp\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=224pt]{Pump__Utils_8cpp__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{Pump__Utils_8cpp_afbfe7e9690b402f3a3e4cde442d43458}{manage\+Pump}} (\mbox{\hyperlink{classPump}{Pump}} \texorpdfstring{$\ast$}{*}\mbox{\hyperlink{Program__Utils_8cpp_a7baeb34b0eec2b69efd06c72c013b77c}{pump}})
+\begin{DoxyCompactList}\small\item\em Controls pump operation based on infusion timestamps. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{Pump__Utils_8cpp_afbfe7e9690b402f3a3e4cde442d43458}\label{Pump__Utils_8cpp_afbfe7e9690b402f3a3e4cde442d43458} 
+\index{Pump\_Utils.cpp@{Pump\_Utils.cpp}!managePump@{managePump}}
+\index{managePump@{managePump}!Pump\_Utils.cpp@{Pump\_Utils.cpp}}
+\doxysubsubsection{\texorpdfstring{managePump()}{managePump()}}
+{\footnotesize\ttfamily void manage\+Pump (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classPump}{Pump}} \texorpdfstring{$\ast$}{*}}]{pump }\end{DoxyParamCaption})}
+
+
+
+Controls pump operation based on infusion timestamps. 
+
+Manages pump on/off state based on infusion period.
+
+Turns the pump on during the infusion period and off otherwise, if armed.
+
+
+\begin{DoxyParams}{Parameters}
+{\em pump} & Pointer to the \doxylink{classPump}{Pump} object (optional, can be nullptr). \\
+\hline
+\end{DoxyParams}
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{Pump__Utils_8cpp_afbfe7e9690b402f3a3e4cde442d43458_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=296pt]{Pump__Utils_8cpp_afbfe7e9690b402f3a3e4cde442d43458_icgraph}
+\end{center}
+\end{figure}

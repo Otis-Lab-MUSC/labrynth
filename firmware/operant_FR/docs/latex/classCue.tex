@@ -1,0 +1,443 @@
+\doxysection{Cue Class Reference}
+\hypertarget{classCue}{}\label{classCue}\index{Cue@{Cue}}
+
+
+A subclass of \doxylink{classDevice}{Device} representing a cue speaker.  
+
+
+
+
+{\ttfamily \#include $<$Cue.\+h$>$}
+
+
+
+Inheritance diagram for Cue\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=130pt]{classCue__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Cue\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=130pt]{classCue__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classCue_a422319b148b913c453ad022b25b04c94}{Cue}} (byte init\+Pin)
+\begin{DoxyCompactList}\small\item\em Constructor for the \doxylink{classCue}{Cue} class. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classCue_a7e882b97dd009f12c3cbc922dfbc2d35}{set\+Running}} (bool init\+Running)
+\begin{DoxyCompactList}\small\item\em Sets the running state of the cue. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classCue_afa09d2deb6e0680fdd05cd3747847df2}{set\+Frequency}} (int32\+\_\+t init\+Frequency)
+\begin{DoxyCompactList}\small\item\em Sets the tone frequency. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classCue_ae11470c81e00eb5f612d1ceb7ba99ad0}{set\+Duration}} (int32\+\_\+t init\+Duration)
+\begin{DoxyCompactList}\small\item\em Sets the tone duration. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classCue_a1cf431fb8dd6c2e44b8cee6a7f68e748}{on}} ()
+\begin{DoxyCompactList}\small\item\em Turns the cue speaker on. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classCue_a7584bb7230e8d35e7b7efac844f253c1}{off}} ()
+\begin{DoxyCompactList}\small\item\em Turns the cue speaker off. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classCue_a86f2d33c9921085609026af089c0e662}{is\+Running}} () const
+\begin{DoxyCompactList}\small\item\em Checks if the cue is running. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classCue_a23c466f46cd0255203e4c3c8d13eaa60}{get\+Frequency}} () const
+\begin{DoxyCompactList}\small\item\em Gets the current frequency. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classCue_afc49f063d9c4cac54a2d0d1b20b5980d}{get\+Duration}} () const
+\begin{DoxyCompactList}\small\item\em Gets the current duration. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classCue_a29b1e33e6105014f16b182cbf92716d8}{set\+On\+Timestamp}} (int32\+\_\+t current\+Timestamp)
+\begin{DoxyCompactList}\small\item\em Sets the on timestamp. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classCue_a08d16c27b2fed86260121c5958214827}{set\+Off\+Timestamp}} (int32\+\_\+t current\+Timestamp)
+\begin{DoxyCompactList}\small\item\em Sets the off timestamp based on duration. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classCue_a88eacb5791fc5f61818815ee66de2a01}{get\+On\+Timestamp}} () const
+\begin{DoxyCompactList}\small\item\em Gets the on timestamp. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classCue_a46867d656c457a7f3cd8694e8ffe2887}{get\+Off\+Timestamp}} () const
+\begin{DoxyCompactList}\small\item\em Gets the off timestamp. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \mbox{\hyperlink{classDevice}{Device}}}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classDevice_ab0bd37dfa5b18937d0fc322c53aa34bb}{Device}} (byte init\+Pin)
+\begin{DoxyCompactList}\small\item\em Constructor for the \doxylink{classDevice}{Device} class. \end{DoxyCompactList}\item 
+virtual void \mbox{\hyperlink{classDevice_a6fae03bad4409e927ffa2d507ad80368}{arm}} ()
+\begin{DoxyCompactList}\small\item\em Arms the device to enable its operation. \end{DoxyCompactList}\item 
+virtual void \mbox{\hyperlink{classDevice_a5892284484274c1c7bb519205ede65c3}{disarm}} ()
+\begin{DoxyCompactList}\small\item\em Disarms the device to disable its operation. \end{DoxyCompactList}\item 
+byte \mbox{\hyperlink{classDevice_a59d40185f6ee06991eda620994339bc9}{get\+Pin}} () const
+\begin{DoxyCompactList}\small\item\em Gets the pin assigned to the device. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classDevice_ad11e00f9c5700db962ed3dede2ef9e0c}{is\+Armed}} () const
+\begin{DoxyCompactList}\small\item\em Checks if the device is armed. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{classCue_a3ff3ed8e261790a6a7d7625a8d2c2ecd}{running}}
+\begin{DoxyCompactList}\small\item\em Indicates whether the cue is currently playing a tone. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classCue_a73121c32b81ebb4d33cc506d8afd1e62}{frequency}}
+\begin{DoxyCompactList}\small\item\em Frequency (in Hz) of the tone to be played. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classCue_a8078035cd1fcb91c117e9d709c81528c}{duration}}
+\begin{DoxyCompactList}\small\item\em Duration (in milliseconds) of the tone. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classCue_ae6c01e2bd65e46089bd14a32d1b78ba7}{on\+Timestamp}}
+\begin{DoxyCompactList}\small\item\em Timestamp (in milliseconds) when the tone starts. \end{DoxyCompactList}\item 
+int32\+\_\+t \mbox{\hyperlink{classCue_ac1ee28f819e27142cafeb744f2495131}{off\+Timestamp}}
+\begin{DoxyCompactList}\small\item\em Timestamp (in milliseconds) when the tone stops. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Protected Attributes inherited from \mbox{\hyperlink{classDevice}{Device}}}
+\begin{DoxyCompactItemize}
+\item 
+const byte \mbox{\hyperlink{classDevice_a69c3f3be7a4bd2c8f5d7afa2b35bc904}{pin}}
+\begin{DoxyCompactList}\small\item\em The digital pin on the Arduino to which the device is connected. \end{DoxyCompactList}\item 
+bool \mbox{\hyperlink{classDevice_abff0d14798b4f0a11926cbf9ce350f23}{armed}}
+\begin{DoxyCompactList}\small\item\em Indicates whether the device is armed and able to operate. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A subclass of \doxylink{classDevice}{Device} representing a cue speaker. 
+
+Manages a speaker connected to a digital pin, providing methods to control tone frequency, duration, and on/off states based on timestamps. 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classCue_a422319b148b913c453ad022b25b04c94}\label{classCue_a422319b148b913c453ad022b25b04c94} 
+\index{Cue@{Cue}!Cue@{Cue}}
+\index{Cue@{Cue}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{Cue()}{Cue()}}
+{\footnotesize\ttfamily Cue\+::\+Cue (\begin{DoxyParamCaption}\item[{byte}]{init\+Pin }\end{DoxyParamCaption})}
+
+
+
+Constructor for the \doxylink{classCue}{Cue} class. 
+
+Constructs a \doxylink{classCue}{Cue} object with an initial pin and default settings.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Pin} & The digital pin to which the cue speaker is connected.\\
+\hline
+\end{DoxyParams}
+Initializes a \doxylink{classCue}{Cue} object as a subclass of \doxylink{classDevice}{Device}, setting the pin for tone output and default values for running state, frequency, and duration.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Pin} & The digital pin (byte) to which the cue speaker is connected. \\
+\hline
+\end{DoxyParams}
+
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classCue_afc49f063d9c4cac54a2d0d1b20b5980d}\label{classCue_afc49f063d9c4cac54a2d0d1b20b5980d} 
+\index{Cue@{Cue}!getDuration@{getDuration}}
+\index{getDuration@{getDuration}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{getDuration()}{getDuration()}}
+{\footnotesize\ttfamily int32\+\_\+t Cue\+::get\+Duration (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Gets the current duration. 
+
+Retrieves the current duration of the cue.
+
+\begin{DoxyReturn}{Returns}
+Duration (in milliseconds).
+
+The duration (in milliseconds) of the cue tone. 
+\end{DoxyReturn}
+\Hypertarget{classCue_a23c466f46cd0255203e4c3c8d13eaa60}\label{classCue_a23c466f46cd0255203e4c3c8d13eaa60} 
+\index{Cue@{Cue}!getFrequency@{getFrequency}}
+\index{getFrequency@{getFrequency}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{getFrequency()}{getFrequency()}}
+{\footnotesize\ttfamily int32\+\_\+t Cue\+::get\+Frequency (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Gets the current frequency. 
+
+Retrieves the current frequency of the cue.
+
+\begin{DoxyReturn}{Returns}
+Frequency (in Hz).
+
+The frequency (in Hz) of the cue tone. 
+\end{DoxyReturn}
+\Hypertarget{classCue_a46867d656c457a7f3cd8694e8ffe2887}\label{classCue_a46867d656c457a7f3cd8694e8ffe2887} 
+\index{Cue@{Cue}!getOffTimestamp@{getOffTimestamp}}
+\index{getOffTimestamp@{getOffTimestamp}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{getOffTimestamp()}{getOffTimestamp()}}
+{\footnotesize\ttfamily int32\+\_\+t Cue\+::get\+Off\+Timestamp (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Gets the off timestamp. 
+
+Retrieves the timestamp when the cue turns off.
+
+\begin{DoxyReturn}{Returns}
+Off timestamp (in milliseconds).
+
+The off timestamp (in milliseconds). 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classCue_a46867d656c457a7f3cd8694e8ffe2887_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classCue_a88eacb5791fc5f61818815ee66de2a01}\label{classCue_a88eacb5791fc5f61818815ee66de2a01} 
+\index{Cue@{Cue}!getOnTimestamp@{getOnTimestamp}}
+\index{getOnTimestamp@{getOnTimestamp}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{getOnTimestamp()}{getOnTimestamp()}}
+{\footnotesize\ttfamily int32\+\_\+t Cue\+::get\+On\+Timestamp (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Gets the on timestamp. 
+
+Retrieves the timestamp when the cue turns on.
+
+\begin{DoxyReturn}{Returns}
+On timestamp (in milliseconds).
+
+The on timestamp (in milliseconds). 
+\end{DoxyReturn}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classCue_a88eacb5791fc5f61818815ee66de2a01_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classCue_a86f2d33c9921085609026af089c0e662}\label{classCue_a86f2d33c9921085609026af089c0e662} 
+\index{Cue@{Cue}!isRunning@{isRunning}}
+\index{isRunning@{isRunning}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{isRunning()}{isRunning()}}
+{\footnotesize\ttfamily bool Cue\+::is\+Running (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Checks if the cue is running. 
+
+Checks if the cue is currently running.
+
+\begin{DoxyReturn}{Returns}
+Boolean indicating running state.
+
+Boolean indicating whether the cue is playing a tone. 
+\end{DoxyReturn}
+\Hypertarget{classCue_a7584bb7230e8d35e7b7efac844f253c1}\label{classCue_a7584bb7230e8d35e7b7efac844f253c1} 
+\index{Cue@{Cue}!off@{off}}
+\index{off@{off}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{off()}{off()}}
+{\footnotesize\ttfamily void Cue\+::off (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Turns the cue speaker off. 
+
+Deactivates the cue speaker.
+
+Stops the tone on the assigned pin. Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classCue_a7584bb7230e8d35e7b7efac844f253c1_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classCue_a1cf431fb8dd6c2e44b8cee6a7f68e748}\label{classCue_a1cf431fb8dd6c2e44b8cee6a7f68e748} 
+\index{Cue@{Cue}!on@{on}}
+\index{on@{on}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{on()}{on()}}
+{\footnotesize\ttfamily void Cue\+::on (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Turns the cue speaker on. 
+
+Activates the cue speaker with the set frequency.
+
+Starts playing a tone on the assigned pin at the specified frequency. Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classCue_a1cf431fb8dd6c2e44b8cee6a7f68e748_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classCue_ae11470c81e00eb5f612d1ceb7ba99ad0}\label{classCue_ae11470c81e00eb5f612d1ceb7ba99ad0} 
+\index{Cue@{Cue}!setDuration@{setDuration}}
+\index{setDuration@{setDuration}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{setDuration()}{setDuration()}}
+{\footnotesize\ttfamily void Cue\+::set\+Duration (\begin{DoxyParamCaption}\item[{int32\+\_\+t}]{init\+Duration }\end{DoxyParamCaption})}
+
+
+
+Sets the tone duration. 
+
+Sets the duration of the cue tone and logs the change.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Duration} & Duration (in milliseconds) to set.\\
+\hline
+{\em init\+Duration} & The duration (in milliseconds) for which the tone will play. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classCue_afa09d2deb6e0680fdd05cd3747847df2}\label{classCue_afa09d2deb6e0680fdd05cd3747847df2} 
+\index{Cue@{Cue}!setFrequency@{setFrequency}}
+\index{setFrequency@{setFrequency}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{setFrequency()}{setFrequency()}}
+{\footnotesize\ttfamily void Cue\+::set\+Frequency (\begin{DoxyParamCaption}\item[{int32\+\_\+t}]{init\+Frequency }\end{DoxyParamCaption})}
+
+
+
+Sets the tone frequency. 
+
+Sets the frequency of the cue tone and logs the change.
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Frequency} & Frequency (in Hz) to set.\\
+\hline
+{\em init\+Frequency} & The frequency (in Hz) to set for the cue tone. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classCue_a08d16c27b2fed86260121c5958214827}\label{classCue_a08d16c27b2fed86260121c5958214827} 
+\index{Cue@{Cue}!setOffTimestamp@{setOffTimestamp}}
+\index{setOffTimestamp@{setOffTimestamp}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{setOffTimestamp()}{setOffTimestamp()}}
+{\footnotesize\ttfamily void Cue\+::set\+Off\+Timestamp (\begin{DoxyParamCaption}\item[{int32\+\_\+t}]{current\+Timestamp }\end{DoxyParamCaption})}
+
+
+
+Sets the off timestamp based on duration. 
+
+Sets the timestamp when the cue should turn off.
+
+
+\begin{DoxyParams}{Parameters}
+{\em current\+Timestamp} & Starting time (in milliseconds) for calculation.\\
+\hline
+\end{DoxyParams}
+Calculates the off timestamp based on the current timestamp plus the duration.
+
+
+\begin{DoxyParams}{Parameters}
+{\em current\+Timestamp} & The starting time (in milliseconds) for the off calculation. \\
+\hline
+\end{DoxyParams}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classCue_a08d16c27b2fed86260121c5958214827_icgraph}
+\end{center}
+\end{figure}
+\Hypertarget{classCue_a29b1e33e6105014f16b182cbf92716d8}\label{classCue_a29b1e33e6105014f16b182cbf92716d8} 
+\index{Cue@{Cue}!setOnTimestamp@{setOnTimestamp}}
+\index{setOnTimestamp@{setOnTimestamp}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{setOnTimestamp()}{setOnTimestamp()}}
+{\footnotesize\ttfamily void Cue\+::set\+On\+Timestamp (\begin{DoxyParamCaption}\item[{int32\+\_\+t}]{current\+Timestamp }\end{DoxyParamCaption})}
+
+
+
+Sets the on timestamp. 
+
+Sets the timestamp when the cue should turn on.
+
+
+\begin{DoxyParams}{Parameters}
+{\em current\+Timestamp} & Time (in milliseconds) to start the tone.\\
+\hline
+{\em current\+Timestamp} & The time (in milliseconds) when the cue should activate. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classCue_a7e882b97dd009f12c3cbc922dfbc2d35}\label{classCue_a7e882b97dd009f12c3cbc922dfbc2d35} 
+\index{Cue@{Cue}!setRunning@{setRunning}}
+\index{setRunning@{setRunning}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{setRunning()}{setRunning()}}
+{\footnotesize\ttfamily void Cue\+::set\+Running (\begin{DoxyParamCaption}\item[{bool}]{init\+Running }\end{DoxyParamCaption})}
+
+
+
+Sets the running state of the cue. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em init\+Running} & Boolean to set the running state.\\
+\hline
+{\em init\+Running} & Boolean indicating whether the cue is currently playing a tone. \\
+\hline
+\end{DoxyParams}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{classCue_a7e882b97dd009f12c3cbc922dfbc2d35_icgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{classCue_a8078035cd1fcb91c117e9d709c81528c}\label{classCue_a8078035cd1fcb91c117e9d709c81528c} 
+\index{Cue@{Cue}!duration@{duration}}
+\index{duration@{duration}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{duration}{duration}}
+{\footnotesize\ttfamily int32\+\_\+t Cue\+::duration}
+
+
+
+Duration (in milliseconds) of the tone. 
+
+\Hypertarget{classCue_a73121c32b81ebb4d33cc506d8afd1e62}\label{classCue_a73121c32b81ebb4d33cc506d8afd1e62} 
+\index{Cue@{Cue}!frequency@{frequency}}
+\index{frequency@{frequency}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{frequency}{frequency}}
+{\footnotesize\ttfamily int32\+\_\+t Cue\+::frequency}
+
+
+
+Frequency (in Hz) of the tone to be played. 
+
+\Hypertarget{classCue_ac1ee28f819e27142cafeb744f2495131}\label{classCue_ac1ee28f819e27142cafeb744f2495131} 
+\index{Cue@{Cue}!offTimestamp@{offTimestamp}}
+\index{offTimestamp@{offTimestamp}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{offTimestamp}{offTimestamp}}
+{\footnotesize\ttfamily int32\+\_\+t Cue\+::off\+Timestamp}
+
+
+
+Timestamp (in milliseconds) when the tone stops. 
+
+\Hypertarget{classCue_ae6c01e2bd65e46089bd14a32d1b78ba7}\label{classCue_ae6c01e2bd65e46089bd14a32d1b78ba7} 
+\index{Cue@{Cue}!onTimestamp@{onTimestamp}}
+\index{onTimestamp@{onTimestamp}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{onTimestamp}{onTimestamp}}
+{\footnotesize\ttfamily int32\+\_\+t Cue\+::on\+Timestamp}
+
+
+
+Timestamp (in milliseconds) when the tone starts. 
+
+\Hypertarget{classCue_a3ff3ed8e261790a6a7d7625a8d2c2ecd}\label{classCue_a3ff3ed8e261790a6a7d7625a8d2c2ecd} 
+\index{Cue@{Cue}!running@{running}}
+\index{running@{running}!Cue@{Cue}}
+\doxysubsubsection{\texorpdfstring{running}{running}}
+{\footnotesize\ttfamily bool Cue\+::running}
+
+
+
+Indicates whether the cue is currently playing a tone. 
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{Cue_8h}{Cue.\+h}}\item 
+\mbox{\hyperlink{Cue_8cpp}{Cue.\+cpp}}\end{DoxyCompactItemize}
