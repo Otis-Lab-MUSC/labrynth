@@ -1,8 +1,0 @@
-<map id="LickCircuit.h" name="LickCircuit.h">
-<area shape="rect" id="Node000001" title="Defines the LickCircuit class for monitoring lick interactions." alt="" coords="5,5,108,31"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="15,152,99,177"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="55,31,48,64,46,104,52,138,47,139,41,104,43,63,50,30"/>
-<area shape="rect" id="Node000003" href="$Device_8h.html" title="Defines the base Device class for hardware components." alt="" coords="56,79,135,104"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="65,30,85,65,80,68,61,32"/>
-<area shape="poly" id="edge3_Node000003_Node000002" title=" " alt="" coords="91,106,72,141,67,139,87,103"/>
-</map>
