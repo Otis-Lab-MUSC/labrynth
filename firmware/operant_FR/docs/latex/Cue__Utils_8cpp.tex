@@ -1,0 +1,89 @@
+\doxysection{Cue\+\_\+\+Utils.\+cpp File Reference}
+\hypertarget{Cue__Utils_8cpp}{}\label{Cue__Utils_8cpp}\index{Cue\_Utils.cpp@{Cue\_Utils.cpp}}
+{\ttfamily \#include "{}Device.\+h"{}}\newline
+{\ttfamily \#include "{}Cue.\+h"{}}\newline
+{\ttfamily \#include $<$Arduino.\+h$>$}\newline
+Include dependency graph for Cue\+\_\+\+Utils.\+cpp\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=194pt]{Cue__Utils_8cpp__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{Cue__Utils_8cpp_a94c5b0adb098686b0a7f26cb33815909}{connection\+Jingle}} (String connected, \mbox{\hyperlink{classCue}{Cue}} \&cue, bool \&linked\+To\+GUI)
+\begin{DoxyCompactList}\small\item\em Plays a connection or disconnection jingle based on the connection status. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{Cue__Utils_8cpp_a901134c3a67c6efb2830b4bc01521d43}{manage\+Cue}} (\mbox{\hyperlink{classCue}{Cue}} \texorpdfstring{$\ast$}{*}cue)
+\begin{DoxyCompactList}\small\item\em Manages the operation of a cue tone based on timestamps. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{Cue__Utils_8cpp_a94c5b0adb098686b0a7f26cb33815909}\label{Cue__Utils_8cpp_a94c5b0adb098686b0a7f26cb33815909} 
+\index{Cue\_Utils.cpp@{Cue\_Utils.cpp}!connectionJingle@{connectionJingle}}
+\index{connectionJingle@{connectionJingle}!Cue\_Utils.cpp@{Cue\_Utils.cpp}}
+\doxysubsubsection{\texorpdfstring{connectionJingle()}{connectionJingle()}}
+{\footnotesize\ttfamily void connection\+Jingle (\begin{DoxyParamCaption}\item[{String}]{connected,  }\item[{\mbox{\hyperlink{classCue}{Cue}} \&}]{cue,  }\item[{bool \&}]{linked\+To\+GUI }\end{DoxyParamCaption})}
+
+
+
+Plays a connection or disconnection jingle based on the connection status. 
+
+Plays a connection or disconnection jingle.
+
+This function generates an audible feedback using tones to indicate whether a device has been linked or unlinked from a GUI. The pitch increases for connection and decreases for disconnection.
+
+
+\begin{DoxyParams}{Parameters}
+{\em connected} & A String indicating the connection status ("{}\+LINK"{} or "{}\+UNLINK"{}). \\
+\hline
+{\em cue} & Reference to a \doxylink{classCue}{Cue} object controlling the speaker output pin. \\
+\hline
+{\em linked\+To\+GUI} & Reference to a boolean flag tracking GUI connection status. \\
+\hline
+\end{DoxyParams}
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=300pt]{Cue__Utils_8cpp_a94c5b0adb098686b0a7f26cb33815909_cgraph}
+\end{center}
+\end{figure}
+\Hypertarget{Cue__Utils_8cpp_a901134c3a67c6efb2830b4bc01521d43}\label{Cue__Utils_8cpp_a901134c3a67c6efb2830b4bc01521d43} 
+\index{Cue\_Utils.cpp@{Cue\_Utils.cpp}!manageCue@{manageCue}}
+\index{manageCue@{manageCue}!Cue\_Utils.cpp@{Cue\_Utils.cpp}}
+\doxysubsubsection{\texorpdfstring{manageCue()}{manageCue()}}
+{\footnotesize\ttfamily void manage\+Cue (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classCue}{Cue}} \texorpdfstring{$\ast$}{*}}]{cue }\end{DoxyParamCaption})}
+
+
+
+Manages the operation of a cue tone based on timestamps. 
+
+Manages the state of a cue based on time intervals.
+
+Controls the cue speaker by turning it on or off depending on whether the current time falls within the cue\textquotesingle{}s designated on/off timestamp interval. The cue must be armed for this function to take effect.
+
+
+\begin{DoxyParams}{Parameters}
+{\em cue} & Pointer to a \doxylink{classCue}{Cue} object (optional, nullptr if unused). \\
+\hline
+\end{DoxyParams}
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=317pt]{Cue__Utils_8cpp_a901134c3a67c6efb2830b4bc01521d43_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=287pt]{Cue__Utils_8cpp_a901134c3a67c6efb2830b4bc01521d43_icgraph}
+\end{center}
+\end{figure}

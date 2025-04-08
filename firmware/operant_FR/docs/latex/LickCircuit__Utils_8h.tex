@@ -1,0 +1,62 @@
+\doxysection{Lick\+Circuit\+\_\+\+Utils.\+h File Reference}
+\hypertarget{LickCircuit__Utils_8h}{}\label{LickCircuit__Utils_8h}\index{LickCircuit\_Utils.h@{LickCircuit\_Utils.h}}
+
+
+Utility function for monitoring licking behavior.  
+
+
+{\ttfamily \#include $<$Arduino.\+h$>$}\newline
+{\ttfamily \#include "{}Lick\+Circuit.\+h"{}}\newline
+Include dependency graph for Lick\+Circuit\+\_\+\+Utils.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=225pt]{LickCircuit__Utils_8h__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{LickCircuit__Utils_8h_a11812a9a6f5ec5e3e82968ceb90b898f}{monitor\+Licking}} (\mbox{\hyperlink{classLickCircuit}{Lick\+Circuit}} \&lick\+Spout)
+\begin{DoxyCompactList}\small\item\em Monitors licking events on a lick circuit. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Utility function for monitoring licking behavior. 
+
+
+
+\doxysubsection{Function Documentation}
+\Hypertarget{LickCircuit__Utils_8h_a11812a9a6f5ec5e3e82968ceb90b898f}\label{LickCircuit__Utils_8h_a11812a9a6f5ec5e3e82968ceb90b898f} 
+\index{LickCircuit\_Utils.h@{LickCircuit\_Utils.h}!monitorLicking@{monitorLicking}}
+\index{monitorLicking@{monitorLicking}!LickCircuit\_Utils.h@{LickCircuit\_Utils.h}}
+\doxysubsubsection{\texorpdfstring{monitorLicking()}{monitorLicking()}}
+{\footnotesize\ttfamily void monitor\+Licking (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classLickCircuit}{Lick\+Circuit}} \&}]{lick\+Spout }\end{DoxyParamCaption})}
+
+
+
+Monitors licking events on a lick circuit. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em lick\+Spout} & Reference to the \doxylink{classLickCircuit}{Lick\+Circuit} object to monitor.\\
+\hline
+\end{DoxyParams}
+Monitors licking events on a lick circuit.
+
+Detects lick touch and release events, applies debouncing, and logs timestamps adjusted by the program start time when the lick circuit is armed.
+
+
+\begin{DoxyParams}{Parameters}
+{\em lick\+Spout} & Reference to the \doxylink{classLickCircuit}{Lick\+Circuit} object being monitored. \\
+\hline
+\end{DoxyParams}
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{LickCircuit__Utils_8h_a11812a9a6f5ec5e3e82968ceb90b898f_cgraph}
+\end{center}
+\end{figure}

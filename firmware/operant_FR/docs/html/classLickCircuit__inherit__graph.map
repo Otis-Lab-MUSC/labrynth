@@ -1,0 +1,5 @@
+<map id="LickCircuit" name="LickCircuit">
+<area shape="rect" id="Node000001" title="A subclass of Device representing a lick detection circuit." alt="" coords="5,79,96,104"/>
+<area shape="rect" id="Node000002" href="$classDevice.html" title="Base class for hardware devices connected to Arduino pins." alt="" coords="17,5,84,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="53,44,53,79,48,79,48,44"/>
+</map>
