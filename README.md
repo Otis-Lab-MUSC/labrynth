@@ -6,6 +6,10 @@
 
 [![Download REACHER](https://img.shields.io/badge/Download-REACHER-cyan?style=for-the-badge)](#download-options)
 
+*Written by*: Joshua Boquiren ([*@thejoshbq*](https://github.com/thejoshbq/thejoshbq/))
+
+## Overview
+
 The **REACHER Suite** (Rodent Experiment Application Controls and Handling Ecosystem for Research) is an open-source application framework designed for experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems.
 
 
