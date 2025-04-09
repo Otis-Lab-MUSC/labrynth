@@ -20,7 +20,7 @@ Please refer to the [Recommended Specs](#recommended-specifications) for system 
 
 **Components:**
 - A single computer
-- Microcontroller (e.g., Arduino UNO)
+- Microcontroller (e.g., Arduino UNO) with compatible firmware installed (download [here](https://github.com/Otis-Lab-MUSC/REACHER-Firmware))
 - USB-A to USB-B connector
 
 ### **Setup 2: Distributed Configuration**
@@ -134,9 +134,9 @@ You can download the latest version of the **REACHER Suite Dashboard** for your 
 
 | **Operating System**       | **Download Link**                                                                                  |
 |----------------------------|----------------------------------------------------------------------------------------------------|
-| **Windows**               | [Download reacher-dashboard_win_x64.exe](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_win_x64.exe) |
-| **Linux (Ubuntu/Debian)** | [Download reacher-dashboard_linux_amd64.deb](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_linux_amd64.deb) |
-| **macOS**                 | [Download reacher-dashboard_macos_x64.dmg](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_macos_x64.dmg) |
+| **Windows**               | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_win_x64.exe) |
+| **Linux (Ubuntu/Debian)** | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_linux_amd64.deb) |
+| **macOS**                 | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_macos_x64.dmg) |
 
 <br>
 
@@ -146,9 +146,9 @@ You can download the latest version of the **REACHER API** for your operating sy
 
 | **Operating System**       | **Download Link**                                                                                  |
 |----------------------------|----------------------------------------------------------------------------------------------------|
-| **Windows *(BETA)***      | [Download reacher-api_win_x64.exe](#)                                                             |
-| **Linux (Ubuntu/Debian)** | [Download reacher-api_linux_amd64.deb](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-api_linux_amd64.deb) |
-| **macOS *(BETA)***        | [Download reacher-api_macos_x64.dmg](#)                                                           |
+| **Windows *(Coming soon)***      | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](#)                                                             |
+| **Linux (Ubuntu/Debian)** | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-api_linux_amd64.deb) |
+| **macOS *(Coming soon)***        | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](#)                                                           |
 
 <br>
 
@@ -156,13 +156,13 @@ You can download the latest version of the **REACHER API** for your operating sy
 
 You can download the latest version of any of the accompanying Arduino projects here as well:
 
-| **Reinforcement Paradigm**       | **Download Link**                                                                                  |
-|----------------------------------|----------------------------------------------------------------------------------------------------|
-| **All Sketches**                | [Download reacher_arduino_sketches.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher_arduino_sketches.zip) |
-| **Operant Fixed Ratio**         | [Download operant_FR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/operant_FR.zip)           |
-| **Operant Progressive Ratio *(BETA)*** | [Download operant_PR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/operant_PR.zip)     |
-| **Operant Variable Ratio *(BETA)***    | [Download operant_VR.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/operant_VR.zip)     |
-| **Omission *(BETA)***           | [Download omission.zip](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/omission.zip)             |
+| Project          | Paradigm Description                                      | Download Link                                                                 |
+|------------------|----------------------------------------------------------|--------------------------------------------------------------------------------|
+| Operant FR       | Fixed-ratio: Rewards after a set number of presses       | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Firmware/releases/download/v1.0.1/operant_FR.zip) |
+| Omission         | Contingency-based: Rewards withheld under conditions     | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Firmware/releases/download/v1.0.1/omission.zip) |
+| Operant PR       | Progressive-ratio: Press requirement increases           | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Firmware/releases/download/v1.0.1/operant_PR.zip) |
+| Operant VI       | Variable-interval: Reward available once per interval    | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Firmware/releases/download/v1.0.1/operant_VI.zip) |
+| All Projects     | Combined archive of all four paradigms                   | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Firmware/releases/download/v1.0.1/operant_suite.zip) |
 
 <br>
 

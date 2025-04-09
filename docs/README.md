@@ -19,8 +19,7 @@ Welcome to the documentation hub for the **REACHER Suite** (Rodent Experiment Ap
   
 ### Arduino projects:
 
-- **[Operant Fixed Ratio (`operant_FR.ino`)](arduino/operant_FR.md)**  
-    Implements fixed-ratio reinforcement paradigms for rodent experiments.
+Please visit the official [repository](https://github.com/Otis-Lab-MUSC/REACHER-Firmware) for detailed documentation for the Arduino projcts.
 
 ---
 
