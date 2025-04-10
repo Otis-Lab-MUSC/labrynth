@@ -1,6 +1,8 @@
+import matplotlib
+matplotlib.use('QtAgg')
 import panel as pn
-from reacher.wired_controls.interface import Interface as WiredInterface
-from reacher.wireless_controls.interface import Interface as WirelessInterface
+from reacher.interface.interface import Interface as WiredInterface
+from reacher.remote.interface import Interface as WirelessInterface
 import sys
 import os
 import multiprocessing
