@@ -1,5 +1,5 @@
 #define MyAppName "REACHER Dashboard"
-#define MyAppVersion "1.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Joshua Boquiren"
 #define MyAppURL "https://github.com/Otis-Lab-MUSC/REACHER-Suite"  ; Replace with your actual repo URL
 #define MyAppExeName "reacher-dashboard.exe"

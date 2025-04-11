@@ -2,11 +2,16 @@
     <img src="docs/assets/reacher-icon-banner.png" alt="REACHER logo">
 </div>
 <br>
-<br>
+
+*Written by*: Joshua Boquiren
+
+[![](https://img.shields.io/badge/@thejoshbq-grey?style=for-the-badge&logo=github)](https://github.com/thejoshbq) [![](https://img.shields.io/badge/@thejoshbq-grey?style=for-the-badge&logo=X)](https://x.com/thejoshbq) 
 
 [![Download REACHER](https://img.shields.io/badge/Download-REACHER-cyan?style=for-the-badge)](#download-options)
+ 
+<br>
 
-*Written by*: Joshua Boquiren ([*@thejoshbq*](https://github.com/thejoshbq/thejoshbq/))
+---
 
 ## Overview
 
