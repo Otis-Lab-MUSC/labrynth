@@ -1,15 +1,18 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import sys
+from PyInstaller.utils.hooks import collect_data_files
 
 block_cipher = None
 
 a = Analysis(
-    ['src/app.py'],
-    pathex=['.'], 
+    ['src/main.py'],
+    pathex=['.'],
     binaries=[],
-    datas=[],
-    hiddenimports=['flask', 'socket', 'json', 'uuid', 'signal', 'threading'],
+    datas=[
+        ('src/assets/*', 'assets'),
+    ],
+    hiddenimports=['panel', 'plotly', 'requests', 'PySide6', 'reacher'],
     hookspath=[],
     runtime_hooks=[],
     excludes=[],
@@ -27,20 +30,22 @@ if sys.platform == 'darwin':
         a.scripts,
         [],
         exclude_binaries=True,
-        name='reacher-api',
+        name='labrynth',
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
         upx=True,
-        console=True,
+        console=False,
+        icon='src/assets/labrynth-icon.icns',
     )
     app = BUNDLE(
         exe,
         a.binaries,
         a.zipfiles,
         a.datas,
-        name='REACHER API.app',
-        bundle_identifier='com.yourname.reacher-api',
+        name='Labrynth.app',
+        icon='src/assets/labrynth-icon.icns',
+        bundle_identifier='com.thejoshbq.labrynth',
     )
 else:
     try:
@@ -49,12 +54,13 @@ else:
             a.scripts,
             [],
             exclude_binaries=True,
-            name='reacher-api',
+            name='labrynth',
             debug=False,
             bootloader_ignore_signals=False,
             strip=False,
             upx=True,
-            console=True,
+            console=False,
+            icon='src/assets/labrynth-icon.ico',
         )
     except:
         exe = EXE(
@@ -62,12 +68,13 @@ else:
             a.scripts,
             [],
             exclude_binaries=True,
-            name='reacher-api',
+            name='labrynth',
             debug=False,
             bootloader_ignore_signals=False,
             strip=False,
             upx=True,
-            console=True,
+            console=False,
+            icon='src/assets/labrynth-icon.png',
         )
     finally:
         coll = COLLECT(
@@ -78,5 +85,5 @@ else:
             strip=False,
             upx=True,
             upx_exclude=[],
-            name='reacher-api',
+            name='labrynth',
         )
