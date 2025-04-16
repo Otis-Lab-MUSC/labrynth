@@ -66,9 +66,9 @@ You can download the latest version of **The Labrynth** for your operating syste
 
 | **Operating System**       | **Download Link**                                                                                  |
 |----------------------------|----------------------------------------------------------------------------------------------------|
-| **Windows**               | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_win_x64.exe) |
-| **Linux (Ubuntu/Debian)** | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_linux_amd64.deb) |
-| **macOS**                 | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/REACHER-Suite/releases/latest/download/reacher-dashboard_macos_x64.dmg) |
+| **Windows**               | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest/download/labrynth_x64.exe) |
+| **Linux (Ubuntu/Debian)** | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest/download/labrynth_amd64.deb) |
+| **macOS**                 | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest/download/labrynth_x64.dmg) |
 
 <br>
 

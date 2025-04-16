@@ -12,7 +12,7 @@ a = Analysis(
     datas=[
         ('src/assets/*', 'assets'),
     ],
-    hiddenimports=['panel', 'plotly', 'requests', 'PySide6', 'reacher'],
+    hiddenimports=[],
     hookspath=[],
     runtime_hooks=[],
     excludes=[],

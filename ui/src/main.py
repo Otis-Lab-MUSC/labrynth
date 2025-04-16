@@ -38,7 +38,7 @@ icon_path: str = os.path.join(assets_dir, 'labrynth-icon.png')
 if not os.path.isfile(icon_path):
     print(f"Warning: Icon file not found at {icon_path}. Proceeding without custom banner.")
 
-banner: pn.pane.PNG = pn.pane.PNG(os.path.join(assets_dir, 'labrynth-banner.png'), width=600)
+banner: pn.pane.PNG = pn.pane.PNG(os.path.join(assets_dir, 'labrynth-banner-wider.png'), width=600)
 instructions: pn.pane.Markdown = pn.pane.Markdown(
     """
     # Setting Up a Session
@@ -167,7 +167,7 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         """Initialize the main window with a label, button, and start the Panel server."""
         super().__init__()
-        self.setWindowTitle("Labrynth Launcher")
+        self.setWindowTitle("The Labrynth Launcher")
         self.setGeometry(100, 100, 300, 150) 
 
         self.setWindowIcon(QIcon(icon_path))
