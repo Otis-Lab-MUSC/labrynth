@@ -15,7 +15,7 @@
 
 ## Overview
 
-**The Labrynth** is an open-source frontend built using the custom Python-based [`REACHER`]() suite designed to support experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems.
+**The Labrynth** is an open-source frontend built using the custom Python-based [`REACHER`](https://github.com/Otis-Lab-MUSC/reacher) suite designed to support experimental paradigms involving head-fixed rodents. It supports connections to multiple microcontrollers and facilitates running multiple sessions simultaneously from the same computer or across distributed systems.
 
 ---
 
