@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="ui/src/assets/labrynth-banner.png" alt="REACHER logo" width=1000>
+    <img src="ui/src/assets/labrynth-banner.png" alt="REACHER logo" width=400px>
 </div>
 <br>
 
