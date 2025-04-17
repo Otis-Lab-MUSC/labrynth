@@ -1,4 +1,4 @@
-# REACHER Suite Documentation Navigation
+# The Labrynth Documentation Navigation
 
 Welcome to the documentation hub for the **REACHER Suite** (Rodent Experiment Application Controls and Handling Ecosystem for Research). This README is your central navigation menu, linking to detailed documentation for each component of the suite. Use the links below to explore guides, APIs, and more.
 

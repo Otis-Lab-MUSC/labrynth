@@ -33,17 +33,17 @@ if getattr(sys, 'frozen', False):  # Packaged (frozen) environment
 else:  # Development environment
     assets_dir: str = os.path.join('src', 'assets')
 
-icon_path: str = os.path.join(assets_dir, 'reacher-app-icon.png')
+icon_path: str = os.path.join(assets_dir, 'labrynth-icon.png')
 
 if not os.path.isfile(icon_path):
-    print(f"Warning: Icon file not found at {icon_path}. Proceeding without custom icon.")
+    print(f"Warning: Icon file not found at {icon_path}. Proceeding without custom banner.")
 
-icon: pn.pane.PNG = pn.pane.PNG(os.path.join(assets_dir, 'reacher-icon-banner.png'), width=600)
+banner: pn.pane.PNG = pn.pane.PNG(os.path.join(assets_dir, 'labrynth-banner-wider.png'), width=600)
 instructions: pn.pane.Markdown = pn.pane.Markdown(
     """
     # Setting Up a Session
 
-    Welcome to the REACHER Suite! Follow these steps to set up and run your experiment session:
+    Welcome to the Labrynth! Follow these steps to set up and run your experiment session:
 
     ## Step 1: Create a New Session
     1. In the "Create a session" area, enter a unique name for your session (e.g., "Experiment_001").
@@ -83,7 +83,7 @@ instructions: pn.pane.Markdown = pn.pane.Markdown(
     """
 )
 
-tab_1: pn.Column = pn.Column(icon, instructions)
+tab_1: pn.Column = pn.Column(banner, instructions)
 session_tabs: pn.Tabs = pn.Tabs(("Welcome", tab_1))
 
 def make_new_local_instance_tab(_: Any) -> None:
@@ -153,7 +153,7 @@ def serve_interface() -> None:
     This function creates a Bootstrap template and launches the dashboard in a web browser.
     """
     template = pn.template.BootstrapTemplate(
-        title="REACHER Dashboard",
+        title="The Labrynth",
         logo=icon_path,
         main=interface,
         theme="dark",
@@ -162,12 +162,12 @@ def serve_interface() -> None:
     pn.serve(template, port=7007, show=True)
 
 class MainWindow(QMainWindow):
-    """Main window for launching the REACHER Dashboard."""
+    """Launcher window for Labrynth that controls all processes."""
 
     def __init__(self) -> None:
         """Initialize the main window with a label, button, and start the Panel server."""
         super().__init__()
-        self.setWindowTitle("REACHER Dashboard Launcher")
+        self.setWindowTitle("The Labrynth Launcher")
         self.setGeometry(100, 100, 300, 150) 
 
         self.setWindowIcon(QIcon(icon_path))
@@ -216,7 +216,7 @@ class MainWindow(QMainWindow):
         """
         reply: QMessageBox.StandardButton = QMessageBox.question(
             self,
-            "Quit REACHER Dashboard",
+            "Quit the Labrynth",
             "Do you really want to quit? This action is irreversible.",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
@@ -231,7 +231,7 @@ class MainWindow(QMainWindow):
             event.ignore()
 
 if __name__ == "__main__":
-    """Main entry point for the REACHER Dashboard application."""
+    """Main entry point for the Labrynth application."""
     multiprocessing.freeze_support()
     
     app: QApplication = QApplication(sys.argv)
