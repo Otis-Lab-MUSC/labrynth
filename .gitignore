@@ -6,3 +6,4 @@
 /installers/
 **/zip/
 /.vscode/
+*.bak

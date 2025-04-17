@@ -1,19 +1,25 @@
+import matplotlib
+matplotlib.use('QtAgg')
 import panel as pn
-from reacher.interface.local_dashboard import Dashboard as local_dash
-from reacher.interface.network_dashboard import Dashboard as network_dash
-import sys, os, multiprocessing
-
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QMessageBox
+from reacher.interface.interface import Interface as WiredInterface
+from reacher.remote.interface import Interface as WirelessInterface
+import sys
+import os
+import multiprocessing
+from typing import Any, Optional
+from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt
+import webbrowser
 
 pn.extension('plotly')
 
-box_name_TextInput = pn.widgets.TextInput(placeholder="Enter a box name")
-make_new_local_instance_tab_button = pn.widgets.Button(name="New local session")
-make_new_network_instance_tab_button = pn.widgets.Button(name="New network session (BETA)") 
+# UI Components
+box_name_TextInput: pn.widgets.TextInput = pn.widgets.TextInput(placeholder="Enter a box name")
+make_new_local_instance_tab_button: pn.widgets.Button = pn.widgets.Button(name="New wired session")
+make_new_network_instance_tab_button: pn.widgets.Button = pn.widgets.Button(name="New wireless session (BETA)")
 
-start_area = pn.Column(
+start_area: pn.Column = pn.Column(
     pn.pane.Markdown("## Create a session"),
     pn.Row(box_name_TextInput, pn.Column(
         make_new_local_instance_tab_button,
@@ -21,22 +27,23 @@ start_area = pn.Column(
     )
 )
 
+# Asset handling
 if getattr(sys, 'frozen', False):  # Packaged (frozen) environment
-    assets_dir = os.path.join(sys._MEIPASS, 'assets')
+    assets_dir: str = os.path.join(sys._MEIPASS, 'assets')
 else:  # Development environment
-    assets_dir = os.path.join('src', 'assets')
+    assets_dir: str = os.path.join('src', 'assets')
 
-icon_path = os.path.join(assets_dir, 'reacher-app-icon.png')
+icon_path: str = os.path.join(assets_dir, 'labrynth-icon.png')
 
 if not os.path.isfile(icon_path):
-    print(f"Warning: Icon file not found at {icon_path}. Proceeding without custom icon.")
+    print(f"Warning: Icon file not found at {icon_path}. Proceeding without custom banner.")
 
-icon = pn.pane.PNG(os.path.join(assets_dir, 'reacher-icon-banner.png'), width=600)
-instructions = pn.pane.Markdown(
+banner: pn.pane.PNG = pn.pane.PNG(os.path.join(assets_dir, 'labrynth-banner-wider.png'), width=600)
+instructions: pn.pane.Markdown = pn.pane.Markdown(
     """
     # Setting Up a Session
 
-    Welcome to the REACHER Suite! Follow these steps to set up and run your experiment session:
+    Welcome to the Labrynth! Follow these steps to set up and run your experiment session:
 
     ## Step 1: Create a New Session
     1. In the "Create a session" area, enter a unique name for your session (e.g., "Experiment_001").
@@ -76,30 +83,44 @@ instructions = pn.pane.Markdown(
     """
 )
 
-tab_1 = pn.Column(icon, instructions)
-session_tabs = pn.Tabs(("Welcome", tab_1))
+tab_1: pn.Column = pn.Column(banner, instructions)
+session_tabs: pn.Tabs = pn.Tabs(("Welcome", tab_1))
 
-def make_new_local_instance_tab(_):
+def make_new_local_instance_tab(_: Any) -> None:
+    """Create a new local session tab in the dashboard.
+
+    Args:
+        _ (Any): The event object (unused).
+
+    This method creates a new local dashboard tab if the provided box name is valid and unique.
+    """
     if box_name_TextInput.value == "":
         box_name_TextInput.placeholder = "Please enter a name and try again."
     elif box_name_TextInput.value in session_tabs._names:
         box_name_TextInput.value = ""
         box_name_TextInput.placeholder = "Name entered already exists. Please enter a different name."
     else:
-        new_dashboard = local_dash()
+        new_dashboard: WiredInterface = WiredInterface()
         session_tabs.append((f"LOCAL - {box_name_TextInput.value}", new_dashboard.layout()))
         session_tabs.active = len(session_tabs) - 1
         box_name_TextInput.value = ""
         box_name_TextInput.placeholder = ""
 
-def make_new_network_instance_tab(_):
+def make_new_network_instance_tab(_: Any) -> None:
+    """Create a new network session tab in the dashboard.
+
+    Args:
+        _ (Any): The event object (unused).
+
+    This method creates a new network dashboard tab if the provided box name is valid and unique.
+    """
     if box_name_TextInput.value == "":
         box_name_TextInput.placeholder = "Please enter a name and try again."
     elif box_name_TextInput.value in session_tabs._names:
         box_name_TextInput.value = ""
         box_name_TextInput.placeholder = "Name entered already exists. Please enter a different name."
     else:
-        new_dashboard = network_dash()
+        new_dashboard: WirelessInterface = WirelessInterface()
         session_tabs.append((f"NETWORK - {box_name_TextInput.value}", new_dashboard.layout()))
         session_tabs.active = len(session_tabs) - 1
         box_name_TextInput.value = ""
@@ -108,10 +129,10 @@ def make_new_network_instance_tab(_):
 make_new_local_instance_tab_button.on_click(make_new_local_instance_tab)
 make_new_network_instance_tab_button.on_click(make_new_network_instance_tab)
 
-footer = pn.pane.HTML(
+footer: pn.pane.HTML = pn.pane.HTML(
     """
     <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
-        <p>© 2025 LogisTech. All rights reserved.</p><br>
+        <p>© 2025 Otis Lab. All rights reserved.</p><br>
         <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
         <p>Psalm 19:1</p>
     </div>
@@ -119,42 +140,83 @@ footer = pn.pane.HTML(
     sizing_mode="stretch_width"
 )
 
-interface = pn.Column(
+interface: pn.Column = pn.Column(
     start_area,
     pn.Spacer(height=75),
     session_tabs,
     footer
 )
 
-def serve_interface():
+def serve_interface() -> None:
+    """Serve the Panel interface in a browser.
+
+    This function creates a Bootstrap template and launches the dashboard in a web browser.
+    """
     template = pn.template.BootstrapTemplate(
-        title="REACHER Dashboard",
+        title="The Labrynth",
         logo=icon_path,
         main=interface,
         theme="dark",
         favicon=icon_path
     )
-    pn.serve(template, show=True)
+    pn.serve(template, port=7007, show=True)
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    """Launcher window for Labrynth that controls all processes."""
+
+    def __init__(self) -> None:
+        """Initialize the main window with a label, button, and start the Panel server."""
         super().__init__()
-        self.setWindowTitle("REACHER Dashboard Launcher")
-        self.setGeometry(100, 100, 300, 100)
+        self.setWindowTitle("The Labrynth Launcher")
+        self.setGeometry(100, 100, 300, 150) 
 
         self.setWindowIcon(QIcon(icon_path))
 
-        label = QLabel("Opening REACHER Dashboard in browser...\n(keep this window open)")
+        central_widget: QWidget = QWidget()
+        self.setCentralWidget(central_widget)
+        layout: QVBoxLayout = QVBoxLayout(central_widget)
+
+        label: QLabel = QLabel("Opening session in browser...")
         label.setAlignment(Qt.AlignCenter)
-        self.setCentralWidget(label)
+        layout.addWidget(label)
 
-        self.panel_process = multiprocessing.Process(target=serve_interface, daemon=True)
+        self.reopen_button: QPushButton = QPushButton("Re-open Dashboard")
+        self.reopen_button.clicked.connect(self.reopen_session)
+        layout.addWidget(self.reopen_button)
+
+        self.panel_process: multiprocessing.Process = multiprocessing.Process(
+            target=serve_interface, daemon=True
+        )
         self.panel_process.start()
+        label.setText("Session running in browser.\n(keep this window open)")
 
-    def closeEvent(self, event):
-        reply = QMessageBox.question(
+    def reopen_session(self) -> None:
+        """Re-open the Panel dashboard in the default web browser.
+
+        This method checks if the Panel server process is still running and, if so, opens the
+        dashboard URL in the default browser. If the server is not running, it displays a warning.
+        """
+        if self.panel_process.is_alive():
+            url: str = "http://localhost:7007"
+            webbrowser.open(url)
+        else:
+            QMessageBox.warning(
+                self,
+                "Server Not Running",
+                "The dashboard server is not running. Please restart the application."
+            )
+
+    def closeEvent(self, event: Any) -> None:
+        """Handle the window close event with a confirmation dialog.
+
+        Args:
+            event (Any): The close event object.
+
+        This method prompts the user to confirm quitting and terminates the Panel process if confirmed.
+        """
+        reply: QMessageBox.StandardButton = QMessageBox.question(
             self,
-            "Quit REACHER Dashboard",
+            "Quit the Labrynth",
             "Do you really want to quit? This action is irreversible.",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
@@ -169,10 +231,11 @@ class MainWindow(QMainWindow):
             event.ignore()
 
 if __name__ == "__main__":
+    """Main entry point for the Labrynth application."""
     multiprocessing.freeze_support()
     
-    app = QApplication(sys.argv)
-    window = MainWindow()
+    app: QApplication = QApplication(sys.argv)
+    window: MainWindow = MainWindow()
     window.show()
     
     sys.exit(app.exec())

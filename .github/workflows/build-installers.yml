@@ -1,4 +1,4 @@
-name: Build Installers for REACHER Dashboard, REACHER API, and Arduino sketch ZIPs
+name: Build Installers for The Labrynth
 
 on:
   push:
@@ -19,23 +19,25 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-          cd lib
-          python -m pip install .
-          cd ..
+          python -m pip install pyinstaller
+          python -m pip install wget
+          Invoke-WebRequest -Uri https://github.com/Otis-Lab-MUSC/reacher/releases/download/v1.0.1-beta/reacher-1.0.1-py3-none-any.whl -OutFile reacher-1.0.1-py3-none-any.whl
+          python -m pip install reacher-1.0.1-py3-none-any.whl
+
       - name: Build with PyInstaller
-        working-directory: web/frontend/dashboard
+        working-directory: ui
         run: pyinstaller setup.spec
       - name: Install Inno Setup
         run: choco install innosetup
       - name: Build Installer
-        working-directory: web/frontend/dashboard
+        working-directory: ui
         run: |
-          iscc /O"dist" /F"reacher-dashboard_win_x64" setup.iss
+          iscc /O"dist" /F"labrynth_x64" setup.iss
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: reacher-dashboard_win_x64.exe
-          path: web/frontend/dashboard/dist/reacher-dashboard_win_x64.exe
+          name: labrynth_x64.exe
+          path: ui/dist/labrynth_x64.exe
 
   build-dashboard-macos:
     runs-on: macos-latest
@@ -49,20 +51,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-          cd lib
-          python -m pip install .
-          cd ..
+          python -m pip install pyinstaller
+          curl -L -o reacher-1.0.1-py3-none-any.whl https://github.com/Otis-Lab-MUSC/reacher/releases/download/v1.0.1-beta/reacher-1.0.1-py3-none-any.whl
+          python -m pip install reacher-1.0.1-py3-none-any.whl
+
       - name: Build with PyInstaller
-        working-directory: web/frontend/dashboard
+        working-directory: ui
         run: pyinstaller setup.spec
       - name: Create DMG
         run: |
-          hdiutil create -volname "REACHER Dashboard Installer" -srcfolder "web/frontend/dashboard/dist/REACHER Dashboard.app" -ov -format UDZO reacher-dashboard_macos_x64.dmg
+          hdiutil create -volname "Labrynth Installer" -srcfolder "ui/dist/Labrynth.app" -ov -format UDZO labrynth_x64.dmg
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: reacher-dashboard_macos_x64.dmg
-          path: reacher-dashboard_macos_x64.dmg
+          name: labrynth_x64.dmg
+          path: labrynth_x64.dmg
 
   build-dashboard-linux:
     runs-on: ubuntu-latest
@@ -76,98 +79,44 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-          cd lib
-          python -m pip install .
-          cd ..
-          sudo apt install -y python3-tk
+          python -m pip install pyinstaller
+          curl -L -o reacher-1.0.1-py3-none-any.whl https://github.com/Otis-Lab-MUSC/reacher/releases/download/v1.0.1-beta/reacher-1.0.1-py3-none-any.whl
+          python -m pip install reacher-1.0.1-py3-none-any.whl
+          
       - name: Build with PyInstaller
-        working-directory: web/frontend/dashboard
+        working-directory: ui
         run: pyinstaller setup.spec
       - name: Create DEB structure
         run: |
-          mkdir -p reacher-dashboard_linux_amd64/DEBIAN
-          mkdir -p reacher-dashboard_linux_amd64/opt/reacher-dashboard
-          mkdir -p reacher-dashboard_linux_amd64/usr/local/bin
-          echo "Package: reacher-dashboard
+          mkdir -p labrynth_amd64/DEBIAN
+          mkdir -p labrynth_amd64/opt/labrynth
+          mkdir -p labrynth_amd64/usr/local/bin
+          echo "Package: labrynth
           Version: 1.0.1
           Section: utils
           Priority: optional
           Architecture: amd64
-          Depends: tk8.6
-          Maintainer: Your Name <your.email@example.com>
-          Description: REACHER Dashboard - A dashboard application" > reacher-dashboard_linux_amd64/DEBIAN/control
-          cp -r web/frontend/dashboard/dist/reacher-dashboard/* reacher-dashboard_linux_amd64/opt/reacher-dashboard/
-          chmod +x reacher-dashboard_linux_amd64/opt/reacher-dashboard/reacher-dashboard
-          ln -s /opt/reacher-dashboard/reacher-dashboard reacher-dashboard_linux_amd64/usr/local/bin/reacher-dashboard
+          Maintainer: Josh Boquiren <thejoshbq.proton@.me>
+          Description: Labrynth - A dashboard application" > labrynth_amd64/DEBIAN/control
+          cp -r ui/dist/labrynth/* labrynth_amd64/opt/labrynth/
+          chmod +x labrynth_amd64/opt/labrynth/labrynth
+          ln -s /opt/labrynth/labrynth labrynth_amd64/usr/local/bin/labrynth
       - name: Build DEB package
-        run: dpkg-deb --build reacher-dashboard_linux_amd64
+        run: dpkg-deb --build labrynth_amd64
       - name: Upload DEB
         uses: actions/upload-artifact@v4
         with:
-          name: reacher-dashboard_linux_amd64.deb
-          path: reacher-dashboard_linux_amd64.deb
-
-  build-api-linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          cd lib
-          python -m pip install .
-          cd ..
-      - name: Build with PyInstaller
-        working-directory: web/backend/api
-        run: pyinstaller setup.spec
-      - name: Create DEB structure
-        run: |
-          mkdir -p reacher-api_linux_amd64/DEBIAN
-          mkdir -p reacher-api_linux_amd64/opt/reacher-api
-          mkdir -p reacher-api_linux_amd64/usr/local/bin
-          echo "Package: reacher-api
-          Version: 1.0.1
-          Section: utils
-          Priority: optional
-          Architecture: amd64
-          Depends: python3 (>= 3.11), python3-tk
-          Maintainer: Your Name <your.email@example.com>
-          Description: REACHER API - A launcher application" > reacher-api_linux_amd64/DEBIAN/control
-          cp -r web/backend/api/dist/reacher-api/* reacher-api_linux_amd64/opt/reacher-api/
-          chmod +x reacher-api_linux_amd64/opt/reacher-api/reacher-api
-          ln -s /opt/reacher-api/reacher-api reacher-api_linux_amd64/usr/local/bin/reacher-api
-      - name: Build DEB package
-        run: dpkg-deb --build reacher-api_linux_amd64
-      - name: Upload DEB
-        uses: actions/upload-artifact@v4
-        with:
-          name: reacher-api_linux_amd64.deb
-          path: reacher-api_linux_amd64.deb
+          name: labrynth_amd64.deb
+          path: labrynth_amd64.deb
 
   release:
-    needs: [build-dashboard-windows, build-dashboard-macos, build-dashboard-linux, build-api-linux]
+    needs: [build-dashboard-windows, build-dashboard-macos, build-dashboard-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-
-      - name: Zip Arduino sketches
-        run: |
-          zip -r reacher_arduino_sketches.zip firmware
-          cd firmware
-          zip -r ../operant_FR.zip operant_FR
-          zip -r ../operant_PR.zip operant_PR
-          zip -r ../operant_VI.zip operant_VI
-          zip -r ../omission.zip omission
-          cd ..
-
       - name: Delete existing release and tag
         uses: actions/github-script@v6
         with:
@@ -210,26 +159,20 @@ jobs:
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher-dashboard_win_x64.exe
+          name: labrynth_x64.exe
           path: dist/windows
 
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher-dashboard_macos_x64.dmg
+          name: labrynth_x64.dmg
           path: dist/macos
 
       - name: Download Dashboard Linux artifact
         uses: actions/download-artifact@v4
         with:
-          name: reacher-dashboard_linux_amd64.deb
+          name: labrynth_amd64.deb
           path: dist/linux-dashboard
-
-      - name: Download API Linux artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: reacher-api_linux_amd64.deb
-          path: dist/linux-api
 
       - name: Upload Windows Installer
         uses: actions/upload-release-asset@v1
@@ -237,8 +180,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/windows/reacher-dashboard_win_x64.exe
-          asset_name: reacher-dashboard_win_x64.exe
+          asset_path: dist/windows/labrynth_x64.exe
+          asset_name: labrynth_x64.exe
           asset_content_type: application/octet-stream
 
       - name: Upload macOS DMG
@@ -247,8 +190,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/macos/reacher-dashboard_macos_x64.dmg
-          asset_name: reacher-dashboard_macos_x64.dmg
+          asset_path: dist/macos/labrynth_x64.dmg
+          asset_name: labrynth_x64.dmg
           asset_content_type: application/x-diskcopy
 
       - name: Upload Dashboard Linux DEB
@@ -257,66 +200,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/linux-dashboard/reacher-dashboard_linux_amd64.deb
-          asset_name: reacher-dashboard_linux_amd64.deb
+          asset_path: dist/linux-dashboard/labrynth_amd64.deb
+          asset_name: labrynth_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
-
-      - name: Upload API Linux DEB
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/linux-api/reacher-api_linux_amd64.deb
-          asset_name: reacher-api_linux_amd64.deb
-          asset_content_type: application/vnd.debian.binary-package
-
-      - name: Upload All Sketches Zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: reacher_arduino_sketches.zip
-          asset_name: reacher_arduino_sketches.zip
-          asset_content_type: application/zip
-
-      - name: Upload Operant FR Zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: operant_FR.zip
-          asset_name: operant_FR.zip
-          asset_content_type: application/zip
-
-      - name: Upload Operant PR Zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: operant_PR.zip
-          asset_name: operant_PR.zip
-          asset_content_type: application/zip
-
-      - name: Upload Operant VI Zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: operant_VI.zip
-          asset_name: operant_VI.zip
-          asset_content_type: application/zip
-
-      - name: Upload Omission Zip
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: omission.zip
-          asset_name: omission.zip
-          asset_content_type: application/zip
