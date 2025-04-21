@@ -16,7 +16,6 @@ DefaultGroupName={#MyAppName}
 OutputBaseFilename=labrynth-1.0-x64
 Compression=lzma
 SolidCompression=yes
-SetupIconFile=src\assets\labrynth-icon.png
 UninstallDisplayIcon={app}\{#MyAppExeName}
 PrivilegesRequired=admin
 OutputDir=dist
