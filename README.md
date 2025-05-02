@@ -87,13 +87,9 @@ You can download the latest version of **The Labrynth** for your operating syste
 ---
 
 <br><br>
-<h2>Copyright & License</h2>
-  <p>© 2025 Otis Lab. All rights reserved.</p>
+<div align="center">
+  <h2>Copyright & License</h2>
+  <p>© 2025 <a href="http://www.otis-lab.org">Otis Lab</a>. All rights reserved.</p>
   <p>This project is licensed under the <a href=""><strong>LICENSE</strong></a>.</p>
-  <p>For more information, please visit the official <a href=""><strong>documentation repository</strong></a>, or contact the author at <a href="mailto:thejoshbq@proton.me"><i>thejoshbq@proton.me</i></a>
-
-<div align="center"
-     style="padding: 10px; background-color: #333; color: white;">
-    <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
-    <p>Psalm 19:1</p>
+  <p>For more information, please contact the author at <a href="mailto:thejoshbq@proton.me"><i>thejoshbq@proton.me</i></a>
 </div>
