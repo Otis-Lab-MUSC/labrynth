@@ -7,3 +7,5 @@
 **/zip/
 /.vscode/
 *.bak
+.idea/
+*.idea/
