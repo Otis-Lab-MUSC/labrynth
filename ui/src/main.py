@@ -100,7 +100,7 @@ def make_new_local_instance_tab(_: Any) -> None:
         box_name_TextInput.value = ""
         box_name_TextInput.placeholder = "Name entered already exists. Please enter a different name."
     else:
-        new_dashboard: WiredInterface = WiredInterface()
+        new_dashboard: WiredInterface = WiredInterface(box_name_TextInput.value)
         session_tabs.append((f"LOCAL - {box_name_TextInput.value}", new_dashboard.layout()))
         session_tabs.active = len(session_tabs) - 1
         box_name_TextInput.value = ""
@@ -120,7 +120,7 @@ def make_new_network_instance_tab(_: Any) -> None:
         box_name_TextInput.value = ""
         box_name_TextInput.placeholder = "Name entered already exists. Please enter a different name."
     else:
-        new_dashboard: WirelessInterface = WirelessInterface()
+        new_dashboard: WirelessInterface = WirelessInterface(box_name_TextInput.value)
         session_tabs.append((f"NETWORK - {box_name_TextInput.value}", new_dashboard.layout()))
         session_tabs.active = len(session_tabs) - 1
         box_name_TextInput.value = ""
@@ -132,7 +132,9 @@ make_new_network_instance_tab_button.on_click(make_new_network_instance_tab)
 footer: pn.pane.HTML = pn.pane.HTML(
     """
     <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
-        <p>© 2025 Otis Lab. All rights reserved.</p><br>
+        <p>Copyright © 2025 LogisTech.</p>
+        <p>Developed with support from the Otis Lab, MUSC.</p>
+        <p>Licensed under the MIT License</p><br>
         <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
         <p>Psalm 19:1</p>
     </div>
