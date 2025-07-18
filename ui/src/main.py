@@ -132,8 +132,16 @@ make_new_network_instance_tab_button.on_click(make_new_network_instance_tab)
 footer: pn.pane.HTML = pn.pane.HTML(
     """
     <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
+<<<<<<< HEAD
         <p>Copyright © 2025 <a href="http://www.otis-lab.org">Otis Lab</a>. Developed by <a href="mailto:logistech@pm.me">LogisTech</a>.</p>
         <p>All rights reserved.</p>
+=======
+        <p>Copyright © 2025 LogisTech.</p>
+        <p>Developed with support from the Otis Lab, MUSC.</p>
+        <p>Licensed under the MIT License</p><br>
+        <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
+        <p>Psalm 19:1</p>
+>>>>>>> 83fcf9fa0df4523873986c103847a70d807d050a
     </div>
     """,
     sizing_mode="stretch_width"
