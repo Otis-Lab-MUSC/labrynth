@@ -12,7 +12,7 @@ a = Analysis(
     datas=[
         ('src/assets/*', 'assets'),
     ],
-    hiddenimports=[],
+    hiddenimports=['typing_extensions'],
     hookspath=[],
     runtime_hooks=[],
     excludes=[],
