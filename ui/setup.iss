@@ -1,7 +1,7 @@
 #define MyAppName "The Labrynth"
 #define MyAppVersion "1.0.1"
 #define MyAppPublisher "Joshua Boquiren"
-#define MyAppURL "https://github.com/Otis-Lab-MUSC/Labrynth"  ; Replace with your actual repo URL
+#define MyAppURL "https://github.com/Otis-Lab-MUSC/Labrynth"
 #define MyAppExeName "labrynth.exe"
 
 [Setup]
@@ -13,10 +13,9 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-OutputBaseFilename=reacher-dashboard-1.0-x64
+OutputBaseFilename=labrynth-1.0-x64
 Compression=lzma
 SolidCompression=yes
-SetupIconFile=src\assets\labrynth-app-logo.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 PrivilegesRequired=admin
 OutputDir=dist
@@ -25,14 +24,15 @@ OutputDir=dist
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 
 [Files]
 Source: "dist\labrynth\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\labrynth\_internal\assets\labrynth-icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\labrynth-icon.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

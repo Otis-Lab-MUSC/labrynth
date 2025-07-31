@@ -120,7 +120,7 @@ def make_new_network_instance_tab(_: Any) -> None:
         box_name_TextInput.value = ""
         box_name_TextInput.placeholder = "Name entered already exists. Please enter a different name."
     else:
-        new_dashboard: WirelessInterface = WirelessInterface()
+        new_dashboard: WirelessInterface = WirelessInterface(box_name_TextInput.value)
         session_tabs.append((f"NETWORK - {box_name_TextInput.value}", new_dashboard.layout()))
         session_tabs.active = len(session_tabs) - 1
         box_name_TextInput.value = ""
