@@ -132,8 +132,14 @@ make_new_network_instance_tab_button.on_click(make_new_network_instance_tab)
 footer: pn.pane.HTML = pn.pane.HTML(
     """
     <div style="text-align: center; padding: 10px; background-color: #333; color: white;">
+<<<<<<< HEAD
         <p>Copyright © 2025 <a href="http://www.otis-lab.org">Otis Lab</a>. Developed by <a href="mailto:logistech@pm.me">LogisTech</a>.</p>
         <p>All rights reserved.</p>
+=======
+        <p>Copyright © 2025 Otis Lab</p>
+        <p>Developed by LogisTech</p>
+        <p>For more information, visit our <a href="https://github.com/LogisTechLLC">GitHub page</a></p>
+>>>>>>> 5dcf23527215cfd4f951a9861bb24050fbdc0ec8
     </div>
     """,
     sizing_mode="stretch_width"
