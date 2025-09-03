@@ -93,8 +93,3 @@ You can download the latest version of **The Labrynth** for your operating syste
   <p>This project is licensed under the <a href=""><strong>LICENSE</strong></a>.</p>
   <p>For more information, please contact the author at <a href="mailto:thejoshbq@proton.me"><i>thejoshbq@proton.me</i></a>
 </div>
-
-<div align="center", style="padding: 10px; background-color: #333; color: white;">
-    <p><i>"The heavens declare the glory of God, and the sky above proclaims his handiwork."</i>
-    <p>Psalm 19:1</p>
-</div>
