@@ -16,8 +16,8 @@ pn.extension('plotly')
 
 # UI Components
 box_name_TextInput: pn.widgets.TextInput = pn.widgets.TextInput(placeholder="Enter a box name")
-make_new_local_instance_tab_button: pn.widgets.Button = pn.widgets.Button(name="New wired session")
-make_new_network_instance_tab_button: pn.widgets.Button = pn.widgets.Button(name="New wireless session (BETA)")
+make_new_local_instance_tab_button: pn.widgets.Button = pn.widgets.Button(name="New wired session", button_type="primary")
+make_new_network_instance_tab_button: pn.widgets.Button = pn.widgets.Button(name="New wireless session (BETA)", button_type="primary")
 
 start_area: pn.Column = pn.Column(
     pn.pane.Markdown("## Create a session"),
