@@ -36,7 +36,7 @@ export default function App() {
         {background === "storm-synapse" && <StormSynapseBackground />}
         {background === "ember-circuit" && <EmberCircuitBackground />}
         <div className="relative z-10 text-center text-theme-text">
-          <p className="text-lg font-bold text-accent">REACHER is already open in another tab.</p>
+          <p className="text-lg font-bold text-accent">Labrynth is already open in another tab.</p>
           <p className="mt-2 text-sm">Close this tab and return to the original.</p>
         </div>
       </div>

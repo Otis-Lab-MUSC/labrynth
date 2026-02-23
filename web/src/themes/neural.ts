@@ -32,7 +32,7 @@ export const neuralTheme: ThemeDefinition = {
   glass: { enabled: true, opacity: 0.8, blur: "8px" },
   branding: {
     type: "clean",
-    text: "REACHER",
+    text: "Labrynth",
     showCursor: false,
     icon: "neural",
   },

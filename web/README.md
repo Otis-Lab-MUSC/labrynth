@@ -1,8 +1,8 @@
-# REACHER — React Frontend
+# Labrynth — React Frontend
 
 **Browser-based experiment control interface for the REACHER ecosystem**
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/Otis-Lab-MUSC/REACHER-Frontend)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/Otis-Lab-MUSC/labrynth)
 [![React](https://img.shields.io/badge/React-19-blue)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -15,15 +15,15 @@
 
 ## Overview
 
-The REACHER frontend is a React 19 + TypeScript single-page application providing the browser-based user interface for REACHER experiments. It enables researchers to manage sessions, configure hardware devices, run behavioral paradigms, monitor events in real time, and export data — all from a web browser.
+The Labrynth frontend is a React 19 + TypeScript single-page application providing the browser-based user interface for REACHER experiments. It enables researchers to manage sessions, configure hardware devices, run behavioral paradigms, monitor events in real time, and export data — all from a web browser.
 
-In production, these static files are served by the Python backend and bundled into the standalone REACHER executable. During development, the Vite dev server runs independently with hot module replacement and proxies API requests to the backend.
+In production, these static files are served by the Python backend and bundled into the standalone executable. During development, the Vite dev server runs independently with hot module replacement and proxies API requests to the backend.
 
 ---
 
 ## Role in the REACHER Ecosystem
 
-The frontend is the user-facing layer of the REACHER system:
+The frontend is the user-facing layer of the Labrynth application shell:
 
 ```
 Arduino Firmware ◄──► Python Backend ◄──REST API + WebSocket──► React Frontend (web/)
@@ -113,7 +113,7 @@ src/
 Session states: `idle` → `uploading` → `connected` → `running` → `paused` → `stopped`
 
 **Theme Store** (`useThemeStore`) — dark/light mode:
-- Persisted to `localStorage` (`reacher-theme` key)
+- Persisted to `localStorage` (`labrynth-mode` / `labrynth-theme-id` keys)
 - Defaults to dark mode (optimized for lab environments)
 - Class-based toggling on `<html>` element
 
@@ -195,7 +195,7 @@ npm run build
 
 This compiles TypeScript and builds optimized static files into the `dist/` directory. These files are:
 - Served by the Python backend as static files at the root URL
-- Bundled into the standalone REACHER executable by PyInstaller during the full build process
+- Bundled into the standalone executable by PyInstaller during the full build process
 
 To preview the production build locally:
 
@@ -236,4 +236,4 @@ This project is licensed under the MIT License.
 
 Joshua Boquiren — [thejoshbq@proton.me](mailto:thejoshbq@proton.me)
 
-[GitHub: Otis-Lab-MUSC/REACHER-Frontend](https://github.com/Otis-Lab-MUSC/REACHER-Frontend)
+[GitHub: Otis-Lab-MUSC/labrynth](https://github.com/Otis-Lab-MUSC/labrynth)

@@ -17,16 +17,26 @@ const FONT_MAP: Record<string, string> = {
   sans: "Inter, system-ui, sans-serif",
 };
 
+function migrateKey(oldKey: string, newKey: string): void {
+  const legacy = localStorage.getItem(oldKey);
+  if (legacy !== null) {
+    localStorage.setItem(newKey, legacy);
+    localStorage.removeItem(oldKey);
+  }
+}
+
 function getInitialMode(): Mode {
   if (typeof window === "undefined") return "dark";
-  const stored = localStorage.getItem("reacher-mode");
+  migrateKey("reacher-mode", "labrynth-mode");
+  const stored = localStorage.getItem("labrynth-mode");
   if (stored === "light" || stored === "dark") return stored;
   return "dark";
 }
 
 function getInitialThemeId(): string {
   if (typeof window === "undefined") return defaultThemeId;
-  const stored = localStorage.getItem("reacher-theme-id");
+  migrateKey("reacher-theme-id", "labrynth-theme-id");
+  const stored = localStorage.getItem("labrynth-theme-id");
   if (stored && themes[stored]) return stored;
   return defaultThemeId;
 }
@@ -58,8 +68,8 @@ function apply(theme: ThemeDefinition, mode: Mode) {
   root.style.setProperty("--glass-blur", theme.glass.blur);
 
   // Persist
-  localStorage.setItem("reacher-mode", mode);
-  localStorage.setItem("reacher-theme-id", theme.id);
+  localStorage.setItem("labrynth-mode", mode);
+  localStorage.setItem("labrynth-theme-id", theme.id);
 }
 
 export const useThemeStore = create<ThemeStore>((set) => {

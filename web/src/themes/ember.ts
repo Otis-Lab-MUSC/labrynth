@@ -32,9 +32,9 @@ export const emberTheme: ThemeDefinition = {
   glass: { enabled: true, opacity: 0.9, blur: "4px" },
   branding: {
     type: "clean",
-    text: "REACHER",
+    text: "Labrynth",
     showCursor: false,
-    icon: null,
+    icon: "ember",
   },
   sidebar: { activeStyle: "filled", itemPrefix: "" },
   background: "ember-circuit",

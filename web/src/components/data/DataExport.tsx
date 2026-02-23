@@ -70,7 +70,7 @@ export function DataExport() {
           <input
             value={destination}
             onChange={(e) => setDestination(e.target.value)}
-            placeholder="/home/user/REACHER/DATA"
+            placeholder="/home/user/Labrynth/DATA"
             className="flex-1 input-base"
           />
         </div>

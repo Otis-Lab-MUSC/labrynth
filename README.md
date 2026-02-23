@@ -1,6 +1,6 @@
 # The Labrynth
 
-**REACHER application shell — build orchestrator and React frontend**
+**Labrynth application shell — build orchestrator and React frontend**
 
 [![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/Otis-Lab-MUSC/labrynth)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -13,7 +13,7 @@
 
 ## Overview
 
-**The Labrynth** is the application shell for the [REACHER](https://github.com/otis-lab-musc/reacher) ecosystem. It bundles:
+**Labrynth** is the application shell for the [REACHER](https://github.com/otis-lab-musc/reacher) ecosystem. It bundles:
 
 - A **React 19 + TypeScript frontend** (Vite + Tailwind CSS) for browser-based experiment control
 - A **build pipeline** (`build.py`) that compiles firmware, builds the frontend, and packages everything into a standalone executable via PyInstaller

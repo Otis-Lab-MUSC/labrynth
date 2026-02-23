@@ -32,9 +32,9 @@ export const midnightTheme: ThemeDefinition = {
   glass: { enabled: true, opacity: 0.85, blur: "6px" },
   branding: {
     type: "clean",
-    text: "REACHER",
+    text: "Labrynth",
     showCursor: false,
-    icon: null,
+    icon: "bolt",
   },
   sidebar: { activeStyle: "left-accent", itemPrefix: "" },
   background: "storm-synapse",

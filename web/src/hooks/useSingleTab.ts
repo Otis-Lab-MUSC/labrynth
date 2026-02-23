@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const CHANNEL_NAME = "reacher-single-tab";
+const CHANNEL_NAME = "labrynth-single-tab";
 
 export function useSingleTab(): boolean {
   const [blocked, setBlocked] = useState(false);

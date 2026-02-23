@@ -32,7 +32,7 @@ export const terminalTheme: ThemeDefinition = {
   glass: { enabled: false, opacity: 1, blur: "0px" },
   branding: {
     type: "terminal",
-    text: "$ otis-lab@reacher_",
+    text: "$ user@labrynth_",
     showCursor: true,
     icon: null,
   },

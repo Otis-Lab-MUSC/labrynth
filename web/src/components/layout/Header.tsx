@@ -17,6 +17,28 @@ function NeuralIcon() {
   );
 }
 
+function BoltIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"
+         className="inline-block mr-1.5 animate-bolt-flicker">
+      <path d="M11 1L4 12h5l-1 7 7-11h-5l1-7z"
+            fill="currentColor" opacity="0.8" />
+    </svg>
+  );
+}
+
+function EmberIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"
+         className="inline-block mr-1.5 animate-ember-sway">
+      <path d="M10 2c0 4-4 5-4 9a4 4 0 0 0 8 0c0-4-4-5-4-9z"
+            fill="currentColor" opacity="0.7" />
+      <path d="M10 8c0 2-1.5 2.5-1.5 4.5a1.5 1.5 0 0 0 3 0c0-2-1.5-2.5-1.5-4.5z"
+            fill="currentColor" opacity="0.4" />
+    </svg>
+  );
+}
+
 export function Header() {
   const { sessions, activeSessionId, setActive, createSession, resetSessionData, setSessionName } = useSessionStore();
   const { mode, toggleMode, theme } = useThemeStore();
@@ -71,6 +93,8 @@ export function Header() {
       {/* Branding */}
       <span className="mr-4 text-lg font-bold tracking-wide text-accent title-glow">
         {branding.icon === "neural" && <NeuralIcon />}
+        {branding.icon === "bolt" && <BoltIcon />}
+        {branding.icon === "ember" && <EmberIcon />}
         {branding.text}
         {branding.showCursor && <span className="animate-blink">|</span>}
       </span>

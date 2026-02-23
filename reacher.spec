@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for REACHER standalone executable.
+"""PyInstaller spec for Labrynth standalone executable.
 
 Bundles:
   - Python backend (FastAPI + kernel + all deps)

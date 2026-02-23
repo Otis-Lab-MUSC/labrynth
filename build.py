@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-platform build orchestrator for REACHER standalone packaging.
+"""Cross-platform build orchestrator for Labrynth standalone packaging.
 
 Orchestrates the full build pipeline:
   0. Validate environment (submodule + reacher package)
@@ -203,7 +203,7 @@ def report_output():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Build REACHER standalone executable",
+        description="Build Labrynth standalone executable",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Example: python build.py --skip-firmware --avrdude /usr/bin/avrdude",
     )
@@ -225,7 +225,7 @@ def main():
     )
     args = parser.parse_args()
 
-    print("REACHER Build Orchestrator")
+    print("Labrynth Build Orchestrator")
     print(f"  Platform: {platform.system()} {platform.machine()}")
     print(f"  Python:   {sys.version.split()[0]}")
     print(f"  Project:  {PROJECT_ROOT}")

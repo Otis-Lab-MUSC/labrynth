@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "labrynth"
 version = "2.0.0"
-description = "REACHER application shell — build orchestrator and frontend"
+description = "Labrynth application shell — build orchestrator and frontend"
 requires-python = ">=3.10"
 dependencies = [
     "reacher>=2.0.0",
