@@ -1,5 +1,5 @@
-import { useState } from "react";
 import * as api from "../../api/client";
+import { useSessionStore } from "../../store/useSessionStore";
 import { HARDWARE_PINS } from "./pins";
 
 interface Props {
@@ -7,9 +7,12 @@ interface Props {
 }
 
 export function LaserControl({ sessionId }: Props) {
-  const [frequency, setFrequency] = useState(20);
-  const [duration, setDuration] = useState(10000);
-  const [armed, setArmed] = useState(false);
+  const laser = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi.laser);
+  const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
+
+  if (!laser) return null;
+
+  const { armed, frequency, duration } = laser;
   const send = (code: number, value?: number) => api.sendCommand(sessionId, code, value);
 
   return (
@@ -20,11 +23,11 @@ export function LaserControl({ sessionId }: Props) {
       </h3>
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={() => { send(601); setArmed(true); }}
+          onClick={() => { send(601); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, armed: true } })); }}
           className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
-          onClick={() => { send(600); setArmed(false); }}
+          onClick={() => { send(600); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, armed: false } })); }}
           className={`btn-sm ${!armed ? "btn-toggle-red-on" : "btn-toggle-red-off"}`}
         >Disarm</button>
         <button onClick={() => send(603)} className="btn-sm bg-yellow-600 text-white">Test</button>
@@ -36,7 +39,7 @@ export function LaserControl({ sessionId }: Props) {
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Freq (Hz):</label>
         <input type="number" value={frequency} min={1} max={65535}
-          onChange={(e) => setFrequency(+e.target.value)}
+          onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, frequency: +e.target.value } }))}
           className="w-24 input-base" />
         <button onClick={() => send(671, frequency)}
           disabled={frequency < 1 || frequency > 65535}
@@ -45,7 +48,7 @@ export function LaserControl({ sessionId }: Props) {
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Dur (ms):</label>
         <input type="number" value={duration} min={1} max={600000}
-          onChange={(e) => setDuration(+e.target.value)}
+          onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, duration: +e.target.value } }))}
           className="w-24 input-base" />
         <button onClick={() => send(672, duration)}
           disabled={duration < 1 || duration > 600000}

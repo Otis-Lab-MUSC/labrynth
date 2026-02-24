@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useSessionStore } from "../../store/useSessionStore";
 import * as api from "../../api/client";
 import { ArduinoConfig } from "./ArduinoConfig";
@@ -9,27 +8,26 @@ export function DataExport() {
   const session = useSessionStore((s) =>
     s.activeSessionId ? s.sessions.get(s.activeSessionId) : null
   );
-  const [filename, setFilename] = useState("");
-  const [destination, setDestination] = useState("");
-  const [exporting, setExporting] = useState(false);
-  const [exportResult, setExportResult] = useState<string | null>(null);
-  const [exportError, setExportError] = useState<string | null>(null);
+  const setFileConfig = useSessionStore((s) => s.setFileConfig);
+  const setExportState = useSessionStore((s) => s.setExportState);
 
   if (!activeSessionId || !session) {
     return <p className="text-theme-text/60 font-mono">No active session.</p>;
   }
 
-  const handleSaveConfig = () => {
-    api.setFileConfig(activeSessionId, {
+  const { filename, destination } = session.fileConfig;
+  const { exporting, result: exportResult, error: exportError } = session.exportState;
+
+  const handleSaveConfig = async () => {
+    const confirmed = await api.setFileConfig(activeSessionId, {
       filename: filename || undefined,
       destination: destination || undefined,
     });
+    setFileConfig(activeSessionId, confirmed);
   };
 
   const handleZipExport = async () => {
-    setExporting(true);
-    setExportResult(null);
-    setExportError(null);
+    setExportState(activeSessionId, { exporting: true, result: null, error: null });
     try {
       const result = await api.exportZip(activeSessionId, {
         session_name: session.name || undefined,
@@ -39,11 +37,12 @@ export function DataExport() {
         trial_count: session.trialCount,
         program_start_time: session.programStartTime,
       });
-      setExportResult(result.file_path);
+      setExportState(activeSessionId, { exporting: false, result: result.file_path });
     } catch (e) {
-      setExportError(e instanceof Error ? e.message : "ZIP export failed");
-    } finally {
-      setExporting(false);
+      setExportState(activeSessionId, {
+        exporting: false,
+        error: e instanceof Error ? e.message : "ZIP export failed",
+      });
     }
   };
 
@@ -60,7 +59,7 @@ export function DataExport() {
           <label className="text-sm w-28 text-theme-text/60">Filename:</label>
           <input
             value={filename}
-            onChange={(e) => setFilename(e.target.value)}
+            onChange={(e) => setFileConfig(activeSessionId, { filename: e.target.value })}
             placeholder="experiment_001"
             className="flex-1 input-base"
           />
@@ -69,7 +68,7 @@ export function DataExport() {
           <label className="text-sm w-28 text-theme-text/60">Destination:</label>
           <input
             value={destination}
-            onChange={(e) => setDestination(e.target.value)}
+            onChange={(e) => setFileConfig(activeSessionId, { destination: e.target.value })}
             placeholder="/home/user/Labrynth/DATA"
             className="flex-1 input-base"
           />

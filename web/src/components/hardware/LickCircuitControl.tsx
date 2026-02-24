@@ -1,5 +1,5 @@
-import { useState } from "react";
 import * as api from "../../api/client";
+import { useSessionStore } from "../../store/useSessionStore";
 import { HARDWARE_PINS } from "./pins";
 
 interface Props {
@@ -7,7 +7,8 @@ interface Props {
 }
 
 export function LickCircuitControl({ sessionId }: Props) {
-  const [armed, setArmed] = useState(false);
+  const armed = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi.lickCircuit.armed ?? false);
+  const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
   const send = (code: number) => api.sendCommand(sessionId, code);
 
   return (
@@ -18,11 +19,11 @@ export function LickCircuitControl({ sessionId }: Props) {
       </h3>
       <div className="flex gap-2">
         <button
-          onClick={() => { send(501); setArmed(true); }}
+          onClick={() => { send(501); updateHardwareUi(sessionId, () => ({ lickCircuit: { armed: true } })); }}
           className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
-          onClick={() => { send(500); setArmed(false); }}
+          onClick={() => { send(500); updateHardwareUi(sessionId, () => ({ lickCircuit: { armed: false } })); }}
           className={`btn-sm ${!armed ? "btn-toggle-red-on" : "btn-toggle-red-off"}`}
         >Disarm</button>
       </div>

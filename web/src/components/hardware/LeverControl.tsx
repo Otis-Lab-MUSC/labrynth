@@ -1,5 +1,5 @@
-import { useState } from "react";
 import * as api from "../../api/client";
+import { useSessionStore } from "../../store/useSessionStore";
 import { HARDWARE_PINS } from "./pins";
 
 interface Props {
@@ -13,12 +13,17 @@ const CODES = {
   LH: { arm: 1301, disarm: 1300, timeout: 1374, ratio: 1375, inactive: 1380, active: 1381 },
 };
 
-export function LeverControl({ sessionId, side, paradigm }: Props) {
-  const [timeout, setTimeout_] = useState(20000);
-  const [ratio, setRatio] = useState(1);
-  const [armed, setArmed] = useState(false);
-  const codes = CODES[side];
+const STORE_KEY = { RH: "rhLever", LH: "lhLever" } as const;
 
+export function LeverControl({ sessionId, side, paradigm }: Props) {
+  const storeKey = STORE_KEY[side];
+  const lever = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[storeKey]);
+  const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
+
+  if (!lever) return null;
+
+  const { armed, timeout, ratio } = lever;
+  const codes = CODES[side];
   const send = (code: number, value?: number) => api.sendCommand(sessionId, code, value);
 
   const showActiveInactive = paradigm !== "pavlovian";
@@ -33,11 +38,11 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
       </h3>
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={() => { send(codes.arm); setArmed(true); }}
+          onClick={() => { send(codes.arm); updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], armed: true } })); }}
           className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
-          onClick={() => { send(codes.disarm); setArmed(false); }}
+          onClick={() => { send(codes.disarm); updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], armed: false } })); }}
           className={`btn-sm ${!armed ? "btn-toggle-red-on" : "btn-toggle-red-off"}`}
         >Disarm</button>
         {showActiveInactive && (
@@ -52,7 +57,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
           <label className="text-sm text-theme-text/60">Timeout (ms):</label>
           <input
             type="number" value={timeout} min={0} max={600000}
-            onChange={(e) => setTimeout_(+e.target.value)}
+            onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], timeout: +e.target.value } }))}
             className="w-24 input-base"
           />
           <button onClick={() => send(codes.timeout, timeout)}
@@ -65,7 +70,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
           <label className="text-sm text-theme-text/60">Ratio:</label>
           <input
             type="number" value={ratio} min={1} max={255}
-            onChange={(e) => setRatio(+e.target.value)}
+            onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], ratio: +e.target.value } }))}
             className="w-24 input-base"
           />
           <button onClick={() => send(codes.ratio, ratio)}

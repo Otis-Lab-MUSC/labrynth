@@ -10,38 +10,31 @@ import { HardwarePanel } from "./components/hardware/HardwarePanel";
 import { ProgramPanel } from "./components/program/ProgramPanel";
 import { MonitorPanel } from "./components/monitor/MonitorPanel";
 import { DataExport } from "./components/data/DataExport";
-import { useSessionStore } from "./store/useSessionStore";
 import { useThemeStore } from "./store/useThemeStore";
-import { useWebSocket } from "./hooks/useWebSocket";
+import { useSessionWebSockets } from "./hooks/useSessionWebSockets";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { useSingleTab } from "./hooks/useSingleTab";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 
 type Panel = "session" | "hardware" | "program" | "monitor" | "data";
 
-export default function App() {
-  const blocked = useSingleTab();
-  const [activePanel, setActivePanel] = useState<Panel>("session");
-  const activeSessionId = useSessionStore((s) => s.activeSessionId);
+function BackgroundLayer() {
   const background = useThemeStore((s) => s.theme.background);
+  return (
+    <>
+      {background === "neural" && <NeuralBackground />}
+      {background === "ct-scan" && <CTScanBackground />}
+      {background === "storm-synapse" && <StormSynapseBackground />}
+      {background === "ember-circuit" && <EmberCircuitBackground />}
+    </>
+  );
+}
 
-  useWebSocket(blocked ? null : activeSessionId);
-  useBeforeUnload(blocked);
+function AppContent() {
+  const [activePanel, setActivePanel] = useState<Panel>("session");
 
-  if (blocked) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        {background === "neural" && <NeuralBackground />}
-        {background === "ct-scan" && <CTScanBackground />}
-        {background === "storm-synapse" && <StormSynapseBackground />}
-        {background === "ember-circuit" && <EmberCircuitBackground />}
-        <div className="relative z-10 text-center text-theme-text">
-          <p className="text-lg font-bold text-accent">Labrynth is already open in another tab.</p>
-          <p className="mt-2 text-sm">Close this tab and return to the original.</p>
-        </div>
-      </div>
-    );
-  }
+  useSessionWebSockets();
+  useBeforeUnload(false);
 
   const panels: Record<Panel, React.ReactNode> = {
     session: <SessionPanel />,
@@ -53,10 +46,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen flex-col">
-      {background === "neural" && <NeuralBackground />}
-      {background === "ct-scan" && <CTScanBackground />}
-      {background === "storm-synapse" && <StormSynapseBackground />}
-      {background === "ember-circuit" && <EmberCircuitBackground />}
+      <BackgroundLayer />
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar active={activePanel} onSelect={(key) => setActivePanel(key as Panel)} />
@@ -72,4 +62,22 @@ export default function App() {
       </div>
     </div>
   );
+}
+
+export default function App() {
+  const blocked = useSingleTab();
+
+  if (blocked) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <BackgroundLayer />
+        <div className="relative z-10 text-center text-theme-text">
+          <p className="text-lg font-bold text-accent">Labrynth is already open in another tab.</p>
+          <p className="mt-2 text-sm">Close this tab and return to the original.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <AppContent />;
 }

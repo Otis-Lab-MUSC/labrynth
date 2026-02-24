@@ -6,16 +6,61 @@ export type SessionState =
   | "paused"
   | "stopped";
 
+// Keep in sync with reacher/src/reacher/uploader/boards.py BOARD_PROFILES
+export type BoardType = "uno" | "mega";
+
+export interface BoardInfo {
+  id: BoardType;
+  name: string;
+}
+
 export interface LeverCounts {
   active: number;
   timeout: number;
   inactive: number;
 }
 
+export interface DeviceArmState {
+  armed: boolean;
+}
+
+export interface LeverUiState extends DeviceArmState {
+  timeout: number;
+  ratio: number;
+}
+
+export interface CueUiState extends DeviceArmState {
+  frequency: number;
+  duration: number;
+}
+
+export interface PumpUiState extends DeviceArmState {
+  duration: number;
+}
+
+export interface LaserUiState extends DeviceArmState {
+  frequency: number;
+  duration: number;
+}
+
+export interface HardwareUiState {
+  rhLever: LeverUiState;
+  lhLever: LeverUiState;
+  primaryCue: CueUiState;
+  secondaryCue: CueUiState;
+  primaryPump: PumpUiState;
+  secondaryPump: PumpUiState;
+  laser: LaserUiState;
+  lickCircuit: DeviceArmState;
+  microscope: DeviceArmState;
+  testMode: boolean;
+}
+
 export interface Session {
   id: string;
   port: string;
   paradigm: string | null;
+  board: BoardType | null;
   state: SessionState;
   name: string;
   notes: string;
@@ -35,6 +80,9 @@ export interface Session {
   trialCount: number;
   rhLeverCounts: LeverCounts;
   lhLeverCounts: LeverCounts;
+  hardwareUi: HardwareUiState;
+  fileConfig: { filename: string; destination: string };
+  exportState: { exporting: boolean; result: string | null; error: string | null };
 }
 
 export interface FirmwareConfig {

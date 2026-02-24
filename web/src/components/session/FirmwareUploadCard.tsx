@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { BoardType } from "../../types";
 import * as api from "../../api/client";
 import { useFirmwareUpload } from "../../hooks/useFirmwareUpload";
 import { useSessionStore } from "../../store/useSessionStore";
@@ -8,22 +9,40 @@ interface Props {
 }
 
 export function FirmwareUploadCard({ sessionId }: Props) {
+  const [boards, setBoards] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedBoard, setSelectedBoard] = useState<BoardType>("uno");
   const [paradigms, setParadigms] = useState<string[]>([]);
-  const [selected, setSelected] = useState("");
+  const [selectedParadigm, setSelectedParadigm] = useState("");
   const { upload, uploading, error } = useFirmwareUpload(sessionId);
   const progress = useSessionStore((s) => s.uploadProgress.get(sessionId));
 
   useEffect(() => {
-    api.listParadigms().then((r) => setParadigms(r.paradigms)).catch(() => {});
+    api.listBoards().then((r) => setBoards(r.boards)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    setSelectedParadigm("");
+    api.listParadigms(selectedBoard).then((r) => setParadigms(r.paradigms)).catch(() => {});
+  }, [selectedBoard]);
 
   return (
     <div className="card">
       <h3 className="font-medium text-theme-text">Firmware Upload</h3>
       <div className="flex items-center gap-2">
         <select
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
+          value={selectedBoard}
+          onChange={(e) => setSelectedBoard(e.target.value as BoardType)}
+          className="input-base"
+        >
+          {boards.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={selectedParadigm}
+          onChange={(e) => setSelectedParadigm(e.target.value)}
           className="input-base"
         >
           <option value="">Select paradigm...</option>
@@ -34,8 +53,8 @@ export function FirmwareUploadCard({ sessionId }: Props) {
           ))}
         </select>
         <button
-          onClick={() => upload(selected)}
-          disabled={!selected || uploading}
+          onClick={() => upload(selectedParadigm, selectedBoard)}
+          disabled={!selectedParadigm || uploading}
           className="btn-sm bg-accent text-accent-contrast hover:bg-accent-hover disabled:opacity-50"
         >
           {uploading ? "Uploading..." : "Upload"}

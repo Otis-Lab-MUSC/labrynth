@@ -39,6 +39,7 @@ FRONTEND_DIST = os.path.join(FRONTEND_DIR, "dist")
 SPEC_FILE = os.path.join(SCRIPT_DIR, "reacher.spec")
 
 PARADIGMS = ("fr", "pr", "vi", "omission", "pavlovian")
+BOARDS = ("uno", "mega")
 
 
 def _run(cmd, cwd=None, env=None):
@@ -121,16 +122,27 @@ def validate_assets(avrdude_path):
         print(f"  [MISSING] Frontend dist: {index_html}")
         ok = False
 
-    # Hex files
-    hex_found = []
-    for p in PARADIGMS:
-        path = os.path.join(HEX_DIR, f"{p}.hex")
-        if os.path.isfile(path):
-            hex_found.append(p)
-    if hex_found:
-        print(f"  [OK] Hex files: {', '.join(hex_found)}")
-    else:
-        print(f"  [WARN] No hex files found in {HEX_DIR}")
+    # Hex files (board-aware subdirectory layout)
+    for board in BOARDS:
+        board_hex = []
+        board_dir = os.path.join(HEX_DIR, board)
+        for p in PARADIGMS:
+            path = os.path.join(board_dir, f"{p}.hex")
+            if os.path.isfile(path):
+                board_hex.append(p)
+        if board_hex:
+            print(f"  [OK] Hex files ({board}): {', '.join(board_hex)}")
+        else:
+            # Fallback: check flat layout for uno only
+            if board == "uno":
+                flat_found = [p for p in PARADIGMS if os.path.isfile(os.path.join(HEX_DIR, f"{p}.hex"))]
+                if flat_found:
+                    print(f"  [WARN] Hex files ({board}): using deprecated flat layout — "
+                          f"migrate to hex/{board}/. Found: {', '.join(flat_found)}")
+                else:
+                    print(f"  [WARN] No hex files found for {board}")
+            else:
+                print(f"  [WARN] No hex files found for {board} in {board_dir}")
 
     # avrdude
     if avrdude_path and os.path.isfile(avrdude_path):

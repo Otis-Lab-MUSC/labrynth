@@ -1,14 +1,16 @@
 import { create } from "zustand";
-import type { Session, SessionState, BehaviorEvent, FirmwareConfig, LeverCounts } from "../types";
+import type { BoardType, Session, SessionState, BehaviorEvent, FirmwareConfig, LeverCounts, HardwareUiState } from "../types";
 import * as api from "../api/client";
 
 interface SessionStore {
   sessions: Map<string, Session>;
   activeSessionId: string | null;
+  sessionOrder: string[];
   uploadProgress: Map<string, { percent: number; stage: string }>;
 
   createSession: (port: string, paradigm?: string) => Promise<string>;
   destroySession: (id: string) => Promise<void>;
+  reorderSession: (fromId: string, toId: string) => void;
   setActive: (id: string | null) => void;
   updateState: (id: string, state: SessionState) => void;
   pushEvent: (id: string, event: BehaviorEvent) => void;
@@ -19,18 +21,36 @@ interface SessionStore {
   setParadigmSettings: (id: string, settings: { ratio: number; step: number; interval: number; traceInterval: number }) => void;
   setLimitSettings: (id: string, settings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number }) => void;
   setParadigm: (id: string, paradigm: string) => void;
+  setBoard: (id: string, board: BoardType) => void;
   resetSessionData: (id: string) => void;
   setSessionName: (id: string, name: string) => void;
   setSessionNotes: (id: string, notes: string) => void;
   pushHardwareSetting: (id: string, config: FirmwareConfig) => void;
+  updateHardwareUi: (id: string, updater: (prev: HardwareUiState) => Partial<HardwareUiState>) => void;
+  setFileConfig: (id: string, config: Partial<{ filename: string; destination: string }>) => void;
+  setExportState: (id: string, partial: Partial<{ exporting: boolean; result: string | null; error: string | null }>) => void;
 }
 
 const ZERO_LEVER: LeverCounts = { active: 0, timeout: 0, inactive: 0 };
+
+const defaultHardwareUiState = (): HardwareUiState => ({
+  rhLever: { armed: false, timeout: 20000, ratio: 1 },
+  lhLever: { armed: false, timeout: 20000, ratio: 1 },
+  primaryCue: { armed: false, frequency: 2900, duration: 1000 },
+  secondaryCue: { armed: false, frequency: 2900, duration: 1000 },
+  primaryPump: { armed: false, duration: 3000 },
+  secondaryPump: { armed: false, duration: 3000 },
+  laser: { armed: false, frequency: 20, duration: 10000 },
+  lickCircuit: { armed: false },
+  microscope: { armed: false },
+  testMode: false,
+});
 
 const newSession = (id: string, port: string, paradigm: string | null): Session => ({
   id,
   port,
   paradigm,
+  board: null,
   state: "idle",
   name: "",
   notes: "",
@@ -50,11 +70,15 @@ const newSession = (id: string, port: string, paradigm: string | null): Session 
   trialCount: 0,
   rhLeverCounts: { ...ZERO_LEVER },
   lhLeverCounts: { ...ZERO_LEVER },
+  hardwareUi: defaultHardwareUiState(),
+  fileConfig: { filename: "", destination: "" },
+  exportState: { exporting: false, result: null, error: null },
 });
 
 export const useSessionStore = create<SessionStore>((set) => ({
   sessions: new Map(),
   activeSessionId: null,
+  sessionOrder: [],
   uploadProgress: new Map(),
 
   createSession: async (port, paradigm) => {
@@ -62,7 +86,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
     set((s) => {
       const next = new Map(s.sessions);
       next.set(session_id, newSession(session_id, port, paradigm ?? null));
-      return { sessions: next, activeSessionId: session_id };
+      return { sessions: next, activeSessionId: session_id, sessionOrder: [...s.sessionOrder, session_id] };
     });
     return session_id;
   },
@@ -72,11 +96,27 @@ export const useSessionStore = create<SessionStore>((set) => ({
     set((s) => {
       const next = new Map(s.sessions);
       next.delete(id);
-      const activeSessionId =
-        s.activeSessionId === id ? (next.keys().next().value ?? null) : s.activeSessionId;
-      return { sessions: next, activeSessionId };
+      const nextOrder = s.sessionOrder.filter((sid) => sid !== id);
+      let activeSessionId = s.activeSessionId;
+      if (activeSessionId === id) {
+        const idx = s.sessionOrder.indexOf(id);
+        activeSessionId = nextOrder[Math.min(idx, nextOrder.length - 1)] ?? null;
+      }
+      const nextProgress = new Map(s.uploadProgress);
+      nextProgress.delete(id);
+      return { sessions: next, activeSessionId, sessionOrder: nextOrder, uploadProgress: nextProgress };
     });
   },
+
+  reorderSession: (fromId, toId) =>
+    set((s) => {
+      if (fromId === toId) return s;
+      const order = s.sessionOrder.filter((id) => id !== fromId);
+      const toIndex = order.indexOf(toId);
+      if (toIndex === -1) return s;
+      order.splice(toIndex, 0, fromId);
+      return { sessionOrder: order };
+    }),
 
   setActive: (id) => set({ activeSessionId: id }),
 
@@ -228,6 +268,15 @@ export const useSessionStore = create<SessionStore>((set) => ({
       return { sessions: next };
     }),
 
+  setBoard: (id, board) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, { ...sess, board });
+      return { sessions: next };
+    }),
+
   resetSessionData: (id) =>
     set((s) => {
       const sess = s.sessions.get(id);
@@ -250,6 +299,8 @@ export const useSessionStore = create<SessionStore>((set) => ({
         hardwareSettings: [],
         rhLeverCounts: { ...ZERO_LEVER },
         lhLeverCounts: { ...ZERO_LEVER },
+        hardwareUi: defaultHardwareUiState(),
+        exportState: { exporting: false, result: null, error: null },
       });
       return { sessions: next };
     }),
@@ -278,6 +329,33 @@ export const useSessionStore = create<SessionStore>((set) => ({
       if (!sess) return s;
       const next = new Map(s.sessions);
       next.set(id, { ...sess, hardwareSettings: [...sess.hardwareSettings, config] });
+      return { sessions: next };
+    }),
+
+  updateHardwareUi: (id, updater) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, { ...sess, hardwareUi: { ...sess.hardwareUi, ...updater(sess.hardwareUi) } });
+      return { sessions: next };
+    }),
+
+  setFileConfig: (id, config) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, { ...sess, fileConfig: { ...sess.fileConfig, ...config } });
+      return { sessions: next };
+    }),
+
+  setExportState: (id, partial) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, { ...sess, exportState: { ...sess.exportState, ...partial } });
       return { sessions: next };
     }),
 }));

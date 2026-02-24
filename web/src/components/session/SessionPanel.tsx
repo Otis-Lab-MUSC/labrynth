@@ -99,6 +99,8 @@ export function SessionPanel() {
             <span className="font-mono text-accent">{activeSession.id}</span>
             <span className="text-theme-text/60">Port:</span>
             <span className="font-mono">{activeSession.port}</span>
+            <span className="text-theme-text/60">Board:</span>
+            <span className="font-mono">{activeSession.board?.toUpperCase() ?? "—"}</span>
             <span className="text-theme-text/60">Paradigm:</span>
             <span className="font-mono">{activeSession.paradigm?.toUpperCase() ?? "—"}</span>
             <span className="text-theme-text/60">State:</span>
@@ -135,7 +137,7 @@ export function SessionPanel() {
       )}
 
       {/* Firmware upload */}
-      {activeSession && <FirmwareUploadCard sessionId={activeSession.id} />}
+      {activeSession && <FirmwareUploadCard key={activeSession.id} sessionId={activeSession.id} />}
     </div>
   );
 }

@@ -1,3 +1,5 @@
+import type { BoardInfo, BoardType } from "../types";
+
 const BASE = "/api";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -35,12 +37,20 @@ export const disconnectSerial = (id: string) =>
   request(`/serial/${id}/disconnect`, { method: "POST" });
 
 // --- Firmware ---
-export const listParadigms = () => request<{ paradigms: string[] }>("/firmware/paradigms");
-export const uploadFirmware = (id: string, paradigm: string) =>
-  request(`/firmware/upload/${id}`, {
-    method: "POST",
-    body: JSON.stringify({ paradigm }),
-  });
+export const listBoards = () =>
+  request<{ boards: BoardInfo[] }>("/firmware/boards");
+export const listParadigms = (board?: BoardType) =>
+  request<{ paradigms: string[] }>(
+    `/firmware/paradigms${board ? `?board=${board}` : ""}`,
+  );
+export const uploadFirmware = (id: string, paradigm: string, board: BoardType = "uno") =>
+  request<{ status: string; paradigm: string; board: string; firmware_info: Record<string, unknown> }>(
+    `/firmware/upload/${id}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ paradigm, board }),
+    },
+  );
 
 // --- Hardware ---
 export const sendCommand = (id: string, code: number, value?: number) =>
@@ -91,4 +101,4 @@ export const shutdown = () => request("/lifecycle/shutdown", { method: "POST" })
 
 // --- File ---
 export const setFileConfig = (id: string, body: { filename?: string; destination?: string }) =>
-  request(`/file/${id}/config`, { method: "POST", body: JSON.stringify(body) });
+  request<{ filename: string; destination: string }>(`/file/${id}/config`, { method: "POST", body: JSON.stringify(body) });

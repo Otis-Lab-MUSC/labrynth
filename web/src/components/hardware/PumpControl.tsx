@@ -1,5 +1,5 @@
-import { useState } from "react";
 import * as api from "../../api/client";
+import { useSessionStore } from "../../store/useSessionStore";
 import { HARDWARE_PINS } from "./pins";
 
 interface Props {
@@ -13,9 +13,16 @@ const CODES = {
   "2": { arm: 411, disarm: 410, test: 413, dur: 482 },
 };
 
+const STORE_KEY = { "": "primaryPump", "2": "secondaryPump" } as const;
+
 export function PumpControl({ sessionId, label, prefix }: Props) {
-  const [duration, setDuration] = useState(3000);
-  const [armed, setArmed] = useState(false);
+  const storeKey = STORE_KEY[prefix];
+  const pump = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[storeKey]);
+  const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
+
+  if (!pump) return null;
+
+  const { armed, duration } = pump;
   const codes = CODES[prefix];
   const send = (code: number, value?: number) => api.sendCommand(sessionId, code, value);
 
@@ -27,11 +34,11 @@ export function PumpControl({ sessionId, label, prefix }: Props) {
       </h3>
       <div className="flex flex-wrap gap-2">
         <button
-          onClick={() => { send(codes.arm); setArmed(true); }}
+          onClick={() => { send(codes.arm); updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], armed: true } })); }}
           className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
-          onClick={() => { send(codes.disarm); setArmed(false); }}
+          onClick={() => { send(codes.disarm); updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], armed: false } })); }}
           className={`btn-sm ${!armed ? "btn-toggle-red-on" : "btn-toggle-red-off"}`}
         >Disarm</button>
         <button onClick={() => send(codes.test)} className="btn-sm bg-yellow-600 text-white">Test</button>
@@ -39,7 +46,7 @@ export function PumpControl({ sessionId, label, prefix }: Props) {
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Duration (ms):</label>
         <input type="number" value={duration} min={1} max={600000}
-          onChange={(e) => setDuration(+e.target.value)}
+          onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], duration: +e.target.value } }))}
           className="w-24 input-base" />
         <button onClick={() => send(codes.dur, duration)}
           disabled={duration < 1 || duration > 600000}

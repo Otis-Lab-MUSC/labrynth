@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Plus, Moon, Sun, RotateCcw } from "lucide-react";
+import { Plus, Moon, Sun, RotateCcw, X } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { ThemeSelector } from "./ThemeSelector";
+import { ConfirmDialog } from "./ConfirmDialog";
 import * as api from "../../api/client";
+import type { Session } from "../../types";
 
 function NeuralIcon() {
   return (
@@ -39,15 +41,54 @@ function EmberIcon() {
   );
 }
 
+function getCloseWarning(session: Session): { title: string; message: string; variant: "danger" | "warning" } {
+  const name = session.name || "Unnamed session";
+  if (session.state === "running" || session.state === "paused") {
+    return {
+      title: "Close running session?",
+      message: `"${name}" is currently ${session.state}. Closing will stop the program and discard all unsaved data.`,
+      variant: "danger",
+    };
+  }
+  if (session.behaviorData.length > 0) {
+    return {
+      title: "Close session with data?",
+      message: `"${name}" has ${session.behaviorData.length} recorded events that have not been exported. This data will be lost.`,
+      variant: "warning",
+    };
+  }
+  return {
+    title: "Close session?",
+    message: `Close "${name}"?`,
+    variant: "warning",
+  };
+}
+
 export function Header() {
-  const { sessions, activeSessionId, setActive, createSession, resetSessionData, setSessionName } = useSessionStore();
+  const {
+    sessions,
+    activeSessionId,
+    sessionOrder,
+    setActive,
+    createSession,
+    destroySession,
+    reorderSession,
+    resetSessionData,
+    setSessionName,
+  } = useSessionStore();
   const { mode, toggleMode, theme } = useThemeStore();
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [closingId, setClosingId] = useState<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
   const { branding, glass } = theme;
+
+  const closingSession = closingId ? sessions.get(closingId) : null;
+  const closeWarning = closingSession ? getCloseWarning(closingSession) : null;
 
   const handleReset = async () => {
     if (!activeSessionId) return;
@@ -84,6 +125,22 @@ export function Header() {
     setEditingId(null);
   };
 
+  const handleCloseClick = (id: string) => {
+    if (editingId === id) cancelEdit();
+    setClosingId(id);
+  };
+
+  const handleCloseConfirm = async () => {
+    if (!closingId) return;
+    const id = closingId;
+    setClosingId(null);
+    try {
+      await destroySession(id);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to close session");
+    }
+  };
+
   const glassClasses = glass.enabled
     ? "bg-panel/80 backdrop-blur-sm"
     : "bg-panel";
@@ -101,41 +158,80 @@ export function Header() {
 
       {/* Session tabs */}
       <div className="flex items-center gap-1 overflow-x-auto">
-        {[...sessions.values()].map((s) => {
+        {sessionOrder.map((id) => {
+          const s = sessions.get(id);
+          if (!s) return null;
+
           const fallback = `${s.paradigm?.toUpperCase() ?? "New"} (${s.port})`;
           const displayName = s.name || fallback;
 
           if (editingId === s.id) {
             return (
-              <input
-                key={s.id}
-                autoFocus
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onBlur={commitEdit}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") commitEdit();
-                  if (e.key === "Escape") cancelEdit();
-                }}
-                className="rounded-t px-3 py-1 text-sm bg-surface text-accent border border-theme-border outline-none w-40"
-              />
+              <div key={s.id} className="group relative flex items-center">
+                <input
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onBlur={commitEdit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitEdit();
+                    if (e.key === "Escape") cancelEdit();
+                  }}
+                  className="rounded-t px-3 py-1 text-sm bg-surface text-accent border border-theme-border outline-none w-40"
+                />
+              </div>
             );
           }
 
           return (
-            <button
+            <div
               key={s.id}
-              onClick={() => setActive(s.id)}
-              onDoubleClick={() => startEditing(s.id, s.name, fallback)}
-              title="Double-click to rename"
-              className={`rounded-t px-3 py-1 text-sm transition ${
-                s.id === activeSessionId
-                  ? "bg-surface font-semibold text-accent"
-                  : "hover:bg-accent/10 text-theme-text"
+              draggable={editingId !== s.id}
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", s.id);
+                setDragId(s.id);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (dragId && s.id !== dragId) setDropTargetId(s.id);
+              }}
+              onDragLeave={() => setDropTargetId((prev) => (prev === s.id ? null : prev))}
+              onDrop={(e) => {
+                e.preventDefault();
+                const fromId = e.dataTransfer.getData("text/plain");
+                if (fromId && fromId !== s.id) reorderSession(fromId, s.id);
+                setDragId(null);
+                setDropTargetId(null);
+              }}
+              onDragEnd={() => { setDragId(null); setDropTargetId(null); }}
+              className={`group relative flex items-center ${
+                dragId === s.id ? "opacity-40" : ""
+              } ${
+                dropTargetId === s.id ? "border-l-2 border-accent" : ""
               }`}
             >
-              {displayName}
-            </button>
+              <button
+                onClick={() => setActive(s.id)}
+                onDoubleClick={() => startEditing(s.id, s.name, fallback)}
+                title="Double-click to rename"
+                className={`rounded-t px-3 py-1 text-sm transition ${
+                  s.id === activeSessionId
+                    ? "bg-surface font-semibold text-accent"
+                    : "hover:bg-accent/10 text-theme-text"
+                }`}
+              >
+                {displayName}
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); handleCloseClick(s.id); }}
+                className="ml-1 rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-theme-text/40 hover:text-red-400 transition"
+                title="Close session"
+              >
+                <X size={12} />
+              </button>
+            </div>
           );
         })}
         <button
@@ -171,6 +267,17 @@ export function Header() {
       >
         {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       </button>
+
+      {/* Close confirmation dialog */}
+      <ConfirmDialog
+        open={!!closingId && !!closeWarning}
+        title={closeWarning?.title ?? ""}
+        message={closeWarning?.message ?? ""}
+        confirmLabel="Close"
+        variant={closeWarning?.variant ?? "warning"}
+        onConfirm={handleCloseConfirm}
+        onCancel={() => setClosingId(null)}
+      />
     </header>
   );
 }

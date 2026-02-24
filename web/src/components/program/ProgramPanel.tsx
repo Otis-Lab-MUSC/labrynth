@@ -20,12 +20,12 @@ export function ProgramPanel() {
       <h2 className="text-xl font-semibold text-theme-text">Program Configuration</h2>
 
       {paradigm === "pavlovian" ? (
-        <PavlovianSettings sessionId={activeSessionId} />
+        <PavlovianSettings key={activeSessionId} sessionId={activeSessionId} />
       ) : (
-        <ParadigmSettings sessionId={activeSessionId} paradigm={paradigm ?? "fr"} />
+        <ParadigmSettings key={activeSessionId} sessionId={activeSessionId} paradigm={paradigm ?? "fr"} />
       )}
 
-      <LimitConfig sessionId={activeSessionId} paradigm={paradigm} />
+      <LimitConfig key={activeSessionId} sessionId={activeSessionId} paradigm={paradigm} />
     </div>
   );
 }

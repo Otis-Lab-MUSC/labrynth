@@ -14,8 +14,11 @@ export function HardwarePanel() {
   const session = useSessionStore((s) =>
     s.activeSessionId ? s.sessions.get(s.activeSessionId) : null
   );
+  const testMode = useSessionStore((s) =>
+    s.activeSessionId ? s.sessions.get(s.activeSessionId)?.hardwareUi.testMode ?? false : false
+  );
+  const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
   const [commands, setCommands] = useState<CommandSpec[]>([]);
-  const [testMode, setTestMode] = useState(false);
 
   useEffect(() => {
     if (!activeSessionId) return;
@@ -35,7 +38,7 @@ export function HardwarePanel() {
   const handleTestChain = () => api.sendCommand(activeSessionId, 103);
   const handleTestMode = () => {
     const next = !testMode;
-    setTestMode(next);
+    updateHardwareUi(activeSessionId, () => ({ testMode: next }));
     api.sendCommand(activeSessionId, 104, next ? 1 : 0);
   };
 
