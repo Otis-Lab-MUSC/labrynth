@@ -6,7 +6,7 @@ import { useLogStore } from "../../store/useLogStore";
 import { ThemeSelector } from "./ThemeSelector";
 import { ConfirmDialog } from "./ConfirmDialog";
 import * as api from "../../api/client";
-import type { Session } from "../../types";
+import type { Session, SessionState } from "../../types";
 
 function NeuralIcon() {
   return (
@@ -122,6 +122,29 @@ function ReacherIcon() {
         </g>
       </g>
     </svg>
+  );
+}
+
+function SessionStatusDot({ state }: { state: SessionState }) {
+  if (state === "idle" || state === "uploading" || state === "connected") {
+    return null;
+  }
+
+  if (state === "running" || state === "paused") {
+    return (
+      <span
+        className="mr-1.5 inline-block h-2 w-2 shrink-0 rounded-full bg-green-500 animate-status-pulse"
+        aria-label={`Session ${state}`}
+      />
+    );
+  }
+
+  // stopped
+  return (
+    <span
+      className="mr-1.5 inline-block h-2 w-2 shrink-0 rounded-full border border-red-500"
+      aria-label="Session stopped"
+    />
   );
 }
 
@@ -306,12 +329,13 @@ export function Header() {
                 onClick={() => setActive(s.id)}
                 onDoubleClick={() => startEditing(s.id, s.name, fallback)}
                 title="Double-click to rename"
-                className={`rounded-t px-3 py-1 text-sm transition ${
+                className={`flex items-center rounded-t px-3 py-1 text-sm transition ${
                   s.id === activeSessionId
                     ? "bg-surface font-semibold text-accent"
                     : "hover:bg-accent/10 text-theme-text"
                 }`}
               >
+                <SessionStatusDot state={s.state} />
                 {displayName}
               </button>
               <button
