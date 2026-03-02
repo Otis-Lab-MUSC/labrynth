@@ -7,7 +7,7 @@ export function SessionPanel() {
   const [ports, setPorts] = useState<string[]>([]);
   const [selectedPort, setSelectedPort] = useState("");
   const [loading, setLoading] = useState(false);
-  const { activeSessionId, sessions, createSession, setSessionName, setParadigm } = useSessionStore();
+  const { activeSessionId, sessions, createSession, setSessionName, setParadigm, updateState } = useSessionStore();
 
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
 
@@ -15,28 +15,18 @@ export function SessionPanel() {
     api.listPorts().then((r) => setPorts(r.ports)).catch(() => {});
   }, []);
 
-  const handleCreate = async () => {
+  const handleConnect = async () => {
     if (!selectedPort) return;
     setLoading(true);
     try {
-      await createSession(selectedPort);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to create session");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConnect = async () => {
-    if (!activeSessionId) return;
-    setLoading(true);
-    try {
-      const result = await api.connectSerial(activeSessionId);
+      const sessionId = await createSession(selectedPort);
+      const result = await api.connectSerial(sessionId);
       if (result.detected_paradigm) {
-        setParadigm(activeSessionId, result.detected_paradigm);
+        setParadigm(sessionId, result.detected_paradigm);
       }
+      updateState(sessionId, "connected");
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Connection failed");
+      alert(e instanceof Error ? e.message : "Failed to connect");
     } finally {
       setLoading(false);
     }
@@ -58,7 +48,7 @@ export function SessionPanel() {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-theme-text">Session</h2>
 
-      {/* Port selection + create */}
+      {/* Port selection + connect */}
       <div className="card">
         <h3 className="font-medium text-theme-text">COM Port</h3>
         <div className="flex items-center gap-2">
@@ -81,11 +71,11 @@ export function SessionPanel() {
             Refresh
           </button>
           <button
-            onClick={handleCreate}
+            onClick={handleConnect}
             disabled={!selectedPort || loading}
             className="btn-sm bg-accent text-accent-contrast hover:bg-accent-hover disabled:opacity-50"
           >
-            Create Session
+            Connect
           </button>
         </div>
       </div>
@@ -94,7 +84,7 @@ export function SessionPanel() {
       {activeSession?.draft && (
         <div className="card">
           <p className="text-sm text-theme-text/60">
-            Select a COM port above and click "Create Session" to begin.
+            Select a COM port above and click "Connect" to begin.
           </p>
         </div>
       )}
@@ -124,15 +114,6 @@ export function SessionPanel() {
               className="flex-1 input-base"
             />
           </div>
-          {activeSession.state === "idle" && (
-            <button
-              onClick={handleConnect}
-              disabled={loading}
-              className="btn-sm bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
-            >
-              Connect Serial
-            </button>
-          )}
           {(activeSession.state === "connected" || activeSession.state === "stopped") && (
             <button
               onClick={handleDisconnect}

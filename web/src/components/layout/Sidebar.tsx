@@ -3,8 +3,8 @@ import { useThemeStore } from "../../store/useThemeStore";
 
 const items = [
   { key: "session", label: "Session", icon: Cable },
-  { key: "hardware", label: "Hardware", icon: Cpu },
   { key: "program", label: "Program", icon: Play },
+  { key: "hardware", label: "Hardware", icon: Cpu },
   { key: "monitor", label: "Monitor", icon: Activity },
   { key: "data", label: "Data", icon: Database },
 ] as const;

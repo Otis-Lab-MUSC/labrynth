@@ -9,8 +9,8 @@ export function MonitorPanel() {
   const session = useSessionStore((s) =>
     s.activeSessionId ? s.sessions.get(s.activeSessionId) : null
   );
+  const setStartModalOpen = useSessionStore((s) => s.setStartModalOpen);
   const [, forceUpdate] = useState(0);
-  const [starting, setStarting] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
@@ -35,25 +35,6 @@ export function MonitorPanel() {
           : 0)) / 1000
       : 0;
 
-  const handleStart = async () => {
-    if (!activeSessionId || !session) return;
-    setStarting(true);
-    try {
-      // Send Pavlovian params before starting (firmware rejects changes once session is active)
-      if (session.paradigm === "pavlovian" && session.pavlovianParams) {
-        for (const [code, value] of Object.entries(session.pavlovianParams)) {
-          await api.sendCommand(activeSessionId, Number(code), value);
-        }
-      }
-
-      await api.startProgram(activeSessionId);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to start program");
-    } finally {
-      setStarting(false);
-    }
-  };
-
   if (!activeSessionId || !session || session.draft) {
     return <p className="text-theme-text/60 font-mono">No active session.</p>;
   }
@@ -65,11 +46,11 @@ export function MonitorPanel() {
       {/* Control buttons */}
       <div className="flex gap-3">
         <button
-          onClick={handleStart}
-          disabled={session.state === "running" || starting}
+          onClick={() => setStartModalOpen(true)}
+          disabled={session.state === "running"}
           className="rounded bg-green-600 px-4 py-2 text-white font-mono hover:bg-green-700 disabled:opacity-50"
         >
-          {starting ? "Starting…" : "Start"}
+          Start
         </button>
         <button
           onClick={() => api.stopProgram(activeSessionId)}

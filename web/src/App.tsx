@@ -10,6 +10,7 @@ import { SessionPanel } from "./components/session/SessionPanel";
 import { HardwarePanel } from "./components/hardware/HardwarePanel";
 import { ProgramPanel } from "./components/program/ProgramPanel";
 import { MonitorPanel } from "./components/monitor/MonitorPanel";
+import { SessionStartModal } from "./components/monitor/SessionStartModal";
 import { DataExport } from "./components/data/DataExport";
 import { useThemeStore } from "./store/useThemeStore";
 import { useSessionWebSockets } from "./hooks/useSessionWebSockets";
@@ -62,6 +63,7 @@ function AppContent() {
           </ErrorBoundary>
         </main>
       </div>
+      <SessionStartModal />
     </div>
   );
 }

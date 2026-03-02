@@ -7,7 +7,9 @@ interface SessionStore {
   activeSessionId: string | null;
   sessionOrder: string[];
   uploadProgress: Map<string, { percent: number; stage: string }>;
+  startModalOpen: boolean;
 
+  setStartModalOpen: (open: boolean) => void;
   createDraft: () => string;
   createSession: (port: string, paradigm?: string) => Promise<string>;
   destroySession: (id: string) => Promise<void>;
@@ -82,6 +84,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   activeSessionId: null,
   sessionOrder: [],
   uploadProgress: new Map(),
+  startModalOpen: false,
+
+  setStartModalOpen: (open) => set({ startModalOpen: open }),
 
   createDraft: () => {
     const state = get();
