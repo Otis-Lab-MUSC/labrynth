@@ -11,6 +11,7 @@ import { HardwarePanel } from "./components/hardware/HardwarePanel";
 import { ProgramPanel } from "./components/program/ProgramPanel";
 import { MonitorPanel } from "./components/monitor/MonitorPanel";
 import { SessionStartModal } from "./components/monitor/SessionStartModal";
+import { TerminalPanel } from "./components/terminal/TerminalPanel";
 import { DataExport } from "./components/data/DataExport";
 import { useThemeStore } from "./store/useThemeStore";
 import { useSessionWebSockets } from "./hooks/useSessionWebSockets";
@@ -53,15 +54,18 @@ function AppContent() {
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar active={activePanel} onSelect={(key) => setActivePanel(key as Panel)} />
-        <main className="flex-1 overflow-y-auto p-6">
-          <ErrorBoundary>
-            {Object.entries(panels).map(([key, panel]) => (
-              <div key={key} style={{ display: key === activePanel ? undefined : "none" }}>
-                {panel}
-              </div>
-            ))}
-          </ErrorBoundary>
-        </main>
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <main className="flex-1 overflow-y-auto p-6">
+            <ErrorBoundary>
+              {Object.entries(panels).map(([key, panel]) => (
+                <div key={key} style={{ display: key === activePanel ? undefined : "none" }}>
+                  {panel}
+                </div>
+              ))}
+            </ErrorBoundary>
+          </main>
+          <TerminalPanel />
+        </div>
       </div>
       <SessionStartModal />
     </div>

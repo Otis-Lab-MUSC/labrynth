@@ -114,5 +114,6 @@ export type WSMessage =
   | { type: "frame"; session_id: string; data: { timestamp: number } }
   | { type: "config"; session_id: string; data: FirmwareConfig }
   | { type: "log"; session_id: string; data: { level: string; message: string } }
+  | { type: "error"; session_id: string; data: { level: string; device: string; desc: string; timestamp: number } }
   | { type: "upload_progress"; session_id: string; data: { percent: number; stage: string } }
   | { type: "session_state"; session_id: string; data: { state: SessionState } };

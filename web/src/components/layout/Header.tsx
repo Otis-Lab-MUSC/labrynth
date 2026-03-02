@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Plus, Moon, Sun, RotateCcw, X } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useThemeStore } from "../../store/useThemeStore";
+import { useLogStore } from "../../store/useLogStore";
 import { ThemeSelector } from "./ThemeSelector";
 import { ConfirmDialog } from "./ConfirmDialog";
 import * as api from "../../api/client";
@@ -180,7 +181,8 @@ export function Header() {
       await api.resetSession(activeSessionId);
       resetSessionData(activeSessionId);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Reset failed");
+      useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Reset failed");
+      useLogStore.getState().setOpen(true);
     }
   };
 
@@ -221,7 +223,8 @@ export function Header() {
     try {
       await destroySession(id);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to close session");
+      useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Failed to close session");
+      useLogStore.getState().setOpen(true);
     }
   };
 

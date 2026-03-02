@@ -29,7 +29,7 @@ export const resetSession = (id: string) =>
 // --- Serial ---
 export const listPorts = () => request<{ ports: string[] }>("/serial/ports");
 export const connectSerial = (id: string) =>
-  request<{ status: string; port: string; detected_paradigm: string | null }>(
+  request<{ status: string; port: string; detected_paradigm: string | null; detected_board: string | null }>(
     `/serial/${id}/connect`,
     { method: "POST" },
   );

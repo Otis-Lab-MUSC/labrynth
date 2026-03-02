@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSessionStore } from "../../store/useSessionStore";
+import { useLogStore } from "../../store/useLogStore";
 import * as api from "../../api/client";
 
 const DEVICE_LABELS: Record<string, string> = {
@@ -86,7 +87,8 @@ export function SessionStartModal() {
       await api.startProgram(activeSessionId);
       setStartModalOpen(false);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to start program");
+      useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Failed to start program");
+      useLogStore.getState().setOpen(true);
     } finally {
       setStarting(false);
     }

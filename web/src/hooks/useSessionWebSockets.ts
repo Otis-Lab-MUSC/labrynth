@@ -2,11 +2,20 @@ import { useEffect, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { ReacherWebSocket } from "../api/websocket";
 import { useSessionStore } from "../store/useSessionStore";
+import { useLogStore } from "../store/useLogStore";
+import type { LogLevel } from "../store/useLogStore";
 import type { WSMessage, BehaviorEvent, FirmwareConfig, SessionState } from "../types";
+
+function normalizeLevel(level: string): LogLevel {
+  if (level === "warn" || level === "warning") return "warn";
+  if (level === "error") return "error";
+  return "info";
+}
 
 function handleMessage(msg: WSMessage) {
   const { updateState, pushEvent, pushFrame, setFirmwareInfo, pushHardwareSetting, setUploadProgress } =
     useSessionStore.getState();
+  const { pushLog } = useLogStore.getState();
 
   switch (msg.type) {
     case "event": {
@@ -29,14 +38,28 @@ function handleMessage(msg: WSMessage) {
       }
       break;
     }
+    case "log": {
+      const { level, message } = msg.data as { level: string; message: string };
+      pushLog(normalizeLevel(level), message, msg.session_id);
+      break;
+    }
+    case "error": {
+      const { desc, device } = msg.data as { desc: string; device: string };
+      pushLog("error", `[${device}] ${desc}`, msg.session_id);
+      break;
+    }
     case "upload_progress": {
       const { percent, stage } = msg.data as { percent: number; stage: string };
       setUploadProgress(msg.session_id, percent, stage);
+      pushLog("info", `Upload: ${stage} (${percent}%)`, msg.session_id);
       break;
     }
-    case "session_state":
-      updateState(msg.session_id, (msg.data as { state: SessionState }).state);
+    case "session_state": {
+      const { state } = msg.data as { state: SessionState };
+      updateState(msg.session_id, state);
+      pushLog("info", `Session ${state}`, msg.session_id);
       break;
+    }
   }
 }
 

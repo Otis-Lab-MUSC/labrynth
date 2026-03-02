@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import * as api from "../../api/client";
 import { useSessionStore } from "../../store/useSessionStore";
+import { useLogStore } from "../../store/useLogStore";
+import type { BoardType } from "../../types";
 import { FirmwareUploadCard } from "./FirmwareUploadCard";
 
 export function SessionPanel() {
   const [ports, setPorts] = useState<string[]>([]);
   const [selectedPort, setSelectedPort] = useState("");
   const [loading, setLoading] = useState(false);
-  const { activeSessionId, sessions, createSession, setSessionName, setParadigm, updateState } = useSessionStore();
+  const { activeSessionId, sessions, createSession, setSessionName, setParadigm, setBoard, updateState } = useSessionStore();
 
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
 
@@ -24,9 +26,14 @@ export function SessionPanel() {
       if (result.detected_paradigm) {
         setParadigm(sessionId, result.detected_paradigm);
       }
+      if (result.detected_board) {
+        setBoard(sessionId, result.detected_board as BoardType);
+      }
       updateState(sessionId, "connected");
+      useLogStore.getState().pushLog("info", `Connected to ${selectedPort}`, sessionId);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to connect");
+      useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Failed to connect");
+      useLogStore.getState().setOpen(true);
     } finally {
       setLoading(false);
     }
@@ -37,8 +44,10 @@ export function SessionPanel() {
     setLoading(true);
     try {
       await api.disconnectSerial(activeSessionId);
+      useLogStore.getState().pushLog("info", "Serial disconnected", activeSessionId);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Disconnect failed");
+      useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Disconnect failed");
+      useLogStore.getState().setOpen(true);
     } finally {
       setLoading(false);
     }
