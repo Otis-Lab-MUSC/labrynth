@@ -58,6 +58,7 @@ export interface HardwareUiState {
 
 export interface Session {
   id: string;
+  draft: boolean;
   port: string;
   paradigm: string | null;
   board: BoardType | null;

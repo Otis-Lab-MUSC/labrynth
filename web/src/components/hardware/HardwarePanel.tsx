@@ -27,7 +27,7 @@ export function HardwarePanel() {
     }).catch(() => {});
   }, [activeSessionId, session?.paradigm]);
 
-  if (!activeSessionId || !session) {
+  if (!activeSessionId || !session || session.draft) {
     return <p className="text-theme-text/60 font-mono">No active session. Create one in the Session panel.</p>;
   }
 

@@ -21,8 +21,8 @@ export interface ThemeDefinition {
     type: "terminal" | "clean";
     text: string;
     showCursor: boolean;
-    icon: "neural" | "bolt" | "ember" | null;
+    icon: "neural" | "bolt" | "ember" | "reacher" | null;
   };
   sidebar: { activeStyle: "filled" | "left-accent"; itemPrefix: string };
-  background: "neural" | "ct-scan" | "storm-synapse" | "ember-circuit" | null;
+  background: "neural" | "ct-scan" | "storm-synapse" | "ember-circuit" | "neon-grid" | null;
 }

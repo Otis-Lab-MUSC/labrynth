@@ -8,6 +8,7 @@ interface SessionStore {
   sessionOrder: string[];
   uploadProgress: Map<string, { percent: number; stage: string }>;
 
+  createDraft: () => string;
   createSession: (port: string, paradigm?: string) => Promise<string>;
   destroySession: (id: string) => Promise<void>;
   reorderSession: (fromId: string, toId: string) => void;
@@ -46,8 +47,9 @@ const defaultHardwareUiState = (): HardwareUiState => ({
   testMode: false,
 });
 
-const newSession = (id: string, port: string, paradigm: string | null): Session => ({
+const newSession = (id: string, port: string, paradigm: string | null, draft = false): Session => ({
   id,
+  draft,
   port,
   paradigm,
   board: null,
@@ -75,24 +77,62 @@ const newSession = (id: string, port: string, paradigm: string | null): Session 
   exportState: { exporting: false, result: null, error: null },
 });
 
-export const useSessionStore = create<SessionStore>((set) => ({
+export const useSessionStore = create<SessionStore>((set, get) => ({
   sessions: new Map(),
   activeSessionId: null,
   sessionOrder: [],
   uploadProgress: new Map(),
 
+  createDraft: () => {
+    const state = get();
+    const existingDraft = state.sessionOrder.find((id: string) => state.sessions.get(id)?.draft);
+    if (existingDraft) {
+      set({ activeSessionId: existingDraft });
+      return existingDraft;
+    }
+    const draftId = `draft-${crypto.randomUUID()}`;
+    set((s) => {
+      const next = new Map(s.sessions);
+      next.set(draftId, newSession(draftId, "", null, true));
+      return {
+        sessions: next,
+        activeSessionId: draftId,
+        sessionOrder: [...s.sessionOrder, draftId],
+      };
+    });
+    return draftId;
+  },
+
   createSession: async (port, paradigm) => {
+    const state = get();
+    const activeDraft =
+      state.activeSessionId && state.sessions.get(state.activeSessionId)?.draft
+        ? state.activeSessionId
+        : null;
+
     const { session_id } = await api.createSession(port, paradigm);
     set((s) => {
       const next = new Map(s.sessions);
+      let nextOrder = [...s.sessionOrder];
+      if (activeDraft) {
+        next.delete(activeDraft);
+        const idx = nextOrder.indexOf(activeDraft);
+        if (idx !== -1) nextOrder[idx] = session_id;
+        else nextOrder.push(session_id);
+      } else {
+        nextOrder.push(session_id);
+      }
       next.set(session_id, newSession(session_id, port, paradigm ?? null));
-      return { sessions: next, activeSessionId: session_id, sessionOrder: [...s.sessionOrder, session_id] };
+      return { sessions: next, activeSessionId: session_id, sessionOrder: nextOrder };
     });
     return session_id;
   },
 
   destroySession: async (id) => {
-    await api.destroySession(id);
+    const session = get().sessions.get(id);
+    if (session && !session.draft) {
+      await api.destroySession(id);
+    }
     set((s) => {
       const next = new Map(s.sessions);
       next.delete(id);

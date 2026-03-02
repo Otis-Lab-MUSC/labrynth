@@ -11,7 +11,7 @@ export function DataExport() {
   const setFileConfig = useSessionStore((s) => s.setFileConfig);
   const setExportState = useSessionStore((s) => s.setExportState);
 
-  if (!activeSessionId || !session) {
+  if (!activeSessionId || !session || session.draft) {
     return <p className="text-theme-text/60 font-mono">No active session.</p>;
   }
 

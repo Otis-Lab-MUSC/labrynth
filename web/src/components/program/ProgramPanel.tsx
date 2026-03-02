@@ -9,7 +9,7 @@ export function ProgramPanel() {
     s.activeSessionId ? s.sessions.get(s.activeSessionId) : null
   );
 
-  if (!activeSessionId || !session) {
+  if (!activeSessionId || !session || session.draft) {
     return <p className="text-theme-text/60 font-mono">No active session.</p>;
   }
 
@@ -20,12 +20,12 @@ export function ProgramPanel() {
       <h2 className="text-xl font-semibold text-theme-text">Program Configuration</h2>
 
       {paradigm === "pavlovian" ? (
-        <PavlovianSettings key={activeSessionId} sessionId={activeSessionId} />
+        <PavlovianSettings key={`settings-${activeSessionId}`} sessionId={activeSessionId} />
       ) : (
-        <ParadigmSettings key={activeSessionId} sessionId={activeSessionId} paradigm={paradigm ?? "fr"} />
+        <ParadigmSettings key={`settings-${activeSessionId}`} sessionId={activeSessionId} paradigm={paradigm ?? "fr"} />
       )}
 
-      <LimitConfig key={activeSessionId} sessionId={activeSessionId} paradigm={paradigm} />
+      <LimitConfig key={`limits-${activeSessionId}`} sessionId={activeSessionId} paradigm={paradigm} />
     </div>
   );
 }

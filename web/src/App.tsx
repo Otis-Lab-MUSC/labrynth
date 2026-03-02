@@ -5,6 +5,7 @@ import { NeuralBackground } from "./components/layout/NeuralBackground";
 import { CTScanBackground } from "./components/layout/CTScanBackground";
 import { StormSynapseBackground } from "./components/layout/StormSynapseBackground";
 import { EmberCircuitBackground } from "./components/layout/EmberCircuitBackground";
+import { NeonGridBackground } from "./components/layout/NeonGridBackground";
 import { SessionPanel } from "./components/session/SessionPanel";
 import { HardwarePanel } from "./components/hardware/HardwarePanel";
 import { ProgramPanel } from "./components/program/ProgramPanel";
@@ -26,6 +27,7 @@ function BackgroundLayer() {
       {background === "ct-scan" && <CTScanBackground />}
       {background === "storm-synapse" && <StormSynapseBackground />}
       {background === "ember-circuit" && <EmberCircuitBackground />}
+      {background === "neon-grid" && <NeonGridBackground />}
     </>
   );
 }

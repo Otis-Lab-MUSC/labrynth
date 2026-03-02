@@ -90,8 +90,17 @@ export function SessionPanel() {
         </div>
       </div>
 
+      {/* Draft session hint */}
+      {activeSession?.draft && (
+        <div className="card">
+          <p className="text-sm text-theme-text/60">
+            Select a COM port above and click "Create Session" to begin.
+          </p>
+        </div>
+      )}
+
       {/* Active session info */}
-      {activeSession && (
+      {activeSession && !activeSession.draft && (
         <div className="card">
           <h3 className="font-medium text-theme-text">Active Session</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
@@ -137,7 +146,9 @@ export function SessionPanel() {
       )}
 
       {/* Firmware upload */}
-      {activeSession && <FirmwareUploadCard key={activeSession.id} sessionId={activeSession.id} />}
+      {activeSession && !activeSession.draft && (
+        <FirmwareUploadCard key={activeSession.id} sessionId={activeSession.id} />
+      )}
     </div>
   );
 }

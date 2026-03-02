@@ -41,14 +41,20 @@ function handleMessage(msg: WSMessage) {
 }
 
 export function useSessionWebSockets() {
-  const sessionOrder = useSessionStore(useShallow((s) => s.sessionOrder));
+  const { sessionOrder, sessions } = useSessionStore(
+    useShallow((s: { sessionOrder: string[]; sessions: Map<string, { draft?: boolean }> }) => ({
+      sessionOrder: s.sessionOrder,
+      sessions: s.sessions,
+    }))
+  );
   const connectionsRef = useRef<Map<string, ReacherWebSocket>>(new Map());
 
   useEffect(() => {
     const current = connectionsRef.current;
-    const activeIds = new Set(sessionOrder);
+    const realIds = sessionOrder.filter((id: string) => !sessions.get(id)?.draft);
+    const activeIds = new Set(realIds);
 
-    // Close connections for removed sessions
+    // Close connections for removed or draft sessions
     for (const [id, ws] of current) {
       if (!activeIds.has(id)) {
         ws.close();
@@ -56,13 +62,13 @@ export function useSessionWebSockets() {
       }
     }
 
-    // Open connections for new sessions
-    for (const id of sessionOrder) {
+    // Open connections for new real sessions
+    for (const id of realIds) {
       if (!current.has(id)) {
         current.set(id, new ReacherWebSocket(id, handleMessage));
       }
     }
-  }, [sessionOrder]);
+  }, [sessionOrder, sessions]);
 
   // Cleanup all on unmount
   useEffect(() => {

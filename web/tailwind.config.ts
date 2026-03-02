@@ -47,6 +47,10 @@ export default {
           "25%": { transform: "rotate(-2deg) scale(1.03)" },
           "75%": { transform: "rotate(2deg) scale(0.97)" },
         },
+        "reacher-glow": {
+          "0%, 100%": { filter: "drop-shadow(0 0 3px rgb(var(--color-accent) / 0.3))" },
+          "50%": { filter: "drop-shadow(0 0 8px rgb(var(--color-accent) / 0.6))" },
+        },
       },
       animation: {
         blink: "blink 1s step-end infinite",
@@ -54,6 +58,7 @@ export default {
         "btn-flash": "btn-flash 0.4s ease-out",
         "bolt-flicker": "bolt-flicker 3s ease-in-out infinite",
         "ember-sway": "ember-sway 2s ease-in-out infinite",
+        "reacher-glow": "reacher-glow 3s ease-in-out infinite",
       },
     },
   },
