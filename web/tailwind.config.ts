@@ -51,10 +51,6 @@ export default {
           "0%, 100%": { filter: "drop-shadow(0 0 3px rgb(var(--color-accent) / 0.3))" },
           "50%": { filter: "drop-shadow(0 0 8px rgb(var(--color-accent) / 0.6))" },
         },
-        "laser-scroll": {
-          from: { transform: "translateX(0)" },
-          to: { transform: "translateX(-25%)" },
-        },
         "mouse-run": {
           "0%, 100%": { transform: "rotate(0deg)" },
           "25%": { transform: "rotate(25deg)" },
@@ -72,7 +68,6 @@ export default {
         "bolt-flicker": "bolt-flicker 3s ease-in-out infinite",
         "ember-sway": "ember-sway 2s ease-in-out infinite",
         "reacher-glow": "reacher-glow 3s ease-in-out infinite",
-        "laser-scroll": "laser-scroll 1s linear infinite",
         "mouse-run": "mouse-run 0.3s ease-in-out infinite",
         "status-pulse": "status-pulse 2s ease-in-out infinite",
       },

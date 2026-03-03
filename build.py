@@ -39,6 +39,13 @@ FRONTEND_DIST = os.path.join(FRONTEND_DIR, "dist")
 SPEC_FILE = os.path.join(SCRIPT_DIR, "reacher.spec")
 
 PARADIGMS = ("fr", "pr", "vi", "omission", "pavlovian")
+PARADIGM_TO_SKETCH = {
+    "fr": "operant_FR",
+    "pr": "operant_PR",
+    "vi": "operant_VI",
+    "omission": "operant_OMISSION",
+    "pavlovian": "pavlovian",
+}
 BOARDS = ("uno", "mega")
 
 
@@ -127,7 +134,8 @@ def validate_assets(avrdude_path):
         board_hex = []
         board_dir = os.path.join(HEX_DIR, board)
         for p in PARADIGMS:
-            path = os.path.join(board_dir, f"{p}.hex")
+            sketch = PARADIGM_TO_SKETCH[p]
+            path = os.path.join(board_dir, f"{sketch}.hex")
             if os.path.isfile(path):
                 board_hex.append(p)
         if board_hex:
@@ -135,7 +143,8 @@ def validate_assets(avrdude_path):
         else:
             # Fallback: check flat layout for uno only
             if board == "uno":
-                flat_found = [p for p in PARADIGMS if os.path.isfile(os.path.join(HEX_DIR, f"{p}.hex"))]
+                flat_found = [p for p in PARADIGMS
+                              if os.path.isfile(os.path.join(HEX_DIR, f"{PARADIGM_TO_SKETCH[p]}.hex"))]
                 if flat_found:
                     print(f"  [WARN] Hex files ({board}): using deprecated flat layout — "
                           f"migrate to hex/{board}/. Found: {', '.join(flat_found)}")

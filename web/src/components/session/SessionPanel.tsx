@@ -2,13 +2,40 @@ import { useEffect, useState } from "react";
 import * as api from "../../api/client";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useLogStore } from "../../store/useLogStore";
-import type { BoardType } from "../../types";
+import type { BoardType, Session } from "../../types";
 import { FirmwareUploadCard } from "./FirmwareUploadCard";
+import { ConfirmDialog } from "../layout/ConfirmDialog";
+
+function getDisconnectWarning(session: Session): { title: string; message: string; variant: "danger" | "warning" } | null {
+  if (session.programStartTime !== null) {
+    return {
+      title: "Disconnect session?",
+      message: `"${session.name}" has been run. Disconnecting will discard all unsaved data.`,
+      variant: "danger",
+    };
+  }
+  if (session.behaviorData.length > 0) {
+    return {
+      title: "Disconnect session with data?",
+      message: `"${session.name}" has ${session.behaviorData.length} recorded events that have not been exported. This data will be lost.`,
+      variant: "danger",
+    };
+  }
+  if (session.paradigmSettings !== null || session.limitSettings !== null) {
+    return {
+      title: "Disconnect session?",
+      message: `"${session.name}" has unsaved configuration changes.`,
+      variant: "warning",
+    };
+  }
+  return null;
+}
 
 export function SessionPanel() {
   const [ports, setPorts] = useState<string[]>([]);
   const [selectedPort, setSelectedPort] = useState("");
   const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { activeSessionId, sessions, createSession, destroySession, setSessionName, setParadigm, setBoard, updateState } = useSessionStore();
 
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
@@ -39,7 +66,7 @@ export function SessionPanel() {
     }
   };
 
-  const handleDisconnect = async () => {
+  const doDisconnect = async () => {
     if (!activeSessionId) return;
     setLoading(true);
     try {
@@ -51,6 +78,16 @@ export function SessionPanel() {
       useLogStore.getState().setOpen(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDisconnect = () => {
+    if (!activeSession) return;
+    const warning = getDisconnectWarning(activeSession);
+    if (warning) {
+      setConfirmOpen(true);
+    } else {
+      doDisconnect();
     }
   };
 
@@ -140,6 +177,21 @@ export function SessionPanel() {
       {activeSession && !activeSession.draft && (
         <FirmwareUploadCard key={activeSession.id} sessionId={activeSession.id} />
       )}
+
+      {(() => {
+        const warning = activeSession ? getDisconnectWarning(activeSession) : null;
+        return (
+          <ConfirmDialog
+            open={confirmOpen}
+            title={warning?.title ?? ""}
+            message={warning?.message ?? ""}
+            variant={warning?.variant ?? "warning"}
+            confirmLabel="Disconnect"
+            onConfirm={() => { doDisconnect(); setConfirmOpen(false); }}
+            onCancel={() => setConfirmOpen(false)}
+          />
+        );
+      })()}
     </div>
   );
 }
