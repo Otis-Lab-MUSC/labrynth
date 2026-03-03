@@ -1,205 +1,254 @@
-name: Build Installers for The Labrynth
+name: Build & Release REACHER
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      reacher_ref:
+        description: 'reacher repo branch/tag to install (default: main)'
+        required: false
+        default: 'main'
+
+permissions:
+  contents: write
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
 
 jobs:
-  build-dashboard-windows:
+  # -------------------------------------------------------------------
+  # Windows — Inno Setup installer (.exe)
+  # -------------------------------------------------------------------
+  build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          python-version: '3.11'
-      - name: Install dependencies
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Extract version
+        id: version
+        shell: bash
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install pyinstaller
-          python -m pip install wget
-          Invoke-WebRequest -Uri https://github.com/Otis-Lab-MUSC/reacher/releases/download/v1.1.1-beta/reacher-1.1.1-py3-none-any.whl -OutFile reacher-1.1.1-py3-none-any.whl
-          python -m pip install reacher-1.1.1-py3-none-any.whl
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install reacher from source
+        shell: bash
+        run: |
+          REF="${{ inputs.reacher_ref || 'main' }}"
+          git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
+          pip install ./_reacher
+
+      - name: Install Python build tools
+        run: pip install pyinstaller
+
+      - name: Build frontend
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
 
       - name: Build with PyInstaller
-        working-directory: ui
-        run: pyinstaller setup.spec
+        run: python build.py --skip-firmware --skip-frontend
+
       - name: Install Inno Setup
-        run: choco install innosetup
-      - name: Build Installer
-        working-directory: ui
-        run: |
-          iscc /O"dist" /F"labrynth_x64" setup.iss
-      - name: Upload Windows installer
+        run: choco install innosetup -y
+
+      - name: Build Windows installer
+        env:
+          VERSION_NUM: ${{ steps.version.outputs.version }}
+        run: iscc installer\reacher.iss
+
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: labrynth_x64.exe
-          path: ui/dist/labrynth_x64.exe
+          name: windows-installer
+          path: dist/REACHER-${{ steps.version.outputs.version }}-windows-x64.exe
 
-  build-dashboard-macos:
+  # -------------------------------------------------------------------
+  # macOS — DMG disk image (.dmg)
+  # -------------------------------------------------------------------
+  build-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          python-version: '3.11'
-      - name: Install dependencies
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Extract version
+        id: version
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install pyinstaller
-          curl -L -o reacher-1.1.1-py3-none-any.whl https://github.com/Otis-Lab-MUSC/reacher/releases/download/v1.1.1-beta/reacher-1.1.1-py3-none-any.whl
-          python -m pip install reacher-1.1.1-py3-none-any.whl
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install reacher from source
+        run: |
+          REF="${{ inputs.reacher_ref || 'main' }}"
+          git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
+          pip install ./_reacher
+
+      - name: Install Python build tools
+        run: pip install pyinstaller
+
+      - name: Build frontend
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
 
       - name: Build with PyInstaller
-        working-directory: ui
-        run: pyinstaller setup.spec
+        run: python build.py --skip-firmware --skip-frontend
+
       - name: Create DMG
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          hdiutil create -volname "Labrynth Installer" -srcfolder "ui/dist/Labrynth.app" -ov -format UDZO labrynth_x64.dmg
+          hdiutil create \
+            -volname "REACHER $VERSION" \
+            -srcfolder dist/REACHER.app \
+            -ov -format UDZO \
+            "dist/REACHER-${VERSION}-macos-arm64.dmg"
+
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: labrynth_x64.dmg
-          path: labrynth_x64.dmg
+          name: macos-dmg
+          path: dist/REACHER-${{ steps.version.outputs.version }}-macos-arm64.dmg
 
-  build-dashboard-linux:
+  # -------------------------------------------------------------------
+  # Linux — DEB package (.deb)
+  # -------------------------------------------------------------------
+  build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          python-version: '3.11'
-      - name: Install dependencies
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Extract version
+        id: version
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install pyinstaller
-          curl -L -o reacher-1.1.1-py3-none-any.whl https://github.com/Otis-Lab-MUSC/reacher/releases/download/v1.1.1-beta/reacher-1.1.1-py3-none-any.whl
-          python -m pip install reacher-1.1.1-py3-none-any.whl
-          
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install reacher from source
+        run: |
+          REF="${{ inputs.reacher_ref || 'main' }}"
+          git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
+          pip install ./_reacher
+
+      - name: Install Python build tools
+        run: pip install pyinstaller
+
+      - name: Build frontend
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+
       - name: Build with PyInstaller
-        working-directory: ui
-        run: pyinstaller setup.spec
-      - name: Create DEB structure
+        run: python build.py --skip-firmware --skip-frontend
+
+      - name: Build DEB package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          mkdir -p labrynth_amd64/DEBIAN
-          mkdir -p labrynth_amd64/opt/labrynth
-          mkdir -p labrynth_amd64/usr/local/bin
-          echo "Package: labrynth
-          Version: 1.0.1
-          Section: utils
+          PKG="reacher_${VERSION}_amd64"
+          mkdir -p "${PKG}/DEBIAN"
+          mkdir -p "${PKG}/opt/reacher"
+          mkdir -p "${PKG}/usr/local/bin"
+
+          cat > "${PKG}/DEBIAN/control" <<EOF
+          Package: reacher
+          Version: ${VERSION}
+          Section: science
           Priority: optional
           Architecture: amd64
-          Maintainer: Josh Boquiren <thejoshbq.proton@.me>
-          Description: Labrynth - A dashboard application" > labrynth_amd64/DEBIAN/control
-          cp -r ui/dist/labrynth/* labrynth_amd64/opt/labrynth/
-          chmod +x labrynth_amd64/opt/labrynth/labrynth
-          ln -s /opt/labrynth/labrynth labrynth_amd64/usr/local/bin/labrynth
-      - name: Build DEB package
-        run: dpkg-deb --build labrynth_amd64
+          Maintainer: Otis Lab <otislab@musc.edu>
+          Description: REACHER — Neuroscience experiment control system
+           Head-fixed rodent operant conditioning control software.
+          EOF
+
+          cp -r dist/REACHER/* "${PKG}/opt/reacher/"
+          chmod +x "${PKG}/opt/reacher/REACHER"
+          ln -s /opt/reacher/REACHER "${PKG}/usr/local/bin/reacher"
+
+          dpkg-deb --build "$PKG"
+
       - name: Upload DEB
         uses: actions/upload-artifact@v4
         with:
-          name: labrynth_amd64.deb
-          path: labrynth_amd64.deb
+          name: linux-deb
+          path: reacher_${{ steps.version.outputs.version }}_amd64.deb
 
+  # -------------------------------------------------------------------
+  # Release — publish artifacts to GitHub Releases
+  # -------------------------------------------------------------------
   release:
-    needs: [build-dashboard-windows, build-dashboard-macos, build-dashboard-linux]
+    needs: [build-windows, build-macos, build-linux]
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref_type == 'tag'
     steps:
-      - uses: actions/checkout@v4
-      - name: Delete existing release and tag
-        uses: actions/github-script@v6
-        with:
-          script: |
-            try {
-              const release = await github.rest.repos.getReleaseByTag({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag: 'v1.0.1'
-              });
-              await github.rest.repos.deleteRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                release_id: release.data.id
-              });
-            } catch (error) {
-              if (error.status !== 404) throw error;
-            }
-            try {
-              await github.rest.git.deleteRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: 'tags/v1.0.1'
-              });
-            } catch (error) {
-              if (error.status !== 404) throw error;
-            }
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v1.0.1
-          release_name: Release v1.0.1
-          draft: false
-          prerelease: false
-
-      - name: Download Windows artifact
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          name: labrynth_x64.exe
-          path: dist/windows
+          path: artifacts
+          merge-multiple: true
 
-      - name: Download macOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: labrynth_x64.dmg
-          path: dist/macos
+      - name: List artifacts
+        run: ls -lhR artifacts/
 
-      - name: Download Dashboard Linux artifact
-        uses: actions/download-artifact@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: labrynth_amd64.deb
-          path: dist/linux-dashboard
-
-      - name: Upload Windows Installer
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/windows/labrynth_x64.exe
-          asset_name: labrynth_x64.exe
-          asset_content_type: application/octet-stream
-
-      - name: Upload macOS DMG
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/macos/labrynth_x64.dmg
-          asset_name: labrynth_x64.dmg
-          asset_content_type: application/x-diskcopy
-
-      - name: Upload Dashboard Linux DEB
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/linux-dashboard/labrynth_amd64.deb
-          asset_name: labrynth_amd64.deb
-          asset_content_type: application/vnd.debian.binary-package
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+          files: |
+            artifacts/*.exe
+            artifacts/*.dmg
+            artifacts/*.deb
