@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { ReacherWebSocket } from "../api/websocket";
 import { useSessionStore } from "../store/useSessionStore";
+import { useTutorialStore } from "../store/useTutorialStore";
 import { useLogStore } from "../store/useLogStore";
 import type { LogLevel } from "../store/useLogStore";
 import type { WSMessage, BehaviorEvent, FirmwareConfig, SessionState } from "../types";
@@ -74,7 +75,8 @@ export function useSessionWebSockets() {
 
   useEffect(() => {
     const current = connectionsRef.current;
-    const realIds = sessionOrder.filter((id: string) => !sessions.get(id)?.draft);
+    const demoMode = useTutorialStore.getState().demoMode;
+    const realIds = sessionOrder.filter((id: string) => !sessions.get(id)?.draft && !(demoMode && id.startsWith("demo-")));
     const activeIds = new Set(realIds);
 
     // Close connections for removed or draft sessions

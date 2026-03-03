@@ -52,7 +52,7 @@ export function HardwarePanel() {
 
       {/* System Controls — Issue #2A */}
       {showSystemControls && (
-        <div className="card">
+        <div data-tour="system-controls" className="card">
           <h3 className="font-medium text-theme-text">System Controls</h3>
           <div className="flex flex-wrap gap-2">
             <button
@@ -72,11 +72,11 @@ export function HardwarePanel() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} />
+        <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
         <LeverControl sessionId={activeSessionId} side="LH" paradigm={paradigm} />
-        <CueControl sessionId={activeSessionId} label="Primary" prefix="" />
+        <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="Primary" prefix="" /></div>
         <CueControl sessionId={activeSessionId} label="Secondary" prefix="2" />
-        <PumpControl sessionId={activeSessionId} label="Primary" prefix="" />
+        <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="Primary" prefix="" /></div>
         <PumpControl sessionId={activeSessionId} label="Secondary" prefix="2" />
         <LickCircuitControl sessionId={activeSessionId} />
         <MicroscopeControl sessionId={activeSessionId} />

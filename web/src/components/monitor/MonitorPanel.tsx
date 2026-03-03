@@ -86,13 +86,13 @@ export function MonitorPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div data-tour="monitor-heading" className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-theme-text">Monitor</h2>
         <RunningMouseIndicator state={session.state} />
       </div>
 
       {/* Control buttons */}
-      <div className="flex gap-3">
+      <div data-tour="experiment-controls" className="flex gap-3">
         <button
           onClick={() => setStartModalOpen(true)}
           disabled={session.state === "running"}
@@ -116,7 +116,7 @@ export function MonitorPanel() {
         </button>
       </div>
 
-      <LiveStats session={session} elapsed={elapsed} />
+      <div data-tour="live-stats"><LiveStats session={session} elapsed={elapsed} /></div>
       <EventTimeline events={session.behaviorData} />
     </div>
   );

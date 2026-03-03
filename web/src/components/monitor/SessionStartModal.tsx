@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useLogStore } from "../../store/useLogStore";
 import * as api from "../../api/client";
+import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
 
 const DEVICE_LABELS: Record<string, string> = {
   rhLever: "RH Lever",
@@ -163,6 +164,23 @@ export function SessionStartModal() {
               <p className="text-sm text-theme-text/60">Using defaults</p>
             )}
           </section>
+
+          {/* Paradigm Flow */}
+          {paradigm && (
+            <section>
+              <h3 className="text-sm font-medium text-theme-text/60 uppercase tracking-wide mb-2">
+                Paradigm Flow
+              </h3>
+              <div className="border border-theme-border rounded p-3 bg-accent/5">
+                <ParadigmFlowDiagram
+                  paradigm={paradigm}
+                  hardwareUi={session.hardwareUi}
+                  paradigmSettings={session.paradigmSettings}
+                  pavlovianParams={session.pavlovianParams}
+                />
+              </div>
+            </section>
+          )}
 
           {/* Limits (inline-editable) */}
           <section>

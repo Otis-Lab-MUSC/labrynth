@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Header } from "./components/layout/Header";
 import { Sidebar } from "./components/layout/Sidebar";
 import { NeuralBackground } from "./components/layout/NeuralBackground";
@@ -13,13 +12,17 @@ import { MonitorPanel } from "./components/monitor/MonitorPanel";
 import { SessionStartModal } from "./components/monitor/SessionStartModal";
 import { TerminalPanel } from "./components/terminal/TerminalPanel";
 import { DataExport } from "./components/data/DataExport";
+import { TutorialOverlay } from "./components/tutorial/TutorialOverlay";
+import { HelpPanel } from "./components/tutorial/HelpPanel";
+import { WelcomeScreen } from "./components/tutorial/WelcomeScreen";
+import { DemoModeBanner } from "./components/tutorial/DemoModeBanner";
 import { useThemeStore } from "./store/useThemeStore";
+import { useNavigationStore } from "./store/useNavigationStore";
 import { useSessionWebSockets } from "./hooks/useSessionWebSockets";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { useSingleTab } from "./hooks/useSingleTab";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
-
-type Panel = "session" | "hardware" | "program" | "monitor" | "data";
+import type { Panel } from "./store/useNavigationStore";
 
 function BackgroundLayer() {
   const background = useThemeStore((s) => s.theme.background);
@@ -35,7 +38,8 @@ function BackgroundLayer() {
 }
 
 function AppContent() {
-  const [activePanel, setActivePanel] = useState<Panel>("session");
+  const activePanel = useNavigationStore((s) => s.activePanel);
+  const setActivePanel = useNavigationStore((s) => s.setActivePanel);
 
   useSessionWebSockets();
   useBeforeUnload(false);
@@ -51,6 +55,7 @@ function AppContent() {
   return (
     <div className="flex h-screen flex-col">
       <BackgroundLayer />
+      <DemoModeBanner />
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar active={activePanel} onSelect={(key) => setActivePanel(key as Panel)} />
@@ -68,6 +73,9 @@ function AppContent() {
         </div>
       </div>
       <SessionStartModal />
+      <TutorialOverlay />
+      <HelpPanel />
+      <WelcomeScreen />
     </div>
   );
 }

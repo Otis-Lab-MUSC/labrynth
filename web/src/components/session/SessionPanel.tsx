@@ -96,7 +96,7 @@ export function SessionPanel() {
       <h2 className="text-xl font-semibold text-theme-text">Session</h2>
 
       {/* Port selection + connect */}
-      <div className="card">
+      <div data-tour="port-select" className="card">
         <h3 className="font-medium text-theme-text">COM Port</h3>
         <div className="flex items-center gap-2">
           <select
@@ -175,7 +175,7 @@ export function SessionPanel() {
 
       {/* Firmware upload */}
       {activeSession && !activeSession.draft && (
-        <FirmwareUploadCard key={activeSession.id} sessionId={activeSession.id} />
+        <div data-tour="firmware-card"><FirmwareUploadCard key={activeSession.id} sessionId={activeSession.id} /></div>
       )}
 
       {(() => {

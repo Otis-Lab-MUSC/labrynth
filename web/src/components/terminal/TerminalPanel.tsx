@@ -38,7 +38,7 @@ export function TerminalPanel() {
   }, [entries.length]);
 
   return (
-    <div className="border-t border-theme-border bg-surface flex-shrink-0">
+    <div data-tour="terminal-bar" className="border-t border-theme-border bg-surface flex-shrink-0">
       {/* Toggle bar */}
       <button
         onClick={toggleOpen}

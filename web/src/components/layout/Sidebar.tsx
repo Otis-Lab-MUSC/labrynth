@@ -22,7 +22,7 @@ export function Sidebar({ active, onSelect }: Props) {
     : "bg-panel";
 
   return (
-    <nav className={`flex w-48 flex-col gap-1 border-r border-theme-border ${glassClasses} p-2`}>
+    <nav data-tour="sidebar" className={`flex w-48 flex-col gap-1 border-r border-theme-border ${glassClasses} p-2`}>
       {items.map(({ key, label, icon: Icon }) => {
         const isActive = active === key;
 

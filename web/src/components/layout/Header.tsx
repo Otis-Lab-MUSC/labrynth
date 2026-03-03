@@ -5,6 +5,7 @@ import { useThemeStore } from "../../store/useThemeStore";
 import { useLogStore } from "../../store/useLogStore";
 import { ThemeSelector } from "./ThemeSelector";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { HelpButton } from "../tutorial/HelpButton";
 import * as api from "../../api/client";
 import type { Session, SessionState } from "../../types";
 
@@ -256,7 +257,7 @@ export function Header() {
     : "bg-panel";
 
   return (
-    <header className={`relative z-10 flex items-center gap-2 border-b border-theme-border ${glassClasses} px-4 py-2`}>
+    <header data-tour="header" className={`relative z-10 flex items-center gap-2 border-b border-theme-border ${glassClasses} px-4 py-2`}>
       {/* Branding */}
       <span className="mr-4 text-lg font-bold tracking-wide text-accent title-glow">
         {branding.icon === "neural" && <NeuralIcon />}
@@ -349,6 +350,7 @@ export function Header() {
           );
         })}
         <button
+          data-tour="new-session"
           onClick={handleNewSession}
           className="ml-1 rounded p-1 hover:bg-accent/10 text-theme-text"
           title="New session"
@@ -372,6 +374,9 @@ export function Header() {
 
       {/* Theme selector */}
       <ThemeSelector />
+
+      {/* Help button */}
+      <HelpButton />
 
       {/* Mode toggle */}
       <button

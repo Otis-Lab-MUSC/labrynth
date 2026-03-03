@@ -159,7 +159,7 @@ export function ProgramPanel() {
 
       {/* Session Preset Selector */}
       {filteredSessionPresets.length > 0 && (
-        <div className="card">
+        <div data-tour="preset-select" className="card">
           <h3 className="font-medium text-theme-text">Session Preset</h3>
           <select
             value={selectedPresetId}
@@ -188,14 +188,18 @@ export function ProgramPanel() {
       {selectedSessionPreset && <hr className="border-theme-border/40" />}
 
       {/* Paradigm Settings */}
-      {paradigm === "pavlovian" ? (
-        <PavlovianSettings key={`settings-${activeSessionId}-${presetKey}`} sessionId={activeSessionId} />
-      ) : (
-        <ParadigmSettings key={`settings-${activeSessionId}-${presetKey}`} sessionId={activeSessionId} paradigm={paradigm ?? "fr"} />
-      )}
+      <div data-tour="paradigm-settings">
+        {paradigm === "pavlovian" ? (
+          <PavlovianSettings key={`settings-${activeSessionId}-${presetKey}`} sessionId={activeSessionId} />
+        ) : (
+          <ParadigmSettings key={`settings-${activeSessionId}-${presetKey}`} sessionId={activeSessionId} paradigm={paradigm ?? "fr"} />
+        )}
+      </div>
 
       {/* Limit Config */}
-      <LimitConfig key={`limits-${activeSessionId}-${presetKey}`} sessionId={activeSessionId} paradigm={paradigm} />
+      <div data-tour="limit-config">
+        <LimitConfig key={`limits-${activeSessionId}-${presetKey}`} sessionId={activeSessionId} paradigm={paradigm} />
+      </div>
 
       {/* Device Preset Dropdown (existing system, only if presets exist) */}
       {filteredDevicePresets.length > 0 && (
@@ -222,6 +226,7 @@ export function ProgramPanel() {
       {/* Start Session button */}
       {canStart && (
         <button
+          data-tour="start-session"
           onClick={() => setStartModalOpen(true)}
           className="w-full rounded bg-green-600 px-4 py-3 text-white font-mono text-lg hover:bg-green-700"
         >

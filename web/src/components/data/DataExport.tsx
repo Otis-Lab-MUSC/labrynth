@@ -53,7 +53,7 @@ export function DataExport() {
       <h2 className="text-xl font-semibold text-theme-text">Data</h2>
 
       {/* File config */}
-      <div className="card">
+      <div data-tour="file-config" className="card">
         <h3 className="font-medium text-theme-text">File Configuration</h3>
         <div className="flex items-center gap-2">
           <label className="text-sm w-28 text-theme-text/60">Filename:</label>
@@ -79,7 +79,7 @@ export function DataExport() {
       </div>
 
       {/* Export */}
-      <div className="card">
+      <div data-tour="export-card" className="card">
         <h3 className="font-medium text-theme-text">Export</h3>
         <p className="text-sm text-theme-text/60 font-mono">
           {session.behaviorData.length} behavior events, {session.frameData.length} frame timestamps
