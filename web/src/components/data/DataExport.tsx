@@ -69,7 +69,7 @@ export function DataExport() {
           <input
             value={destination}
             onChange={(e) => setFileConfig(activeSessionId, { destination: e.target.value })}
-            placeholder="/home/user/Labrynth/DATA"
+            placeholder="~/REACHER/DATA"
             className="flex-1 input-base"
           />
         </div>

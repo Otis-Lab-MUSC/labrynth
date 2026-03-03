@@ -9,7 +9,7 @@ export function SessionPanel() {
   const [ports, setPorts] = useState<string[]>([]);
   const [selectedPort, setSelectedPort] = useState("");
   const [loading, setLoading] = useState(false);
-  const { activeSessionId, sessions, createSession, setSessionName, setParadigm, setBoard, updateState } = useSessionStore();
+  const { activeSessionId, sessions, createSession, destroySession, setSessionName, setParadigm, setBoard, updateState } = useSessionStore();
 
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
 
@@ -44,6 +44,7 @@ export function SessionPanel() {
     setLoading(true);
     try {
       await api.disconnectSerial(activeSessionId);
+      await destroySession(activeSessionId);
       useLogStore.getState().pushLog("info", "Serial disconnected", activeSessionId);
     } catch (e) {
       useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Disconnect failed");
@@ -81,7 +82,7 @@ export function SessionPanel() {
           </button>
           <button
             onClick={handleConnect}
-            disabled={!selectedPort || loading}
+            disabled={!selectedPort || loading || (activeSession != null && !activeSession.draft && activeSession.state !== "idle")}
             className="btn-sm bg-accent text-accent-contrast hover:bg-accent-hover disabled:opacity-50"
           >
             Connect
