@@ -63,6 +63,12 @@ export function ProgramPanel() {
           (result as unknown as Record<string, unknown>)[key] = merged;
         }
       }
+      // Disarm devices NOT mentioned in the preset (full-takeover semantics)
+      for (const deviceKey of Object.keys(PRESET_COMMAND_MAP)) {
+        if (!(deviceKey in preset.hardware)) {
+          ((result as unknown as Record<string, Record<string, unknown>>)[deviceKey]).armed = false;
+        }
+      }
       return result;
     });
 
@@ -83,6 +89,13 @@ export function ProgramPanel() {
               await api.sendCommand(activeSessionId, code, state[paramKey] as number);
             }
           }
+        }
+      }
+
+      // Send DISARM for devices NOT mentioned in the preset
+      for (const [deviceKey, mapping] of Object.entries(PRESET_COMMAND_MAP)) {
+        if (!(deviceKey in preset.hardware)) {
+          await api.sendCommand(activeSessionId, mapping.disarm);
         }
       }
 
@@ -179,6 +192,7 @@ export function ProgramPanel() {
       {/* Session Preset Card (when selected) */}
       {selectedSessionPreset && (
         <SessionPresetCard
+          key={selectedSessionPreset.id}
           preset={selectedSessionPreset}
           onApply={(overrides) => applySessionPreset(selectedSessionPreset, overrides)}
         />
