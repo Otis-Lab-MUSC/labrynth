@@ -38,6 +38,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install Arduino AVR core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
 
       - name: Extract version
         id: version
@@ -54,19 +64,14 @@ jobs:
         run: |
           REF="${{ inputs.reacher_ref || 'main' }}"
           git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
-          pip install ./_reacher
+          python -m pip install ./_reacher
+          python -c "import reacher; print('reacher OK')"
 
       - name: Install Python build tools
-        run: pip install pyinstaller
+        run: python -m pip install pyinstaller
 
-      - name: Build frontend
-        working-directory: web
-        run: |
-          npm ci
-          npm run build
-
-      - name: Build with PyInstaller
-        run: python build.py --skip-firmware --skip-frontend
+      - name: Build application
+        run: python build.py
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -102,6 +107,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install Arduino AVR core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
 
       - name: Extract version
         id: version
@@ -116,19 +131,14 @@ jobs:
         run: |
           REF="${{ inputs.reacher_ref || 'main' }}"
           git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
-          pip install ./_reacher
+          python -m pip install ./_reacher
+          python -c "import reacher; print('reacher OK')"
 
       - name: Install Python build tools
-        run: pip install pyinstaller
+        run: python -m pip install pyinstaller
 
-      - name: Build frontend
-        working-directory: web
-        run: |
-          npm ci
-          npm run build
-
-      - name: Build with PyInstaller
-        run: python build.py --skip-firmware --skip-frontend
+      - name: Build application
+        run: python build.py
 
       - name: Create DMG
         env:
@@ -166,6 +176,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Install Arduino AVR core
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
 
       - name: Extract version
         id: version
@@ -180,19 +200,14 @@ jobs:
         run: |
           REF="${{ inputs.reacher_ref || 'main' }}"
           git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
-          pip install ./_reacher
+          python -m pip install ./_reacher
+          python -c "import reacher; print('reacher OK')"
 
       - name: Install Python build tools
-        run: pip install pyinstaller
+        run: python -m pip install pyinstaller
 
-      - name: Build frontend
-        working-directory: web
-        run: |
-          npm ci
-          npm run build
-
-      - name: Build with PyInstaller
-        run: python build.py --skip-firmware --skip-frontend
+      - name: Build application
+        run: python build.py
 
       - name: Build DEB package
         env:
