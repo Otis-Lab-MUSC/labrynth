@@ -36,6 +36,8 @@ export interface CueUiState extends DeviceArmState {
 
 export interface PumpUiState extends DeviceArmState {
   duration: number;
+  flowRate: number | null;  // µL/s — null means unknown
+  volume: number | null;    // µL — computed from duration * flowRate, null when flowRate is null
 }
 
 export interface LaserUiState extends DeviceArmState {

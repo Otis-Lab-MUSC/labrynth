@@ -22,7 +22,14 @@ function formatDeviceParams(device: Record<string, unknown>): string {
   if ("timeout" in device && device.timeout !== undefined) parts.push(`T:${Number(device.timeout) / 1000}s`);
   if ("ratio" in device && device.ratio !== undefined) parts.push(`R:${device.ratio}`);
   if ("frequency" in device && device.frequency !== undefined) parts.push(`${device.frequency}Hz`);
-  if ("duration" in device && device.duration !== undefined) parts.push(`${device.duration}ms`);
+  if ("duration" in device && device.duration !== undefined) {
+    const durStr = `${device.duration}ms`;
+    if ("volume" in device && device.volume != null) {
+      parts.push(`${durStr} (${device.volume}\u00B5L)`);
+    } else {
+      parts.push(durStr);
+    }
+  }
   return parts.join(" ");
 }
 
