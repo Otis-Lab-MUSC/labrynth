@@ -29,6 +29,7 @@ export function DataExport() {
   const handleZipExport = async () => {
     setExportState(activeSessionId, { exporting: true, result: null, error: null });
     try {
+      const micro = session.hardwareUi.microscope;
       const result = await api.exportZip(activeSessionId, {
         session_name: session.name || undefined,
         notes: session.notes || undefined,
@@ -36,6 +37,8 @@ export function DataExport() {
         press_count: session.pressCount,
         trial_count: session.trialCount,
         program_start_time: session.programStartTime,
+        ...(micro.armed && micro.frameRate != null && { microscope_frame_rate: micro.frameRate }),
+        ...(micro.armed && micro.frameAveraging != null && { microscope_frame_averaging: micro.frameAveraging }),
       });
       setExportState(activeSessionId, { exporting: false, result: result.file_path });
     } catch (e) {

@@ -122,7 +122,7 @@ export function WelcomeScreen() {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-accent">Welcome to Labrynth</h1>
           <p className="text-sm text-theme-text/60 leading-relaxed">
-            The control interface for REACHER experiments. New here? Take a quick tour or explore the interface with simulated hardware.
+            Take an interactive tour — you'll configure a real session as you learn each panel.
           </p>
         </div>
 
@@ -131,7 +131,7 @@ export function WelcomeScreen() {
             onClick={handleTour}
             className="w-full rounded-lg bg-accent px-4 py-3 text-accent-contrast font-medium hover:bg-accent-hover transition"
           >
-            Take the Tour
+            Take the Interactive Tour
           </button>
           <button
             onClick={handleDemo}

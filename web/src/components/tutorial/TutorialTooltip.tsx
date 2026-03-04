@@ -1,15 +1,18 @@
 import { useEffect, useRef, useLayoutEffect, useState } from "react";
 import { TutorialProgress } from "./TutorialProgress";
 import type { TutorialStep } from "../../store/useTutorialStore";
+import { useSessionStore } from "../../store/useSessionStore";
 
 interface TutorialTooltipProps {
   step: TutorialStep;
   stepIndex: number;
   totalSteps: number;
   rect: DOMRect | null;
+  steps: TutorialStep[];
   onNext: () => void;
   onPrev: () => void;
   onSkip: () => void;
+  onGoToStep: (index: number) => void;
 }
 
 const TOOLTIP_WIDTH = 340;
@@ -78,14 +81,23 @@ export function TutorialTooltip({
   stepIndex,
   totalSteps,
   rect,
+  steps,
   onNext,
   onPrev,
   onSkip,
+  onGoToStep,
 }: TutorialTooltipProps) {
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === totalSteps - 1;
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [measuredHeight, setMeasuredHeight] = useState(180);
+
+  const activeSession = useSessionStore((s) => {
+    const id = s.activeSessionId;
+    return id ? s.sessions.get(id) ?? null : null;
+  });
+
+  const summaryText = step.summary && activeSession ? step.summary(activeSession) : null;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -147,10 +159,25 @@ export function TutorialTooltip({
       <div className="p-4 space-y-3">
         <div>
           <h3 className="text-sm font-semibold text-accent">{step.title}</h3>
+          {step.interactive && (
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-accent/15 text-accent text-[10px] font-medium">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-status-pulse" />
+              Try it — interact with the highlighted area
+            </span>
+          )}
           <p className="mt-1 text-sm text-theme-text/80 leading-relaxed">{step.content}</p>
         </div>
 
-        <TutorialProgress current={stepIndex} total={totalSteps} />
+        {summaryText && (
+          <div className="mt-2 px-2.5 py-2 rounded bg-surface/50 border border-theme-border">
+            <span className="text-[10px] font-semibold text-accent uppercase tracking-wider">Your configuration</span>
+            <pre className="mt-1 text-[11px] text-theme-text/70 font-mono whitespace-pre-wrap leading-relaxed">
+              {summaryText}
+            </pre>
+          </div>
+        )}
+
+        <TutorialProgress current={stepIndex} total={totalSteps} steps={steps} onGoToStep={onGoToStep} />
 
         <div className="flex items-center justify-between">
           <button

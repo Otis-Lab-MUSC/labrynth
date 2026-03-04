@@ -64,13 +64,18 @@ export function SessionStartModal() {
     if (!activeSessionId || !session) return;
     setStarting(true);
     try {
-      // Persist inline limit edits
-      await api.setLimit(activeSessionId, {
+      // Build limit payload with only relevant fields
+      const limitPayload: { type: string; time_limit?: number; infusion_limit?: number; delay?: number } = {
         type: limitType,
-        time_limit: timeLimit,
-        infusion_limit: infusionLimit,
-        delay,
-      });
+      };
+      if (limitType === "Time" || limitType === "Both") {
+        limitPayload.time_limit = timeLimit;
+      }
+      if (limitType === "Infusion" || limitType === "Both" || limitType === "Trials") {
+        limitPayload.infusion_limit = infusionLimit;
+        limitPayload.delay = delay;
+      }
+      await api.setLimit(activeSessionId, limitPayload);
       setLimitSettings(activeSessionId, { limitType, timeLimit, infusionLimit, delay });
 
       // Persist name

@@ -99,6 +99,8 @@ export const exportZip = (
     press_count?: number;
     trial_count?: number;
     program_start_time?: number | null;
+    microscope_frame_rate?: number | null;
+    microscope_frame_averaging?: number | null;
   }
 ) =>
   isDemoMode() ? mock.exportZip(id, body) : request<{ file_path: string; folder_path: string }>(`/file/${id}/export/zip`, {

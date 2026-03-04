@@ -1,9 +1,10 @@
 interface TutorialSpotlightProps {
   rect: DOMRect | null;
   visible: boolean;
+  interactive?: boolean;
 }
 
-export function TutorialSpotlight({ rect, visible }: TutorialSpotlightProps) {
+export function TutorialSpotlight({ rect, visible, interactive }: TutorialSpotlightProps) {
   if (!visible) return null;
 
   // Center placement — no cutout, just full dimming
@@ -20,7 +21,7 @@ export function TutorialSpotlight({ rect, visible }: TutorialSpotlightProps) {
 
   return (
     <div
-      className="fixed z-[60] transition-all duration-300 ease-out rounded-lg"
+      className={`fixed z-[60] transition-all duration-300 ease-out rounded-lg${interactive ? " animate-spotlight-interactive" : ""}`}
       style={{
         top: rect.top - padding,
         left: rect.left - padding,

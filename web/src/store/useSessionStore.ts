@@ -45,7 +45,7 @@ const defaultHardwareUiState = (): HardwareUiState => ({
   secondaryPump: { armed: false, duration: 3000 },
   laser: { armed: false, frequency: 20, duration: 10000 },
   lickCircuit: { armed: false },
-  microscope: { armed: false },
+  microscope: { armed: false, frameRate: null, frameAveraging: null },
   testMode: false,
 });
 

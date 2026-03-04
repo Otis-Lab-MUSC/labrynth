@@ -15,6 +15,7 @@ export function TutorialOverlay() {
   const steps = useTutorialStore((s) => s.steps);
   const nextStep = useTutorialStore((s) => s.nextStep);
   const prevStep = useTutorialStore((s) => s.prevStep);
+  const goToStep = useTutorialStore((s) => s.goToStep);
   const skipTour = useTutorialStore((s) => s.skipTour);
 
   const step = steps[currentStepIndex] ?? null;
@@ -50,15 +51,17 @@ export function TutorialOverlay() {
 
   return createPortal(
     <>
-      <TutorialSpotlight rect={step.placement === "center" ? null : rect} visible />
+      <TutorialSpotlight rect={step.placement === "center" ? null : rect} visible interactive={step.interactive} />
       <TutorialTooltip
         step={step}
         stepIndex={currentStepIndex}
         totalSteps={steps.length}
         rect={step.placement === "center" ? null : rect}
+        steps={steps}
         onNext={nextStep}
         onPrev={prevStep}
         onSkip={skipTour}
+        onGoToStep={goToStep}
       />
     </>,
     document.body

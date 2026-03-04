@@ -43,6 +43,11 @@ export interface LaserUiState extends DeviceArmState {
   duration: number;
 }
 
+export interface MicroscopeUiState extends DeviceArmState {
+  frameRate: number | null;
+  frameAveraging: number | null;
+}
+
 export interface HardwareUiState {
   rhLever: LeverUiState;
   lhLever: LeverUiState;
@@ -52,7 +57,7 @@ export interface HardwareUiState {
   secondaryPump: PumpUiState;
   laser: LaserUiState;
   lickCircuit: DeviceArmState;
-  microscope: DeviceArmState;
+  microscope: MicroscopeUiState;
   testMode: boolean;
 }
 

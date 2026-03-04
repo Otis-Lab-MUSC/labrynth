@@ -1,12 +1,66 @@
+import { useMemo } from "react";
+import type { TutorialStep } from "../../store/useTutorialStore";
+
 interface TutorialProgressProps {
   current: number;
   total: number;
+  steps: TutorialStep[];
+  onGoToStep: (index: number) => void;
 }
 
-export function TutorialProgress({ current, total }: TutorialProgressProps) {
-  if (total > 10) {
-    const pct = ((current + 1) / total) * 100;
-    return (
+interface SectionInfo {
+  section: string;
+  startIndex: number;
+  count: number;
+}
+
+export function TutorialProgress({ current, total, steps, onGoToStep }: TutorialProgressProps) {
+  const sections = useMemo(() => {
+    const result: SectionInfo[] = [];
+    for (let i = 0; i < steps.length; i++) {
+      const label = steps[i].section ?? "Other";
+      const last = result[result.length - 1];
+      if (last && last.section === label) {
+        last.count++;
+      } else {
+        result.push({ section: label, startIndex: i, count: 1 });
+      }
+    }
+    return result;
+  }, [steps]);
+
+  const activeSectionIndex = sections.findIndex(
+    (s) => current >= s.startIndex && current < s.startIndex + s.count,
+  );
+
+  const pct = ((current + 1) / total) * 100;
+
+  return (
+    <div className="space-y-2">
+      {sections.length > 1 && (
+        <div className="flex flex-wrap gap-1">
+          {sections.map((s, i) => {
+            const isActive = i === activeSectionIndex;
+            const isPast = i < activeSectionIndex;
+            return (
+              <button
+                key={s.section}
+                onClick={() => onGoToStep(s.startIndex)}
+                className={`px-2 py-0.5 rounded-full text-[9px] font-medium transition ${
+                  isActive
+                    ? "bg-accent/20 text-accent"
+                    : isPast
+                      ? "text-accent/50 hover:bg-accent/10"
+                      : "text-theme-text/30 hover:bg-theme-text/5"
+                }`}
+              >
+                {s.section}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="flex items-center gap-2 min-w-0">
         <span className="text-[10px] text-theme-text/50 whitespace-nowrap">
           {current + 1} / {total}
@@ -18,23 +72,6 @@ export function TutorialProgress({ current, total }: TutorialProgressProps) {
           />
         </div>
       </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-1.5">
-      {Array.from({ length: total }, (_, i) => (
-        <div
-          key={i}
-          className={`h-1.5 rounded-full transition-all duration-200 ${
-            i === current
-              ? "w-4 bg-accent"
-              : i < current
-                ? "w-1.5 bg-accent/50"
-                : "w-1.5 bg-theme-text/20"
-          }`}
-        />
-      ))}
     </div>
   );
 }

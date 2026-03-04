@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Panel } from "./useNavigationStore";
+import type { Session } from "../types";
 
 export interface TutorialStep {
   id: string;
@@ -8,6 +9,9 @@ export interface TutorialStep {
   title: string;
   content: string;
   placement: "top" | "bottom" | "left" | "right" | "center";
+  interactive?: boolean;
+  section?: string;
+  summary?: (session: Session) => string | null;
 }
 
 interface TutorialStore {
@@ -19,6 +23,7 @@ interface TutorialStore {
   startTour: (tourId: string) => void;
   nextStep: () => void;
   prevStep: () => void;
+  goToStep: (index: number) => void;
   skipTour: () => void;
   endTour: () => void;
 
@@ -85,6 +90,13 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
     const { currentStepIndex } = get();
     if (currentStepIndex > 0) {
       set({ currentStepIndex: currentStepIndex - 1 });
+    }
+  },
+
+  goToStep: (index) => {
+    const { steps } = get();
+    if (index >= 0 && index < steps.length) {
+      set({ currentStepIndex: index });
     }
   },
 

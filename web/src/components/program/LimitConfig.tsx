@@ -21,12 +21,17 @@ export function LimitConfig({ sessionId, paradigm }: Props) {
 
   const handleSet = async () => {
     try {
-      await api.setLimit(sessionId, {
+      const limitPayload: { type: string; time_limit?: number; infusion_limit?: number; delay?: number } = {
         type: limitType,
-        time_limit: timeLimit,
-        infusion_limit: infusionLimit,
-        delay,
-      });
+      };
+      if (limitType === "Time" || limitType === "Both") {
+        limitPayload.time_limit = timeLimit;
+      }
+      if (limitType === "Infusion" || limitType === "Both") {
+        limitPayload.infusion_limit = infusionLimit;
+        limitPayload.delay = delay;
+      }
+      await api.setLimit(sessionId, limitPayload);
       // Only persist to store after server acknowledges
       setLimitSettings(sessionId, { limitType, timeLimit, infusionLimit, delay });
     } catch {

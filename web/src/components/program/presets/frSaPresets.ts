@@ -34,7 +34,7 @@ const PUMP_HARDWARE: Partial<HardwareUiState> = {
 const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
   laser:       { armed: false, frequency: 40, duration: 5000 },
   lickCircuit: { armed: false },
-  microscope:  { armed: false },
+  microscope:  { armed: false, frameRate: null, frameAveraging: null },
 };
 
 /* ── Shared paradigm settings ──────────────────────────────────────── */
@@ -89,5 +89,5 @@ export const SA_EXTINCTION_PRESET: SessionPreset = {
   devices: [...CORE_DEVICES],
   hardware: { ...CORE_HARDWARE },
   paradigmSettings: PARADIGM_SETTINGS,
-  limitDefaults: { limitType: "Time", timeLimit: 3600, infusionLimit: 0, delay: 60 },
+  limitDefaults: { limitType: "Time", timeLimit: 3600, infusionLimit: 30, delay: 60 },
 };
