@@ -5,6 +5,8 @@ import { CTScanBackground } from "./components/layout/CTScanBackground";
 import { StormSynapseBackground } from "./components/layout/StormSynapseBackground";
 import { EmberCircuitBackground } from "./components/layout/EmberCircuitBackground";
 import { NeonGridBackground } from "./components/layout/NeonGridBackground";
+import { CyberpunkGridBackground } from "./components/layout/CyberpunkGridBackground";
+import { CyberpunkCursor } from "./components/layout/CyberpunkCursor";
 import { SessionPanel } from "./components/session/SessionPanel";
 import { HardwarePanel } from "./components/hardware/HardwarePanel";
 import { ProgramPanel } from "./components/program/ProgramPanel";
@@ -21,6 +23,7 @@ import { useNavigationStore } from "./store/useNavigationStore";
 import { useSessionWebSockets } from "./hooks/useSessionWebSockets";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { useSingleTab } from "./hooks/useSingleTab";
+import { useScrollReveal } from "./hooks/useScrollReveal";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
 import type { Panel } from "./store/useNavigationStore";
 
@@ -33,6 +36,7 @@ function BackgroundLayer() {
       {background === "storm-synapse" && <StormSynapseBackground />}
       {background === "ember-circuit" && <EmberCircuitBackground />}
       {background === "neon-grid" && <NeonGridBackground />}
+      {background === "cyberpunk-grid" && <CyberpunkGridBackground />}
     </>
   );
 }
@@ -40,9 +44,12 @@ function BackgroundLayer() {
 function AppContent() {
   const activePanel = useNavigationStore((s) => s.activePanel);
   const setActivePanel = useNavigationStore((s) => s.setActivePanel);
+  const themeId = useThemeStore((s) => s.themeId);
+  const isReacher = themeId === "reacher";
 
   useSessionWebSockets();
   useBeforeUnload(false);
+  useScrollReveal();
 
   const panels: Record<Panel, React.ReactNode> = {
     session: <SessionPanel />,
@@ -55,6 +62,7 @@ function AppContent() {
   return (
     <div className="flex h-screen flex-col">
       <BackgroundLayer />
+      {isReacher && <CyberpunkCursor />}
       <DemoModeBanner />
       <Header />
       <div className="flex flex-1 overflow-hidden">
@@ -63,7 +71,7 @@ function AppContent() {
           <main className="flex-1 overflow-y-auto p-6">
             <ErrorBoundary>
               {Object.entries(panels).map(([key, panel]) => (
-                <div key={key} style={{ display: key === activePanel ? undefined : "none" }}>
+                <div key={key} className="reveal" style={{ display: key === activePanel ? undefined : "none" }}>
                   {panel}
                 </div>
               ))}
@@ -72,6 +80,12 @@ function AppContent() {
           <TerminalPanel />
         </div>
       </div>
+      {isReacher && (
+        <footer className="border-t border-theme-border bg-panel/50 px-4 py-2 text-center"
+          style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", letterSpacing: "0.1em", color: "rgb(var(--color-text-dim, var(--color-text-secondary)))" }}>
+          (c) 2026 LOGISTECH // ALL RIGHTS RESERVED // BUILD 2.0.0
+        </footer>
+      )}
       <SessionStartModal />
       <TutorialOverlay />
       <HelpPanel />

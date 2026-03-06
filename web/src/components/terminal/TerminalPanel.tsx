@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { useLogStore } from "../../store/useLogStore";
+import { useThemeStore } from "../../store/useThemeStore";
 import type { LogLevel } from "../../store/useLogStore";
 
 const LEVEL_CLASSES: Record<LogLevel, string> = {
@@ -19,6 +20,7 @@ export function TerminalPanel() {
   const isOpen = useLogStore((s) => s.isOpen);
   const toggleOpen = useLogStore((s) => s.toggleOpen);
   const clearLogs = useLogStore((s) => s.clearLogs);
+  const isReacher = useThemeStore((s) => s.themeId) === "reacher";
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const userScrolledUp = useRef(false);
@@ -67,6 +69,16 @@ export function TerminalPanel() {
         )}
       </button>
 
+      {/* Terminal header bar (Reacher theme) */}
+      {isOpen && isReacher && (
+        <div className="terminal-header">
+          <span className="dot dot-red" />
+          <span className="dot dot-yellow" />
+          <span className="dot dot-green" />
+          <span className="terminal-label">TERMINAL</span>
+        </div>
+      )}
+
       {/* Log area */}
       {isOpen && (
         <div
@@ -76,6 +88,7 @@ export function TerminalPanel() {
         >
           {entries.map((entry) => (
             <div key={entry.id} className="flex gap-2 py-px">
+              {isReacher && <span className="text-accent shrink-0">&gt;</span>}
               <span className="text-theme-text/30 whitespace-nowrap">
                 [{formatTime(entry.timestamp)}]
               </span>

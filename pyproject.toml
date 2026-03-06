@@ -12,5 +12,16 @@ dependencies = [
     "pyinstaller>=6.0",
 ]
 
+[project.optional-dependencies]
+cli = [
+    "prompt_toolkit>=3.0.0",
+    "httpx>=0.27.0",
+    "websockets>=12.0",
+]
+
+[project.scripts]
+reacher-cli = "cli.__main__:main"
+
 [tool.setuptools]
 py-modules = ["build", "launcher"]
+packages = ["cli"]

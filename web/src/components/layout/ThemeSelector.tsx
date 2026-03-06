@@ -1,3 +1,7 @@
+/* PRESERVED — theme switching disabled.
+   This component is intentionally retained for potential future use.
+   To re-enable, restore the ThemeSwitcher render in Header.tsx and theme state logic in useThemeStore.ts. */
+// @ts-nocheck
 import { useState, useRef, useEffect } from "react";
 import { Palette } from "lucide-react";
 import { useThemeStore } from "../../store/useThemeStore";

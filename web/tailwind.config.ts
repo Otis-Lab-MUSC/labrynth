@@ -8,6 +8,8 @@ export default {
       fontFamily: {
         mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "monospace"],
         sans: ["Inter", "system-ui", "sans-serif"],
+        rajdhani: ["'Rajdhani'", "sans-serif"],
+        shareTechMono: ["'Share Tech Mono'", "monospace"],
       },
       colors: {
         surface: {
@@ -60,6 +62,17 @@ export default {
           "0%, 100%": { opacity: "1", transform: "scale(1)" },
           "50%": { opacity: "0.6", transform: "scale(0.92)" },
         },
+        "grid-drift": {
+          to: { backgroundPosition: "60px 60px" },
+        },
+        glitch: {
+          "0%": { clipPath: "inset(40% 0 61% 0)", transform: "skewX(0deg)" },
+          "20%": { clipPath: "inset(92% 0 1% 0)", transform: "skewX(-2deg)" },
+          "40%": { clipPath: "inset(43% 0 1% 0)", transform: "skewX(1deg)" },
+          "60%": { clipPath: "inset(25% 0 58% 0)", transform: "skewX(-1deg)" },
+          "80%": { clipPath: "inset(54% 0 7% 0)", transform: "skewX(2deg)" },
+          "100%": { clipPath: "inset(58% 0 43% 0)", transform: "skewX(0deg)" },
+        },
       },
       animation: {
         blink: "blink 1s step-end infinite",
@@ -70,6 +83,8 @@ export default {
         "reacher-glow": "reacher-glow 3s ease-in-out infinite",
         "mouse-run": "mouse-run 0.3s ease-in-out infinite",
         "status-pulse": "status-pulse 2s ease-in-out infinite",
+        "grid-drift": "grid-drift 60s linear infinite",
+        glitch: "glitch 0.3s linear",
       },
     },
   },

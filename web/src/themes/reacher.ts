@@ -5,37 +5,39 @@ export const reacherTheme: ThemeDefinition = {
   name: "Reacher",
   colors: {
     light: {
-      surface: "250 253 253",       // cool cyan-tinted white
-      panel: "238 248 248",         // light teal panel
-      textPrimary: "10 20 20",      // near-black
-      textSecondary: "70 100 100",  // muted teal
-      accent: "0 180 182",          // brand cyan (light-adapted)
-      accentHover: "0 145 148",     // dimmed cyan
-      accentContrast: "0 0 0",      // black on cyan
-      border: "70 100 100",         // muted teal border
-      input: "245 251 251",         // near-white
+      surface: "240 248 248",
+      panel: "225 238 238",
+      textPrimary: "10 30 30",
+      textSecondary: "74 112 112",
+      accent: "0 180 200",
+      accentHover: "0 140 155",
+      accentContrast: "0 0 0",
+      border: "180 210 210",
+      input: "232 244 244",
+      textDim: "120 160 160",
     },
     dark: {
-      surface: "10 10 10",          // near-black (brand banner bg)
-      panel: "14 18 20",            // blue-gray lift
-      textPrimary: "210 245 245",   // cyan-tinted white
-      textSecondary: "120 175 175", // muted teal
-      accent: "0 212 216",          // brand cyan (exact logo)
-      accentHover: "0 175 180",     // dimmed cyan
-      accentContrast: "0 0 0",      // black on cyan
-      border: "0 212 216",          // cyan border
-      input: "6 8 10",              // near-black input
+      surface: "0 0 0",
+      panel: "10 24 24",
+      textPrimary: "200 232 232",
+      textSecondary: "74 112 112",
+      accent: "0 229 255",
+      accentHover: "0 122 140",
+      accentContrast: "0 0 0",
+      border: "13 38 38",
+      input: "4 10 10",
+      textDim: "40 80 80",
     },
   },
-  font: "mono",
-  radius: { sm: "0.375rem", md: "0.375rem", lg: "0.625rem" },
+  font: "cyberpunk",
+  radius: { sm: "2px", md: "2px", lg: "2px" },
   glass: { enabled: true, opacity: 0.85, blur: "6px" },
   branding: {
     type: "clean",
-    text: "Labrynth",
+    text: "// Labrynth",
     showCursor: false,
     icon: "reacher",
   },
   sidebar: { activeStyle: "left-accent", itemPrefix: "" },
-  background: "neon-grid",
+  background: "cyberpunk-grid",
 };

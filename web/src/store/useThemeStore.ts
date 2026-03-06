@@ -9,12 +9,18 @@ interface ThemeStore {
   mode: Mode;
   theme: ThemeDefinition;
   toggleMode: () => void;
-  setTheme: (id: string) => void;
 }
 
 const FONT_MAP: Record<string, string> = {
   mono: '"JetBrains Mono", ui-monospace, SFMono-Regular, monospace',
   sans: "Inter, system-ui, sans-serif",
+  cyberpunk: "'Rajdhani', sans-serif",
+};
+
+const MONO_MAP: Record<string, string> = {
+  cyberpunk: "'Share Tech Mono', monospace",
+  mono: '"JetBrains Mono", ui-monospace, SFMono-Regular, monospace',
+  sans: '"JetBrains Mono", ui-monospace, SFMono-Regular, monospace',
 };
 
 function migrateKey(oldKey: string, newKey: string): void {
@@ -31,14 +37,6 @@ function getInitialMode(): Mode {
   const stored = localStorage.getItem("labrynth-mode");
   if (stored === "light" || stored === "dark") return stored;
   return "dark";
-}
-
-function getInitialThemeId(): string {
-  if (typeof window === "undefined") return defaultThemeId;
-  migrateKey("reacher-theme-id", "labrynth-theme-id");
-  const stored = localStorage.getItem("labrynth-theme-id");
-  if (stored && themes[stored]) return stored;
-  return defaultThemeId;
 }
 
 function apply(theme: ThemeDefinition, mode: Mode) {
@@ -61,27 +59,36 @@ function apply(theme: ThemeDefinition, mode: Mode) {
 
   // Style variables
   root.style.setProperty("--font-body", FONT_MAP[theme.font] ?? FONT_MAP.mono);
+  root.style.setProperty("--font-mono", MONO_MAP[theme.font] ?? MONO_MAP.mono);
   root.style.setProperty("--radius-sm", theme.radius.sm);
   root.style.setProperty("--radius-md", theme.radius.md);
   root.style.setProperty("--radius-lg", theme.radius.lg);
   root.style.setProperty("--glass-opacity", String(theme.glass.opacity));
   root.style.setProperty("--glass-blur", theme.glass.blur);
 
+  // Text dim token
+  if (palette.textDim) {
+    root.style.setProperty("--color-text-dim", palette.textDim);
+  } else {
+    root.style.removeProperty("--color-text-dim");
+  }
+
+  // Theme-specific class toggle
+  root.classList.toggle("theme-reacher", theme.id === "reacher");
+
   // Persist
   localStorage.setItem("labrynth-mode", mode);
-  localStorage.setItem("labrynth-theme-id", theme.id);
 }
 
 export const useThemeStore = create<ThemeStore>((set) => {
   const initialMode = getInitialMode();
-  const initialThemeId = getInitialThemeId();
-  const initialTheme = themes[initialThemeId];
+  const initialTheme = themes[defaultThemeId];
 
   // Apply synchronously before first render
   apply(initialTheme, initialMode);
 
   return {
-    themeId: initialThemeId,
+    themeId: defaultThemeId,
     mode: initialMode,
     theme: initialTheme,
 
@@ -90,14 +97,6 @@ export const useThemeStore = create<ThemeStore>((set) => {
         const next: Mode = s.mode === "dark" ? "light" : "dark";
         apply(s.theme, next);
         return { mode: next };
-      }),
-
-    setTheme: (id: string) =>
-      set((s) => {
-        const next = themes[id];
-        if (!next) return s;
-        apply(next, s.mode);
-        return { themeId: id, theme: next };
       }),
   };
 });

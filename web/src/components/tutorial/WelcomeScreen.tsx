@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTutorialStore } from "../../store/useTutorialStore";
 import { useSessionStore } from "../../store/useSessionStore";
+import { useThemeStore } from "../../store/useThemeStore";
 
 const DISMISSED_KEY = "labrynth-welcome-dismissed";
 
@@ -77,6 +78,7 @@ export function WelcomeScreen() {
   const startTour = useTutorialStore((s) => s.startTour);
   const setDemoMode = useTutorialStore((s) => s.setDemoMode);
   const sessionCount = useSessionStore((s) => s.sessionOrder.length);
+  const isReacher = useThemeStore((s) => s.themeId) === "reacher";
 
   const [dismissed, setDismissed] = useState(() => {
     try {
@@ -120,7 +122,14 @@ export function WelcomeScreen() {
         <ReacherLogo />
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-accent">Welcome to Labrynth</h1>
+          {isReacher && (
+            <p className="text-xs tracking-widest uppercase text-theme-text/40" style={{ fontFamily: "var(--font-mono)" }}>
+              v1.0.0 // LABRYNTH
+            </p>
+          )}
+          <h1 className={`text-2xl font-bold text-accent ${isReacher ? "blink-cursor" : ""}`}>
+            Welcome to Labrynth
+          </h1>
           <p className="text-sm text-theme-text/60 leading-relaxed">
             Take an interactive tour — you'll configure a real session as you learn each panel.
           </p>

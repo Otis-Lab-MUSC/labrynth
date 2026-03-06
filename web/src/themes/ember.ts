@@ -1,3 +1,6 @@
+/* PRESERVED — theme switching disabled.
+   This theme is intentionally retained for potential future use.
+   To re-enable, restore the ThemeSwitcher component and theme state logic. */
 import type { ThemeDefinition } from "./types";
 
 export const emberTheme: ThemeDefinition = {

@@ -3,7 +3,7 @@ import { Plus, Moon, Sun, RotateCcw, X } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useLogStore } from "../../store/useLogStore";
-import { ThemeSelector } from "./ThemeSelector";
+
 import { ConfirmDialog } from "./ConfirmDialog";
 import { HelpButton } from "../tutorial/HelpButton";
 import * as api from "../../api/client";
@@ -259,7 +259,7 @@ export function Header() {
   return (
     <header data-tour="header" className={`relative z-10 flex items-center gap-2 border-b border-theme-border ${glassClasses} px-4 py-2`}>
       {/* Branding */}
-      <span className="mr-4 text-lg font-bold tracking-wide text-accent title-glow">
+      <span className={`mr-4 text-lg font-bold tracking-wide text-accent title-glow ${theme.id === "reacher" ? "glitch-hover" : ""}`}>
         {branding.icon === "neural" && <NeuralIcon />}
         {branding.icon === "bolt" && <BoltIcon />}
         {branding.icon === "ember" && <EmberIcon />}
@@ -267,6 +267,12 @@ export function Header() {
         {branding.text}
         {branding.showCursor && <span className="animate-blink">|</span>}
       </span>
+      {theme.id === "reacher" && (
+        <span className="sys-online">
+          <span className="pulse-dot" />
+          <span className="sys-label">SYS_ONLINE</span>
+        </span>
+      )}
 
       {/* Session tabs */}
       <div className="flex items-center gap-1 overflow-x-auto">
@@ -372,8 +378,7 @@ export function Header() {
         </button>
       )}
 
-      {/* Theme selector */}
-      <ThemeSelector />
+      {/* ThemeSwitcher removed — theme locked to reacher. Component preserved at src/components/layout/ThemeSelector.tsx. */}
 
       {/* Help button */}
       <HelpButton />

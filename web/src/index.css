@@ -46,11 +46,17 @@
 
     /* Style variables */
     --font-body: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
     --radius-sm: 0.25rem;
     --radius-md: 0.25rem;
     --radius-lg: 0.5rem;
     --glass-opacity: 1;
     --glass-blur: 0px;
+
+    /* Extended tokens */
+    --color-text-dim: 120 160 160;
+    --color-cyan-glow: rgba(0, 229, 255, 0.15);
+    --color-cyan-glow-strong: rgba(0, 229, 255, 0.35);
   }
 
   .dark {
@@ -201,4 +207,304 @@ body {
   outline: 2px solid rgb(var(--color-accent) / 0.4);
   outline-offset: 0px;
   animation: spotlight-interactive 2s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   REACHER THEME — Cyberpunk overrides (scoped to .theme-reacher)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Custom cursor ── */
+.theme-reacher body,
+.theme-reacher a,
+.theme-reacher button,
+.theme-reacher [role="button"] {
+  cursor: none;
+}
+
+/* ── Typography ── */
+.theme-reacher h1,
+.theme-reacher h2,
+.theme-reacher h3,
+.theme-reacher h4,
+.theme-reacher h5 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+
+.theme-reacher h4 {
+  color: rgb(var(--color-accent));
+}
+
+.theme-reacher .label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgb(var(--color-text-secondary));
+}
+
+.theme-reacher code {
+  background: rgb(var(--color-surface));
+  border: 1px solid rgb(var(--color-border));
+  color: rgb(var(--color-accent));
+  border-radius: 2px;
+  padding: 0.1em 0.35em;
+  font-family: var(--font-mono);
+}
+
+/* ── Scanlines overlay ── */
+.theme-reacher body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.18) 0px,
+    rgba(0, 0, 0, 0.18) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* ── Noise overlay ── */
+.theme-reacher body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+/* ── Button styles ── */
+.theme-reacher .btn-sm {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-reacher .btn-sm.bg-accent,
+.theme-reacher .btn-sm[class*="bg-accent"] {
+  background-color: rgb(var(--color-accent));
+  color: rgb(var(--color-accent-contrast));
+  box-shadow: 0 0 12px var(--color-cyan-glow-strong), 0 0 4px var(--color-cyan-glow);
+}
+
+.theme-reacher .btn-sm.bg-accent:hover,
+.theme-reacher .btn-sm[class*="bg-accent"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 20px var(--color-cyan-glow-strong), 0 4px 12px var(--color-cyan-glow);
+}
+
+.theme-reacher .btn-outline {
+  background: transparent;
+  border: 1px solid rgb(var(--color-accent));
+  color: rgb(var(--color-accent));
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+
+.theme-reacher .btn-outline:hover {
+  box-shadow: 0 0 12px var(--color-cyan-glow), inset 0 0 12px var(--color-cyan-glow);
+}
+
+.theme-reacher .btn-ghost {
+  background: transparent;
+  color: rgb(var(--color-text-secondary));
+  border: 1px solid rgb(var(--color-border));
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+
+.theme-reacher .btn-sm::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.theme-reacher .btn-sm:hover::before {
+  opacity: 1;
+}
+
+/* ── Card styles ── */
+.theme-reacher .card {
+  background: rgb(var(--color-surface));
+  border: 1px solid rgb(var(--color-border));
+  border-radius: 2px;
+  position: relative;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.theme-reacher .card:hover {
+  border-color: rgb(var(--color-accent-hover));
+  box-shadow: 0 0 16px var(--color-cyan-glow);
+}
+
+.theme-reacher .card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(var(--color-accent)), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.theme-reacher .card:hover::before {
+  opacity: 1;
+}
+
+.theme-reacher .card-accent {
+  border-left: 2px solid rgb(var(--color-accent));
+}
+
+/* ── Form elements ── */
+.theme-reacher .input-base {
+  background: rgb(var(--color-input));
+  font-family: var(--font-mono);
+  border-radius: 2px;
+}
+
+.theme-reacher .input-base:focus {
+  border-color: rgb(var(--color-accent-hover));
+  box-shadow: 0 0 0 2px var(--color-cyan-glow), 0 0 8px var(--color-cyan-glow);
+}
+
+.theme-reacher label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgb(var(--color-accent-hover));
+}
+
+/* ── Section divider ── */
+.theme-reacher .h-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.theme-reacher .h-line::before {
+  content: "01 //";
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: rgb(var(--color-text-secondary));
+  flex-shrink: 0;
+}
+
+.theme-reacher .h-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgb(var(--color-accent) / 0.3), transparent);
+}
+
+/* ── Glitch hover ── */
+@keyframes glitch-effect {
+  0% { clip-path: inset(40% 0 61% 0); transform: skewX(0deg); }
+  20% { clip-path: inset(92% 0 1% 0); transform: skewX(-2deg); }
+  40% { clip-path: inset(43% 0 1% 0); transform: skewX(1deg); }
+  60% { clip-path: inset(25% 0 58% 0); transform: skewX(-1deg); }
+  80% { clip-path: inset(54% 0 7% 0); transform: skewX(2deg); }
+  100% { clip-path: inset(58% 0 43% 0); transform: skewX(0deg); }
+}
+
+.theme-reacher .glitch-hover:hover {
+  animation: glitch-effect 0.3s linear;
+}
+
+/* ── Blinking cursor ── */
+.theme-reacher .blink-cursor::after {
+  content: "\2588";
+  animation: blink 1s step-end infinite;
+  color: rgb(var(--color-accent));
+  margin-left: 0.15em;
+}
+
+/* ── Scroll reveal ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Terminal header bar ── */
+.theme-reacher .terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background: rgb(var(--color-panel));
+  border-bottom: 1px solid rgb(var(--color-border));
+}
+
+.theme-reacher .terminal-header .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.theme-reacher .terminal-header .dot-red { background: #ff5f56; }
+.theme-reacher .terminal-header .dot-yellow { background: #ffbd2e; }
+.theme-reacher .terminal-header .dot-green { background: #27c93f; }
+
+.theme-reacher .terminal-header .terminal-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgb(var(--color-text-secondary));
+  margin-left: auto;
+}
+
+/* ── SYS_ONLINE indicator ── */
+.theme-reacher .sys-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 0.75rem;
+}
+
+.theme-reacher .sys-online .pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--color-accent));
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.theme-reacher .sys-online .sys-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: rgb(var(--color-accent));
 }
