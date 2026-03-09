@@ -23,6 +23,19 @@ from prompt_toolkit.styles import Style
 from .client import ReacherClient
 
 # ═══════════════════════════════════════════════════════════════════════════
+# Helpers
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+def _safe_int(val: str, label: str = "value") -> int | None:
+    """Parse *val* as int, returning None on failure (for user-facing prompts)."""
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # Constants
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -574,8 +587,8 @@ class ReacherCLI:
         for p in cfg.get("params", []):
             items.append(MenuItem(
                 f"Set {p['label']}",
-                action=lambda code=p["code"], lbl=p["label"]: self._prompt_input(
-                    f"Enter {lbl}:", lambda val, c=code: self._send_hw_command(c, int(val))
+                action=lambda code=p["code"], lbl=p["label"]: self._prompt_int_input(
+                    f"Enter {lbl}:", lambda val, c=code: self._send_hw_command(c, val)
                 ),
                 suffix=f"({p['default']})",
             ))
@@ -635,20 +648,20 @@ class ReacherCLI:
 
     def _paradigm_settings_menu(self) -> MenuState:
         items = [
-            MenuItem("Set Ratio", action=lambda: self._prompt_input(
-                "Enter ratio:", lambda v: self._send_paradigm_setting("ratio", int(v))
+            MenuItem("Set Ratio", action=lambda: self._prompt_int_input(
+                "Enter ratio:", lambda v: self._send_paradigm_setting("ratio", v)
             )),
-            MenuItem("Set Step", action=lambda: self._prompt_input(
-                "Enter step:", lambda v: self._send_paradigm_setting("step", int(v))
+            MenuItem("Set Step", action=lambda: self._prompt_int_input(
+                "Enter step:", lambda v: self._send_paradigm_setting("step", v)
             )),
-            MenuItem("Set VI Interval (ms)", action=lambda: self._prompt_input(
-                "Enter VI interval (ms):", lambda v: self._send_paradigm_setting("vi_interval", int(v))
+            MenuItem("Set VI Interval (ms)", action=lambda: self._prompt_int_input(
+                "Enter VI interval (ms):", lambda v: self._send_paradigm_setting("vi_interval", v)
             )),
-            MenuItem("Set OM Interval (ms)", action=lambda: self._prompt_input(
-                "Enter OM interval (ms):", lambda v: self._send_paradigm_setting("om_interval", int(v))
+            MenuItem("Set OM Interval (ms)", action=lambda: self._prompt_int_input(
+                "Enter OM interval (ms):", lambda v: self._send_paradigm_setting("om_interval", v)
             )),
-            MenuItem("Set Trace Interval (ms)", action=lambda: self._prompt_input(
-                "Enter trace interval (ms):", lambda v: self._send_paradigm_setting("trace_interval", int(v))
+            MenuItem("Set Trace Interval (ms)", action=lambda: self._prompt_int_input(
+                "Enter trace interval (ms):", lambda v: self._send_paradigm_setting("trace_interval", v)
             )),
             MenuItem("Back", action=self._pop_menu),
         ]
@@ -659,8 +672,8 @@ class ReacherCLI:
         for pp in PAVLOVIAN_PARAMS:
             items.append(MenuItem(
                 f"Set {pp['label']}",
-                action=lambda code=pp["code"], lbl=pp["label"]: self._prompt_input(
-                    f"Enter {lbl}:", lambda v, c=code: self._send_hw_command(c, int(v))
+                action=lambda code=pp["code"], lbl=pp["label"]: self._prompt_int_input(
+                    f"Enter {lbl}:", lambda v, c=code: self._send_hw_command(c, v)
                 ),
                 suffix=f"({pp['default']})",
             ))
@@ -677,17 +690,17 @@ class ReacherCLI:
                 [(t, t) for t in limit_types],
                 self._set_limit_type,
             ), suffix=f"({current_type})"),
-            MenuItem("Set Time Limit (s)", action=lambda: self._prompt_input(
+            MenuItem("Set Time Limit (s)", action=lambda: self._prompt_int_input(
                 "Enter time limit (seconds):",
-                lambda v: self._set_limit_value("time_limit", int(v))
+                lambda v: self._set_limit_value("time_limit", v)
             ), suffix=f"({s.limit_settings['time_limit']})" if s else ""),
-            MenuItem("Set Infusion Limit", action=lambda: self._prompt_input(
+            MenuItem("Set Infusion Limit", action=lambda: self._prompt_int_input(
                 "Enter infusion limit:",
-                lambda v: self._set_limit_value("infusion_limit", int(v))
+                lambda v: self._set_limit_value("infusion_limit", v)
             ), suffix=f"({s.limit_settings['infusion_limit']})" if s else ""),
-            MenuItem("Set Delay (s)", action=lambda: self._prompt_input(
+            MenuItem("Set Delay (s)", action=lambda: self._prompt_int_input(
                 "Enter delay (seconds):",
-                lambda v: self._set_limit_value("delay", int(v))
+                lambda v: self._set_limit_value("delay", v)
             ), suffix=f"({s.limit_settings['delay']})" if s else ""),
             MenuItem("Back", action=self._pop_menu),
         ]
@@ -767,6 +780,16 @@ class ReacherCLI:
         self.input_value = ""
         self.input_callback = callback
         self._invalidate()
+
+    def _prompt_int_input(self, prompt: str, callback: Callable) -> None:
+        """Like _prompt_input, but validates that the value is an integer."""
+        def _validate(val: str):
+            n = _safe_int(val, prompt)
+            if n is None:
+                self._set_status(f"Invalid number: {val!r}", error=True)
+                return
+            callback(n)
+        self._prompt_input(prompt, _validate)
 
     def _prompt_select(self, title: str, options: list[tuple[str, str]], callback: Callable) -> None:
         self.mode = "select"
@@ -1037,13 +1060,17 @@ class ReacherCLI:
                 self.session.armed[dev_id] = hw_cfg.get("armed", False)
                 for param_key, param_code in cmd_map.get("params", {}).items():
                     if param_key in hw_cfg:
-                        await self.api.send_command(self.session.id, param_code, int(hw_cfg[param_key]))
+                        val = _safe_int(str(hw_cfg[param_key]), param_key)
+                        if val is not None:
+                            await self.api.send_command(self.session.id, param_code, val)
 
             # Apply paradigm settings
             ps = preset.get("paradigm_settings", {})
             for key, code in PARADIGM_SETTING_CODES.items():
                 if key in ps:
-                    await self.api.send_command(self.session.id, code, int(ps[key]))
+                    val = _safe_int(str(ps[key]), key)
+                    if val is not None:
+                        await self.api.send_command(self.session.id, code, val)
             self.session.paradigm_settings.update(ps)
 
             # Apply limits

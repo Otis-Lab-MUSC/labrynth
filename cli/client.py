@@ -2,16 +2,35 @@
 
 from __future__ import annotations
 
+import os
+
 import httpx
 
 DEFAULT_BASE = "http://localhost:6229"
+_KEY_FILE = os.path.expanduser("~/.reacher/api_key")
+
+
+def _read_api_key() -> str | None:
+    """Read the API key from env or the default key file."""
+    key = os.getenv("REACHER_API_KEY")
+    if key:
+        return key
+    try:
+        with open(_KEY_FILE) as f:
+            return f.read().strip() or None
+    except FileNotFoundError:
+        return None
 
 
 class ReacherClient:
     """Thin async wrapper around every REACHER REST endpoint."""
 
     def __init__(self, base_url: str = DEFAULT_BASE):
-        self._http = httpx.AsyncClient(base_url=base_url, timeout=30.0)
+        api_key = _read_api_key()
+        headers: dict[str, str] = {}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        self._http = httpx.AsyncClient(base_url=base_url, timeout=30.0, headers=headers)
 
     async def close(self):
         await self._http.aclose()
