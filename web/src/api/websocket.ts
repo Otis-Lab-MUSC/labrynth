@@ -1,4 +1,5 @@
 import type { WSMessage } from "../types";
+import { getToken } from "./client";
 
 type MessageHandler = (msg: WSMessage) => void;
 
@@ -91,10 +92,13 @@ export class ReacherWebSocket {
   private connect() {
     if (this.closed) return;
 
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const url = `${proto}//${window.location.host}/ws/${this.sessionId}`;
+    getToken().then((token) => {
+      if (this.closed) return;
+      const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
+      const url = `${proto}//${window.location.host}/ws/${this.sessionId}${tokenParam}`;
 
-    this.ws = new WebSocket(url);
+      this.ws = new WebSocket(url);
     this.ws.onopen = () => {
       this.reconnectAttempt = 0;
       this.startHeartbeat();
@@ -115,6 +119,7 @@ export class ReacherWebSocket {
     this.ws.onerror = () => {
       this.ws?.close();
     };
+    });
   }
 
   close() {

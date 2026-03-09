@@ -21,6 +21,7 @@ import { DemoModeBanner } from "./components/tutorial/DemoModeBanner";
 import { useThemeStore } from "./store/useThemeStore";
 import { useNavigationStore } from "./store/useNavigationStore";
 import { useSessionWebSockets } from "./hooks/useSessionWebSockets";
+import { useSessionRecovery } from "./hooks/useSessionRecovery";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { useSingleTab } from "./hooks/useSingleTab";
 import { useScrollReveal } from "./hooks/useScrollReveal";
@@ -47,6 +48,7 @@ function AppContent() {
   const themeId = useThemeStore((s) => s.themeId);
   const isReacher = themeId === "reacher";
 
+  useSessionRecovery();
   useSessionWebSockets();
   useBeforeUnload(false);
   useScrollReveal();

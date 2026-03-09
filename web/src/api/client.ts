@@ -8,9 +8,35 @@ function isDemoMode() {
   return useTutorialStore.getState().demoMode;
 }
 
+// Auth token cache — fetched once from the localhost-only endpoint
+let _authToken: string | null = null;
+let _authFetching: Promise<string | null> | null = null;
+
+async function getAuthToken(): Promise<string | null> {
+  if (_authToken) return _authToken;
+  if (_authFetching) return _authFetching;
+  _authFetching = fetch(`${BASE}/auth/token`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      _authToken = data?.token ?? null;
+      return _authToken;
+    })
+    .catch(() => null)
+    .finally(() => { _authFetching = null; });
+  return _authFetching;
+}
+
+/** Expose the cached auth token for WebSocket connections. */
+export async function getToken(): Promise<string | null> {
+  return getAuthToken();
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await getAuthToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers,
     ...init,
   });
   if (!res.ok) {
