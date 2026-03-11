@@ -40,10 +40,10 @@ SPEC_FILE = os.path.join(SCRIPT_DIR, "reacher.spec")
 
 PARADIGMS = ("fr", "pr", "vi", "omission", "pavlovian")
 PARADIGM_TO_SKETCH = {
-    "fr": "operant_FR",
-    "pr": "operant_PR",
-    "vi": "operant_VI",
-    "omission": "operant_OMISSION",
+    "fr": "fr",
+    "pr": "pr",
+    "vi": "vi",
+    "omission": "omission",
     "pavlovian": "pavlovian",
 }
 BOARDS = ("uno", "mega")
