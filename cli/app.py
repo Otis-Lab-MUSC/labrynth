@@ -947,6 +947,8 @@ class ReacherCLI:
             self.session.board = board
             self.session.state = "connected"
             self._set_status(f"Firmware uploaded: {paradigm} ({board})")
+            if not self.session.name:
+                self.session.name = f"{paradigm.upper()} {self.session.port}"
             self._rebuild_current_menu()
         except Exception as exc:
             self.session.state = "idle"
@@ -1334,7 +1336,11 @@ class ReacherCLI:
             self._set_status("No session", error=True)
             return
         try:
-            resp = await self.api.export_zip(self.session.id, **self.session.file_config)
+            export_payload = {
+                "session_name": self.session.name or "",
+                "notes": self.session.file_config.get("notes", ""),
+            }
+            resp = await self.api.export_zip(self.session.id, **export_payload)
             path = resp.get("path", resp.get("file", "exported"))
             self._set_status(f"ZIP exported: {path}")
         except Exception as exc:
