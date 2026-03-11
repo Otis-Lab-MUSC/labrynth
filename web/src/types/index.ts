@@ -4,7 +4,8 @@ export type SessionState =
   | "connected"
   | "running"
   | "paused"
-  | "stopped";
+  | "stopped"
+  | "disconnected";  // Fix: XL-003 — Serial disconnect surfaced to frontend
 
 // Keep in sync with reacher/src/reacher/uploader/boards.py BOARD_PROFILES
 export type BoardType = "uno" | "mega";
@@ -43,6 +44,7 @@ export interface PumpUiState extends DeviceArmState {
 export interface LaserUiState extends DeviceArmState {
   frequency: number;
   duration: number;
+  mode: "contingent" | "independent";
 }
 
 export interface MicroscopeUiState extends DeviceArmState {
@@ -123,4 +125,5 @@ export type WSMessage =
   | { type: "log"; session_id: string; data: { level: string; message: string } }
   | { type: "error"; session_id: string; data: { level: string; device: string; desc: string; timestamp: number } }
   | { type: "upload_progress"; session_id: string; data: { percent: number; stage: string } }
-  | { type: "session_state"; session_id: string; data: { state: SessionState } };
+  | { type: "session_state"; session_id: string; data: { state: SessionState } }
+  | { type: "disconnect"; session_id: string; data: { reason: string } };  // Fix: XL-003

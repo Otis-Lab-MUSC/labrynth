@@ -41,7 +41,15 @@ export function SessionPanel() {
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
 
   useEffect(() => {
-    api.listPorts().then((r) => setPorts(r.ports)).catch(() => {});
+    api.listPorts()
+      .then((r) => setPorts(r.ports))
+      .catch((e: unknown) => {
+        useLogStore.getState().pushLog(
+          "error",
+          e instanceof Error ? e.message : "Failed to load COM ports",
+        );
+        useLogStore.getState().setOpen(true);
+      });
   }, []);
 
   const handleConnect = async () => {

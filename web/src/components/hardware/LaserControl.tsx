@@ -13,7 +13,7 @@ export function LaserControl({ sessionId }: Props) {
 
   if (!laser) return null;
 
-  const { armed, frequency, duration } = laser;
+  const { armed, frequency, duration, mode } = laser;
   const send = (code: number, value?: number) => api.sendCommand(sessionId, code, value);
 
   return (
@@ -34,8 +34,14 @@ export function LaserControl({ sessionId }: Props) {
         <button onClick={() => send(603)} className="btn-sm bg-yellow-600 text-white">Test</button>
       </div>
       <div className="flex flex-wrap gap-2">
-        <button onClick={() => send(681)} className="btn-sm bg-purple-600 text-white">Contingent</button>
-        <button onClick={() => send(682)} className="btn-sm bg-purple-500 text-white">Independent</button>
+        <button
+          onClick={() => { send(681); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, mode: "contingent" } })); }}
+          className={`btn-sm ${mode === "contingent" ? "bg-purple-600" : "bg-purple-600/40"} text-white`}
+        >Contingent</button>
+        <button
+          onClick={() => { send(682); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, mode: "independent" } })); }}
+          className={`btn-sm ${mode === "independent" ? "bg-purple-500" : "bg-purple-500/40"} text-white`}
+        >Independent</button>
       </div>
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Freq (Hz):</label>

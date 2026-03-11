@@ -13,8 +13,21 @@ function normalizeLevel(level: string): LogLevel {
   return "info";
 }
 
+/** Map firmware config device names to hardwareUi keys for arm-state sync. */
+const DEVICE_TO_UI_KEY: Record<string, string> = {
+  CUE: "primaryCue",
+  CUE2: "secondaryCue",
+  PUMP: "primaryPump",
+  PUMP2: "secondaryPump",
+  LASER: "laser",
+  LICK: "lickCircuit",
+  MICROSCOPE: "microscope",
+  LEVER_RH: "rhLever",
+  LEVER_LH: "lhLever",
+};
+
 function handleMessage(msg: WSMessage) {
-  const { updateState, pushEvent, pushFrame, setFirmwareInfo, pushHardwareSetting, setUploadProgress } =
+  const { updateState, pushEvent, pushFrame, setFirmwareInfo, pushHardwareSetting, setUploadProgress, updateHardwareUi } =
     useSessionStore.getState();
   const { pushLog } = useLogStore.getState();
 
@@ -32,10 +45,26 @@ function handleMessage(msg: WSMessage) {
       break;
     case "config": {
       const configData = msg.data as FirmwareConfig;
-      if ((configData as Record<string, unknown>).device === "CONTROLLER") {
+      const raw = configData as Record<string, unknown>;
+      if (raw.device === "CONTROLLER") {
         setFirmwareInfo(msg.session_id, configData);
       } else {
         pushHardwareSetting(msg.session_id, configData);
+
+        // Sync arm state (and available params) from firmware config into hardwareUi
+        const uiKey = DEVICE_TO_UI_KEY[raw.device as string];
+        if (uiKey) {
+          updateHardwareUi(msg.session_id, (prev) => {
+            const current = (prev as unknown as Record<string, Record<string, unknown>>)[uiKey];
+            if (!current) return {};
+            const patch: Record<string, unknown> = {};
+            if (typeof raw.armed === "boolean") patch.armed = raw.armed;
+            if (typeof raw.frequency === "number") patch.frequency = raw.frequency;
+            if (typeof raw.duration === "number") patch.duration = raw.duration;
+            if (typeof raw.reinforced === "boolean") patch.reinforced = raw.reinforced;
+            return { [uiKey]: { ...current, ...patch } } as Partial<typeof prev>;
+          });
+        }
       }
       break;
     }
@@ -59,6 +88,13 @@ function handleMessage(msg: WSMessage) {
       const { state } = msg.data as { state: SessionState };
       updateState(msg.session_id, state);
       pushLog("info", `Session ${state}`, msg.session_id);
+      break;
+    }
+    // Fix: XL-003 — Handle serial disconnect event
+    case "disconnect": {
+      const { reason } = msg.data as { reason: string };
+      updateState(msg.session_id, "disconnected");
+      pushLog("error", `Serial disconnected: ${reason}`, msg.session_id);
       break;
     }
   }

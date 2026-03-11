@@ -23,6 +23,9 @@ export const DEVICE_PRESETS: DevicePreset[] = [
   // },
 ];
 
+/** Command code for laser mode: contingent = 681, independent = 682 */
+export const LASER_MODE_COMMANDS = { contingent: 681, independent: 682 } as const;
+
 export const PRESET_COMMAND_MAP: Record<string, { arm: number; disarm: number; params?: Record<string, number> }> = {
   rhLever:       { arm: 1001, disarm: 1000, params: { timeout: 1074, ratio: 1075 } },
   lhLever:       { arm: 1301, disarm: 1300, params: { timeout: 1374, ratio: 1375 } },

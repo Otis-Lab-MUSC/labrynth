@@ -4,6 +4,20 @@ import { useTutorialStore } from "../store/useTutorialStore";
 
 const BASE = "/api";
 
+// Fix: FE-001 — Filename validation to prevent path traversal
+const UNSAFE_FILENAME_RE = /[<>:"/\\|?*\x00-\x1f]/;
+export function sanitizeFilename(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return trimmed;
+  if (UNSAFE_FILENAME_RE.test(trimmed)) {
+    throw new Error(`Invalid filename: contains unsafe characters`);
+  }
+  if (trimmed.startsWith(".") || trimmed.includes("..")) {
+    throw new Error(`Invalid filename: path traversal attempt`);
+  }
+  return trimmed;
+}
+
 function isDemoMode() {
   return useTutorialStore.getState().demoMode;
 }
@@ -139,5 +153,8 @@ export const shutdown = () =>
   isDemoMode() ? mock.shutdown() : request("/lifecycle/shutdown", { method: "POST" });
 
 // --- File ---
-export const setFileConfig = (id: string, body: { filename?: string; destination?: string }) =>
-  isDemoMode() ? mock.setFileConfig(id, body) : request<{ filename: string; destination: string }>(`/file/${id}/config`, { method: "POST", body: JSON.stringify(body) });
+export const setFileConfig = (id: string, body: { filename?: string; destination?: string }) => {
+  // Fix: FE-001 — Validate filename before sending to backend
+  if (body.filename) sanitizeFilename(body.filename);
+  return isDemoMode() ? mock.setFileConfig(id, body) : request<{ filename: string; destination: string }>(`/file/${id}/config`, { method: "POST", body: JSON.stringify(body) });
+};

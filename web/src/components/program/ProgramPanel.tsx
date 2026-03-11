@@ -3,7 +3,7 @@ import { useSessionStore } from "../../store/useSessionStore";
 import { ParadigmSettings } from "./ParadigmSettings";
 import { PavlovianSettings } from "./PavlovianSettings";
 import { LimitConfig } from "./LimitConfig";
-import { DEVICE_PRESETS, PRESET_COMMAND_MAP } from "./devicePresets";
+import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS } from "./devicePresets";
 import type { DevicePreset } from "./devicePresets";
 import { SESSION_PRESETS, SessionPresetCard } from "./presets";
 import type { SessionPreset } from "./presets";
@@ -99,6 +99,12 @@ export function ProgramPanel() {
         }
       }
 
+      // 2b. Send laser mode command if preset specifies a mode
+      const laserState = preset.hardware.laser as { mode?: "contingent" | "independent" } | undefined;
+      if (laserState?.mode) {
+        await api.sendCommand(activeSessionId, LASER_MODE_COMMANDS[laserState.mode]);
+      }
+
       // 3. Send paradigm-specific commands
       await api.sendCommand(activeSessionId, 201, preset.paradigmSettings.ratio);
       await api.sendCommand(activeSessionId, 220, preset.paradigmSettings.traceInterval);
@@ -149,6 +155,12 @@ export function ProgramPanel() {
             }
           }
         }
+      }
+
+      // Send laser mode command if preset specifies a mode
+      const laserState = preset.hardware.laser as { mode?: "contingent" | "independent" } | undefined;
+      if (laserState?.mode) {
+        await api.sendCommand(activeSessionId, LASER_MODE_COMMANDS[laserState.mode]);
       }
     }
   };
