@@ -62,6 +62,9 @@ function handleMessage(msg: WSMessage) {
             if (typeof raw.frequency === "number") patch.frequency = raw.frequency;
             if (typeof raw.duration === "number") patch.duration = raw.duration;
             if (typeof raw.reinforced === "boolean") patch.reinforced = raw.reinforced;
+            if (typeof raw.timeout === "number") patch.timeout = raw.timeout;
+            if (typeof raw.ratio === "number") patch.ratio = raw.ratio;
+            if (typeof raw.mode === "string") patch.mode = raw.mode;
             return { [uiKey]: { ...current, ...patch } } as Partial<typeof prev>;
           });
         }

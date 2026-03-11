@@ -373,7 +373,17 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const sess = s.sessions.get(id);
       if (!sess) return s;
       const next = new Map(s.sessions);
-      next.set(id, { ...sess, hardwareSettings: [...sess.hardwareSettings, config] });
+      const device = (config as Record<string, unknown>).device as string | undefined;
+      const idx = device
+        ? sess.hardwareSettings.findIndex(
+            (h) => (h as Record<string, unknown>).device === device
+          )
+        : -1;
+      const updated =
+        idx >= 0
+          ? sess.hardwareSettings.map((h, i) => (i === idx ? config : h))
+          : [...sess.hardwareSettings, config];
+      next.set(id, { ...sess, hardwareSettings: updated });
       return { sessions: next };
     }),
 
