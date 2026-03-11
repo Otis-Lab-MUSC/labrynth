@@ -20,6 +20,9 @@ export function useSessionRecovery() {
     if (didRecover.current) return;
     didRecover.current = true;
 
+    // Demo site has no backend — skip recovery entirely
+    if (import.meta.env.VITE_DEMO_SITE === "true") return;
+
     (async () => {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;

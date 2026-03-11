@@ -73,6 +73,8 @@ function ReacherLogo() {
   );
 }
 
+const IS_DEMO_SITE = import.meta.env.VITE_DEMO_SITE === "true";
+
 export function WelcomeScreen() {
   const completedTours = useTutorialStore((s) => s.completedTours);
   const startTour = useTutorialStore((s) => s.startTour);
@@ -87,6 +89,11 @@ export function WelcomeScreen() {
       return false;
     }
   });
+
+  // Demo site: ensure demo mode is active whenever the welcome screen is visible
+  useEffect(() => {
+    if (IS_DEMO_SITE) setDemoMode(true);
+  }, [setDemoMode]);
 
   // Don't show if already dismissed, has completed tours, or has sessions
   const shouldShow = !dismissed && completedTours.length === 0 && sessionCount === 0;
@@ -106,6 +113,7 @@ export function WelcomeScreen() {
 
   const handleTour = () => {
     dismiss();
+    if (IS_DEMO_SITE) setDemoMode(true);
     startTour("first-session");
   };
 
@@ -128,10 +136,12 @@ export function WelcomeScreen() {
             </p>
           )}
           <h1 className={`text-2xl font-bold text-accent ${isReacher ? "blink-cursor" : ""}`}>
-            Welcome to Labrynth
+            {IS_DEMO_SITE ? "Try Labrynth" : "Welcome to Labrynth"}
           </h1>
           <p className="text-sm text-theme-text/60 leading-relaxed">
-            Take an interactive tour — you'll configure a real session as you learn each panel.
+            {IS_DEMO_SITE
+              ? "Explore the full interface with simulated hardware — no device required."
+              : "Take an interactive tour — you'll configure a real session as you learn each panel."}
           </p>
         </div>
 
@@ -146,16 +156,18 @@ export function WelcomeScreen() {
             onClick={handleDemo}
             className="w-full rounded-lg border border-accent/30 px-4 py-3 text-accent font-medium hover:bg-accent/10 transition"
           >
-            Try Demo Mode
+            {IS_DEMO_SITE ? "Explore Freely" : "Try Demo Mode"}
           </button>
         </div>
 
-        <button
-          onClick={dismiss}
-          className="text-xs text-theme-text/30 hover:text-theme-text/60 transition"
-        >
-          Skip for now
-        </button>
+        {!IS_DEMO_SITE && (
+          <button
+            onClick={dismiss}
+            className="text-xs text-theme-text/30 hover:text-theme-text/60 transition"
+          >
+            Skip for now
+          </button>
+        )}
       </div>
     </div>,
     document.body

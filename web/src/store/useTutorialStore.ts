@@ -112,7 +112,7 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
     set({ active: false, activeTourId: null, currentStepIndex: 0, steps: [] });
   },
 
-  demoMode: false,
+  demoMode: import.meta.env.VITE_DEMO_SITE === "true",
   setDemoMode: (on) => set({ demoMode: on }),
 
   helpOpen: false,
