@@ -132,7 +132,7 @@ export function WelcomeScreen() {
         <div className="space-y-2">
           {isReacher && (
             <p className="text-xs tracking-widest uppercase text-theme-text/40" style={{ fontFamily: "var(--font-mono)" }}>
-              v1.0.0 // LABRYNTH
+              v2.0.0 // LABRYNTH
             </p>
           )}
           <h1 className={`text-2xl font-bold text-accent ${isReacher ? "blink-cursor" : ""}`}>

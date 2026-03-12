@@ -32,33 +32,6 @@ function formatLimitSummary(session: Session): string | null {
   return parts.length > 1 ? parts.join("\n") : null;
 }
 
-function formatLeverSummary(session: Session): string | null {
-  const rh = session.hardwareUi.rhLever;
-  const lh = session.hardwareUi.lhLever;
-  const parts: string[] = [];
-  if (rh.armed) parts.push(`RH Lever: armed (timeout ${rh.timeout}ms, ratio ${rh.ratio})`);
-  if (lh.armed) parts.push(`LH Lever: armed (timeout ${lh.timeout}ms, ratio ${lh.ratio})`);
-  return parts.length > 0 ? parts.join("\n") : null;
-}
-
-function formatCueSummary(session: Session): string | null {
-  const pc = session.hardwareUi.primaryCue;
-  const sc = session.hardwareUi.secondaryCue;
-  const parts: string[] = [];
-  if (pc.armed) parts.push(`Primary: ${pc.frequency}Hz, ${pc.duration}ms`);
-  if (sc.armed) parts.push(`Secondary: ${sc.frequency}Hz, ${sc.duration}ms`);
-  return parts.length > 0 ? parts.join("\n") : null;
-}
-
-function formatPumpSummary(session: Session): string | null {
-  const pp = session.hardwareUi.primaryPump;
-  const sp = session.hardwareUi.secondaryPump;
-  const parts: string[] = [];
-  if (pp.armed) parts.push(`Primary: ${pp.duration}ms`);
-  if (sp.armed) parts.push(`Secondary: ${sp.duration}ms`);
-  return parts.length > 0 ? parts.join("\n") : null;
-}
-
 function formatFileSummary(session: Session): string | null {
   const f = session.fileConfig;
   if (!f.filename && !f.destination) return null;
@@ -126,9 +99,19 @@ export function firstSessionTour(): TutorialStep[] {
       target: "port-select",
       title: "Connecting to Hardware",
       content:
-        "Try selecting your Arduino's COM port from the dropdown. The system will auto-detect the paradigm and board type from the firmware.",
+        "Select your Arduino's COM port from the dropdown, then click CONNECT. The system will auto-detect the board type (UNO or Mega) and paradigm from the loaded firmware.",
       placement: "bottom",
       interactive: true,
+      section: "Connection",
+    },
+    {
+      id: "first-session-4b",
+      panel: "session",
+      target: "active-session",
+      title: "Active Session",
+      content:
+        "Once connected, the Active Session card shows the detected board type, paradigm, and current state. You can also set a human-readable session name here — it appears in logs and exported data.",
+      placement: "bottom",
       section: "Connection",
     },
     {
@@ -151,6 +134,17 @@ export function firstSessionTour(): TutorialStep[] {
       title: "Session Presets",
       content:
         "Try selecting a preset to auto-fill hardware settings, paradigm parameters, and limits in one click.",
+      placement: "bottom",
+      interactive: true,
+      section: "Program",
+    },
+    {
+      id: "first-session-6b",
+      panel: "program",
+      target: "preset-card",
+      title: "Preset Details",
+      content:
+        "The preset card shows session limits, the device table with arm/disarm toggles for each piece of hardware, and the configured parameters. Review and adjust, then click Apply Preset to push all settings to the session at once.",
       placement: "bottom",
       interactive: true,
       section: "Program",
@@ -206,37 +200,11 @@ export function firstSessionTour(): TutorialStep[] {
       id: "first-session-11",
       panel: "hardware",
       target: "lever-card",
-      title: "Lever Configuration",
+      title: "Arming Devices",
       content:
-        "Try arming a lever and setting the timeout duration and ratio. The active lever triggers reinforcement; the inactive lever is tracked separately.",
+        "Each device must be armed before a session to participate. Arming sends the activation command to the Arduino — the device enters the control loop and will respond to program events. Disarming removes it cleanly. Only arm the devices your paradigm requires; unneeded hardware can stay disarmed.",
       placement: "bottom",
-      interactive: true,
       section: "Hardware",
-      summary: formatLeverSummary,
-    },
-    {
-      id: "first-session-12",
-      panel: "hardware",
-      target: "cue-card",
-      title: "Cue Configuration",
-      content:
-        "Try configuring auditory cues with frequency and duration. Primary and secondary cues can signal different events.",
-      placement: "bottom",
-      interactive: true,
-      section: "Hardware",
-      summary: formatCueSummary,
-    },
-    {
-      id: "first-session-13",
-      panel: "hardware",
-      target: "pump-card",
-      title: "Pump Configuration",
-      content:
-        "Try setting the infusion duration and arming a pump to enable drug delivery during the session.",
-      placement: "bottom",
-      interactive: true,
-      section: "Hardware",
-      summary: formatPumpSummary,
     },
 
     // ── Monitor ──────────────────────────────────────────
@@ -253,20 +221,20 @@ export function firstSessionTour(): TutorialStep[] {
     {
       id: "first-session-15",
       panel: "monitor",
-      target: "live-stats",
-      title: "Live Statistics",
+      target: "experiment-controls",
+      title: "Start / Stop / Pause",
       content:
-        "Track elapsed time, lever presses, infusion count, and trial count as the experiment runs.",
+        "Control the running experiment: Start begins the program, Stop ends it, and Pause freezes the timer and event processing.",
       placement: "bottom",
       section: "Monitor",
     },
     {
       id: "first-session-16",
       panel: "monitor",
-      target: "experiment-controls",
-      title: "Start / Stop / Pause",
+      target: "live-stats",
+      title: "Live Statistics",
       content:
-        "Control the running experiment: Start begins the program, Stop ends it, and Pause freezes the timer and event processing.",
+        "Track elapsed time, lever presses, infusion count, and trial count as the experiment runs.",
       placement: "bottom",
       section: "Monitor",
     },
@@ -278,7 +246,8 @@ export function firstSessionTour(): TutorialStep[] {
       target: "file-config",
       title: "File Configuration",
       content:
-        "Try setting a filename and destination folder. The system will create a ZIP with behavior events, frame timestamps, and session metadata.",
+        "Set a filename and destination folder for your exported data. If left blank, the system defaults to a timestamp-based filename saved to your machine's Downloads folder. " +
+        "Separately, the Python engine appends every behavioral event to an on-disk log (~/REACHER/LOG/) in real time — fsynced per-event — so your data is safe even if the export step is skipped or the session crashes.",
       placement: "bottom",
       interactive: true,
       section: "Data",

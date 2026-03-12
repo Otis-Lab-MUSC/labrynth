@@ -99,7 +99,7 @@ export function SessionPresetCard({ preset, onApply }: Props) {
   const showInfusion = limitDefaults.limitType === "Infusion" || limitDefaults.limitType === "Both";
 
   return (
-    <div className="card border-l-4 border-l-accent space-y-4">
+    <div data-tour="preset-card" className="card border-l-4 border-l-accent space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         <h3 className="font-semibold text-theme-text text-base">{preset.name}</h3>

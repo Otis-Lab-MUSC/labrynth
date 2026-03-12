@@ -1,4 +1,4 @@
-import type { BoardInfo } from "../types";
+import type { BoardInfo, Session } from "../types";
 import { useSessionStore } from "../store/useSessionStore";
 
 let simulatorTimer: ReturnType<typeof setTimeout> | null = null;
@@ -10,6 +10,58 @@ function randomBetween(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+type SimEvent = { device: string; event: string; duration: number };
+
+function buildEventPool(session: Session): Array<{ weight: number; entry: SimEvent }> {
+  const hw = session.hardwareUi;
+  const paradigm = session.paradigm ?? "fr";
+  const isPavlovianOrOmission = paradigm === "pavlovian" || paradigm === "omission";
+
+  const leverEvents: string[] = isPavlovianOrOmission
+    ? ["ACTIVE_PRESS", "INACTIVE_PRESS"]
+    : ["ACTIVE_PRESS", "TIMEOUT_PRESS", "INACTIVE_PRESS"];
+  const leverWeights: number[] = isPavlovianOrOmission ? [0.7, 0.3] : [0.6, 0.25, 0.15];
+
+  const pool: Array<{ weight: number; entry: SimEvent }> = [];
+
+  if (hw.rhLever.armed) {
+    leverEvents.forEach((ev, i) => {
+      pool.push({ weight: leverWeights[i] * (paradigm === "pavlovian" ? 0.3 : 0.5), entry: { device: "RH_LEVER", event: ev, duration: randomBetween(50, 200) } });
+    });
+  }
+  if (hw.lhLever.armed) {
+    leverEvents.forEach((ev, i) => {
+      pool.push({ weight: leverWeights[i] * 0.2, entry: { device: "LH_LEVER", event: ev, duration: randomBetween(50, 200) } });
+    });
+  }
+  if (hw.primaryPump.armed || hw.secondaryPump.armed) {
+    const pumpDevice = hw.primaryPump.armed ? "PRIMARY_PUMP" : "SECONDARY_PUMP";
+    pool.push({ weight: 0.2, entry: { device: pumpDevice, event: "INFUSION", duration: 3000 } });
+  }
+  if (hw.primaryCue.armed || hw.secondaryCue.armed) {
+    const cueDevice = hw.primaryCue.armed ? "PRIMARY_CUE" : "SECONDARY_CUE";
+    const cueWeight = paradigm === "pavlovian" ? 0.35 : 0.15;
+    pool.push({ weight: cueWeight, entry: { device: cueDevice, event: "TONE_ON", duration: 1000 } });
+  }
+  if (hw.lickCircuit.armed) {
+    pool.push({ weight: 0.1, entry: { device: "LICK", event: "LICK", duration: 50 } });
+  }
+
+  // Fallback to generic pool if nothing is armed
+  if (pool.length === 0) {
+    return [
+      { weight: 0.35, entry: { device: "RH_LEVER", event: "ACTIVE_PRESS", duration: randomBetween(50, 200) } },
+      { weight: 0.15, entry: { device: "RH_LEVER", event: "TIMEOUT_PRESS", duration: randomBetween(50, 200) } },
+      { weight: 0.1, entry: { device: "LH_LEVER", event: "INACTIVE_PRESS", duration: randomBetween(50, 200) } },
+      { weight: 0.2, entry: { device: "PUMP", event: "INFUSION", duration: 3000 } },
+      { weight: 0.15, entry: { device: "CUE", event: "TONE_ON", duration: 1000 } },
+      { weight: 0.05, entry: { device: "LICK", event: "LICK", duration: 50 } },
+    ];
+  }
+
+  return pool;
+}
+
 function pushSimulatedEvent() {
   if (!simulatedSessionId) return;
   const store = useSessionStore.getState();
@@ -18,49 +70,21 @@ function pushSimulatedEvent() {
 
   eventTimestamp += randomBetween(100, 500);
 
-  const roll = Math.random();
-  if (roll < 0.5) {
-    // Lever press
-    const lever = Math.random() < 0.7 ? "RH_LEVER" : "LH_LEVER";
-    const events = ["ACTIVE_PRESS", "TIMEOUT_PRESS", "INACTIVE_PRESS"];
-    const weights = [0.6, 0.25, 0.15];
-    let r = Math.random();
-    let eventType = events[0];
-    for (let i = 0; i < weights.length; i++) {
-      r -= weights[i];
-      if (r <= 0) { eventType = events[i]; break; }
-    }
-    store.pushEvent(simulatedSessionId, {
-      device: lever,
-      event: eventType,
-      start_timestamp: eventTimestamp,
-      end_timestamp: eventTimestamp + randomBetween(50, 200),
-    });
-  } else if (roll < 0.7) {
-    // Infusion
-    store.pushEvent(simulatedSessionId, {
-      device: "PUMP",
-      event: "INFUSION",
-      start_timestamp: eventTimestamp,
-      end_timestamp: eventTimestamp + 3000,
-    });
-  } else if (roll < 0.85) {
-    // Cue
-    store.pushEvent(simulatedSessionId, {
-      device: "CUE",
-      event: "TONE_ON",
-      start_timestamp: eventTimestamp,
-      end_timestamp: eventTimestamp + 1000,
-    });
-  } else {
-    // Lick
-    store.pushEvent(simulatedSessionId, {
-      device: "LICK",
-      event: "LICK",
-      start_timestamp: eventTimestamp,
-      end_timestamp: eventTimestamp + 50,
-    });
+  const pool = buildEventPool(session);
+  const totalWeight = pool.reduce((sum, p) => sum + p.weight, 0);
+  let r = Math.random() * totalWeight;
+  let chosen = pool[0].entry;
+  for (const p of pool) {
+    r -= p.weight;
+    if (r <= 0) { chosen = p.entry; break; }
   }
+
+  store.pushEvent(simulatedSessionId, {
+    device: chosen.device,
+    event: chosen.event,
+    start_timestamp: eventTimestamp,
+    end_timestamp: eventTimestamp + chosen.duration,
+  });
 }
 
 function scheduleNextEvent() {

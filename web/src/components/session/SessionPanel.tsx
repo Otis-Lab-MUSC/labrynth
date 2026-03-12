@@ -146,7 +146,7 @@ export function SessionPanel() {
 
       {/* Active session info */}
       {activeSession && !activeSession.draft && (
-        <div className="card">
+        <div data-tour="active-session" className="card">
           <h3 className="font-medium text-theme-text">Active Session</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <span className="text-theme-text/60">ID:</span>
