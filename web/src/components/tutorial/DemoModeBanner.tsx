@@ -6,7 +6,7 @@ export function DemoModeBanner() {
   const demoMode = useTutorialStore((s) => s.demoMode);
   const setDemoMode = useTutorialStore((s) => s.setDemoMode);
 
-  if (!demoMode) return null;
+  if (!demoMode || !IS_DEMO_SITE) return null;
 
   return (
     <div className="relative z-10 flex items-center justify-center gap-3 bg-amber-500/10 border-b border-amber-500/20 px-4 py-1.5 text-xs text-amber-400">
