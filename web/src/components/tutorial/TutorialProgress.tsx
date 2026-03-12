@@ -46,7 +46,7 @@ export function TutorialProgress({ current, total, steps, onGoToStep }: Tutorial
               <button
                 key={s.section}
                 onClick={() => onGoToStep(s.startIndex)}
-                className={`px-2 py-0.5 rounded-full text-[9px] font-medium transition ${
+                className={`px-2 py-0.5 rounded-full text-xs font-medium transition ${
                   isActive
                     ? "bg-accent/20 text-accent"
                     : isPast
@@ -62,7 +62,7 @@ export function TutorialProgress({ current, total, steps, onGoToStep }: Tutorial
       )}
 
       <div className="flex items-center gap-2 min-w-0">
-        <span className="text-[10px] text-theme-text/50 whitespace-nowrap">
+        <span className="text-xs text-theme-text/50 whitespace-nowrap">
           {current + 1} / {total}
         </span>
         <div className="h-1 flex-1 min-w-[40px] max-w-[80px] bg-theme-text/10 rounded-full overflow-hidden">

@@ -158,9 +158,9 @@ export function TutorialTooltip({
     >
       <div className="p-4 space-y-3">
         <div>
-          <h3 className="text-sm font-semibold text-accent">{step.title}</h3>
+          <h3 className="text-base font-semibold text-accent">{step.title}</h3>
           {step.interactive && (
-            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-accent/15 text-accent text-[10px] font-medium">
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-accent/15 text-accent text-xs font-medium">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-status-pulse" />
               Try it — interact with the highlighted area
             </span>
@@ -170,8 +170,8 @@ export function TutorialTooltip({
 
         {summaryText && (
           <div className="mt-2 px-2.5 py-2 rounded bg-surface/50 border border-theme-border">
-            <span className="text-[10px] font-semibold text-accent uppercase tracking-wider">Your configuration</span>
-            <pre className="mt-1 text-[11px] text-theme-text/70 font-mono whitespace-pre-wrap leading-relaxed">
+            <span className="text-xs font-semibold text-accent uppercase tracking-wider">Your configuration</span>
+            <pre className="mt-1 text-xs text-theme-text/70 font-mono whitespace-pre-wrap leading-relaxed">
               {summaryText}
             </pre>
           </div>
@@ -182,7 +182,7 @@ export function TutorialTooltip({
         <div className="flex items-center justify-between">
           <button
             onClick={onSkip}
-            className="text-[10px] text-theme-text/30 hover:text-theme-text/60 transition"
+            className="text-xs text-theme-text/30 hover:text-theme-text/60 transition"
           >
             Skip tour
           </button>
@@ -191,14 +191,14 @@ export function TutorialTooltip({
             {!isFirst && (
               <button
                 onClick={onPrev}
-                className="px-3 py-1 text-xs rounded border border-theme-border text-theme-text/70 hover:bg-accent/10 transition"
+                className="px-3 py-1 text-sm rounded border border-theme-border text-theme-text/70 hover:bg-accent/10 transition"
               >
                 Back
               </button>
             )}
             <button
               onClick={onNext}
-              className="px-3 py-1 text-xs rounded bg-accent text-accent-contrast hover:bg-accent-hover transition"
+              className="px-3 py-1 text-sm rounded bg-accent text-accent-contrast hover:bg-accent-hover transition"
             >
               {isLast ? "Finish" : "Next"}
             </button>

@@ -15,7 +15,7 @@ export function DemoModeBanner() {
       {!IS_DEMO_SITE && (
         <button
           onClick={() => setDemoMode(false)}
-          className="ml-2 rounded px-2 py-0.5 text-[10px] font-medium border border-amber-500/30 hover:bg-amber-500/20 transition"
+          className="ml-2 rounded px-2 py-0.5 text-xs font-medium border border-amber-500/30 hover:bg-amber-500/20 transition"
         >
           Exit Demo
         </button>
