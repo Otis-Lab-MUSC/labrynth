@@ -72,9 +72,6 @@ export function TerminalPanel() {
       {/* Terminal header bar (Reacher theme) */}
       {isOpen && isReacher && (
         <div className="terminal-header">
-          <span className="dot dot-red" />
-          <span className="dot dot-yellow" />
-          <span className="dot dot-green" />
           <span className="terminal-label">TERMINAL</span>
         </div>
       )}
