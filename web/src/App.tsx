@@ -1,3 +1,5 @@
+import { useState } from "react";
+import BootOverlay from "./components/layout/BootOverlay";
 import { Header } from "./components/layout/Header";
 import { Sidebar } from "./components/layout/Sidebar";
 import { NeuralBackground } from "./components/layout/NeuralBackground";
@@ -98,6 +100,12 @@ function AppContent() {
 
 export default function App() {
   const blocked = useSingleTab();
+  const [booted, setBooted] = useState(() => sessionStorage.getItem('rs-booted') === '1');
+
+  function handleBootDone() {
+    sessionStorage.setItem('rs-booted', '1');
+    setBooted(true);
+  }
 
   if (blocked) {
     return (
@@ -111,5 +119,10 @@ export default function App() {
     );
   }
 
-  return <AppContent />;
+  return (
+    <>
+      {!booted && <BootOverlay onDone={handleBootDone} />}
+      <AppContent />
+    </>
+  );
 }

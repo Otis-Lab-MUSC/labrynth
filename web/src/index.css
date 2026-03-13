@@ -508,3 +508,38 @@ body {
   letter-spacing: 0.15em;
   color: rgb(var(--color-accent));
 }
+
+/* ── Boot sequence ── */
+@keyframes logoCorrupt {
+  0%   { filter: hue-rotate(180deg) contrast(3)   blur(3px);   transform: translateX(-6px) skewX(-2deg); }
+  20%  { filter: hue-rotate(140deg) contrast(2.5) blur(2px);   transform: translateX(5px)  skewY(1deg);  }
+  40%  { filter: hue-rotate(90deg)  contrast(2)   blur(1.5px); transform: translateX(-4px) skewX(1deg);  }
+  60%  { filter: hue-rotate(45deg)  contrast(1.5) blur(0.5px); transform: translateX(2px);               }
+  80%  { filter: hue-rotate(10deg)  contrast(1.1) blur(0px);   transform: translateX(-1px);              }
+  100% { filter: none; transform: none; }
+}
+@keyframes bootFadeOut {
+  to { opacity: 0; pointer-events: none; }
+}
+
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: bootFadeOut 0.3s ease-in 1.6s forwards;
+}
+.boot-logo {
+  width: min(480px, 70vw);
+  pointer-events: none;
+  user-select: none;
+  animation: logoCorrupt 1.2s ease-out 0.1s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-overlay { display: none; }
+}
+
