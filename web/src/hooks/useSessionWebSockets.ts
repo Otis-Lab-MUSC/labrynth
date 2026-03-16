@@ -100,6 +100,22 @@ function handleMessage(msg: WSMessage) {
       pushLog("error", `Serial disconnected: ${reason}`, msg.session_id);
       break;
     }
+    // Fix: F-005 — Handle export_failed event from backend
+    case "export_failed": {
+      const { reason } = msg.data as { reason: string };
+      pushLog("error", `Auto-export failed: ${reason}`, msg.session_id);
+      break;
+    }
+    // Fix: F-006 — Handle kernel_error event from backend
+    case "kernel_error": {
+      const { reason } = msg.data as { reason: string };
+      pushLog("error", `Kernel error: ${reason}`, msg.session_id);
+      break;
+    }
+    // Fix: F-014 — Log unhandled message types so future protocol changes are visible
+    default:
+      console.warn(`[ReacherWS] Unhandled message type: ${(msg as { type: string }).type}`, msg);
+      break;
   }
 }
 

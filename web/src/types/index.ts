@@ -126,4 +126,6 @@ export type WSMessage =
   | { type: "error"; session_id: string; data: { level: string; device: string; desc: string; timestamp: number } }
   | { type: "upload_progress"; session_id: string; data: { percent: number; stage: string } }
   | { type: "session_state"; session_id: string; data: { state: SessionState } }
-  | { type: "disconnect"; session_id: string; data: { reason: string } };  // Fix: XL-003
+  | { type: "disconnect"; session_id: string; data: { reason: string } }  // Fix: XL-003
+  | { type: "export_failed"; session_id: string; data: { reason: string } }  // Fix: F-005
+  | { type: "kernel_error"; session_id: string; data: { reason: string; raw: string } };  // Fix: F-006
