@@ -46,9 +46,18 @@ if os.path.isdir(HEX_DIR):
 else:
     print(f"WARNING: Hex directory not found at {HEX_DIR}")
 
-# avrdude binary → avrdude/
+# avrdude binary + conf → avrdude/
 if AVRDUDE_PATH and os.path.isfile(AVRDUDE_PATH):
     datas.append((AVRDUDE_PATH, "avrdude"))
+    # Also bundle avrdude.conf if present alongside the binary
+    _avrdude_dir = os.path.dirname(AVRDUDE_PATH)
+    for _conf in [
+        os.path.join(_avrdude_dir, "..", "etc", "avrdude.conf"),
+        os.path.join(_avrdude_dir, "avrdude.conf"),
+    ]:
+        if os.path.isfile(_conf):
+            datas.append((os.path.abspath(_conf), "avrdude"))
+            break
 else:
     print("NOTE: No avrdude binary bundled (set REACHER_AVRDUDE_PATH or use build.py --avrdude)")
 

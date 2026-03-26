@@ -49,6 +49,14 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install arduino:avr
 
+      - name: Locate avrdude
+        id: avrdude
+        shell: bash
+        run: |
+          AVRDUDE=$(find "$LOCALAPPDATA/Arduino15/packages/arduino/tools/avrdude" -name "avrdude.exe" -type f | head -1)
+          echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
+          echo "Found avrdude at: $AVRDUDE"
+
       - name: Extract version
         id: version
         shell: bash
@@ -71,7 +79,7 @@ jobs:
         run: python -m pip install pyinstaller
 
       - name: Build application
-        run: python build.py
+        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -118,6 +126,13 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install arduino:avr
 
+      - name: Locate avrdude
+        id: avrdude
+        run: |
+          AVRDUDE=$(find ~/Library/Arduino15/packages/arduino/tools/avrdude -name "avrdude" -not -path "*/etc/*" -type f | head -1)
+          echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
+          echo "Found avrdude at: $AVRDUDE"
+
       - name: Extract version
         id: version
         run: |
@@ -138,7 +153,7 @@ jobs:
         run: python -m pip install pyinstaller
 
       - name: Build application
-        run: python build.py
+        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Create DMG
         env:
@@ -187,6 +202,13 @@ jobs:
           arduino-cli core update-index
           arduino-cli core install arduino:avr
 
+      - name: Locate avrdude
+        id: avrdude
+        run: |
+          AVRDUDE=$(find ~/.arduino15/packages/arduino/tools/avrdude -name "avrdude" -not -path "*/etc/*" -type f | head -1)
+          echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
+          echo "Found avrdude at: $AVRDUDE"
+
       - name: Extract version
         id: version
         run: |
@@ -207,7 +229,7 @@ jobs:
         run: python -m pip install pyinstaller
 
       - name: Build application
-        run: python build.py
+        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Build DEB package
         env:
@@ -235,11 +257,18 @@ jobs:
 
           dpkg-deb --build "$PKG"
 
-      - name: Upload DEB
+      - name: Build tarball
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: tar -czf "REACHER-${VERSION}-linux-x64.tar.gz" -C dist REACHER
+
+      - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-deb
-          path: reacher_${{ steps.version.outputs.version }}_amd64.deb
+          name: linux-installers
+          path: |
+            reacher_${{ steps.version.outputs.version }}_amd64.deb
+            REACHER-${{ steps.version.outputs.version }}-linux-x64.tar.gz
 
   # -------------------------------------------------------------------
   # Release — publish artifacts to GitHub Releases
@@ -263,7 +292,23 @@ jobs:
         with:
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+          body: |
+            ## Installation Notes
+
+            **macOS:** If Gatekeeper blocks the app, right-click the .app → Open, or run:
+            ```
+            xattr -d com.apple.quarantine REACHER.app
+            ```
+
+            **Windows:** If SmartScreen warns, click "More info" → "Run anyway".
+
+            **Linux (tarball):** Extract and run directly:
+            ```
+            tar -xzf REACHER-*-linux-x64.tar.gz
+            ./REACHER/REACHER
+            ```
           files: |
             artifacts/*.exe
             artifacts/*.dmg
             artifacts/*.deb
+            artifacts/*.tar.gz
