@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type Panel = "session" | "hardware" | "program" | "monitor" | "data" | "machines";
+export type Panel = "session" | "hardware" | "program" | "monitor" | "data";
 
 interface NavigationStore {
   activePanel: Panel;

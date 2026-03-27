@@ -76,14 +76,16 @@ export class MachineApiClient {
    */
   async getWsTokenAsync(): Promise<{ token: string; wsUrl: string } | null> {
     if (this.deviceId) {
-      // Proxy mode: ask local server for the remote token
+      // Proxy mode: ask local server for the relay WS URL and local token
       try {
         const localToken = await this.getToken();
         const headers: Record<string, string> = {};
         if (localToken) headers["Authorization"] = `Bearer ${localToken}`;
         const res = await fetch(`/api/proxy/${this.deviceId}/ws-token`, { headers });
         if (!res.ok) return null;
-        return res.json() as Promise<{ token: string; wsUrl: string }>;
+        const data = await res.json();
+        // Backend returns snake_case ws_url; map to camelCase for internal use
+        return { token: data.token, wsUrl: data.ws_url };
       } catch {
         return null;
       }
@@ -227,6 +229,26 @@ export class MachineApiClient {
       method: "POST",
       body: JSON.stringify(body),
     });
+
+  // --- Download ---
+  downloadExportZip = async (id: string, filePath: string): Promise<void> => {
+    const token = await this["getToken"]();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const base = this.deviceId ? `/api/proxy/${this.deviceId}` : this.baseUrl;
+    const url = `${base}/api/file/${id}/export/download?path=${encodeURIComponent(filePath)}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error("Download failed");
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filePath.split("/").pop() || "export.zip";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(blobUrl);
+  };
 
   // --- Lifecycle ---
   shutdown = () =>

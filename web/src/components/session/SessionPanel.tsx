@@ -6,6 +6,7 @@ import { useLogStore } from "../../store/useLogStore";
 import type { BoardType, Session } from "../../types";
 import { FirmwareUploadCard } from "./FirmwareUploadCard";
 import { ConfirmDialog } from "../layout/ConfirmDialog";
+import { MachineManagement } from "./MachineManagement";
 
 function getDisconnectWarning(session: Session): { title: string; message: string; variant: "danger" | "warning" } | null {
   if (session.programStartTime !== null) {
@@ -43,24 +44,33 @@ export function SessionPanel() {
   const activeMachine = machines.find((m) => m.deviceId === activeMachineId);
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
 
-  // Refresh port list whenever the selected machine changes
+  // Probe health immediately when machine selection changes, then refresh ports
   useEffect(() => {
-    if (!activeMachineId || !activeMachine?.online) {
+    if (!activeMachineId) {
       setPorts([]);
       return;
     }
     const client = getClient(activeMachineId);
     if (!client) return;
-    client.listPorts()
-      .then((r) => setPorts(r.ports))
-      .catch((e: unknown) => {
-        useLogStore.getState().pushLog(
-          "error",
-          e instanceof Error ? e.message : "Failed to load COM ports",
-        );
-        useLogStore.getState().setOpen(true);
-      });
-  }, [activeMachineId, activeMachine?.online]);
+    // Immediately check if the machine is reachable (don't wait for 30s poll)
+    client.probeHealth().then((h) => {
+      const online = h?.service === "reacher";
+      useMachineStore.getState().setMachineOnline(activeMachineId, online);
+      if (online) {
+        client.listPorts()
+          .then((r) => setPorts(r.ports))
+          .catch((e: unknown) => {
+            useLogStore.getState().pushLog(
+              "error",
+              e instanceof Error ? e.message : "Failed to load COM ports",
+            );
+            useLogStore.getState().setOpen(true);
+          });
+      } else {
+        setPorts([]);
+      }
+    });
+  }, [activeMachineId]);
 
   const handleConnect = async () => {
     if (!selectedPort || !activeMachineId) return;
@@ -129,7 +139,7 @@ export function SessionPanel() {
           >
             {machines.length === 0 && <option value="">No machines available</option>}
             {machines.map((m) => (
-              <option key={m.deviceId} value={m.deviceId} disabled={!m.online}>
+              <option key={m.deviceId} value={m.deviceId}>
                 {m.name}{m.isLocal ? " (local)" : ` — ${m.hostname}`}{!m.online ? " [offline]" : ""}
               </option>
             ))}
@@ -145,6 +155,12 @@ export function SessionPanel() {
           <p className="mt-1 text-xs text-theme-text/50 font-mono">{activeMachine.url}</p>
         )}
       </div>
+
+      {/* Inline device management */}
+      <details className="card">
+        <summary className="font-medium text-theme-text cursor-pointer select-none">Manage Devices</summary>
+        <MachineManagement />
+      </details>
 
       {/* Port selection + connect */}
       <div data-tour="port-select" className="card">

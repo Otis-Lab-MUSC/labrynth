@@ -74,8 +74,9 @@ interface MachineStore {
   initLocalMachine: () => Promise<void>;
   addMachine: (url: string, apiKey: string, name?: string) => Promise<Machine>;
   pairMachine: (deviceId: string, code: string, name?: string) => Promise<Machine>;
+  pairByCode: (code: string, name?: string) => Promise<Machine>;
   pairMachineByUrl: (url: string, code: string, name?: string) => Promise<Machine>;
-  removeMachine: (deviceId: string) => void;
+  removeMachine: (deviceId: string) => Promise<void>;
   renameMachine: (deviceId: string, name: string) => void;
   setMachineOnline: (deviceId: string, online: boolean) => void;
   setActiveMachine: (deviceId: string) => void;
@@ -258,6 +259,39 @@ export const useMachineStore = create<MachineStore>((set, get) => {
       return machine;
     },
 
+    pairByCode: async (code: string, name?: string) => {
+      const lc = getLocalClient();
+      const result = await lc.request<{ device_id: string; hostname: string; url: string; name: string }>(
+        "/discovery/pair-by-code",
+        {
+          method: "POST",
+          body: JSON.stringify({ code, name: name?.trim() || undefined }),
+        },
+      );
+
+      const machine: Machine = {
+        deviceId: result.device_id,
+        name: result.name,
+        hostname: result.hostname,
+        url: result.url,
+        isLocal: false,
+        paired: true,
+        online: true,
+        lastSeen: new Date().toISOString(),
+      };
+
+      _clients.set(machine.deviceId, new MachineApiClient("", undefined, machine.deviceId));
+
+      set((s) => {
+        const next = [...s.machines, machine];
+        persistRemoteMachines(next);
+        const nextDiscovered = s.discoveredDevices.filter((d) => d.deviceId !== result.device_id);
+        return { machines: next, discoveredDevices: nextDiscovered };
+      });
+
+      return machine;
+    },
+
     pairMachineByUrl: async (url: string, code: string, name?: string) => {
       const lc = getLocalClient();
       const result = await lc.request<{ device_id: string; hostname: string; url: string; name: string }>(
@@ -295,7 +329,14 @@ export const useMachineStore = create<MachineStore>((set, get) => {
       return machine;
     },
 
-    removeMachine: (deviceId: string) => {
+    removeMachine: async (deviceId: string) => {
+      // Notify backend to unpair the remote device (best-effort)
+      try {
+        const lc = getLocalClient();
+        await lc.request(`/discovery/${deviceId}`, { method: "DELETE" });
+      } catch {
+        // Machine may already be removed server-side or offline; proceed with local cleanup
+      }
       _clients.delete(deviceId);
       set((s) => {
         const next = s.machines.filter((m) => m.deviceId !== deviceId);

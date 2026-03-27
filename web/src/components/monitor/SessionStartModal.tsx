@@ -128,21 +128,21 @@ export function SessionStartModal() {
         }
       }
 
-      // Send all hardware state to firmware before session start
+      // Send hardware state to firmware — only for armed devices.
+      // Unarmed devices are left at firmware defaults (already disarmed).
       const hw = session.hardwareUi;
       for (const [deviceKey, deviceState] of Object.entries(hw)) {
         const mapping = PRESET_COMMAND_MAP[deviceKey];
         if (!mapping || deviceKey === "testMode") continue;
         const state = deviceState as { armed?: boolean; [k: string]: unknown };
-        // Arm or disarm
-        if (state.armed !== undefined) {
-          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,state.armed ? mapping.arm : mapping.disarm);
-        }
+        if (!state.armed) continue;
+
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, mapping.arm);
         // Send device params (frequency, duration, timeout, ratio)
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
             if (state[paramKey] !== undefined && state[paramKey] !== null) {
-              await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
+              await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, code, state[paramKey] as number);
             }
           }
         }

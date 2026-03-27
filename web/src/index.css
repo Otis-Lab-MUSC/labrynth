@@ -213,14 +213,6 @@ body {
    REACHER THEME — Cyberpunk overrides (scoped to .theme-reacher)
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Custom cursor ── */
-.theme-reacher body,
-.theme-reacher a,
-.theme-reacher button,
-.theme-reacher [role="button"] {
-  cursor: none;
-}
-
 /* ── Typography ── */
 .theme-reacher h1,
 .theme-reacher h2,

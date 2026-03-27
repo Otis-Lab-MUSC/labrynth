@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, RefreshCw, Wifi } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Wifi, Link } from "lucide-react";
 import { useMachineStore } from "../../store/useMachineStore";
 import { useSessionStore } from "../../store/useSessionStore";
 import type { DiscoveredDevice, Machine } from "../../types";
@@ -361,6 +361,88 @@ function AddMachineDialog({ onClose }: AddMachineDialogProps) {
 }
 
 // ---------------------------------------------------------------------------
+// Quick pair — enter code only, backend tries all discovered peers
+// ---------------------------------------------------------------------------
+
+function QuickPairSection() {
+  const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showName, setShowName] = useState(false);
+  const { pairByCode } = useMachineStore();
+
+  const formatCode = (raw: string) => {
+    const digits = raw.replace(/\D/g, "").slice(0, 6);
+    return digits.length > 3 ? `${digits.slice(0, 3)}-${digits.slice(3)}` : digits;
+  };
+
+  const handlePair = async () => {
+    const digits = code.replace(/\D/g, "");
+    if (digits.length !== 6) {
+      setError("Enter the 6-digit code shown on the device");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await pairByCode(digits, name.trim() || undefined);
+      setCode("");
+      setName("");
+      setShowName(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Pairing failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="card border border-theme-border/50 bg-theme-bg/30 space-y-3">
+      <div className="flex items-center gap-2">
+        <Link size={14} className="text-accent/60" />
+        <span className="text-sm font-medium text-theme-text">Pair a Device</span>
+      </div>
+      <p className="text-xs text-theme-text/50">
+        Enter the 6-digit code shown on the REACHER device's terminal.
+      </p>
+      <div className="flex gap-2">
+        <input
+          value={code}
+          onChange={(e) => { setCode(formatCode(e.target.value)); setError(null); }}
+          placeholder="000-000"
+          className="input-base flex-1 font-mono text-lg tracking-widest text-center"
+          onKeyDown={(e) => { if (e.key === "Enter") handlePair(); }}
+        />
+        <button
+          onClick={handlePair}
+          disabled={loading}
+          className="btn-sm bg-accent text-accent-contrast hover:bg-accent-hover disabled:opacity-50 px-4"
+        >
+          {loading ? "Pairing…" : "Pair"}
+        </button>
+      </div>
+      {!showName && (
+        <button onClick={() => setShowName(true)} className="text-xs text-theme-text/40 hover:text-theme-text/60">
+          + Add display name
+        </button>
+      )}
+      {showName && (
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Display name (optional)"
+          className="input-base w-full text-sm"
+        />
+      )}
+      {error && (
+        <p className="rounded bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main panel
 // ---------------------------------------------------------------------------
 
@@ -400,6 +482,10 @@ export function MachinePanel() {
     setRenamingId(null);
   };
 
+  // Only show the quick-pair section if there are no remote machines paired yet,
+  // or always show it if there are discovered devices waiting to be paired.
+  const hasRemoteMachines = machines.some((m) => !m.isLocal);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -418,10 +504,13 @@ export function MachinePanel() {
             title="Add a machine on a different network"
           >
             <Plus size={14} />
-            Different Subnet
+            Manual
           </button>
         </div>
       </div>
+
+      {/* Quick pair — always visible when no remote machines are paired */}
+      {!hasRemoteMachines && <QuickPairSection />}
 
       {/* Discovered but unpaired devices */}
       {discoveredDevices.length > 0 && (
@@ -439,7 +528,7 @@ export function MachinePanel() {
 
       {/* Paired machines */}
       <div className="space-y-3">
-        {discoveredDevices.length > 0 && machines.length > 0 && (
+        {machines.length > 0 && (discoveredDevices.length > 0 || !hasRemoteMachines) && (
           <h3 className="text-sm font-medium text-theme-text/60 uppercase tracking-wider">Paired</h3>
         )}
         {machines.map((machine) => (
@@ -473,11 +562,10 @@ export function MachinePanel() {
             )}
           </div>
         ))}
-
-        {machines.length === 0 && discoveredDevices.length === 0 && (
-          <p className="text-sm text-theme-text/50">Scanning for REACHER devices…</p>
-        )}
       </div>
+
+      {/* Show quick pair below machines when remote machines exist (secondary) */}
+      {hasRemoteMachines && <QuickPairSection />}
 
       {pairingDevice && (
         <PairingDialog

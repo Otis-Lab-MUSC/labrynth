@@ -8,7 +8,6 @@ import { StormSynapseBackground } from "./components/layout/StormSynapseBackgrou
 import { EmberCircuitBackground } from "./components/layout/EmberCircuitBackground";
 import { NeonGridBackground } from "./components/layout/NeonGridBackground";
 import { CyberpunkGridBackground } from "./components/layout/CyberpunkGridBackground";
-import { CyberpunkCursor } from "./components/layout/CyberpunkCursor";
 import { SessionPanel } from "./components/session/SessionPanel";
 import { HardwarePanel } from "./components/hardware/HardwarePanel";
 import { ProgramPanel } from "./components/program/ProgramPanel";
@@ -16,7 +15,6 @@ import { MonitorPanel } from "./components/monitor/MonitorPanel";
 import { SessionStartModal } from "./components/monitor/SessionStartModal";
 import { TerminalPanel } from "./components/terminal/TerminalPanel";
 import { DataExport } from "./components/data/DataExport";
-import { MachinePanel } from "./components/machines/MachinePanel";
 import { TutorialOverlay } from "./components/tutorial/TutorialOverlay";
 import { HelpPanel } from "./components/tutorial/HelpPanel";
 import { WelcomeScreen } from "./components/tutorial/WelcomeScreen";
@@ -77,13 +75,11 @@ function AppContent() {
     program: <ProgramPanel />,
     monitor: <MonitorPanel />,
     data: <DataExport />,
-    machines: <MachinePanel />,
   };
 
   return (
     <div className="flex h-screen flex-col">
       <BackgroundLayer />
-      {isReacher && <CyberpunkCursor />}
       <DemoModeBanner />
       <Header />
       <div className="flex flex-1 overflow-hidden">

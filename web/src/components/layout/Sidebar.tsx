@@ -1,4 +1,4 @@
-import { Cable, Cpu, Play, Activity, Database, Network } from "lucide-react";
+import { Cable, Cpu, Play, Activity, Database } from "lucide-react";
 import { useThemeStore } from "../../store/useThemeStore";
 
 const items = [
@@ -7,7 +7,6 @@ const items = [
   { key: "hardware", label: "Hardware", icon: Cpu },
   { key: "monitor", label: "Monitor", icon: Activity },
   { key: "data", label: "Data", icon: Database },
-  { key: "machines", label: "Machines", icon: Network },
 ] as const;
 
 interface Props {

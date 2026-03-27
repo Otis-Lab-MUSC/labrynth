@@ -40,6 +40,14 @@ export function DataExport() {
         ...(micro.armed && micro.frameRate != null && { microscope_frame_rate: micro.frameRate }),
         ...(micro.armed && micro.frameAveraging != null && { microscope_frame_averaging: micro.frameAveraging }),
       });
+      // Trigger browser download of the ZIP file
+      if (result?.file_path) {
+        try {
+          await getClientForSession(activeSessionId)?.downloadExportZip(activeSessionId, result.file_path);
+        } catch {
+          // Download failed — the server-side path is still shown as fallback
+        }
+      }
       setExportState(activeSessionId, { exporting: false, result: result?.file_path ?? null });
     } catch (e) {
       setExportState(activeSessionId, {
