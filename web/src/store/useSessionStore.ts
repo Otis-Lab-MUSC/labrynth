@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { BoardType, Session, SessionState, BehaviorEvent, FirmwareConfig, LeverCounts, HardwareUiState } from "../types";
-import * as api from "../api/client";
+import { useMachineStore } from "./useMachineStore";
 
 interface SessionStore {
   sessions: Map<string, Session>;
@@ -10,8 +10,8 @@ interface SessionStore {
   startModalOpen: boolean;
 
   setStartModalOpen: (open: boolean) => void;
-  createDraft: () => string;
-  createSession: (port: string, paradigm?: string) => Promise<string>;
+  createDraft: (machineId: string) => string;
+  createSession: (machineId: string, port: string, paradigm?: string) => Promise<string>;
   destroySession: (id: string) => Promise<void>;
   reorderSession: (fromId: string, toId: string) => void;
   setActive: (id: string | null) => void;
@@ -41,17 +41,18 @@ const defaultHardwareUiState = (): HardwareUiState => ({
   lhLever: { armed: false, timeout: 20000, ratio: 1 },
   primaryCue: { armed: false, frequency: 2900, duration: 1000 },
   secondaryCue: { armed: false, frequency: 2900, duration: 1000 },
-  primaryPump: { armed: false, duration: 3000, flowRate: null, volume: null },
-  secondaryPump: { armed: false, duration: 3000, flowRate: null, volume: null },
-  laser: { armed: false, frequency: 20, duration: 10000, mode: "contingent" },
+  primaryPump: { armed: false, duration: 3000 },
+  secondaryPump: { armed: false, duration: 3000 },
+  laser: { armed: false, frequency: 20, duration: 10000, mode: "contingent", phase: "reward" },
   lickCircuit: { armed: false },
   microscope: { armed: false, frameRate: null, frameAveraging: null },
   testMode: false,
 });
 
-const newSession = (id: string, port: string, paradigm: string | null, draft = false): Session => ({
+const newSession = (id: string, port: string, paradigm: string | null, machineId: string, draft = false): Session => ({
   id,
   draft,
+  machineId,
   port,
   paradigm,
   board: null,
@@ -88,9 +89,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   setStartModalOpen: (open) => set({ startModalOpen: open }),
 
-  createDraft: () => {
+  createDraft: (machineId) => {
     const state = get();
-    const existingDraft = state.sessionOrder.find((id: string) => state.sessions.get(id)?.draft);
+    // Reuse existing draft if it belongs to the same machine
+    const existingDraft = state.sessionOrder.find(
+      (id: string) => {
+        const s = state.sessions.get(id);
+        return s?.draft && s.machineId === machineId;
+      },
+    );
     if (existingDraft) {
       set({ activeSessionId: existingDraft });
       return existingDraft;
@@ -98,7 +105,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     const draftId = `draft-${crypto.randomUUID()}`;
     set((s) => {
       const next = new Map(s.sessions);
-      next.set(draftId, newSession(draftId, "", null, true));
+      next.set(draftId, newSession(draftId, "", null, machineId, true));
       return {
         sessions: next,
         activeSessionId: draftId,
@@ -108,14 +115,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     return draftId;
   },
 
-  createSession: async (port, paradigm) => {
+  createSession: async (machineId, port, paradigm) => {
+    const client = useMachineStore.getState().getClient(machineId);
+    if (!client) throw new Error(`No client for machine ${machineId}`);
+
     const state = get();
+    // Replace the active draft for this machine if one exists
     const activeDraft =
-      state.activeSessionId && state.sessions.get(state.activeSessionId)?.draft
+      state.activeSessionId &&
+      state.sessions.get(state.activeSessionId)?.draft &&
+      state.sessions.get(state.activeSessionId)?.machineId === machineId
         ? state.activeSessionId
         : null;
 
-    const { session_id } = await api.createSession(port, paradigm);
+    const { session_id } = await client.createSession(port, paradigm);
     set((s) => {
       const next = new Map(s.sessions);
       let nextOrder = [...s.sessionOrder];
@@ -127,7 +140,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       } else {
         nextOrder.push(session_id);
       }
-      next.set(session_id, newSession(session_id, port, paradigm ?? null));
+      next.set(session_id, newSession(session_id, port, paradigm ?? null, machineId));
       return { sessions: next, activeSessionId: session_id, sessionOrder: nextOrder };
     });
     return session_id;
@@ -136,7 +149,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   destroySession: async (id) => {
     const session = get().sessions.get(id);
     if (session && !session.draft) {
-      await api.destroySession(id);
+      const client = useMachineStore.getState().getClient(session.machineId);
+      await client?.destroySession(id);
     }
     set((s) => {
       const next = new Map(s.sessions);

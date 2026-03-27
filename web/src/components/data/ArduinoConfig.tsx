@@ -3,12 +3,19 @@ import type { FirmwareConfig } from "../../types";
 interface ArduinoConfigProps {
   firmwareInfo: FirmwareConfig | null;
   hardwareSettings: FirmwareConfig[];
+  paradigm?: string;
 }
 
 const INTERNAL_FIELDS = new Set(["level", "device"]);
 
-export function ArduinoConfig({ firmwareInfo, hardwareSettings }: ArduinoConfigProps) {
-  if (!firmwareInfo && hardwareSettings.length === 0) {
+export function ArduinoConfig({ firmwareInfo, hardwareSettings, paradigm }: ArduinoConfigProps) {
+  const filteredSettings = paradigm === "pavlovian"
+    ? hardwareSettings.filter((hw) => {
+        const device = (hw as Record<string, unknown>).device as string | undefined;
+        return !device || !device.includes("LEVER");
+      })
+    : hardwareSettings;
+  if (!firmwareInfo && filteredSettings.length === 0) {
     return (
       <div className="card">
         <h3 className="font-medium text-theme-text">Arduino Configuration</h3>
@@ -37,11 +44,11 @@ export function ArduinoConfig({ firmwareInfo, hardwareSettings }: ArduinoConfigP
         </div>
       )}
 
-      {hardwareSettings.length > 0 && (
+      {filteredSettings.length > 0 && (
         <div>
           <h4 className="text-sm font-semibold text-accent mb-1">Hardware Devices</h4>
           <div className="space-y-2">
-            {hardwareSettings.map((hw, i) => {
+            {filteredSettings.map((hw, i) => {
               const deviceName = (hw as Record<string, unknown>).device as string | undefined;
               return (
                 <div key={i} className="rounded border border-theme-border bg-surface p-3 font-mono text-sm space-y-1">

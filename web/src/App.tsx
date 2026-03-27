@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BootOverlay from "./components/layout/BootOverlay";
 import { Header } from "./components/layout/Header";
 import { Sidebar } from "./components/layout/Sidebar";
@@ -16,12 +16,14 @@ import { MonitorPanel } from "./components/monitor/MonitorPanel";
 import { SessionStartModal } from "./components/monitor/SessionStartModal";
 import { TerminalPanel } from "./components/terminal/TerminalPanel";
 import { DataExport } from "./components/data/DataExport";
+import { MachinePanel } from "./components/machines/MachinePanel";
 import { TutorialOverlay } from "./components/tutorial/TutorialOverlay";
 import { HelpPanel } from "./components/tutorial/HelpPanel";
 import { WelcomeScreen } from "./components/tutorial/WelcomeScreen";
 import { DemoModeBanner } from "./components/tutorial/DemoModeBanner";
 import { useThemeStore } from "./store/useThemeStore";
 import { useNavigationStore } from "./store/useNavigationStore";
+import { useMachineStore } from "./store/useMachineStore";
 import { useSessionWebSockets } from "./hooks/useSessionWebSockets";
 import { useSessionRecovery } from "./hooks/useSessionRecovery";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
@@ -50,6 +52,20 @@ function AppContent() {
   const themeId = useThemeStore((s) => s.themeId);
   const isReacher = themeId === "reacher";
 
+  // Bootstrap machine store before session recovery runs
+  useEffect(() => {
+    const { initLocalMachine, startPolling, stopPolling, startDiscoveryPolling, stopDiscoveryPolling } =
+      useMachineStore.getState();
+    initLocalMachine().then(() => {
+      startPolling();
+      startDiscoveryPolling();
+    });
+    return () => {
+      stopPolling();
+      stopDiscoveryPolling();
+    };
+  }, []);
+
   useSessionRecovery();
   useSessionWebSockets();
   useBeforeUnload(false);
@@ -61,6 +77,7 @@ function AppContent() {
     program: <ProgramPanel />,
     monitor: <MonitorPanel />,
     data: <DataExport />,
+    machines: <MachinePanel />,
   };
 
   return (

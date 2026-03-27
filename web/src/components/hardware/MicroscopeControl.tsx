@@ -1,4 +1,4 @@
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { HARDWARE_PINS } from "./pins";
 
@@ -12,7 +12,7 @@ export function MicroscopeControl({ sessionId }: Props) {
   const frameRate = microscope?.frameRate ?? null;
   const frameAveraging = microscope?.frameAveraging ?? null;
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
-  const send = (code: number) => api.sendCommand(sessionId, code);
+  const send = (code: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code);
 
   return (
     <div className="card">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 
 interface Props {
@@ -31,7 +31,7 @@ export function LimitConfig({ sessionId, paradigm }: Props) {
         limitPayload.infusion_limit = infusionLimit;
         limitPayload.delay = delay;
       }
-      await api.setLimit(sessionId, limitPayload);
+      await getClientForSession(sessionId)?.setLimit(sessionId, limitPayload);
       // Only persist to store after server acknowledges
       setLimitSettings(sessionId, { limitType, timeLimit, infusionLimit, delay });
     } catch {

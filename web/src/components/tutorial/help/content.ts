@@ -89,7 +89,7 @@ export const HELP_CONTENT: HelpSection[] = [
         id: "hardware.pumps",
         title: "Pumps",
         content:
-          "Two syringe pumps (Primary and Secondary) deliver infusions. The Duration parameter (ms) controls how long the pump runs per infusion, which determines the volume delivered based on your syringe and pump calibration.",
+          "Two syringe pumps (Primary and Secondary) deliver infusions. The Duration parameter (ms) controls how long the pump relay stays active per infusion.",
       },
       {
         id: "hardware.laser",

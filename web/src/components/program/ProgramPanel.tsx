@@ -3,11 +3,11 @@ import { useSessionStore } from "../../store/useSessionStore";
 import { ParadigmSettings } from "./ParadigmSettings";
 import { PavlovianSettings } from "./PavlovianSettings";
 import { LimitConfig } from "./LimitConfig";
-import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS } from "./devicePresets";
+import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "./devicePresets";
 import type { DevicePreset } from "./devicePresets";
 import { SESSION_PRESETS, SessionPresetCard } from "./presets";
 import type { SessionPreset } from "./presets";
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
 
 export function ProgramPanel() {
   const activeSessionId = useSessionStore((s) => s.activeSessionId);
@@ -18,6 +18,7 @@ export function ProgramPanel() {
   const setParadigmSettings = useSessionStore((s) => s.setParadigmSettings);
   const setLimitSettings = useSessionStore((s) => s.setLimitSettings);
   const setStartModalOpen = useSessionStore((s) => s.setStartModalOpen);
+  const setPavlovianParams = useSessionStore((s) => s.setPavlovianParams);
 
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
   const [selectedDevicePresetId, setSelectedDevicePresetId] = useState<string>("");
@@ -81,12 +82,12 @@ export function ProgramPanel() {
         const state = deviceState as { armed?: boolean; [k: string]: unknown };
         const armed = deviceKey in armOverrides ? armOverrides[deviceKey] : state.armed;
         if (armed !== undefined) {
-          await api.sendCommand(activeSessionId, armed ? mapping.arm : mapping.disarm);
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,armed ? mapping.arm : mapping.disarm);
         }
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
             if (state[paramKey] !== undefined) {
-              await api.sendCommand(activeSessionId, code, state[paramKey] as number);
+              await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
             }
           }
         }
@@ -95,23 +96,43 @@ export function ProgramPanel() {
       // Send DISARM for devices NOT mentioned in the preset
       for (const [deviceKey, mapping] of Object.entries(PRESET_COMMAND_MAP)) {
         if (!(deviceKey in preset.hardware)) {
-          await api.sendCommand(activeSessionId, mapping.disarm);
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,mapping.disarm);
         }
       }
 
       // 2b. Send laser mode command if preset specifies a mode
-      const laserState = preset.hardware.laser as { mode?: "contingent" | "independent" } | undefined;
+      const laserState = preset.hardware.laser as { mode?: keyof typeof LASER_MODE_COMMANDS; phase?: "reward" | "cue" } | undefined;
       if (laserState?.mode) {
-        await api.sendCommand(activeSessionId, LASER_MODE_COMMANDS[laserState.mode]);
+        // Trial-paired modes require contingent (681) before filter command
+        if (laserState.mode !== "independent" && laserState.mode !== "contingent") {
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
+        }
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode]);
+      }
+
+      // 2c. Send laser phase command if Pavlovian preset specifies a phase
+      if (laserState?.phase) {
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase]);
       }
 
       // 3. Send paradigm-specific commands
-      await api.sendCommand(activeSessionId, 201, preset.paradigmSettings.ratio);
-      await api.sendCommand(activeSessionId, 220, preset.paradigmSettings.traceInterval);
+      if (preset.pavlovianParams) {
+        for (const [code, value] of Object.entries(preset.pavlovianParams)) {
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,Number(code), value);
+        }
+      } else {
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,201, preset.paradigmSettings.ratio);
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,220, preset.paradigmSettings.traceInterval);
+      }
     }
 
     // 4. Update paradigm settings in store
     setParadigmSettings(activeSessionId, preset.paradigmSettings);
+
+    // 4b. Update Pavlovian params in store if present
+    if (preset.pavlovianParams) {
+      setPavlovianParams(activeSessionId, preset.pavlovianParams);
+    }
 
     // 5. Update limit settings in store
     setLimitSettings(activeSessionId, preset.limitDefaults);
@@ -146,21 +167,30 @@ export function ProgramPanel() {
 
         const state = deviceState as { armed?: boolean; [k: string]: unknown };
         if (state.armed !== undefined) {
-          await api.sendCommand(activeSessionId, state.armed ? mapping.arm : mapping.disarm);
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,state.armed ? mapping.arm : mapping.disarm);
         }
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
             if (state[paramKey] !== undefined) {
-              await api.sendCommand(activeSessionId, code, state[paramKey] as number);
+              await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
             }
           }
         }
       }
 
       // Send laser mode command if preset specifies a mode
-      const laserState = preset.hardware.laser as { mode?: "contingent" | "independent" } | undefined;
+      const laserState = preset.hardware.laser as { mode?: keyof typeof LASER_MODE_COMMANDS; phase?: "reward" | "cue" } | undefined;
       if (laserState?.mode) {
-        await api.sendCommand(activeSessionId, LASER_MODE_COMMANDS[laserState.mode]);
+        // Trial-paired modes require contingent (681) before filter command
+        if (laserState.mode !== "independent" && laserState.mode !== "contingent") {
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
+        }
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode]);
+      }
+
+      // Send laser phase command if preset specifies a phase
+      if (laserState?.phase) {
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase]);
       }
     }
   };

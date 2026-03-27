@@ -23,8 +23,14 @@ export const DEVICE_PRESETS: DevicePreset[] = [
   // },
 ];
 
-/** Command code for laser mode: contingent = 681, independent = 682 */
-export const LASER_MODE_COMMANDS = { contingent: 681, independent: 682 } as const;
+/** Command code for laser mode: contingent = 681, independent = 682, Pavlovian trial types = 691-693 */
+export const LASER_MODE_COMMANDS = {
+  contingent: 681, independent: 682,
+  cs_plus: 691, cs_minus: 692, cs_both: 693,
+} as const;
+
+/** Command codes for Pavlovian laser phase selection */
+export const PAV_LASER_PHASE_COMMANDS = { reward: 694, cue: 695 } as const;
 
 export const PRESET_COMMAND_MAP: Record<string, { arm: number; disarm: number; params?: Record<string, number> }> = {
   rhLever:       { arm: 1001, disarm: 1000, params: { timeout: 1074, ratio: 1075 } },

@@ -23,10 +23,16 @@ export class ReacherWebSocket {
   private closed = false;
   private reconnectAttempt = 0;
   private onVisibilityChange: (() => void) | null = null;
+  /** WebSocket base URL, e.g. "ws://192.168.1.50:6229". Null = same origin. */
+  private baseWsUrl: string | null;
+  /** Pre-supplied token for remote machines (skips the /api/auth/token fetch). */
+  private overrideToken: string | null;
 
-  constructor(sessionId: string, handler: MessageHandler) {
+  constructor(sessionId: string, handler: MessageHandler, baseWsUrl?: string, token?: string) {
     this.sessionId = sessionId;
     this.handler = handler;
+    this.baseWsUrl = baseWsUrl ?? null;
+    this.overrideToken = token ?? null;
     this.setupVisibilityListener();
     this.connect();
   }
@@ -98,11 +104,18 @@ export class ReacherWebSocket {
   private connect() {
     if (this.closed) return;
 
-    getToken().then((token) => {
+    const tokenPromise = this.overrideToken !== null
+      ? Promise.resolve(this.overrideToken)
+      : getToken();
+
+    tokenPromise.then((token) => {
       if (this.closed) return;
-      const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const base = this.baseWsUrl ?? (() => {
+        const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+        return `${proto}//${window.location.host}`;
+      })();
       const tokenParam = token ? `?token=${encodeURIComponent(token)}` : "";
-      const url = `${proto}//${window.location.host}/ws/${this.sessionId}${tokenParam}`;
+      const url = `${base}/ws/${this.sessionId}${tokenParam}`;
 
       this.ws = new WebSocket(url);
     this.ws.onopen = () => {

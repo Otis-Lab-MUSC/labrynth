@@ -1,4 +1,4 @@
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { HARDWARE_PINS } from "./pins";
 
@@ -24,7 +24,7 @@ export function CueControl({ sessionId, label, prefix }: Props) {
 
   const { armed, frequency, duration } = cue;
   const codes = CODES[prefix];
-  const send = (code: number, value?: number) => api.sendCommand(sessionId, code, value);
+  const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
   return (
     <div className="card">

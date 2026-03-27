@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { ReacherWebSocket } from "../api/websocket";
 import { useSessionStore } from "../store/useSessionStore";
+import { useMachineStore } from "../store/useMachineStore";
 import { useTutorialStore } from "../store/useTutorialStore";
 import { useLogStore } from "../store/useLogStore";
 import type { LogLevel } from "../store/useLogStore";
@@ -121,12 +122,14 @@ function handleMessage(msg: WSMessage) {
 
 export function useSessionWebSockets() {
   const { sessionOrder, sessions } = useSessionStore(
-    useShallow((s: { sessionOrder: string[]; sessions: Map<string, { draft?: boolean }> }) => ({
+    useShallow((s: { sessionOrder: string[]; sessions: Map<string, { draft?: boolean; machineId?: string }> }) => ({
       sessionOrder: s.sessionOrder,
       sessions: s.sessions,
     }))
   );
   const connectionsRef = useRef<Map<string, ReacherWebSocket>>(new Map());
+  /** Session IDs for which an async WS token fetch is in-flight. */
+  const pendingRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const current = connectionsRef.current;
@@ -139,13 +142,37 @@ export function useSessionWebSockets() {
       if (!activeIds.has(id)) {
         ws.close();
         current.delete(id);
+        pendingRef.current.delete(id);
       }
     }
 
     // Open connections for new real sessions
     for (const id of realIds) {
-      if (!current.has(id)) {
-        current.set(id, new ReacherWebSocket(id, handleMessage));
+      if (current.has(id) || pendingRef.current.has(id)) continue;
+
+      const sess = sessions.get(id);
+      const machineClient = sess?.machineId
+        ? useMachineStore.getState().getClient(sess.machineId)
+        : null;
+
+      if (machineClient?.deviceId) {
+        // Proxy client: WS token requires an async fetch from the local server
+        pendingRef.current.add(id);
+        machineClient.getWsTokenAsync().then((wsInfo) => {
+          pendingRef.current.delete(id);
+          if (connectionsRef.current.has(id)) return; // already opened by a concurrent update
+          if (wsInfo) {
+            connectionsRef.current.set(id, new ReacherWebSocket(id, handleMessage, wsInfo.wsUrl, wsInfo.token));
+          }
+        });
+      } else {
+        // Local machine or legacy remote with synchronous token
+        current.set(id, new ReacherWebSocket(
+          id,
+          handleMessage,
+          machineClient?.wsBaseUrl,
+          machineClient?.getWsToken(),
+        ));
       }
     }
   }, [sessionOrder, sessions]);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 
 interface Props {
@@ -23,6 +23,13 @@ const PAV_PARAMS: PavParam[] = [
   { code: 214, label: "Trace Interval (ms)", default: 1000 },
 ];
 
+const PULSE_PARAMS: PavParam[] = [
+  { code: 374, label: "CS+ Pulse On (ms)", default: 0 },
+  { code: 375, label: "CS+ Pulse Off (ms)", default: 0 },
+  { code: 384, label: "CS- Pulse On (ms)", default: 200 },
+  { code: 385, label: "CS- Pulse Off (ms)", default: 200 },
+];
+
 const ITI_DEFAULTS = {
   itiMean: 30000,
   itiMin: 10000,
@@ -36,7 +43,7 @@ export function PavlovianSettings({ sessionId }: Props) {
   const [values, setValues] = useState<Record<number, number>>(() => {
     const stored = session?.pavlovianParams;
     return Object.fromEntries(
-      PAV_PARAMS.map((p) => [p.code, stored?.[p.code] ?? p.default])
+      [...PAV_PARAMS, ...PULSE_PARAMS].map((p) => [p.code, stored?.[p.code] ?? p.default])
     );
   });
   const [itiMean, setItiMean] = useState(() => session?.pavlovianParams?.[216] ?? ITI_DEFAULTS.itiMean);
@@ -60,18 +67,21 @@ export function PavlovianSettings({ sessionId }: Props) {
   const update = (code: number, val: number) =>
     setValues((prev) => ({ ...prev, [code]: val }));
 
-  const send = (code: number) => api.sendCommand(sessionId, code, values[code]);
+  const send = (code: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, values[code]);
 
   const itiValid = itiMin <= itiMean && itiMean <= itiMax && itiMin >= 0 && itiMax > 0;
 
   const sendAll = async () => {
     for (const p of PAV_PARAMS) {
-      await api.sendCommand(sessionId, p.code, values[p.code]);
+      await getClientForSession(sessionId)?.sendCommand(sessionId,p.code, values[p.code]);
+    }
+    for (const p of PULSE_PARAMS) {
+      await getClientForSession(sessionId)?.sendCommand(sessionId,p.code, values[p.code]);
     }
     const iti = getItiValues();
-    await api.sendCommand(sessionId, 216, iti[216]);
-    await api.sendCommand(sessionId, 217, iti[217]);
-    await api.sendCommand(sessionId, 218, iti[218]);
+    await getClientForSession(sessionId)?.sendCommand(sessionId,216, iti[216]);
+    await getClientForSession(sessionId)?.sendCommand(sessionId,217, iti[217]);
+    await getClientForSession(sessionId)?.sendCommand(sessionId,218, iti[218]);
   };
 
   return (
@@ -96,6 +106,27 @@ export function PavlovianSettings({ sessionId }: Props) {
         ))}
       </div>
 
+      {/* Pulse Configuration */}
+      <div className="mt-4 border-t border-theme-border pt-4">
+        <span className="text-sm font-medium text-theme-text">Pulse Configuration</span>
+        <p className="text-xs text-theme-text/40 mt-1">Set pulse ON to 0 for continuous tone. CS+ defaults to continuous; CS- defaults to 200ms/200ms pulsed.</p>
+        <div className="grid gap-2 sm:grid-cols-2 mt-3">
+          {PULSE_PARAMS.map((p) => (
+            <div key={p.code} className="flex items-center gap-2">
+              <label className="text-sm flex-1 text-theme-text/60">{p.label}:</label>
+              <input
+                type="number"
+                value={values[p.code]}
+                min={0} max={60000}
+                onChange={(e) => update(p.code, +e.target.value)}
+                className="w-20 input-base"
+              />
+              <button onClick={() => send(p.code)} className="btn-sm bg-accent text-accent-contrast text-xs">Set</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ITI Configuration */}
       <div className="mt-4 border-t border-theme-border pt-4">
         <span className="text-sm font-medium text-theme-text">ITI Distribution</span>
@@ -112,7 +143,7 @@ export function PavlovianSettings({ sessionId }: Props) {
               className="w-24 input-base"
             />
             <button
-              onClick={() => api.sendCommand(sessionId, 216, itiMean)}
+              onClick={() => getClientForSession(sessionId)?.sendCommand(sessionId,216, itiMean)}
               disabled={!itiValid}
               className="btn-sm bg-accent text-accent-contrast text-xs disabled:opacity-50"
             >
@@ -128,7 +159,7 @@ export function PavlovianSettings({ sessionId }: Props) {
               className="w-24 input-base"
             />
             <button
-              onClick={() => api.sendCommand(sessionId, 217, itiMin)}
+              onClick={() => getClientForSession(sessionId)?.sendCommand(sessionId,217, itiMin)}
               disabled={!itiValid}
               className="btn-sm bg-accent text-accent-contrast text-xs disabled:opacity-50"
             >
@@ -144,7 +175,7 @@ export function PavlovianSettings({ sessionId }: Props) {
               className="w-24 input-base"
             />
             <button
-              onClick={() => api.sendCommand(sessionId, 218, itiMax)}
+              onClick={() => getClientForSession(sessionId)?.sendCommand(sessionId,218, itiMax)}
               disabled={!itiValid}
               className="btn-sm bg-accent text-accent-contrast text-xs disabled:opacity-50"
             >

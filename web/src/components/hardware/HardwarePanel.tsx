@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { LeverControl } from "./LeverControl";
 import { CueControl } from "./CueControl";
@@ -22,7 +22,7 @@ export function HardwarePanel() {
 
   useEffect(() => {
     if (!activeSessionId) return;
-    api.getCommands(activeSessionId).then((r) => {
+    getClientForSession(activeSessionId)?.getCommands(activeSessionId).then((r) => {
       setCommands(r.commands as unknown as CommandSpec[]);
     }).catch(() => {});
   }, [activeSessionId, session?.paradigm]);
@@ -32,14 +32,13 @@ export function HardwarePanel() {
   }
 
   const paradigm = session.paradigm?.toLowerCase();
-  const hasLaser = paradigm !== "pavlovian";
   const showSystemControls = paradigm !== "pavlovian";
 
-  const handleTestChain = () => api.sendCommand(activeSessionId, 103);
+  const handleTestChain = () => getClientForSession(activeSessionId)?.sendCommand(activeSessionId, 103);
   const handleTestMode = () => {
     const next = !testMode;
     updateHardwareUi(activeSessionId, () => ({ testMode: next }));
-    api.sendCommand(activeSessionId, 104, next ? 1 : 0);
+    getClientForSession(activeSessionId)?.sendCommand(activeSessionId, 104, next ? 1 : 0);
   };
 
   return (
@@ -72,15 +71,19 @@ export function HardwarePanel() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
-        <LeverControl sessionId={activeSessionId} side="LH" paradigm={paradigm} />
+        {paradigm !== "pavlovian" && (
+          <>
+            <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
+            <LeverControl sessionId={activeSessionId} side="LH" paradigm={paradigm} />
+          </>
+        )}
         <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="Primary" prefix="" /></div>
         <CueControl sessionId={activeSessionId} label="Secondary" prefix="2" />
         <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="Primary" prefix="" /></div>
         <PumpControl sessionId={activeSessionId} label="Secondary" prefix="2" />
         <LickCircuitControl sessionId={activeSessionId} />
         <MicroscopeControl sessionId={activeSessionId} />
-        {hasLaser && <LaserControl sessionId={activeSessionId} />}
+        <LaserControl sessionId={activeSessionId} paradigm={paradigm} />
       </div>
     </div>
   );

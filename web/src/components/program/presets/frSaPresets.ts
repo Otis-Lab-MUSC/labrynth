@@ -28,7 +28,7 @@ const CORE_HARDWARE: Partial<HardwareUiState> = {
 };
 
 const PUMP_HARDWARE: Partial<HardwareUiState> = {
-  primaryPump: { armed: true, duration: 2000, flowRate: null, volume: null },
+  primaryPump: { armed: true, duration: 2000 },
 };
 
 const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {

@@ -97,6 +97,7 @@ export function SessionPresetCard({ preset, onApply }: Props) {
   const { limitDefaults } = preset;
   const showTime = limitDefaults.limitType === "Time" || limitDefaults.limitType === "Both";
   const showInfusion = limitDefaults.limitType === "Infusion" || limitDefaults.limitType === "Both";
+  const showTrials = limitDefaults.limitType === "Trials";
 
   return (
     <div data-tour="preset-card" className="card border-l-4 border-l-accent space-y-4">
@@ -122,6 +123,24 @@ export function SessionPresetCard({ preset, onApply }: Props) {
           <>
             <span className="text-theme-text/50 font-mono">Infusions</span>
             <span className="text-theme-text">{limitDefaults.infusionLimit}</span>
+          </>
+        )}
+        {showTrials && (
+          <>
+            <span className="text-theme-text/50 font-mono">Trial Limit</span>
+            <span className="text-theme-text">{limitDefaults.infusionLimit}</span>
+          </>
+        )}
+        {preset.pavlovianParams && (
+          <>
+            <span className="text-theme-text/50 font-mono">CS+ Count</span>
+            <span className="text-theme-text">{preset.pavlovianParams[208]}</span>
+            <span className="text-theme-text/50 font-mono">CS- Count</span>
+            <span className="text-theme-text">{preset.pavlovianParams[209]}</span>
+            <span className="text-theme-text/50 font-mono">CS+ Reward Prob</span>
+            <span className="text-theme-text">{preset.pavlovianParams[206]}%</span>
+            <span className="text-theme-text/50 font-mono">Trace Interval</span>
+            <span className="text-theme-text">{preset.pavlovianParams[214]}ms</span>
           </>
         )}
       </div>

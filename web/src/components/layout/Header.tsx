@@ -3,11 +3,13 @@ import { Plus, Moon, Sun, RotateCcw, X } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useLogStore } from "../../store/useLogStore";
+import { useNavigationStore } from "../../store/useNavigationStore";
 
 import { ConfirmDialog } from "./ConfirmDialog";
 import { HelpButton } from "../tutorial/HelpButton";
-import * as api from "../../api/client";
-import type { Session, SessionState } from "../../types";
+import { getClientForSession } from "../../api/sessionClient";
+import { useMachineStore } from "../../store/useMachineStore";
+import type { Machine, Session, SessionState } from "../../types";
 
 function NeuralIcon() {
   return (
@@ -154,14 +156,14 @@ function getCloseWarning(session: Session): { title: string; message: string; va
   if (session.state === "running" || session.state === "paused") {
     return {
       title: "Close running session?",
-      message: `"${name}" is currently ${session.state}. Closing will stop the program and discard all unsaved data.`,
+      message: `"${name}" is currently ${session.state}. Closing will stop the program. Session logs are saved, but unexported data will need to be recovered from log files.`,
       variant: "danger",
     };
   }
   if (session.behaviorData.length > 0) {
     return {
       title: "Close session with data?",
-      message: `"${name}" has ${session.behaviorData.length} recorded events that have not been exported. This data will be lost.`,
+      message: `"${name}" has ${session.behaviorData.length} recorded events that have not been exported. Session logs are saved, but you will need to recover data from log files if not exported now.`,
       variant: "warning",
     };
   }
@@ -170,6 +172,16 @@ function getCloseWarning(session: Session): { title: string; message: string; va
     message: `Close "${name}"?`,
     variant: "warning",
   };
+}
+
+function MachineBadge({ machineId, machines }: { machineId: string; machines: Machine[] }) {
+  const machine = machines.find((m) => m.deviceId === machineId);
+  if (!machine || machine.isLocal) return null;
+  return (
+    <span className="ml-1.5 rounded bg-accent/15 px-1 py-0.5 text-[10px] font-mono text-accent/70 shrink-0">
+      {machine.name}
+    </span>
+  );
 }
 
 export function Header() {
@@ -184,7 +196,9 @@ export function Header() {
     resetSessionData,
     setSessionName,
   } = useSessionStore();
+  const { machines } = useMachineStore();
   const { mode, toggleMode, theme } = useThemeStore();
+  const { setActivePanel } = useNavigationStore();
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -202,7 +216,8 @@ export function Header() {
     if (!activeSessionId) return;
     if (!confirm("Reset session? All data will be cleared and the Arduino will restart.")) return;
     try {
-      await api.resetSession(activeSessionId);
+      const client = getClientForSession(activeSessionId);
+      await client?.resetSession(activeSessionId);
       resetSessionData(activeSessionId);
     } catch (e) {
       useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Reset failed");
@@ -211,7 +226,8 @@ export function Header() {
   };
 
   const handleNewSession = () => {
-    createDraft();
+    const machineId = useMachineStore.getState().activeMachineId;
+    if (machineId) createDraft(machineId);
   };
 
   const startEditing = (id: string, currentName: string, fallback: string) => {
@@ -259,7 +275,13 @@ export function Header() {
   return (
     <header data-tour="header" className={`relative z-10 flex items-center gap-2 border-b border-theme-border ${glassClasses} px-4 py-2`}>
       {/* Branding */}
-      <span className={`mr-4 text-lg font-bold tracking-wide text-accent title-glow ${theme.id === "reacher" ? "glitch-hover" : ""}`}>
+      <span
+        className={`mr-4 text-lg font-bold tracking-wide text-accent title-glow cursor-pointer select-none ${theme.id === "reacher" ? "glitch-hover" : ""}`}
+        onClick={() => setActivePanel("session")}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setActivePanel("session"); }}
+      >
         {branding.icon === "neural" && <NeuralIcon />}
         {branding.icon === "bolt" && <BoltIcon />}
         {branding.icon === "ember" && <EmberIcon />}
@@ -344,6 +366,7 @@ export function Header() {
               >
                 <SessionStatusDot state={s.state} />
                 {displayName}
+                <MachineBadge machineId={s.machineId} machines={machines} />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); handleCloseClick(s.id); }}

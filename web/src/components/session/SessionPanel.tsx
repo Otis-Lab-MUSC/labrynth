@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import * as api from "../../api/client";
+import { useMachineStore } from "../../store/useMachineStore";
+import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useLogStore } from "../../store/useLogStore";
 import type { BoardType, Session } from "../../types";
@@ -10,14 +11,14 @@ function getDisconnectWarning(session: Session): { title: string; message: strin
   if (session.programStartTime !== null) {
     return {
       title: "Disconnect session?",
-      message: `"${session.name}" has been run. Disconnecting will discard all unsaved data.`,
+      message: `"${session.name}" has been run. Session logs are saved, but unexported data will need to be recovered from log files.`,
       variant: "danger",
     };
   }
   if (session.behaviorData.length > 0) {
     return {
       title: "Disconnect session with data?",
-      message: `"${session.name}" has ${session.behaviorData.length} recorded events that have not been exported. This data will be lost.`,
+      message: `"${session.name}" has ${session.behaviorData.length} recorded events that have not been exported. Session logs are saved, but you will need to recover data from log files if not exported now.`,
       variant: "danger",
     };
   }
@@ -37,11 +38,20 @@ export function SessionPanel() {
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { activeSessionId, sessions, createSession, destroySession, setSessionName, setParadigm, setBoard, updateState } = useSessionStore();
+  const { machines, activeMachineId, setActiveMachine, getClient } = useMachineStore();
 
+  const activeMachine = machines.find((m) => m.deviceId === activeMachineId);
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
 
+  // Refresh port list whenever the selected machine changes
   useEffect(() => {
-    api.listPorts()
+    if (!activeMachineId || !activeMachine?.online) {
+      setPorts([]);
+      return;
+    }
+    const client = getClient(activeMachineId);
+    if (!client) return;
+    client.listPorts()
       .then((r) => setPorts(r.ports))
       .catch((e: unknown) => {
         useLogStore.getState().pushLog(
@@ -50,14 +60,15 @@ export function SessionPanel() {
         );
         useLogStore.getState().setOpen(true);
       });
-  }, []);
+  }, [activeMachineId, activeMachine?.online]);
 
   const handleConnect = async () => {
-    if (!selectedPort) return;
+    if (!selectedPort || !activeMachineId) return;
     setLoading(true);
     try {
-      const sessionId = await createSession(selectedPort);
-      const result = await api.connectSerial(sessionId);
+      const sessionId = await createSession(activeMachineId, selectedPort);
+      const client = getClientForSession(sessionId);
+      const result = await client!.connectSerial(sessionId);
       if (result.detected_paradigm) {
         setParadigm(sessionId, result.detected_paradigm);
       }
@@ -78,7 +89,8 @@ export function SessionPanel() {
     if (!activeSessionId) return;
     setLoading(true);
     try {
-      await api.disconnectSerial(activeSessionId);
+      const client = getClientForSession(activeSessionId);
+      await client?.disconnectSerial(activeSessionId);
       await destroySession(activeSessionId);
       useLogStore.getState().pushLog("info", "Serial disconnected", activeSessionId);
     } catch (e) {
@@ -103,6 +115,37 @@ export function SessionPanel() {
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-theme-text">Session</h2>
 
+      {/* Machine selection */}
+      <div className="card">
+        <h3 className="font-medium text-theme-text">Machine</h3>
+        <div className="flex items-center gap-2">
+          <select
+            value={activeMachineId ?? ""}
+            onChange={(e) => {
+              setActiveMachine(e.target.value);
+              setSelectedPort("");
+            }}
+            className="input-base"
+          >
+            {machines.length === 0 && <option value="">No machines available</option>}
+            {machines.map((m) => (
+              <option key={m.deviceId} value={m.deviceId} disabled={!m.online}>
+                {m.name}{m.isLocal ? " (local)" : ` — ${m.hostname}`}{!m.online ? " [offline]" : ""}
+              </option>
+            ))}
+          </select>
+          <span
+            className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${
+              activeMachine?.online ? "bg-green-500" : "bg-red-500/60"
+            }`}
+            title={activeMachine?.online ? "Online" : "Offline"}
+          />
+        </div>
+        {activeMachine && !activeMachine.isLocal && (
+          <p className="mt-1 text-xs text-theme-text/50 font-mono">{activeMachine.url}</p>
+        )}
+      </div>
+
       {/* Port selection + connect */}
       <div data-tour="port-select" className="card">
         <h3 className="font-medium text-theme-text">COM Port</h3>
@@ -110,6 +153,7 @@ export function SessionPanel() {
           <select
             value={selectedPort}
             onChange={(e) => setSelectedPort(e.target.value)}
+            disabled={!activeMachine?.online}
             className="input-base"
           >
             <option value="">Select port...</option>
@@ -120,14 +164,18 @@ export function SessionPanel() {
             ))}
           </select>
           <button
-            onClick={() => api.listPorts().then((r) => setPorts(r.ports))}
-            className="btn-sm bg-panel border border-theme-border text-theme-text hover:bg-accent/10"
+            onClick={() => {
+              const client = activeMachineId ? getClient(activeMachineId) : null;
+              client?.listPorts().then((r) => setPorts(r.ports));
+            }}
+            disabled={!activeMachine?.online}
+            className="btn-sm bg-panel border border-theme-border text-theme-text hover:bg-accent/10 disabled:opacity-50"
           >
             Refresh
           </button>
           <button
             onClick={handleConnect}
-            disabled={!selectedPort || loading || (activeSession != null && !activeSession.draft && activeSession.state !== "idle")}
+            disabled={!selectedPort || loading || !activeMachine?.online || (activeSession != null && !activeSession.draft && activeSession.state !== "idle")}
             className="btn-sm bg-accent text-accent-contrast hover:bg-accent-hover disabled:opacity-50"
           >
             Connect
@@ -149,6 +197,10 @@ export function SessionPanel() {
         <div data-tour="active-session" className="card">
           <h3 className="font-medium text-theme-text">Active Session</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
+            <span className="text-theme-text/60">Machine:</span>
+            <span className="font-mono text-theme-text/80">
+              {machines.find((m) => m.deviceId === activeSession.machineId)?.name ?? activeSession.machineId}
+            </span>
             <span className="text-theme-text/60">ID:</span>
             <span className="font-mono text-accent">{activeSession.id}</span>
             <span className="text-theme-text/60">Port:</span>

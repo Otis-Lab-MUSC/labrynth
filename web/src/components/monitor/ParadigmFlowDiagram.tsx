@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useThemeStore } from "../../store/useThemeStore";
-import type { HardwareUiState } from "../../types";
+import type { HardwareUiState, LaserUiState } from "../../types";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -150,6 +150,34 @@ function formatMs(ms: number): string {
   return `${ms}ms`;
 }
 
+// ─── Laser Helpers ──────────────────────────────────────────────────
+
+function isLaserInChain(mode: LaserUiState["mode"]): boolean {
+  return mode !== "independent";
+}
+
+function laserAppliesToTrial(mode: LaserUiState["mode"], trialType: "cs+" | "cs-"): boolean {
+  if (mode === "independent") return false;
+  if (mode === "contingent" || mode === "cs_both") return true;
+  if (mode === "cs_plus") return trialType === "cs+";
+  if (mode === "cs_minus") return trialType === "cs-";
+  return false;
+}
+
+function addIndependentLaserAnnotation(bars: TimeBar[], hw: HardwareUiState): void {
+  if (hw.laser.armed && !isLaserInChain(hw.laser.mode)) {
+    const totalMs = Math.max(...bars.map((b) => b.endMs), 1);
+    bars.push({
+      lane: "laser",
+      startMs: 0,
+      endMs: totalMs,
+      label: "INDEPENDENT",
+      sublabel: `${hw.laser.frequency}Hz`,
+      dashed: true,
+    });
+  }
+}
+
 // ─── Timeline Builders ───────────────────────────────────────────────
 
 interface ParadigmSettings {
@@ -198,7 +226,7 @@ function buildFRTimeline(hw: HardwareUiState, ps: ParadigmSettings): TrialTimeli
     bars.push({ lane: "pump", startMs: t, endMs: t + hw.primaryPump.duration, label: "INFUSION", sublabel: `${hw.primaryPump.duration}ms` });
     rewardLanes.push("pump");
   }
-  if (hw.laser.armed) {
+  if (hw.laser.armed && isLaserInChain(hw.laser.mode)) {
     bars.push({ lane: "laser", startMs: t, endMs: t + hw.laser.duration, label: "LASER", sublabel: `${hw.laser.duration}ms` });
     rewardLanes.push("laser");
   }
@@ -286,7 +314,7 @@ function buildOmissionTimeline(hw: HardwareUiState, ps: ParadigmSettings): Trial
     bars.push({ lane: "pump", startMs: t, endMs: t + hw.primaryPump.duration, label: "INFUSION", sublabel: `${hw.primaryPump.duration}ms` });
     rewardLanes.push("pump");
   }
-  if (hw.laser.armed) {
+  if (hw.laser.armed && isLaserInChain(hw.laser.mode)) {
     bars.push({ lane: "laser", startMs: t, endMs: t + hw.laser.duration, label: "LASER", sublabel: `${hw.laser.duration}ms` });
     rewardLanes.push("laser");
   }
@@ -335,7 +363,21 @@ function buildPavlovianTimeline(
 
   // Pump
   bars.push({ lane: "pump", startMs: t, endMs: t + pumpDur, label: "PUMP", sublabel: `${prob}%` });
-  arrows.push({ fromLane: "cue", fromEndMs: cueEnd, toLanes: ["pump"], toStartMs: rewardStart, label: `${cueLabel.toLowerCase()} → pump` });
+
+  const rewardLanes: LaneId[] = ["pump"];
+
+  // Laser
+  if (hw.laser.armed && laserAppliesToTrial(hw.laser.mode, trialType)) {
+    const laserDur = hw.laser.duration || 5000;
+    if (hw.laser.phase === "cue") {
+      bars.push({ lane: "laser", startMs: cueEnd - cueDuration, endMs: cueEnd - cueDuration + laserDur, label: "LASER", sublabel: `${laserDur}ms` });
+    } else {
+      bars.push({ lane: "laser", startMs: rewardStart, endMs: rewardStart + laserDur, label: "LASER", sublabel: `${laserDur}ms` });
+      rewardLanes.push("laser");
+    }
+  }
+
+  arrows.push({ fromLane: "cue", fromEndMs: cueEnd, toLanes: rewardLanes, toStartMs: rewardStart, label: `${cueLabel.toLowerCase()} → ${rewardLanes.join(" + ")}` });
 
   const title = trialType === "cs+" ? "CS+ Trial" : "CS\u2212 Trial";
   return { title, bars, arrows, traces: traceAnnos, timeouts: [] };
@@ -663,6 +705,7 @@ export function ParadigmFlowDiagram({
       buildPavlovianTimeline("cs+", hardwareUi, pavlovianParams),
       buildPavlovianTimeline("cs-", hardwareUi, pavlovianParams),
     ];
+    for (const tl of timelines) addIndependentLaserAnnotation(tl.bars, hardwareUi);
     return (
       <div ref={containerRef} className="space-y-3">
         {timelines.map((tl, i) => (
@@ -691,6 +734,8 @@ export function ParadigmFlowDiagram({
     default:
       return null;
   }
+
+  addIndependentLaserAnnotation(timeline.bars, hardwareUi);
 
   return (
     <div ref={containerRef}>

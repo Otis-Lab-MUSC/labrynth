@@ -1,4 +1,4 @@
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { HARDWARE_PINS } from "./pins";
 
@@ -9,7 +9,7 @@ interface Props {
 export function LickCircuitControl({ sessionId }: Props) {
   const armed = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi.lickCircuit.armed ?? false);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
-  const send = (code: number) => api.sendCommand(sessionId, code);
+  const send = (code: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code);
 
   return (
     <div className="card">

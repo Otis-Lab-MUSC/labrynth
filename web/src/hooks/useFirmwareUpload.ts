@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { BoardType } from "../types";
-import * as api from "../api/client";
+import { getClientForSession } from "../api/sessionClient";
 import { useSessionStore } from "../store/useSessionStore";
 
 export function useFirmwareUpload(sessionId: string | null) {
@@ -15,7 +15,9 @@ export function useFirmwareUpload(sessionId: string | null) {
     updateState(sessionId, "uploading");
 
     try {
-      await api.uploadFirmware(sessionId, paradigm, board);
+      const client = getClientForSession(sessionId);
+      if (!client) throw new Error("No API client for this session");
+      await client.uploadFirmware(sessionId, paradigm, board);
       setParadigm(sessionId, paradigm);
       setBoard(sessionId, board);
       updateState(sessionId, "connected");

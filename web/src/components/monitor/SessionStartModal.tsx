@@ -2,8 +2,27 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useLogStore } from "../../store/useLogStore";
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
+import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "../program/devicePresets";
 import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
+
+const PAV_CODE_LABELS: Record<number, string> = {
+  206: "CS+ Reward Prob (%)",
+  207: "CS- Reward Prob (%)",
+  208: "CS+ Count",
+  209: "CS- Count",
+  210: "CS+ Frequency (Hz)",
+  211: "CS- Frequency (Hz)",
+  213: "Cue Duration (ms)",
+  214: "Trace Interval (ms)",
+  216: "ITI Mean (ms)",
+  217: "ITI Min (ms)",
+  218: "ITI Max (ms)",
+  374: "CS+ Pulse On (ms)",
+  375: "CS+ Pulse Off (ms)",
+  384: "CS- Pulse On (ms)",
+  385: "CS- Pulse Off (ms)",
+};
 
 const DEVICE_LABELS: Record<string, string> = {
   rhLever: "RH Lever",
@@ -17,20 +36,32 @@ const DEVICE_LABELS: Record<string, string> = {
   microscope: "Microscope",
 };
 
-function formatDeviceParams(device: Record<string, unknown>): string {
+function formatDeviceParams(key: string, device: Record<string, unknown>, isPav: boolean): string {
   const parts: string[] = [];
   if ("timeout" in device && device.timeout !== undefined) parts.push(`T:${Number(device.timeout) / 1000}s`);
   if ("ratio" in device && device.ratio !== undefined) parts.push(`R:${device.ratio}`);
   if ("frequency" in device && device.frequency !== undefined) parts.push(`${device.frequency}Hz`);
   if ("duration" in device && device.duration !== undefined) {
     const durStr = `${device.duration}ms`;
-    if ("volume" in device && device.volume != null) {
-      parts.push(`${durStr} (${device.volume}\u00B5L)`);
-    } else {
-      parts.push(durStr);
+    parts.push(durStr);
+  }
+  // Laser-specific: mode and phase
+  if (key === "laser") {
+    const mode = device.mode as string | undefined;
+    if (mode === "independent") {
+      parts.push("Independent");
+    } else if (mode) {
+      const filterLabel: Record<string, string> = {
+        contingent: "Contingent", cs_plus: "CS+", cs_minus: "CS\u2212", cs_both: "CS\u00B1",
+      };
+      parts.push(`Trial-Paired (${filterLabel[mode] ?? mode})`);
+    }
+    if (isPav && mode !== "independent" && device.phase) {
+      const phaseLabel: Record<string, string> = { reward: "Reward", cue: "Cue" };
+      parts.push(`Phase: ${phaseLabel[device.phase as string] ?? device.phase}`);
     }
   }
-  return parts.join(" ");
+  return parts.join("  ");
 }
 
 export function SessionStartModal() {
@@ -82,7 +113,7 @@ export function SessionStartModal() {
         limitPayload.infusion_limit = infusionLimit;
         limitPayload.delay = delay;
       }
-      await api.setLimit(activeSessionId, limitPayload);
+      await getClientForSession(activeSessionId)?.setLimit(activeSessionId, limitPayload);
       setLimitSettings(activeSessionId, { limitType, timeLimit, infusionLimit, delay });
 
       // Persist name
@@ -93,11 +124,44 @@ export function SessionStartModal() {
       // Send Pavlovian params before starting
       if (session.paradigm === "pavlovian" && session.pavlovianParams) {
         for (const [code, value] of Object.entries(session.pavlovianParams)) {
-          await api.sendCommand(activeSessionId, Number(code), value);
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,Number(code), value);
         }
       }
 
-      await api.startProgram(activeSessionId);
+      // Send all hardware state to firmware before session start
+      const hw = session.hardwareUi;
+      for (const [deviceKey, deviceState] of Object.entries(hw)) {
+        const mapping = PRESET_COMMAND_MAP[deviceKey];
+        if (!mapping || deviceKey === "testMode") continue;
+        const state = deviceState as { armed?: boolean; [k: string]: unknown };
+        // Arm or disarm
+        if (state.armed !== undefined) {
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,state.armed ? mapping.arm : mapping.disarm);
+        }
+        // Send device params (frequency, duration, timeout, ratio)
+        if (mapping.params) {
+          for (const [paramKey, code] of Object.entries(mapping.params)) {
+            if (state[paramKey] !== undefined && state[paramKey] !== null) {
+              await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
+            }
+          }
+        }
+      }
+
+      // Send laser mode + Pavlovian-specific commands
+      const laserState = hw.laser;
+      if (laserState?.mode) {
+        // For trial-paired modes, send contingent (681) first, then filter command
+        if (laserState.mode !== "independent" && laserState.mode !== "contingent") {
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
+        }
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode as keyof typeof LASER_MODE_COMMANDS]);
+      }
+      if (isPavlovian && laserState?.phase) {
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase as keyof typeof PAV_LASER_PHASE_COMMANDS]);
+      }
+
+      await getClientForSession(activeSessionId)?.startProgram(activeSessionId);
       setStartModalOpen(false);
     } catch (e) {
       useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Failed to start program");
@@ -110,7 +174,9 @@ export function SessionStartModal() {
   if (!startModalOpen || !session) return null;
 
   const hw = session.hardwareUi;
-  const devices = Object.entries(hw).filter(([key]) => key !== "testMode") as [string, { armed: boolean; [k: string]: unknown }][];
+  const devices = Object.entries(hw)
+    .filter(([key]) => key !== "testMode")
+    .filter(([key]) => !isPavlovian || (key !== "rhLever" && key !== "lhLever")) as [string, { armed: boolean; [k: string]: unknown }][];
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -171,7 +237,16 @@ export function SessionStartModal() {
                 )}
               </div>
             ) : isPavlovian && session.pavlovianParams ? (
-              <p className="text-sm text-theme-text/60">Pavlovian params configured ({Object.keys(session.pavlovianParams).length} parameters)</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                {Object.entries(session.pavlovianParams)
+                  .sort(([a], [b]) => Number(a) - Number(b))
+                  .map(([code, value]) => (
+                    <span key={code} className="contents">
+                      <span className="text-theme-text/60">{PAV_CODE_LABELS[Number(code)] ?? `Code ${code}`}:</span>
+                      <span className="font-mono">{value}</span>
+                    </span>
+                  ))}
+              </div>
             ) : (
               <p className="text-sm text-theme-text/60">Using defaults</p>
             )}
@@ -262,7 +337,7 @@ export function SessionStartModal() {
                         )}
                       </td>
                       <td className="px-3 py-1.5 font-mono text-xs text-theme-text/60">
-                        {state.armed ? formatDeviceParams(state as Record<string, unknown>) : ""}
+                        {state.armed ? formatDeviceParams(key, state as Record<string, unknown>, isPavlovian) : ""}
                       </td>
                     </tr>
                   ))}

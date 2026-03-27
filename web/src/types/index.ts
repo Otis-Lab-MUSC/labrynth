@@ -37,14 +37,13 @@ export interface CueUiState extends DeviceArmState {
 
 export interface PumpUiState extends DeviceArmState {
   duration: number;
-  flowRate: number | null;  // µL/s — null means unknown
-  volume: number | null;    // µL — computed from duration * flowRate, null when flowRate is null
 }
 
 export interface LaserUiState extends DeviceArmState {
   frequency: number;
   duration: number;
-  mode: "contingent" | "independent";
+  mode: "contingent" | "independent" | "cs_plus" | "cs_minus" | "cs_both";
+  phase?: "reward" | "cue";  // Pavlovian only — which trial phase triggers laser
 }
 
 export interface MicroscopeUiState extends DeviceArmState {
@@ -65,9 +64,41 @@ export interface HardwareUiState {
   testMode: boolean;
 }
 
+/** A REACHER API instance — local or on a remote machine (e.g. Raspberry Pi). */
+export interface Machine {
+  /** Persistent UUID hex from the device's ~/.reacher/device_id */
+  deviceId: string;
+  /** User-editable display name (defaults to hostname) */
+  name: string;
+  /** Hostname reported by the device */
+  hostname: string;
+  /** Base URL of the API, e.g. "http://192.168.1.50:6229". Empty string for local. */
+  url: string;
+  /** True when this machine is the same origin as the frontend */
+  isLocal: boolean;
+  /** True when the API key has been exchanged and stored server-side */
+  paired: boolean;
+  /** Whether the device responded to the last health probe */
+  online: boolean;
+  /** ISO timestamp of the last successful health probe */
+  lastSeen: string | null;
+}
+
+/** A REACHER device discovered via mDNS that has not yet been paired. */
+export interface DiscoveredDevice {
+  deviceId: string;
+  hostname: string;
+  url: string;
+  paired: boolean;
+  discovered: boolean;
+  active_sessions: number | null;
+}
+
 export interface Session {
   id: string;
   draft: boolean;
+  /** deviceId of the Machine this session belongs to */
+  machineId: string;
   port: string;
   paradigm: string | null;
   board: BoardType | null;

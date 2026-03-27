@@ -21,6 +21,7 @@ export interface SessionPreset {
     interval: number;
     traceInterval: number;
   };
+  pavlovianParams?: Record<number, number>;
   limitDefaults: {
     limitType: string;
     timeLimit: number;

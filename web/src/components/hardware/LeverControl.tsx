@@ -1,4 +1,4 @@
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { HARDWARE_PINS } from "./pins";
 
@@ -24,7 +24,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
 
   const { armed, timeout, ratio } = lever;
   const codes = CODES[side];
-  const send = (code: number, value?: number) => api.sendCommand(sessionId, code, value);
+  const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
   const showActiveInactive = paradigm !== "pavlovian";
   const showTimeout = paradigm !== "omission" && paradigm !== "pavlovian";

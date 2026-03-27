@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 
 interface Props {
@@ -21,7 +21,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
     setParadigmSettings(sessionId, { ratio, step, interval, traceInterval });
   }, [ratio, step, interval, traceInterval, sessionId]);
 
-  const send = (code: number, value: number) => api.sendCommand(sessionId, code, value);
+  const send = (code: number, value: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
   const showTrace = paradigm === "fr" || paradigm === "pr" || paradigm === "vi";
 

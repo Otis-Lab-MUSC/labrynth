@@ -1,5 +1,5 @@
 import { useSessionStore } from "../../store/useSessionStore";
-import * as api from "../../api/client";
+import { getClientForSession } from "../../api/sessionClient";
 import { ArduinoConfig } from "./ArduinoConfig";
 import { SessionNotes } from "./SessionNotes";
 
@@ -19,18 +19,18 @@ export function DataExport() {
   const { exporting, result: exportResult, error: exportError } = session.exportState;
 
   const handleSaveConfig = async () => {
-    const confirmed = await api.setFileConfig(activeSessionId, {
+    const confirmed = await getClientForSession(activeSessionId)?.setFileConfig(activeSessionId, {
       filename: filename || undefined,
       destination: destination || undefined,
     });
-    setFileConfig(activeSessionId, confirmed);
+    if (confirmed) setFileConfig(activeSessionId, confirmed);
   };
 
   const handleZipExport = async () => {
     setExportState(activeSessionId, { exporting: true, result: null, error: null });
     try {
       const micro = session.hardwareUi.microscope;
-      const result = await api.exportZip(activeSessionId, {
+      const result = await getClientForSession(activeSessionId)?.exportZip(activeSessionId, {
         session_name: session.name || undefined,
         notes: session.notes || undefined,
         infusion_count: session.infusionCount,
@@ -40,7 +40,7 @@ export function DataExport() {
         ...(micro.armed && micro.frameRate != null && { microscope_frame_rate: micro.frameRate }),
         ...(micro.armed && micro.frameAveraging != null && { microscope_frame_averaging: micro.frameAveraging }),
       });
-      setExportState(activeSessionId, { exporting: false, result: result.file_path });
+      setExportState(activeSessionId, { exporting: false, result: result?.file_path ?? null });
     } catch (e) {
       setExportState(activeSessionId, {
         exporting: false,
@@ -116,6 +116,7 @@ export function DataExport() {
       <ArduinoConfig
         firmwareInfo={session.firmwareInfo}
         hardwareSettings={session.hardwareSettings}
+        paradigm={session.paradigm ?? undefined}
       />
 
       {/* Session Notes */}
