@@ -73,8 +73,8 @@ export function HardwarePanel() {
       <div className="grid gap-4 lg:grid-cols-2">
         {paradigm !== "pavlovian" && (
           <>
-            <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
             <LeverControl sessionId={activeSessionId} side="LH" paradigm={paradigm} />
+            <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
           </>
         )}
         <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="Primary" prefix="" /></div>
