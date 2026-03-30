@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useLogStore } from "../../store/useLogStore";
+import { useNavigationStore } from "../../store/useNavigationStore";
 import { getClientForSession } from "../../api/sessionClient";
 import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "../program/devicePresets";
 import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
@@ -128,6 +129,28 @@ export function SessionStartModal() {
         }
       }
 
+      // Send paradigm settings to ensure they reach the firmware even if
+      // applySessionPreset's command block was skipped (e.g. state-sync delay
+      // on remote sessions).  Mirrors the codes used in ProgramPanel.tsx.
+      if (session.paradigmSettings && paradigm !== "pavlovian") {
+        const client = getClientForSession(activeSessionId);
+        if (paradigm === "fr" || paradigm === "pr") {
+          await client?.sendCommand(activeSessionId, 201, session.paradigmSettings.ratio);
+        }
+        if (paradigm === "pr") {
+          await client?.sendCommand(activeSessionId, 205, session.paradigmSettings.step);
+        }
+        if (paradigm === "vi") {
+          await client?.sendCommand(activeSessionId, 204, session.paradigmSettings.interval);
+        }
+        if (paradigm === "omission") {
+          await client?.sendCommand(activeSessionId, 203, session.paradigmSettings.interval);
+        }
+        if (paradigm === "fr" || paradigm === "pr" || paradigm === "vi") {
+          await client?.sendCommand(activeSessionId, 220, session.paradigmSettings.traceInterval);
+        }
+      }
+
       // Send hardware state to firmware — only for armed devices.
       // Unarmed devices are left at firmware defaults (already disarmed).
       const hw = session.hardwareUi;
@@ -162,6 +185,7 @@ export function SessionStartModal() {
       }
 
       await getClientForSession(activeSessionId)?.startProgram(activeSessionId);
+      useNavigationStore.getState().setActivePanel("monitor");
       setStartModalOpen(false);
     } catch (e) {
       useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Failed to start program");
