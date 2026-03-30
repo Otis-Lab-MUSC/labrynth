@@ -73,8 +73,8 @@ export function ProgramPanel() {
       return result;
     });
 
-    // 2. Send ARM/DISARM + param commands if connected
-    if (session?.state === "connected") {
+    // 2. Send ARM/DISARM + param commands if connected or stopped (pre-start states)
+    if (session?.state === "connected" || session?.state === "stopped") {
       for (const [deviceKey, deviceState] of Object.entries(preset.hardware)) {
         const mapping = PRESET_COMMAND_MAP[deviceKey];
         if (!mapping || deviceKey === "testMode") continue;
