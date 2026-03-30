@@ -447,13 +447,20 @@ function QuickPairSection() {
 // ---------------------------------------------------------------------------
 
 export function MachinePanel() {
-  const { machines, discoveredDevices, activeMachineId, setActiveMachine, removeMachine, renameMachine, startPolling } =
+  const { machines, discoveredDevices, activeMachineId, setActiveMachine, removeMachine, renameMachine, refreshDiscovery } =
     useMachineStore();
   const { sessions } = useSessionStore();
   const [showAdd, setShowAdd] = useState(false);
   const [pairingDevice, setPairingDevice] = useState<DiscoveredDevice | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [scanning, setScanning] = useState(false);
+
+  const handleRefresh = async () => {
+    setScanning(true);
+    await refreshDiscovery();
+    setScanning(false);
+  };
 
   // Count sessions per machine
   const sessionCountMap = new Map<string, number>();
@@ -492,11 +499,12 @@ export function MachinePanel() {
         <h2 className="text-xl font-semibold text-theme-text">Machines</h2>
         <div className="flex gap-2">
           <button
-            onClick={() => startPolling()}
-            className="btn-sm bg-panel border border-theme-border text-theme-text/60 hover:text-theme-text hover:bg-accent/10"
-            title="Refresh machine status"
+            onClick={handleRefresh}
+            disabled={scanning}
+            className="btn-sm bg-panel border border-theme-border text-theme-text/60 hover:text-theme-text hover:bg-accent/10 disabled:opacity-50"
+            title={scanning ? "Scanning…" : "Refresh discovered devices"}
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} className={scanning ? "animate-spin" : ""} />
           </button>
           <button
             onClick={() => setShowAdd(true)}

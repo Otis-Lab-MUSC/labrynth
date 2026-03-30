@@ -85,6 +85,8 @@ interface MachineStore {
   stopPolling: () => void;
   startDiscoveryPolling: () => void;
   stopDiscoveryPolling: () => void;
+  /** Trigger an immediate discovery poll and return a promise that resolves when done. */
+  refreshDiscovery: () => Promise<void>;
 }
 
 let _pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -410,6 +412,8 @@ export const useMachineStore = create<MachineStore>((set, get) => {
         _discoveryInterval = null;
       }
     },
+
+    refreshDiscovery: () => _pollDiscovery(set, get),
   };
 });
 
