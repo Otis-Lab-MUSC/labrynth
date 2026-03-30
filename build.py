@@ -24,6 +24,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import urllib.request
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -39,6 +40,10 @@ FRONTEND_DIST = os.path.join(FRONTEND_DIR, "dist")
 SPEC_FILE = os.path.join(SCRIPT_DIR, "reacher.spec")
 
 PARADIGMS = ("fr", "pr", "vi", "omission", "pavlovian")
+FIRMWARE_REPO = "Otis-Lab-MUSC/reacher-firmware"
+FIRMWARE_BRANCH = "develop"  # Will migrate to "main" in a future pass
+FIRMWARE_RAW_BASE = f"https://raw.githubusercontent.com/{FIRMWARE_REPO}/{FIRMWARE_BRANCH}/hex"
+
 PARADIGM_TO_SKETCH = {
     "fr": "fr",
     "pr": "pr",
@@ -62,16 +67,21 @@ def _run(cmd, cwd=None, env=None):
 # Build stages
 # ---------------------------------------------------------------------------
 
-def validate_environment():
+def validate_environment(fetch_firmware_flag: bool = False):
     """Verify submodules are initialized and reacher is installed."""
     print("\n=== Stage 0: Validate environment ===")
 
     # Check firmware submodule
     if not os.path.isfile(os.path.join(FIRMWARE_DIR, "compile.sh")):
-        print("ERROR: firmware/ submodule not initialized.")
-        print("       Run: git submodule update --init --recursive")
-        sys.exit(1)
-    print("  [OK] Firmware submodule")
+        if fetch_firmware_flag:
+            print("  [WARN] firmware/ submodule not initialized — will fetch from GitHub instead.")
+        else:
+            print("ERROR: firmware/ submodule not initialized.")
+            print("       Run: git submodule update --init --recursive")
+            print("       Or:  python build.py --fetch-firmware")
+            sys.exit(1)
+    else:
+        print("  [OK] Firmware submodule")
 
     # Check reacher package
     try:
@@ -81,6 +91,41 @@ def validate_environment():
         print("ERROR: reacher package not installed.")
         print("       Run: pip install -e /path/to/reacher")
         sys.exit(1)
+
+
+def fetch_firmware():
+    """Download pre-compiled hex files from the reacher-firmware GitHub repository.
+
+    Fetches from the ``develop`` branch of Otis-Lab-MUSC/reacher-firmware using
+    raw.githubusercontent.com (no rate limits, no auth required).  Files are
+    written to ``firmware/hex/{board}/{paradigm}.hex``.
+    """
+    print(f"\n=== Stage 1: Fetch firmware from GitHub ({FIRMWARE_BRANCH} branch) ===")
+    errors = []
+    for board in BOARDS:
+        board_dir = os.path.join(HEX_DIR, board)
+        os.makedirs(board_dir, exist_ok=True)
+        for paradigm in PARADIGMS:
+            sketch = PARADIGM_TO_SKETCH[paradigm]
+            url = f"{FIRMWARE_RAW_BASE}/{board}/{sketch}.hex"
+            dest = os.path.join(board_dir, f"{sketch}.hex")
+            print(f"  Fetching {board}/{sketch}.hex ...", end=" ", flush=True)
+            try:
+                urllib.request.urlretrieve(url, dest)
+                print("OK")
+            except Exception as exc:
+                print(f"FAILED ({exc})")
+                errors.append((board, paradigm, str(exc)))
+
+    if errors:
+        print(f"\nWARNING: {len(errors)} hex file(s) could not be fetched:")
+        for board, paradigm, reason in errors:
+            print(f"  {board}/{paradigm}: {reason}")
+        if len(errors) == len(PARADIGMS) * len(BOARDS):
+            print("ERROR: No hex files could be fetched. Check network connectivity.")
+            sys.exit(1)
+    else:
+        print(f"  [OK] All hex files fetched to {HEX_DIR}")
 
 
 def compile_firmware():
@@ -234,6 +279,11 @@ def main():
         help="Skip firmware hex compilation (use existing hex files)",
     )
     parser.add_argument(
+        "--fetch-firmware",
+        action="store_true",
+        help=f"Fetch pre-compiled hex files from GitHub ({FIRMWARE_REPO}@{FIRMWARE_BRANCH}) instead of compiling locally",
+    )
+    parser.add_argument(
         "--skip-frontend",
         action="store_true",
         help="Skip npm build (use existing web/dist/)",
@@ -252,11 +302,17 @@ def main():
     print(f"  Project:  {PROJECT_ROOT}")
 
     # Stage 0: Validate
-    validate_environment()
+    validate_environment(fetch_firmware_flag=args.fetch_firmware)
 
     # Stage 1: Firmware
     if args.skip_firmware:
         print("\n=== Stage 1: Compile firmware [SKIPPED] ===")
+    elif args.fetch_firmware:
+        fetch_firmware()
+    elif not os.path.isfile(os.path.join(FIRMWARE_DIR, "compile.sh")):
+        # Submodule absent and no explicit flag — auto-fall back to GitHub fetch
+        print("\n  [INFO] Firmware submodule absent; auto-fetching from GitHub.")
+        fetch_firmware()
     else:
         compile_firmware()
 
