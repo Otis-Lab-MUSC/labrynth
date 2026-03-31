@@ -422,7 +422,7 @@ export const useMachineStore = create<MachineStore>((set, get) => {
 // ---------------------------------------------------------------------------
 
 async function _pollDiscovery(
-  set: (fn: (s: { discoveredDevices: DiscoveredDevice[]; machines: Machine[] }) => Partial<{ discoveredDevices: DiscoveredDevice[] }>) => void,
+  set: (fn: (s: { discoveredDevices: DiscoveredDevice[]; machines: Machine[] }) => Partial<{ discoveredDevices: DiscoveredDevice[]; machines: Machine[] }>) => void,
   get: () => { machines: Machine[] },
 ) {
   try {
@@ -436,13 +436,42 @@ async function _pollDiscovery(
         paired: boolean;
         discovered: boolean;
         active_sessions: number | null;
+        name?: string;
       }>;
     }>("/discovery");
     const { machines } = get();
     const pairedIds = new Set(machines.map((m) => m.deviceId));
-    // Only surface devices that aren't already in the paired machines list
+
+    // Reconcile: restore machines the server knows are paired but the frontend lost
+    // (e.g. localStorage was cleared, different browser, app restart).
+    const toRestore = data.devices.filter(
+      (d) => d.paired && !pairedIds.has(d.device_id),
+    );
+    if (toRestore.length > 0) {
+      const restored: Machine[] = toRestore.map((d) => ({
+        deviceId: d.device_id,
+        name: d.name || d.hostname,
+        hostname: d.hostname,
+        url: d.url,
+        isLocal: false,
+        paired: true,
+        online: d.discovered,
+        lastSeen: d.discovered ? new Date().toISOString() : null,
+      }));
+      for (const m of restored) {
+        _clients.set(m.deviceId, new MachineApiClient("", undefined, m.deviceId));
+        pairedIds.add(m.deviceId);
+      }
+      set((s) => {
+        const next = [...s.machines, ...restored];
+        persistRemoteMachines(next);
+        return { machines: next };
+      });
+    }
+
+    // Only surface devices that are truly unpaired (not known to server either)
     const unpaired: DiscoveredDevice[] = data.devices
-      .filter((d) => !pairedIds.has(d.device_id))
+      .filter((d) => !d.paired && !pairedIds.has(d.device_id))
       .map((d) => ({
         deviceId: d.device_id,
         hostname: d.hostname,
