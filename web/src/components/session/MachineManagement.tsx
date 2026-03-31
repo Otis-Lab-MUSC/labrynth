@@ -119,7 +119,7 @@ function PairingDialog({ device, onClose }: { device: DiscoveredDevice; onClose:
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const { pairMachine } = useMachineStore();
+  const { pairMachineByUrl } = useMachineStore();
 
   const formatCode = (raw: string) => {
     const digits = raw.replace(/\D/g, "").slice(0, 6);
@@ -135,7 +135,7 @@ function PairingDialog({ device, onClose }: { device: DiscoveredDevice; onClose:
     setLoading(true);
     setError(null);
     try {
-      await pairMachine(device.deviceId, digits, name.trim() || undefined);
+      await pairMachineByUrl(device.url, digits, name.trim() || undefined);
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Pairing failed");

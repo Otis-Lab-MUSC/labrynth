@@ -78,11 +78,14 @@ class ReacherClient:
         params = {"board": board} if board else {}
         return await self._req("GET", "/api/firmware/paradigms", params=params)
 
-    async def upload_firmware(self, sid: str, paradigm: str, board: str = "uno"):
+    async def upload_firmware(self, sid: str, paradigm: str, board: str = "uno", hex_data: str | None = None):
+        body: dict = {"paradigm": paradigm, "board": board}
+        if hex_data:
+            body["hex_data"] = hex_data
         return await self._req(
             "POST",
             f"/api/firmware/upload/{sid}",
-            json={"paradigm": paradigm, "board": board},
+            json=body,
         )
 
     # ── Hardware ───────────────────────────────────────────

@@ -936,13 +936,28 @@ class ReacherCLI:
             lambda p: self._finish_upload(board, p),
         )
 
+    def _read_local_hex(self, paradigm: str, board: str) -> str | None:
+        """Read a local hex file and return base64-encoded content, or None."""
+        import base64
+
+        try:
+            from reacher.uploader import FirmwareUploader
+
+            uploader = FirmwareUploader()
+            path = uploader.get_hex_path(paradigm, board)
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode("ascii")
+        except Exception:
+            return None
+
     async def _finish_upload(self, board: str, paradigm: str) -> None:
         if not self.session:
             return
         try:
             self._set_status("Uploading firmware...")
             self.session.state = "uploading"
-            await self.api.upload_firmware(self.session.id, paradigm, board)
+            hex_data = self._read_local_hex(paradigm, board)
+            await self.api.upload_firmware(self.session.id, paradigm, board, hex_data=hex_data)
             self.session.paradigm = paradigm
             self.session.board = board
             self.session.state = "connected"
