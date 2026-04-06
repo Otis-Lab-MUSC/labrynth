@@ -194,6 +194,7 @@ export function Header() {
     destroySession,
     reorderSession,
     resetSessionData,
+    softResetSessionData,
     setSessionName,
   } = useSessionStore();
   const { machines } = useMachineStore();
@@ -204,6 +205,7 @@ export function Header() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [closingId, setClosingId] = useState<string | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
@@ -212,9 +214,22 @@ export function Header() {
   const closingSession = closingId ? sessions.get(closingId) : null;
   const closeWarning = closingSession ? getCloseWarning(closingSession) : null;
 
-  const handleReset = async () => {
+  const handleSoftReset = async () => {
+    setResetOpen(false);
     if (!activeSessionId) return;
-    if (!confirm("Reset session? All data will be cleared and the Arduino will restart.")) return;
+    try {
+      const client = getClientForSession(activeSessionId);
+      await client?.resetSession(activeSessionId);
+      softResetSessionData(activeSessionId);
+    } catch (e) {
+      useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Reset failed");
+      useLogStore.getState().setOpen(true);
+    }
+  };
+
+  const handleFullReset = async () => {
+    setResetOpen(false);
+    if (!activeSessionId) return;
     try {
       const client = getClientForSession(activeSessionId);
       await client?.resetSession(activeSessionId);
@@ -391,10 +406,11 @@ export function Header() {
       <div className="flex-1" />
 
       {/* Reset button */}
-      {activeSession && (activeSession.state === "connected" || activeSession.state === "stopped") && (
+      {activeSession && (activeSession.state === "connected" || activeSession.state === "stopped" || activeSession.state === "running") && (
         <button
-          onClick={handleReset}
-          className="rounded p-1.5 hover:bg-red-500/20 text-theme-text"
+          onClick={() => setResetOpen(true)}
+          disabled={activeSession.state === "running"}
+          className="rounded p-1.5 hover:bg-red-500/20 text-theme-text disabled:opacity-40 disabled:cursor-not-allowed"
           title="Reset session"
         >
           <RotateCcw size={18} />
@@ -424,6 +440,18 @@ export function Header() {
         variant={closeWarning?.variant ?? "warning"}
         onConfirm={handleCloseConfirm}
         onCancel={() => setClosingId(null)}
+      />
+
+      {/* Reset confirmation dialog */}
+      <ConfirmDialog
+        open={resetOpen}
+        title="Reset Session"
+        message="The Arduino will restart. Choose how to handle your configuration."
+        confirmLabel="Full Reset"
+        variant="danger"
+        secondaryAction={{ label: "Keep Configuration", onClick: handleSoftReset }}
+        onConfirm={handleFullReset}
+        onCancel={() => setResetOpen(false)}
       />
     </header>
   );

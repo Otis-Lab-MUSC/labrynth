@@ -8,6 +8,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "danger" | "warning";
+  secondaryAction?: { label: string; onClick: () => void };
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -19,6 +20,7 @@ export function ConfirmDialog({
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   variant = "warning",
+  secondaryAction,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -66,6 +68,14 @@ export function ConfirmDialog({
           >
             {cancelLabel}
           </button>
+          {secondaryAction && (
+            <button
+              onClick={secondaryAction.onClick}
+              className="rounded border border-theme-border px-3 py-1.5 text-sm font-medium text-theme-text hover:bg-accent/10 transition"
+            >
+              {secondaryAction.label}
+            </button>
+          )}
           <button
             onClick={onConfirm}
             className={`rounded px-3 py-1.5 text-sm font-medium text-white transition ${confirmColor}`}

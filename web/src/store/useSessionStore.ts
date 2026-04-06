@@ -27,6 +27,7 @@ interface SessionStore {
   setParadigm: (id: string, paradigm: string) => void;
   setBoard: (id: string, board: BoardType) => void;
   resetSessionData: (id: string) => void;
+  softResetSessionData: (id: string) => void;
   setSessionName: (id: string, name: string) => void;
   setSessionNotes: (id: string, notes: string) => void;
   pushHardwareSetting: (id: string, config: FirmwareConfig) => void;
@@ -381,6 +382,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const next = new Map(s.sessions);
       next.set(id, {
         ...sess,
+        name: "",
         behaviorData: [],
         frameData: [],
         infusionCount: 0,
@@ -397,6 +399,30 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         rhLeverCounts: { ...ZERO_LEVER },
         lhLeverCounts: { ...ZERO_LEVER },
         hardwareUi: defaultHardwareUiState(),
+        exportState: { exporting: false, result: null, error: null },
+      });
+      return { sessions: next };
+    }),
+
+  softResetSessionData: (id) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, {
+        ...sess,
+        behaviorData: [],
+        frameData: [],
+        infusionCount: 0,
+        pressCount: 0,
+        programStartTime: null,
+        programEndTime: null,
+        pausedTime: 0,
+        pauseStartTime: null,
+        trialCount: 0,
+        hardwareSettings: [],
+        rhLeverCounts: { ...ZERO_LEVER },
+        lhLeverCounts: { ...ZERO_LEVER },
         exportState: { exporting: false, result: null, error: null },
       });
       return { sessions: next };
