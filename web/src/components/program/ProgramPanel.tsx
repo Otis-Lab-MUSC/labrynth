@@ -5,8 +5,10 @@ import { PavlovianSettings } from "./PavlovianSettings";
 import { LimitConfig } from "./LimitConfig";
 import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "./devicePresets";
 import type { DevicePreset } from "./devicePresets";
-import { SESSION_PRESETS, SessionPresetCard } from "./presets";
+import { SESSION_PRESETS, SessionPresetCard, buildPresetFromSession, SavePresetDialog } from "./presets";
 import type { SessionPreset } from "./presets";
+import { ConfirmDialog } from "../layout/ConfirmDialog";
+import { useUserPresetStore } from "../../store/useUserPresetStore";
 import { getClientForSession } from "../../api/sessionClient";
 
 export function ProgramPanel() {
@@ -20,17 +22,24 @@ export function ProgramPanel() {
   const setStartModalOpen = useSessionStore((s) => s.setStartModalOpen);
   const setPavlovianParams = useSessionStore((s) => s.setPavlovianParams);
 
+  const userPresets = useUserPresetStore((s) => s.userPresets);
+  const saveUserPreset = useUserPresetStore((s) => s.savePreset);
+  const deleteUserPreset = useUserPresetStore((s) => s.deletePreset);
+
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
   const [selectedDevicePresetId, setSelectedDevicePresetId] = useState<string>("");
   const [presetKey, setPresetKey] = useState(0);
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const paradigm = session?.paradigm?.toLowerCase();
 
   // Session presets filtered by paradigm
-  const filteredSessionPresets = useMemo(
-    () => SESSION_PRESETS.filter((p) => paradigm && p.paradigm === paradigm),
-    [paradigm]
-  );
+  const filteredSessionPresets = useMemo(() => {
+    const builtIn = SESSION_PRESETS.filter((p) => paradigm && p.paradigm === paradigm);
+    const custom = userPresets.filter((p) => paradigm && p.paradigm === paradigm);
+    return { builtIn, custom };
+  }, [paradigm, userPresets]);
 
   // Device presets filtered by paradigm (existing system)
   const filteredDevicePresets = useMemo(
@@ -41,7 +50,23 @@ export function ProgramPanel() {
     [paradigm]
   );
 
-  const selectedSessionPreset = filteredSessionPresets.find((p) => p.id === selectedPresetId);
+  const selectedSessionPreset =
+    filteredSessionPresets.builtIn.find((p) => p.id === selectedPresetId) ??
+    filteredSessionPresets.custom.find((p) => p.id === selectedPresetId);
+
+  const handleSavePreset = (name: string) => {
+    if (!session || !session.paradigm) return;
+    const preset = buildPresetFromSession(name, session);
+    saveUserPreset(preset);
+    setSaveDialogOpen(false);
+    setSelectedPresetId(preset.id);
+  };
+
+  const handleDeletePreset = (id: string) => {
+    deleteUserPreset(id);
+    setDeleteConfirm(null);
+    if (selectedPresetId === id) setSelectedPresetId("");
+  };
 
   // Apply a session preset: hardware + paradigm settings + limits + commands
   const applySessionPreset = async (preset: SessionPreset, armOverrides: Record<string, boolean>) => {
@@ -213,8 +238,8 @@ export function ProgramPanel() {
       <h2 className="text-xl font-semibold text-theme-text">Program Configuration</h2>
 
       {/* Session Preset Selector */}
-      {filteredSessionPresets.length > 0 && (
-        <div data-tour="preset-select" className="card">
+      {(filteredSessionPresets.builtIn.length > 0 || filteredSessionPresets.custom.length > 0) && (
+        <div data-tour="preset-select" className="card space-y-2">
           <h3 className="font-medium text-theme-text">Session Preset</h3>
           <select
             value={selectedPresetId}
@@ -222,12 +247,29 @@ export function ProgramPanel() {
             className="input-base"
           >
             <option value="">Select a session preset...</option>
-            {filteredSessionPresets.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.menuLabel ?? p.name}
-              </option>
-            ))}
+            {filteredSessionPresets.builtIn.length > 0 && (
+              <optgroup label="Built-in">
+                {filteredSessionPresets.builtIn.map((p) => (
+                  <option key={p.id} value={p.id}>{p.menuLabel ?? p.name}</option>
+                ))}
+              </optgroup>
+            )}
+            {filteredSessionPresets.custom.length > 0 && (
+              <optgroup label="Custom">
+                {filteredSessionPresets.custom.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </optgroup>
+            )}
           </select>
+          {(session.state === "connected" || session.state === "paused") && session.paradigm && (
+            <button
+              onClick={() => setSaveDialogOpen(true)}
+              className="btn-sm w-full py-2 bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-colors"
+            >
+              Save Current Config as Preset
+            </button>
+          )}
         </div>
       )}
 
@@ -237,6 +279,8 @@ export function ProgramPanel() {
           key={selectedSessionPreset.id}
           preset={selectedSessionPreset}
           onApply={(overrides) => applySessionPreset(selectedSessionPreset, overrides)}
+          isUserPreset={selectedSessionPreset.id.startsWith("user-")}
+          onDelete={() => setDeleteConfirm(selectedSessionPreset.id)}
         />
       )}
 
@@ -289,6 +333,21 @@ export function ProgramPanel() {
           Start Session
         </button>
       )}
+
+      <SavePresetDialog
+        open={saveDialogOpen}
+        onSave={handleSavePreset}
+        onCancel={() => setSaveDialogOpen(false)}
+      />
+      <ConfirmDialog
+        open={deleteConfirm !== null}
+        title="Delete Preset"
+        message="This will permanently remove this custom preset."
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => deleteConfirm && handleDeletePreset(deleteConfirm)}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

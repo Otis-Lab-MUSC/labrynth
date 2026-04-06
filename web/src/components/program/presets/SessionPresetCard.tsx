@@ -5,6 +5,8 @@ import type { HardwareUiState } from "../../../types";
 interface Props {
   preset: SessionPreset;
   onApply: (hardwareOverrides: Record<string, boolean>) => Promise<void>;
+  isUserPreset?: boolean;
+  onDelete?: () => void;
 }
 
 function DeviceRow({
@@ -60,7 +62,7 @@ function formatTimeLimit(seconds: number): string {
   return `${seconds}s`;
 }
 
-export function SessionPresetCard({ preset, onApply }: Props) {
+export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete }: Props) {
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
 
@@ -107,6 +109,21 @@ export function SessionPresetCard({ preset, onApply }: Props) {
         <span className="rounded bg-accent/15 px-2 py-0.5 text-xs font-mono text-accent uppercase tracking-wide">
           {preset.paradigm}
         </span>
+        {isUserPreset && (
+          <span className="rounded bg-blue-500/15 px-2 py-0.5 text-xs font-mono text-blue-400 uppercase tracking-wide">
+            Custom
+          </span>
+        )}
+        {isUserPreset && onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            className="ml-auto text-red-400/60 hover:text-red-400 transition-colors text-sm"
+            title="Delete preset"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
       {/* Limit summary */}
