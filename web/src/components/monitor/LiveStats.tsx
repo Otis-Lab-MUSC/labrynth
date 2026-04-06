@@ -58,7 +58,8 @@ export function LiveStats({ session, elapsed }: Props) {
 
   return (
     <div className="rounded-lg border border-theme-border bg-panel p-4 font-mono text-sm">
-      {/* Lever Activity Section */}
+      {/* Lever Activity Section — only when at least one lever is armed */}
+      {(session.hardwareUi.rhLever.armed || session.hardwareUi.lhLever.armed) && (
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-accent text-xs uppercase tracking-wider font-bold">Lever Activity</span>
@@ -94,6 +95,7 @@ export function LiveStats({ session, elapsed }: Props) {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* Session Section */}
       <div>
