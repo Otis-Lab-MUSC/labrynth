@@ -113,6 +113,17 @@ function handleMessage(msg: WSMessage) {
       pushLog("error", `Kernel error: ${reason}`, msg.session_id);
       break;
     }
+    case "split": {
+      const { segment_number } = msg.data as { segment_number: number };
+      useSessionStore.getState().handleSplit(msg.session_id, segment_number);
+      pushLog("info", `Segment split — now on segment ${segment_number + 1}`, msg.session_id);
+      break;
+    }
+    case "restart": {
+      useSessionStore.getState().handleRestart(msg.session_id);
+      pushLog("info", "Program restarted", msg.session_id);
+      break;
+    }
     // Fix: F-014 — Log unhandled message types so future protocol changes are visible
     default:
       console.warn(`[ReacherWS] Unhandled message type: ${(msg as { type: string }).type}`, msg);

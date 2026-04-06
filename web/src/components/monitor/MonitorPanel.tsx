@@ -57,6 +57,7 @@ export function MonitorPanel() {
   );
   const setStartModalOpen = useSessionStore((s) => s.setStartModalOpen);
   const [, forceUpdate] = useState(0);
+  const [confirmRestart, setConfirmRestart] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
@@ -85,6 +86,8 @@ export function MonitorPanel() {
     return <p className="text-theme-text/60 font-mono">No active session.</p>;
   }
 
+  const canControl = session.state === "running" || session.state === "paused";
+
   return (
     <div className="space-y-6">
       <div data-tour="monitor-heading" className="flex items-center justify-between">
@@ -93,7 +96,7 @@ export function MonitorPanel() {
       </div>
 
       {/* Control buttons */}
-      <div data-tour="experiment-controls" className="flex gap-3">
+      <div data-tour="experiment-controls" className="flex flex-wrap gap-3">
         <button
           onClick={() => setStartModalOpen(true)}
           disabled={session.state === "running"}
@@ -103,19 +106,61 @@ export function MonitorPanel() {
         </button>
         <button
           onClick={() => getClientForSession(activeSessionId)?.stopProgram(activeSessionId)}
-          disabled={session.state !== "running" && session.state !== "paused"}
+          disabled={!canControl}
           className="rounded bg-red-600 px-4 py-2 text-white font-mono hover:bg-red-700 disabled:opacity-50"
         >
           Stop
         </button>
         <button
           onClick={() => getClientForSession(activeSessionId)?.pauseProgram(activeSessionId)}
-          disabled={session.state !== "running" && session.state !== "paused"}
+          disabled={!canControl}
           className="rounded bg-yellow-600 px-4 py-2 text-white font-mono hover:bg-yellow-700 disabled:opacity-50"
         >
-          {session.state === "paused" ? "Resume" : "Pause"}
+          {session.state === "paused" ? "Play" : "Pause"}
         </button>
+        <button
+          onClick={() => getClientForSession(activeSessionId)?.splitSegment(activeSessionId)}
+          disabled={!canControl}
+          className="rounded bg-blue-600 px-4 py-2 text-white font-mono hover:bg-blue-700 disabled:opacity-50"
+        >
+          Split
+        </button>
+        {!confirmRestart ? (
+          <button
+            onClick={() => setConfirmRestart(true)}
+            disabled={!canControl}
+            className="rounded bg-amber-600 px-4 py-2 text-white font-mono hover:bg-amber-700 disabled:opacity-50"
+          >
+            Restart
+          </button>
+        ) : (
+          <span className="flex items-center gap-1">
+            <button
+              onClick={() => {
+                getClientForSession(activeSessionId)?.restartProgram(activeSessionId);
+                setConfirmRestart(false);
+              }}
+              className="rounded bg-amber-600 px-3 py-2 text-white font-mono hover:bg-amber-700 text-sm"
+            >
+              Confirm
+            </button>
+            <button
+              onClick={() => setConfirmRestart(false)}
+              className="rounded bg-theme-border px-3 py-2 text-theme-text font-mono hover:bg-theme-border/80 text-sm"
+            >
+              Cancel
+            </button>
+          </span>
+        )}
       </div>
+
+      {/* Segment indicator */}
+      {session.segmentNumber > 0 && (
+        <div className="text-sm font-mono text-theme-text/60">
+          Segment: <span className="text-accent font-bold">{session.segmentNumber + 1}</span>
+          <span className="ml-2 text-theme-text/40">({session.segmentNumber} split{session.segmentNumber > 1 ? "s" : ""})</span>
+        </div>
+      )}
 
       <SessionProgress session={session} elapsed={elapsed} />
       <div data-tour="live-stats"><LiveStats session={session} elapsed={elapsed} /></div>

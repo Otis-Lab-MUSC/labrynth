@@ -124,6 +124,12 @@ export interface Session {
   hardwareUi: HardwareUiState;
   fileConfig: { filename: string; destination: string };
   exportState: { exporting: boolean; result: string | null; error: string | null };
+  segmentNumber: number;
+  cumulativeInfusionCount: number;
+  cumulativePressCount: number;
+  cumulativeTrialCount: number;
+  cumulativeRhLeverCounts: LeverCounts;
+  cumulativeLhLeverCounts: LeverCounts;
 }
 
 export interface FirmwareConfig {
@@ -159,4 +165,6 @@ export type WSMessage =
   | { type: "session_state"; session_id: string; data: { state: SessionState } }
   | { type: "disconnect"; session_id: string; data: { reason: string } }  // Fix: XL-003
   | { type: "export_failed"; session_id: string; data: { reason: string } }  // Fix: F-005
-  | { type: "kernel_error"; session_id: string; data: { reason: string; raw: string } };  // Fix: F-006
+  | { type: "kernel_error"; session_id: string; data: { reason: string; raw: string } }  // Fix: F-006
+  | { type: "split"; session_id: string; data: { segment_number: number; export_path: string } }
+  | { type: "restart"; session_id: string; data: Record<string, never> };

@@ -628,9 +628,13 @@ class ReacherCLI:
         if s and s.state == "running":
             items.append(MenuItem("Stop Session", action=self._stop_program))
             items.append(MenuItem("Pause Session", action=self._pause_program))
+            items.append(MenuItem("Split Segment", action=self._split_segment))
+            items.append(MenuItem("Restart Program", action=self._restart_program))
         elif s and s.state == "paused":
             items.append(MenuItem("Stop Session", action=self._stop_program))
-            items.append(MenuItem("Resume Session", action=self._pause_program))
+            items.append(MenuItem("Play (Resume)", action=self._pause_program))
+            items.append(MenuItem("Split Segment", action=self._split_segment))
+            items.append(MenuItem("Restart Program", action=self._restart_program))
         else:
             items.append(MenuItem("Start Session", action=self._start_program))
 
@@ -1171,6 +1175,43 @@ class ReacherCLI:
         except Exception as exc:
             self._set_status(f"Pause/resume failed: {exc}", error=True)
 
+    async def _split_segment(self) -> None:
+        if not self.session:
+            self._set_status("No session", error=True)
+            return
+        try:
+            result = await self.api.split_segment(self.session.id)
+            seg = result.get("segment_number", "?")
+            self._set_status(f"Segment split — now on segment {int(seg) + 1}")
+        except Exception as exc:
+            self._set_status(f"Split failed: {exc}", error=True)
+
+    async def _restart_program(self) -> None:
+        if not self.session:
+            self._set_status("No session", error=True)
+            return
+        self._prompt_select(
+            "Restart program? (Arduino will stop and re-start)",
+            [("Yes", "yes"), ("No", "no")],
+            self._confirm_restart,
+        )
+
+    async def _confirm_restart(self, choice: str) -> None:
+        if choice != "yes" or not self.session:
+            self._set_status("Cancelled")
+            return
+        try:
+            await self.api.restart_program(self.session.id)
+            self.session.state = "running"
+            self.session.program_start = time.time()
+            self.session.program_end = None
+            self.session.paused_time = 0
+            self.session.pause_start = None
+            self._set_status("Program restarted")
+            self._rebuild_current_menu()
+        except Exception as exc:
+            self._set_status(f"Restart failed: {exc}", error=True)
+
     async def _set_limit_type(self, limit_type: str) -> None:
         if not self.session:
             self._set_status("No session", error=True)
@@ -1351,6 +1392,30 @@ class ReacherCLI:
                 armed = data.get("armed", {})
                 if armed:
                     self.session.armed.update(armed)
+
+        elif msg_type == "split":
+            seg = data.get("segment_number", "?")
+            self.monitor_lines.append((
+                "class:monitor-event",
+                f"  [split] Segment split — now on segment {int(seg) + 1}"
+            ))
+
+        elif msg_type == "restart":
+            if self.session:
+                self.session.state = "running"
+                self.session.program_start = time.time()
+                self.session.program_end = None
+                self.session.paused_time = 0
+                self.session.pause_start = None
+                self.session.infusion_count = 0
+                self.session.press_count = 0
+                self.session.backend_event_count = 0
+                self.session.rh_counts = {}
+                self.session.lh_counts = {}
+            self.monitor_lines.append((
+                "class:monitor-event",
+                "  [restart] Program restarted"
+            ))
 
         elif msg_type == "log":
             level = data.get("level", "info")

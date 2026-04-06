@@ -100,7 +100,9 @@ export function LiveStats({ session, elapsed }: Props) {
       {/* Session Section */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-accent text-xs uppercase tracking-wider font-bold">Session</span>
+          <span className="text-accent text-xs uppercase tracking-wider font-bold">
+            {session.segmentNumber > 0 ? `Segment ${session.segmentNumber + 1}` : "Session"}
+          </span>
           <div className="flex-1 border-b border-dashed border-theme-border" />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1">
@@ -112,6 +114,33 @@ export function LiveStats({ session, elapsed }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Cumulative Section — shown when segments have been split */}
+      {session.segmentNumber > 0 && (
+      <div className="mt-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-accent text-xs uppercase tracking-wider font-bold">Cumulative</span>
+          <div className="flex-1 border-b border-dashed border-theme-border" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1">
+          {[
+            { label: "SEGMENTS", value: session.segmentNumber + 1 },
+            { label: "TOTAL INF.", value: session.cumulativeInfusionCount + session.infusionCount },
+            { label: "TOTAL PRESSES", value:
+                session.cumulativeRhLeverCounts.active + session.cumulativeRhLeverCounts.timeout + session.cumulativeRhLeverCounts.inactive
+              + session.cumulativeLhLeverCounts.active + session.cumulativeLhLeverCounts.timeout + session.cumulativeLhLeverCounts.inactive
+              + leverTotal(session.rhLeverCounts) + leverTotal(session.lhLeverCounts)
+            },
+            ...(config.hasTrials ? [{ label: "TOTAL TRIALS", value: session.cumulativeTrialCount + session.trialCount }] : []),
+          ].map((stat) => (
+            <div key={stat.label} className="flex justify-between items-baseline py-0.5">
+              <span className="text-theme-text/60 uppercase text-xs tracking-wider">{stat.label}</span>
+              <span className="text-accent font-bold tabular-nums ml-3">{stat.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      )}
     </div>
   );
 }

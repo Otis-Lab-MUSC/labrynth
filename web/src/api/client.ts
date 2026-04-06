@@ -202,6 +202,10 @@ export class MachineApiClient {
     this.request(`/program/${id}/stop`, { method: "POST" });
   pauseProgram = (id: string) =>
     this.request(`/program/${id}/pause`, { method: "POST" });
+  splitSegment = (id: string) =>
+    this.request(`/program/${id}/split`, { method: "POST" });
+  restartProgram = (id: string) =>
+    this.request(`/program/${id}/restart`, { method: "POST" });
   setLimit = (id: string, body: { type: string; time_limit?: number; infusion_limit?: number; delay?: number }) =>
     this.request(`/program/${id}/limit`, { method: "POST", body: JSON.stringify(body) });
 

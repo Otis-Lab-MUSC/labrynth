@@ -111,6 +111,12 @@ class ReacherClient:
     async def pause_program(self, sid: str):
         return await self._req("POST", f"/api/program/{sid}/pause")
 
+    async def split_segment(self, sid: str):
+        return await self._req("POST", f"/api/program/{sid}/split")
+
+    async def restart_program(self, sid: str):
+        return await self._req("POST", f"/api/program/{sid}/restart")
+
     async def set_limit(self, sid: str, limit_type: str, **kw):
         return await self._req(
             "POST", f"/api/program/{sid}/limit", json={"type": limit_type, **kw}

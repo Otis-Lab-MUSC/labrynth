@@ -111,6 +111,12 @@ export function useSessionRecovery() {
                 },
                 fileConfig: { filename: "", destination: "" },
                 exportState: { exporting: false, result: null, error: null },
+                segmentNumber: 0,
+                cumulativeInfusionCount: 0,
+                cumulativePressCount: 0,
+                cumulativeTrialCount: 0,
+                cumulativeRhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
+                cumulativeLhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
               });
               return {
                 sessions: next,

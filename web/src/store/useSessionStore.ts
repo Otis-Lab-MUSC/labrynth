@@ -34,6 +34,8 @@ interface SessionStore {
   updateHardwareUi: (id: string, updater: (prev: HardwareUiState) => Partial<HardwareUiState>) => void;
   setFileConfig: (id: string, config: Partial<{ filename: string; destination: string }>) => void;
   setExportState: (id: string, partial: Partial<{ exporting: boolean; result: string | null; error: string | null }>) => void;
+  handleSplit: (id: string, segmentNumber: number) => void;
+  handleRestart: (id: string) => void;
 }
 
 const ZERO_LEVER: LeverCounts = { active: 0, timeout: 0, inactive: 0 };
@@ -80,6 +82,12 @@ const newSession = (id: string, port: string, paradigm: string | null, machineId
   hardwareUi: defaultHardwareUiState(),
   fileConfig: { filename: "", destination: "" },
   exportState: { exporting: false, result: null, error: null },
+  segmentNumber: 0,
+  cumulativeInfusionCount: 0,
+  cumulativePressCount: 0,
+  cumulativeTrialCount: 0,
+  cumulativeRhLeverCounts: { ...ZERO_LEVER },
+  cumulativeLhLeverCounts: { ...ZERO_LEVER },
 });
 
 export const useSessionStore = create<SessionStore>((set, get) => ({
@@ -218,6 +226,12 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           trialCount: 0,
           rhLeverCounts: { ...ZERO_LEVER },
           lhLeverCounts: { ...ZERO_LEVER },
+          segmentNumber: 0,
+          cumulativeInfusionCount: 0,
+          cumulativePressCount: 0,
+          cumulativeTrialCount: 0,
+          cumulativeRhLeverCounts: { ...ZERO_LEVER },
+          cumulativeLhLeverCounts: { ...ZERO_LEVER },
         }),
       });
       return { sessions: next };
@@ -489,6 +503,66 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       if (!sess) return s;
       const next = new Map(s.sessions);
       next.set(id, { ...sess, exportState: { ...sess.exportState, ...partial } });
+      return { sessions: next };
+    }),
+
+  handleSplit: (id, segmentNumber) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, {
+        ...sess,
+        segmentNumber,
+        cumulativeInfusionCount: sess.cumulativeInfusionCount + sess.infusionCount,
+        cumulativePressCount: sess.cumulativePressCount + sess.pressCount,
+        cumulativeTrialCount: sess.cumulativeTrialCount + sess.trialCount,
+        cumulativeRhLeverCounts: {
+          active: sess.cumulativeRhLeverCounts.active + sess.rhLeverCounts.active,
+          timeout: sess.cumulativeRhLeverCounts.timeout + sess.rhLeverCounts.timeout,
+          inactive: sess.cumulativeRhLeverCounts.inactive + sess.rhLeverCounts.inactive,
+        },
+        cumulativeLhLeverCounts: {
+          active: sess.cumulativeLhLeverCounts.active + sess.lhLeverCounts.active,
+          timeout: sess.cumulativeLhLeverCounts.timeout + sess.lhLeverCounts.timeout,
+          inactive: sess.cumulativeLhLeverCounts.inactive + sess.lhLeverCounts.inactive,
+        },
+        behaviorData: [],
+        infusionCount: 0,
+        pressCount: 0,
+        trialCount: 0,
+        rhLeverCounts: { ...ZERO_LEVER },
+        lhLeverCounts: { ...ZERO_LEVER },
+      });
+      return { sessions: next };
+    }),
+
+  handleRestart: (id) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, {
+        ...sess,
+        state: "running",
+        behaviorData: [],
+        frameData: [],
+        infusionCount: 0,
+        pressCount: 0,
+        trialCount: 0,
+        rhLeverCounts: { ...ZERO_LEVER },
+        lhLeverCounts: { ...ZERO_LEVER },
+        segmentNumber: 0,
+        cumulativeInfusionCount: 0,
+        cumulativePressCount: 0,
+        cumulativeTrialCount: 0,
+        cumulativeRhLeverCounts: { ...ZERO_LEVER },
+        cumulativeLhLeverCounts: { ...ZERO_LEVER },
+        programStartTime: Date.now(),
+        programEndTime: null,
+        pausedTime: 0,
+        pauseStartTime: null,
+      });
       return { sessions: next };
     }),
 }));
