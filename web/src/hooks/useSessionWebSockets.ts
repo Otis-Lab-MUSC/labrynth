@@ -120,6 +120,29 @@ function handleMessage(msg: WSMessage) {
   }
 }
 
+async function recoverMissedEvents(sessionId: string) {
+  const { sessions, replaceEvents } = useSessionStore.getState();
+  const sess = sessions.get(sessionId);
+  if (!sess || sess.state !== "running") return;
+
+  const client = useMachineStore.getState().getClient(sess.machineId);
+  if (!client) return;
+
+  try {
+    const { data, total } = await client.getBehavior(sessionId);
+    if (total > sess.behaviorData.length) {
+      replaceEvents(sessionId, data as unknown as BehaviorEvent[]);
+      useLogStore.getState().pushLog(
+        "info",
+        `Recovered ${total - sess.behaviorData.length} missed events after reconnect`,
+        sessionId,
+      );
+    }
+  } catch (err) {
+    console.warn("[ReacherWS] Failed to recover missed events:", err);
+  }
+}
+
 export function useSessionWebSockets() {
   const { sessionOrder, sessions } = useSessionStore(
     useShallow((s: { sessionOrder: string[]; sessions: Map<string, { draft?: boolean; machineId?: string }> }) => ({
@@ -162,7 +185,10 @@ export function useSessionWebSockets() {
           pendingRef.current.delete(id);
           if (connectionsRef.current.has(id)) return; // already opened by a concurrent update
           if (wsInfo) {
-            connectionsRef.current.set(id, new ReacherWebSocket(id, handleMessage, wsInfo.wsUrl, wsInfo.token));
+            connectionsRef.current.set(
+              id,
+              new ReacherWebSocket(id, handleMessage, wsInfo.wsUrl, wsInfo.token, () => recoverMissedEvents(id)),
+            );
           }
         });
       } else {
@@ -172,6 +198,7 @@ export function useSessionWebSockets() {
           handleMessage,
           machineClient?.wsBaseUrl,
           machineClient?.getWsToken(),
+          () => recoverMissedEvents(id),
         ));
       }
     }

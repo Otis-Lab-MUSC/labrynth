@@ -1,0 +1,603 @@
+<![CDATA[<?xml version="1.0" encoding="UTF-8"?>
+<prompt>
+  <objective>
+    Fix WebSocket connection drops that cause missed lever press events during
+    active REACHER neuroscience experiment sessions. The backend on a Raspberry Pi
+    always records events in kernel.behavior_data[], but when the WebSocket drops
+    and reconnects, the frontend never fetches the missed events. Add event
+    recovery on reconnect and relax ping/pong timeouts.
+  </objective>
+
+  <context>
+    <architecture>
+      The event pipeline flows:
+        Arduino serial → kernel read_serial() thread → serial queue (max 5000)
+        → handle_queue() thread → update_behavioral_events() → behavior_data[]
+        → _emit("event", entry) → event_callback → enqueue_event()
+        → WebSocket queue (max 10000) → _broadcast_worker() → ws.send_text()
+        → frontend ReacherWebSocket.onmessage → handleMessage() → pushEvent()
+        → Zustand store behaviorData[]
+
+      Loss point: When no WebSocket client is connected, the broadcast worker
+      drains the queue but sends to an empty connection set. Events are silently
+      discarded from the WebSocket layer. However, the kernel's behavior_data[]
+      retains them — the backend is always authoritative.
+
+      Existing recovery API: GET /api/data/{session_id}/behavior?since=N returns
+      behavior_data[N:] and a "total" field with the full list length. The
+      frontend client already has getBehavior(id, since?) but never calls it
+      after reconnection.
+
+      Note: The kernel emits ALL behavioral events via WebSocket (including
+      PAVLOV device events), but behavior_data[] excludes PAVLOV events and
+      events when not program_running. The frontend pushEvent() also gates on
+      state === "running" but does NOT filter PAVLOV. This indexing mismatch
+      means we use full-replace recovery (fetch all events from backend,
+      replace frontend state) rather than incremental since=N for correctness
+      across all paradigms.
+    </architecture>
+
+    <bug_report>
+      Trello card: "WebSocket connection drops periodically, causing missed lever press events"
+      Setup: REACHER API on Raspberry Pi, Labrynth interface on remote machine via ethernet.
+      2 dropped lever presses confirmed during WebSocket close/reconnect cycles.
+      Uvicorn ws_ping_interval=15, ws_ping_timeout=30 may be too aggressive for Pi hardware.
+    </bug_report>
+  </context>
+
+  <files>
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- FILE 1: Backend Uvicorn config (ping/pong timeouts)               -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <file path="reacher/src/reacher/api/app.py" action="edit">
+      <current_code location="lines 318-325">
+    uvicorn.run(
+        "reacher.api.app:app",
+        host=HOST,
+        port=PORT,
+        log_level="info",
+        ws_ping_interval=15,
+        ws_ping_timeout=30,
+    )
+      </current_code>
+
+      <instructions>
+        1. Near the top of the file (after the existing PORT and HOST env var
+           reads around line 33-34), add two new env var reads:
+
+             WS_PING_INTERVAL = int(os.getenv("REACHER_WS_PING_INTERVAL", "20"))
+             WS_PING_TIMEOUT = int(os.getenv("REACHER_WS_PING_TIMEOUT", "60"))
+
+        2. Replace the hardcoded values in uvicorn.run() with the new variables:
+
+             uvicorn.run(
+                 "reacher.api.app:app",
+                 host=HOST,
+                 port=PORT,
+                 log_level="info",
+                 ws_ping_interval=WS_PING_INTERVAL,
+                 ws_ping_timeout=WS_PING_TIMEOUT,
+             )
+
+        The relaxed defaults (20s interval, 60s timeout) give Raspberry Pi
+        hardware more headroom before triggering a disconnect.
+      </instructions>
+    </file>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- FILE 2: Frontend WebSocket class (onReconnect callback)           -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <file path="labrynth/web/src/api/websocket.ts" action="edit">
+      <current_code>
+import type { WSMessage } from "../types";
+import { getToken } from "./client";
+
+type MessageHandler = (msg: WSMessage) => void;
+
+let _pageUnloading = false;
+window.addEventListener("unload", () => {
+  _pageUnloading = true;
+});
+
+const HEARTBEAT_INTERVAL = 20_000; // 20s client-side keepalive
+const RECONNECT_BASE = 1_000; // 1s initial reconnect delay
+const RECONNECT_CAP = 10_000; // 10s max reconnect delay
+const MAX_RECONNECT_ATTEMPTS = 15; // Fix: FE-002 — Stop reconnecting after N failures
+
+export class ReacherWebSocket {
+  private ws: WebSocket | null = null;
+  private sessionId: string;
+  private handler: MessageHandler;
+  private reconnectTimer: ReturnType&lt;typeof setTimeout> | null = null;
+  private heartbeatTimer: ReturnType&lt;typeof setInterval> | null = null;
+  private staleTimer: ReturnType&lt;typeof setTimeout> | null = null;
+  private closed = false;
+  private reconnectAttempt = 0;
+  private onVisibilityChange: (() => void) | null = null;
+  /** WebSocket base URL, e.g. "ws://192.168.1.50:6229". Null = same origin. */
+  private baseWsUrl: string | null;
+  /** Pre-supplied token for remote machines (skips the /api/auth/token fetch). */
+  private overrideToken: string | null;
+
+  constructor(sessionId: string, handler: MessageHandler, baseWsUrl?: string, token?: string) {
+    this.sessionId = sessionId;
+    this.handler = handler;
+    this.baseWsUrl = baseWsUrl ?? null;
+    this.overrideToken = token ?? null;
+    this.setupVisibilityListener();
+    this.connect();
+  }
+      </current_code>
+
+      <instructions>
+        Add an onReconnect callback and a hasConnectedOnce flag to the class.
+        The full replacement for the file should be:
+
+        1. Add a new private field after "overrideToken":
+             private onReconnect: (() => void) | null;
+             private hasConnectedOnce = false;
+
+        2. Extend the constructor signature to accept an optional onReconnect
+           callback as the 5th parameter:
+
+             constructor(
+               sessionId: string,
+               handler: MessageHandler,
+               baseWsUrl?: string,
+               token?: string,
+               onReconnect?: () => void,
+             ) {
+               this.sessionId = sessionId;
+               this.handler = handler;
+               this.baseWsUrl = baseWsUrl ?? null;
+               this.overrideToken = token ?? null;
+               this.onReconnect = onReconnect ?? null;
+               this.setupVisibilityListener();
+               this.connect();
+             }
+
+        3. In the connect() method, modify ws.onopen to detect reconnections:
+
+             this.ws.onopen = () => {
+               this.reconnectAttempt = 0;
+               this.startHeartbeat();
+               if (this.hasConnectedOnce &amp;&amp; this.onReconnect) {
+                 this.onReconnect();
+               }
+               this.hasConnectedOnce = true;
+             };
+
+        Do not change any other methods (heartbeat, stale timer, reconnect
+        logic, visibility listener, close, etc.).
+      </instructions>
+    </file>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- FILE 3: Frontend WebSocket hook (recovery on reconnect)           -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <file path="labrynth/web/src/hooks/useSessionWebSockets.ts" action="edit">
+      <current_code>
+import { useEffect, useRef } from "react";
+import { useShallow } from "zustand/react/shallow";
+import { ReacherWebSocket } from "../api/websocket";
+import { useSessionStore } from "../store/useSessionStore";
+import { useMachineStore } from "../store/useMachineStore";
+import { useTutorialStore } from "../store/useTutorialStore";
+import { useLogStore } from "../store/useLogStore";
+import type { LogLevel } from "../store/useLogStore";
+import type { WSMessage, BehaviorEvent, FirmwareConfig, SessionState } from "../types";
+      </current_code>
+
+      <instructions>
+        1. Add an import for the getBehavior REST client function. After the
+           existing imports, add:
+
+             import type { BehaviorEvent as BehaviorEventType } from "../types";
+
+           And at the top of the imports section, alongside the existing ones:
+
+             import { useMachineStore } from "../store/useMachineStore";
+
+           is already there. Add this new import after the type imports:
+
+           (No new file import needed — getBehavior access comes through
+           useMachineStore.getState().getClient(machineId). The MachineApiClient
+           already has getBehavior.)
+
+        2. Create a new async function recoverMissedEvents() BEFORE the
+           useSessionWebSockets() hook function. Place it after handleMessage():
+
+             async function recoverMissedEvents(sessionId: string) {
+               const { sessions, replaceEvents } = useSessionStore.getState();
+               const sess = sessions.get(sessionId);
+               if (!sess || sess.state !== "running") return;
+
+               const client = useMachineStore.getState().getClient(sess.machineId);
+               if (!client) return;
+
+               try {
+                 const { data, total } = await client.getBehavior(sessionId);
+                 if (total > sess.behaviorData.length) {
+                   replaceEvents(sessionId, data as BehaviorEvent[]);
+                   useLogStore.getState().pushLog(
+                     "info",
+                     `Recovered ${total - sess.behaviorData.length} missed events after reconnect`,
+                     sessionId,
+                   );
+                 }
+               } catch (err) {
+                 console.warn("[ReacherWS] Failed to recover missed events:", err);
+               }
+             }
+
+        3. In the useSessionWebSockets() hook, where ReacherWebSocket instances
+           are constructed, pass recoverMissedEvents as the onReconnect callback.
+
+           For the proxy client path (around the line that creates the WebSocket
+           with wsInfo), change:
+
+             connectionsRef.current.set(
+               id,
+               new ReacherWebSocket(id, handleMessage, wsInfo.wsUrl, wsInfo.token),
+             );
+
+           to:
+
+             connectionsRef.current.set(
+               id,
+               new ReacherWebSocket(
+                 id, handleMessage, wsInfo.wsUrl, wsInfo.token,
+                 () => recoverMissedEvents(id),
+               ),
+             );
+
+           For the local machine path, change:
+
+             current.set(id, new ReacherWebSocket(
+               id,
+               handleMessage,
+               machineClient?.wsBaseUrl,
+               machineClient?.getWsToken(),
+             ));
+
+           to:
+
+             current.set(id, new ReacherWebSocket(
+               id,
+               handleMessage,
+               machineClient?.wsBaseUrl,
+               machineClient?.getWsToken(),
+               () => recoverMissedEvents(id),
+             ));
+      </instructions>
+    </file>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- FILE 4: Frontend Zustand store (replaceEvents method)             -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <file path="labrynth/web/src/store/useSessionStore.ts" action="edit">
+      <current_code_reference>
+        Interface definition (lines 5-35): SessionStore interface
+        Store implementation (lines 83-430): useSessionStore create block
+        Relevant constants: ZERO_LEVER (line 37)
+      </current_code_reference>
+
+      <instructions>
+        1. Add replaceEvents to the SessionStore interface (after pushEvent on
+           line 19):
+
+             replaceEvents: (id: string, events: BehaviorEvent[]) => void;
+
+        2. Add the replaceEvents implementation in the store body, after
+           pushEvent (after line 267). This method does a full replacement of
+           behaviorData and recalculates all derived counters from scratch:
+
+             replaceEvents: (id, events) =>
+               set((s) => {
+                 const sess = s.sessions.get(id);
+                 if (!sess) return s;
+                 const next = new Map(s.sessions);
+                 let infusionCount = 0;
+                 let pressCount = 0;
+                 let trialCount = 0;
+                 const rhLeverCounts = { ...ZERO_LEVER };
+                 const lhLeverCounts = { ...ZERO_LEVER };
+                 for (const e of events) {
+                   if (e.device === "PUMP" &amp;&amp; e.event === "INFUSION") infusionCount++;
+                   if ((e.device === "RH_LEVER" || e.device === "LH_LEVER") &amp;&amp; e.event.includes("PRESS")) pressCount++;
+                   if (e.device === "PAVLOV" &amp;&amp; e.event === "TRIAL_START") trialCount++;
+                   if (e.device === "RH_LEVER") {
+                     if (e.event === "ACTIVE_PRESS") rhLeverCounts.active++;
+                     if (e.event === "TIMEOUT_PRESS") rhLeverCounts.timeout++;
+                     if (e.event === "INACTIVE_PRESS") rhLeverCounts.inactive++;
+                   }
+                   if (e.device === "LH_LEVER") {
+                     if (e.event === "ACTIVE_PRESS") lhLeverCounts.active++;
+                     if (e.event === "TIMEOUT_PRESS") lhLeverCounts.timeout++;
+                     if (e.event === "INACTIVE_PRESS") lhLeverCounts.inactive++;
+                   }
+                 }
+                 next.set(id, {
+                   ...sess,
+                   behaviorData: events,
+                   infusionCount,
+                   pressCount,
+                   trialCount,
+                   rhLeverCounts,
+                   lhLeverCounts,
+                 });
+                 return { sessions: next };
+               }),
+
+        Note: Because the backend's behavior_data excludes PAVLOV events,
+        trialCount will be 0 after a full replace from backend data. This is
+        acceptable — trial counting for Pavlovian sessions is cosmetic in the
+        UI and the backend is the source of truth for data export. The critical
+        fix is recovering missed lever presses and infusions.
+      </instructions>
+    </file>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- FILE 5: CLI reconnection with retry + recovery                    -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <file path="labrynth/cli/app.py" action="edit">
+      <current_code location="lines 1227-1262">
+    async def _stream_events(self) -> None:
+        if not self.session:
+            return
+        try:
+            import websockets
+        except ImportError:
+            self.monitor_lines.append(("class:status-bar-error",
+                                       "websockets not installed — cannot stream"))
+            self._invalidate()
+            return
+
+        ws_url = f"ws://localhost:{self.port}/ws/{self.session.id}"
+        try:
+            async with websockets.connect(ws_url) as ws:
+                # Periodic refresh for elapsed time display
+                async def _refresh_loop():
+                    while True:
+                        await asyncio.sleep(1)
+                        self._invalidate()
+
+                refresh = asyncio.ensure_future(_refresh_loop())
+                try:
+                    async for raw in ws:
+                        try:
+                            msg = json.loads(raw)
+                        except json.JSONDecodeError:
+                            continue
+                        self._handle_ws_message(msg)
+                        self._invalidate()
+                finally:
+                    refresh.cancel()
+        except asyncio.CancelledError:
+            return
+        except Exception as exc:
+            self.monitor_lines.append(("class:status-bar-error", f"WebSocket error: {exc}"))
+            self._invalidate()
+      </current_code>
+
+      <instructions>
+        Replace the _stream_events method with a version that retries on
+        disconnect and recovers missed events on reconnect:
+
+            async def _stream_events(self) -> None:
+                if not self.session:
+                    return
+                try:
+                    import websockets
+                except ImportError:
+                    self.monitor_lines.append(("class:status-bar-error",
+                                               "websockets not installed — cannot stream"))
+                    self._invalidate()
+                    return
+
+                ws_url = f"ws://localhost:{self.port}/ws/{self.session.id}"
+                attempt = 0
+                max_attempts = 10
+                has_connected = False
+
+                while attempt &lt; max_attempts:
+                    try:
+                        async with websockets.connect(ws_url) as ws:
+                            if has_connected:
+                                # Recover missed events after reconnect
+                                await self._recover_missed_events()
+                                self.monitor_lines.append(
+                                    ("class:monitor-event", "  [info] WebSocket reconnected"))
+                                self._invalidate()
+                            has_connected = True
+                            attempt = 0  # Reset on successful connection
+
+                            async def _refresh_loop():
+                                while True:
+                                    await asyncio.sleep(1)
+                                    self._invalidate()
+
+                            refresh = asyncio.ensure_future(_refresh_loop())
+                            try:
+                                async for raw in ws:
+                                    try:
+                                        msg = json.loads(raw)
+                                    except json.JSONDecodeError:
+                                        continue
+                                    self._handle_ws_message(msg)
+                                    self._invalidate()
+                            finally:
+                                refresh.cancel()
+                    except asyncio.CancelledError:
+                        return
+                    except Exception as exc:
+                        attempt += 1
+                        if attempt >= max_attempts:
+                            self.monitor_lines.append(
+                                ("class:status-bar-error",
+                                 f"WebSocket failed after {max_attempts} attempts: {exc}"))
+                            self._invalidate()
+                            return
+                        delay = min(1.0 * (2 ** (attempt - 1)), 10.0)
+                        self.monitor_lines.append(
+                            ("class:status-bar-error",
+                             f"WebSocket disconnected, retrying in {delay:.0f}s..."))
+                        self._invalidate()
+                        await asyncio.sleep(delay)
+
+        Then add a new helper method _recover_missed_events right after
+        _stream_events:
+
+            async def _recover_missed_events(self) -> None:
+                """Fetch events missed during WebSocket disconnect from REST API."""
+                if not self.session:
+                    return
+                try:
+                    since = len(self.session.behavior_data)
+                    resp = await self.client.get_behavior(self.session.id, since=since)
+                    data = resp.get("data", [])
+                    if data:
+                        for entry in data:
+                            fake_msg = {"type": "event", "data": entry}
+                            self._handle_ws_message(fake_msg)
+                        self.monitor_lines.append(
+                            ("class:monitor-event",
+                             f"  [info] Recovered {len(data)} missed events"))
+                except Exception as exc:
+                    self.monitor_lines.append(
+                        ("class:status-bar-error",
+                         f"Event recovery failed: {exc}"))
+
+        Note: The CLI's _handle_ws_message for "event" type already appends to
+        self.session.behavior_data (at line 1267-1277 in the existing code).
+        However, verify that behavior_data is being appended to — if it is not
+        (the existing code only updates counters, not behavior_data), then add
+        the append. Looking at the existing code, _handle_ws_message does NOT
+        append to behavior_data — it only updates counters and display. So
+        also add to the SessionState dataclass a backend_event_count field:
+
+        In the SessionState dataclass (around line 258), add:
+            backend_event_count: int = 0
+
+        And in _handle_ws_message, when msg_type == "event", after the counter
+        updates, add:
+            self.session.backend_event_count += 1
+
+        Then in _recover_missed_events, use backend_event_count instead of
+        len(self.session.behavior_data) for the since parameter:
+            since = self.session.backend_event_count
+        And after processing recovered events, update the count:
+            self.session.backend_event_count += len(data)
+      </instructions>
+    </file>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- FILE 6: Backend test for behavior?since= semantics                -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <file path="reacher/tests/test_websocket.py" action="edit">
+      <current_code_reference>
+        Existing test file with TestWatchdogF001 and TestBroadcastWorkerF004
+        classes (lines 1-114).
+      </current_code_reference>
+
+      <instructions>
+        Append a new test class to the end of the file. This tests the REST
+        endpoint that the recovery mechanism depends on:
+
+        class TestBehaviorSinceEndpoint:
+            """Verify GET /behavior?since=N returns correct slices for event recovery."""
+
+            async def test_since_returns_slice(self):
+                """since=N returns behavior_data[N:] with correct total."""
+                from unittest.mock import Mock, patch
+                from starlette.testclient import TestClient
+
+                # Build a mock REACHER instance with 5 behavior events
+                mock_instance = Mock()
+                events = [
+                    {"device": "RH_LEVER", "event": "ACTIVE_PRESS", "start_timestamp": i, "end_timestamp": i}
+                    for i in range(5)
+                ]
+                mock_instance.get_behavior_data.return_value = list(events)
+
+                mock_info = Mock()
+                mock_info.instance = mock_instance
+
+                mock_sm = Mock()
+                mock_sm.get_session.return_value = mock_info
+
+                from reacher.api.app import create_app
+                app = create_app()
+                app.state.session_manager = mock_sm
+
+                client = TestClient(app)
+                # Simulate auth
+                from reacher.api.middleware.auth import API_KEY
+                headers = {"Authorization": f"Bearer {API_KEY}"}
+
+                # since=3 should return events[3:]
+                resp = client.get("/api/data/test-sess/behavior?since=3", headers=headers)
+                assert resp.status_code == 200
+                body = resp.json()
+                assert len(body["data"]) == 2
+                assert body["total"] == 5
+
+            async def test_since_beyond_length_returns_empty(self):
+                """since beyond list length returns empty data with correct total."""
+                from unittest.mock import Mock
+                from starlette.testclient import TestClient
+
+                mock_instance = Mock()
+                events = [
+                    {"device": "PUMP", "event": "INFUSION", "start_timestamp": 0, "end_timestamp": 0}
+                ]
+                mock_instance.get_behavior_data.return_value = list(events)
+
+                mock_info = Mock()
+                mock_info.instance = mock_instance
+
+                mock_sm = Mock()
+                mock_sm.get_session.return_value = mock_info
+
+                from reacher.api.app import create_app
+                app = create_app()
+                app.state.session_manager = mock_sm
+
+                client = TestClient(app)
+                from reacher.api.middleware.auth import API_KEY
+                headers = {"Authorization": f"Bearer {API_KEY}"}
+
+                resp = client.get("/api/data/test-sess/behavior?since=99", headers=headers)
+                assert resp.status_code == 200
+                body = resp.json()
+                assert len(body["data"]) == 0
+                assert body["total"] == 1
+      </instructions>
+    </file>
+  </files>
+
+  <verification>
+    <step>cd reacher &amp;&amp; pytest — all existing + new tests pass</step>
+    <step>cd labrynth/web &amp;&amp; npm run build — TypeScript compiles without errors</step>
+    <step>cd labrynth/web &amp;&amp; npm run lint — no ESLint violations</step>
+    <step>
+      Manual: Run backend on one machine, frontend on another. Start a session
+      and begin a program. Briefly disconnect the network cable (~5 seconds),
+      then reconnect. Verify that:
+      1. The WebSocket reconnects automatically
+      2. A log message appears: "Recovered N missed events after reconnect"
+      3. The event count in the UI matches GET /api/data/{id}/behavior total
+      4. No duplicate events appear in the behavior data table
+    </step>
+  </verification>
+
+  <constraints>
+    <constraint>Python 3.10+, ruff linter (line-length 120) for reacher/</constraint>
+    <constraint>TypeScript strict mode, ESLint for labrynth/web/</constraint>
+    <constraint>Do not modify the WebSocket broadcast worker or event queue logic — the backend pipeline is correct; only the recovery-after-reconnect is missing</constraint>
+    <constraint>Do not add new npm or pip dependencies</constraint>
+    <constraint>The backend's behavior_data[] is authoritative — the frontend should defer to it on reconnect</constraint>
+    <constraint>replaceEvents() must recalculate all derived counters (infusionCount, pressCount, trialCount, rhLeverCounts, lhLeverCounts) from the event list rather than using stale incremental values</constraint>
+  </constraints>
+</prompt>
+]]>

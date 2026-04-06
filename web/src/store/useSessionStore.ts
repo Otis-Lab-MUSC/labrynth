@@ -17,6 +17,7 @@ interface SessionStore {
   setActive: (id: string | null) => void;
   updateState: (id: string, state: SessionState) => void;
   pushEvent: (id: string, event: BehaviorEvent) => void;
+  replaceEvents: (id: string, events: BehaviorEvent[]) => void;
   pushFrame: (id: string, timestamp: number) => void;
   setFirmwareInfo: (id: string, info: FirmwareConfig) => void;
   setUploadProgress: (id: string, percent: number, stage: string) => void;
@@ -257,6 +258,43 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       next.set(id, {
         ...sess,
         behaviorData: [...sess.behaviorData, event],
+        infusionCount,
+        pressCount,
+        trialCount,
+        rhLeverCounts,
+        lhLeverCounts,
+      });
+      return { sessions: next };
+    }),
+
+  replaceEvents: (id, events) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      let infusionCount = 0;
+      let pressCount = 0;
+      let trialCount = 0;
+      const rhLeverCounts = { ...ZERO_LEVER };
+      const lhLeverCounts = { ...ZERO_LEVER };
+      for (const e of events) {
+        if (e.device === "PUMP" && e.event === "INFUSION") infusionCount++;
+        if ((e.device === "RH_LEVER" || e.device === "LH_LEVER") && e.event.includes("PRESS")) pressCount++;
+        if (e.device === "PAVLOV" && e.event === "TRIAL_START") trialCount++;
+        if (e.device === "RH_LEVER") {
+          if (e.event === "ACTIVE_PRESS") rhLeverCounts.active++;
+          if (e.event === "TIMEOUT_PRESS") rhLeverCounts.timeout++;
+          if (e.event === "INACTIVE_PRESS") rhLeverCounts.inactive++;
+        }
+        if (e.device === "LH_LEVER") {
+          if (e.event === "ACTIVE_PRESS") lhLeverCounts.active++;
+          if (e.event === "TIMEOUT_PRESS") lhLeverCounts.timeout++;
+          if (e.event === "INACTIVE_PRESS") lhLeverCounts.inactive++;
+        }
+      }
+      next.set(id, {
+        ...sess,
+        behaviorData: events,
         infusionCount,
         pressCount,
         trialCount,

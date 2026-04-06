@@ -27,12 +27,15 @@ export class ReacherWebSocket {
   private baseWsUrl: string | null;
   /** Pre-supplied token for remote machines (skips the /api/auth/token fetch). */
   private overrideToken: string | null;
+  private onReconnect: (() => void) | null;
+  private hasConnectedOnce = false;
 
-  constructor(sessionId: string, handler: MessageHandler, baseWsUrl?: string, token?: string) {
+  constructor(sessionId: string, handler: MessageHandler, baseWsUrl?: string, token?: string, onReconnect?: () => void) {
     this.sessionId = sessionId;
     this.handler = handler;
     this.baseWsUrl = baseWsUrl ?? null;
     this.overrideToken = token ?? null;
+    this.onReconnect = onReconnect ?? null;
     this.setupVisibilityListener();
     this.connect();
   }
@@ -120,6 +123,10 @@ export class ReacherWebSocket {
       this.ws = new WebSocket(url);
     this.ws.onopen = () => {
       this.reconnectAttempt = 0;
+      if (this.hasConnectedOnce && this.onReconnect) {
+        this.onReconnect();
+      }
+      this.hasConnectedOnce = true;
       this.startHeartbeat();
     };
     this.ws.onmessage = (ev) => {

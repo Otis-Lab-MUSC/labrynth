@@ -284,6 +284,7 @@ class SessionState:
         default_factory=lambda: {"type": "Time", "time_limit": 3600, "infusion_limit": 30, "delay": 60}
     )
     file_config: dict = field(default_factory=lambda: {"filename": "", "destination": "", "notes": ""})
+    backend_event_count: int = 0
 
     @property
     def elapsed(self) -> float:
@@ -1236,30 +1237,76 @@ class ReacherCLI:
             return
 
         ws_url = f"ws://localhost:{self.port}/ws/{self.session.id}"
-        try:
-            async with websockets.connect(ws_url) as ws:
-                # Periodic refresh for elapsed time display
-                async def _refresh_loop():
-                    while True:
-                        await asyncio.sleep(1)
-                        self._invalidate()
+        attempt = 0
+        max_attempts = 15
+        connected_once = False
 
-                refresh = asyncio.ensure_future(_refresh_loop())
-                try:
-                    async for raw in ws:
-                        try:
-                            msg = json.loads(raw)
-                        except json.JSONDecodeError:
-                            continue
-                        self._handle_ws_message(msg)
+        while attempt < max_attempts:
+            try:
+                async with websockets.connect(ws_url) as ws:
+                    attempt = 0  # Reset on successful connection
+
+                    if connected_once:
+                        await self._recover_missed_events()
+                        self.monitor_lines.append(
+                            ("class:monitor-event", "  [info] WebSocket reconnected"))
                         self._invalidate()
-                finally:
-                    refresh.cancel()
-        except asyncio.CancelledError:
+                    connected_once = True
+
+                    async def _refresh_loop():
+                        while True:
+                            await asyncio.sleep(1)
+                            self._invalidate()
+
+                    refresh = asyncio.ensure_future(_refresh_loop())
+                    try:
+                        async for raw in ws:
+                            try:
+                                msg = json.loads(raw)
+                            except json.JSONDecodeError:
+                                continue
+                            self._handle_ws_message(msg)
+                            self._invalidate()
+                    finally:
+                        refresh.cancel()
+            except asyncio.CancelledError:
+                return
+            except Exception as exc:
+                attempt += 1
+                if attempt >= max_attempts:
+                    self.monitor_lines.append(
+                        ("class:status-bar-error",
+                         f"WebSocket failed after {max_attempts} attempts: {exc}"))
+                    self._invalidate()
+                    return
+                delay = min(1.0 * (2 ** (attempt - 1)), 10.0)
+                self.monitor_lines.append(
+                    ("class:status-bar-error",
+                     f"WebSocket disconnected, retrying in {delay:.0f}s..."))
+                self._invalidate()
+                await asyncio.sleep(delay)
+
+    async def _recover_missed_events(self) -> None:
+        """Fetch events missed during WebSocket disconnect from REST API."""
+        if not self.session:
             return
+        try:
+            since = self.session.backend_event_count
+            resp = await self.api.get_behavior(self.session.id, since=since)
+            data = resp.get("data", [])
+            total = resp.get("total", 0)
+            if data:
+                for entry in data:
+                    fake_msg = {"type": "event", "data": entry}
+                    self._handle_ws_message(fake_msg)
+                self.session.backend_event_count = total
+                self.monitor_lines.append(
+                    ("class:monitor-event",
+                     f"  [info] Recovered {len(data)} missed events"))
         except Exception as exc:
-            self.monitor_lines.append(("class:status-bar-error", f"WebSocket error: {exc}"))
-            self._invalidate()
+            self.monitor_lines.append(
+                ("class:status-bar-error",
+                 f"Event recovery failed: {exc}"))
 
     def _handle_ws_message(self, msg: dict) -> None:
         msg_type = msg.get("type", "")
@@ -1278,6 +1325,7 @@ class ReacherCLI:
 
             # Update counts
             if self.session:
+                self.session.backend_event_count += 1
                 if event == "infusion":
                     self.session.infusion_count += 1
                 elif event in ("active_press", "timeout_press", "inactive_press"):
