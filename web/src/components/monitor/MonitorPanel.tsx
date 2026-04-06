@@ -3,6 +3,7 @@ import { useSessionStore } from "../../store/useSessionStore";
 import { getClientForSession } from "../../api/sessionClient";
 import { EventTimeline } from "./EventTimeline";
 import { LiveStats } from "./LiveStats";
+import { SessionProgress } from "./SessionProgress";
 import type { SessionState } from "../../types";
 
 function RunningMouseIndicator({ state }: { state: SessionState }) {
@@ -116,6 +117,7 @@ export function MonitorPanel() {
         </button>
       </div>
 
+      <SessionProgress session={session} elapsed={elapsed} />
       <div data-tour="live-stats"><LiveStats session={session} elapsed={elapsed} /></div>
       <EventTimeline events={session.behaviorData} />
     </div>
