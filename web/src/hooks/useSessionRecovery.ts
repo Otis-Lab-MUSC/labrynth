@@ -104,7 +104,7 @@ export function useSessionRecovery() {
                   secondaryCue: { armed: false, frequency: 2900, duration: 1000 },
                   primaryPump: { armed: false, duration: 3000 },
                   secondaryPump: { armed: false, duration: 3000 },
-                  laser: { armed: false, frequency: 20, duration: 10000, mode: "contingent" },
+                  laser: { armed: false, frequency: 40, duration: 5000, mode: "contingent", phase: "reward" },
                   lickCircuit: { armed: false },
                   microscope: { armed: false, frameRate: null, frameAveraging: null },
                   testMode: false,
