@@ -68,11 +68,11 @@ export function LaserControl({ sessionId, paradigm }: Props) {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-theme-text/60">Phase:</span>
                 <button
-                  onClick={() => { send(695); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, phase: "reward" } })); }}
+                  onClick={() => { send(694); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, phase: "reward" } })); }}
                   className={`btn-sm ${phase === "reward" ? "bg-purple-600" : "bg-purple-600/40"} text-white`}
                 >Reward</button>
                 <button
-                  onClick={() => { send(694); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, phase: "cue" } })); }}
+                  onClick={() => { send(695); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, phase: "cue" } })); }}
                   className={`btn-sm ${phase === "cue" ? "bg-purple-600" : "bg-purple-600/40"} text-white`}
                 >Cue</button>
               </div>
