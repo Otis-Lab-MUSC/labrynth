@@ -40,7 +40,7 @@ export function LaserControl({ sessionId, paradigm }: Props) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-theme-text/60">Mode:</span>
             <button
-              onClick={() => { send(681); send(691); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, mode: "cs_plus" } })); }}
+              onClick={() => { send(681); send(693); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, mode: "cs_both" } })); }}
               className={`btn-sm ${mode !== "independent" ? "bg-purple-600" : "bg-purple-600/40"} text-white`}
             >Trial-Paired</button>
             <button
@@ -92,7 +92,7 @@ export function LaserControl({ sessionId, paradigm }: Props) {
         </div>
       )}
       <div className="flex items-center gap-2">
-        <label className="text-sm text-theme-text/60">Freq (Hz):</label>
+        <label className="text-sm text-theme-text/60" title="Integer ms timing causes ~2-4% error at 30/40 Hz. Exact at 1, 10, 20, 25, 50 Hz.">Freq (Hz):</label>
         <input type="number" value={frequency} min={1} max={65535}
           onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, frequency: +e.target.value } }))}
           className="w-24 input-base" />
