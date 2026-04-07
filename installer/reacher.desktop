@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=REACHER
+Exec=REACHER
+Icon=reacher
+Type=Application
+Categories=Science;Education;
+Comment=Neuroscience experiment control system
