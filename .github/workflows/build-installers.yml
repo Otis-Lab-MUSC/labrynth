@@ -171,67 +171,6 @@ jobs:
           path: dist/REACHER-${{ needs.version-check.outputs.version }}-macos-arm64.dmg
 
   # -------------------------------------------------------------------
-  # macOS — DMG disk image (.dmg) — Intel (x64)
-  # -------------------------------------------------------------------
-  build-macos-x64:
-    needs: [version-check]
-    runs-on: macos-13
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install avrdude
-        run: brew install avrdude
-
-      - name: Locate avrdude
-        id: avrdude
-        run: |
-          AVRDUDE=$(which avrdude)
-          echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
-          echo "Found avrdude at: $AVRDUDE"
-
-      - name: Install reacher from source
-        run: |
-          REF="${{ inputs.reacher_ref || 'develop' }}"
-          git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
-          python -m pip install ./_reacher
-          python -c "import reacher; print('reacher OK')"
-
-      - name: Install Python build tools
-        run: python -m pip install pyinstaller
-
-      - name: Build application
-        run: python build.py --fetch-firmware --avrdude "${{ steps.avrdude.outputs.path }}"
-
-      - name: Create DMG
-        env:
-          VERSION: ${{ needs.version-check.outputs.version }}
-        run: |
-          hdiutil create \
-            -volname "REACHER $VERSION" \
-            -srcfolder dist/REACHER.app \
-            -ov -format UDZO \
-            "dist/REACHER-${VERSION}-macos-x64.dmg"
-
-      - name: Upload DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-x64-dmg
-          path: dist/REACHER-${{ needs.version-check.outputs.version }}-macos-x64.dmg
-
-  # -------------------------------------------------------------------
   # Linux — DEB package (.deb), tarball (.tar.gz), AppImage
   # -------------------------------------------------------------------
   build-linux:
@@ -373,7 +312,7 @@ jobs:
   # Release — publish artifacts to GitHub Releases
   # -------------------------------------------------------------------
   release:
-    needs: [build-windows, build-macos-arm64, build-macos-x64, build-linux, version-check]
+    needs: [build-windows, build-macos-arm64, build-linux, version-check]
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
     steps:
@@ -398,7 +337,6 @@ jobs:
             |----------|------|-------|
             | Windows (x64) | `REACHER-*-windows-x64.exe` | Installer |
             | macOS (Apple Silicon) | `REACHER-*-macos-arm64.dmg` | M1/M2/M3/M4 |
-            | macOS (Intel) | `REACHER-*-macos-x64.dmg` | Pre-2020 Macs |
             | Linux (Debian/Ubuntu) | `reacher_*_amd64.deb` | `sudo dpkg -i *.deb` |
             | Linux (portable) | `REACHER-*-linux-x64.AppImage` | Any distro |
             | Linux (tarball) | `REACHER-*-linux-x64.tar.gz` | Extract and run |

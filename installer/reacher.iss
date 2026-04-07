@@ -27,8 +27,8 @@ OutputDir=..\dist
 OutputBaseFilename=REACHER-{#VERSION_NUM}-windows-x64
 Compression=lzma2
 SolidCompression=yes
-ArchitecturesAllowed=x64compatible
-ArchitecturesInstallMode=x64compatible
+ArchitecturesAllowed=x64
+ArchitecturesInstallMode=x64
 WizardStyle=modern
 UninstallDisplayIcon={app}\REACHER.exe
 
