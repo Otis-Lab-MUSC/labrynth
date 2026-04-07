@@ -14,7 +14,7 @@ jobs:
           github-token: ${{ secrets.REACHER_SUITE_SITE_TOKEN }}
           script: |
             await github.rest.actions.createWorkflowDispatch({
-              owner: 'otis-lab-musc',
+              owner: 'thejoshbq',
               repo: 'REACHER-Suite',
               workflow_id: 'deploy-site.yml',
               ref: 'main'
