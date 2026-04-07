@@ -119,6 +119,7 @@ export function MonitorPanel() {
           {session.state === "paused" ? "Play" : "Pause"}
         </button>
         <button
+          data-tour="split-button"
           onClick={() => getClientForSession(activeSessionId)?.splitSegment(activeSessionId)}
           disabled={!canControl}
           className="rounded bg-blue-600 px-4 py-2 text-white font-mono hover:bg-blue-700 disabled:opacity-50"
@@ -156,7 +157,7 @@ export function MonitorPanel() {
 
       {/* Segment indicator */}
       {session.segmentNumber > 0 && (
-        <div className="text-sm font-mono text-theme-text/60">
+        <div data-tour="segment-indicator" className="text-sm font-mono text-theme-text/60">
           Segment: <span className="text-accent font-bold">{session.segmentNumber + 1}</span>
           <span className="ml-2 text-theme-text/40">({session.segmentNumber} split{session.segmentNumber > 1 ? "s" : ""})</span>
         </div>

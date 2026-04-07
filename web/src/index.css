@@ -199,12 +199,12 @@ body {
 }
 
 @keyframes spotlight-interactive {
-  0%, 100% { outline-color: rgb(var(--color-accent) / 0.2); }
-  50% { outline-color: rgb(var(--color-accent) / 0.6); }
+  0%, 100% { outline-color: rgba(245, 158, 11, 0.2); }
+  50% { outline-color: rgba(245, 158, 11, 0.6); }
 }
 
 .animate-spotlight-interactive {
-  outline: 2px solid rgb(var(--color-accent) / 0.4);
+  outline: 2px solid rgba(245, 158, 11, 0.4);
   outline-offset: 0px;
   animation: spotlight-interactive 2s ease-in-out infinite;
 }

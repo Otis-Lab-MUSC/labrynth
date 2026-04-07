@@ -76,7 +76,7 @@ export function firstSessionTour(): TutorialStep[] {
       target: "sidebar",
       title: "Navigation",
       content:
-        "Use the sidebar to switch between panels: Session, Program, Hardware, Monitor, and Data. Each handles a different part of the experiment workflow.",
+        "Use the sidebar to switch between panels: Session, Configuration, Monitor, and Data. Each handles a different part of the experiment workflow.",
       placement: "right",
       section: "Getting Started",
     },
@@ -92,6 +92,17 @@ export function firstSessionTour(): TutorialStep[] {
       section: "Getting Started",
     },
 
+    {
+      id: "first-session-3b",
+      panel: "session",
+      target: "machine-management",
+      title: "Device Management",
+      content:
+        "Expand this section to pair remote REACHER devices on your network. You can enter a 6-digit pairing code, scan for discovered devices, or add a machine manually by URL.",
+      placement: "bottom",
+      section: "Getting Started",
+    },
+
     // ── Connection ───────────────────────────────────────
     {
       id: "first-session-4",
@@ -103,6 +114,7 @@ export function firstSessionTour(): TutorialStep[] {
       placement: "bottom",
       interactive: true,
       section: "Connection",
+      gate: (s) => s !== null && s.state !== "idle" && !s.draft,
     },
     {
       id: "first-session-4b",
@@ -225,6 +237,16 @@ export function firstSessionTour(): TutorialStep[] {
       title: "Start / Stop / Pause",
       content:
         "Control the running experiment: Start begins the program, Stop ends it, and Pause freezes the timer and event processing.",
+      placement: "bottom",
+      section: "Monitor",
+    },
+    {
+      id: "first-session-15b",
+      panel: "monitor",
+      target: "split-button",
+      title: "Session Segmentation",
+      content:
+        "Click Split to mark a segment boundary during a running session. Use this to separate experimental phases (baseline, drug, recovery) within a single recording.",
       placement: "bottom",
       section: "Monitor",
     },

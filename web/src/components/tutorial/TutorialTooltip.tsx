@@ -98,12 +98,13 @@ export function TutorialTooltip({
   });
 
   const summaryText = step.summary && activeSession ? step.summary(activeSession) : null;
+  const gateOpen = !step.gate || step.gate(activeSession);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "Enter") {
         e.preventDefault();
-        onNext();
+        if (gateOpen) onNext();
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         onPrev();
@@ -114,7 +115,7 @@ export function TutorialTooltip({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onNext, onPrev, onSkip]);
+  }, [onNext, onPrev, onSkip, gateOpen]);
 
   // Measure actual tooltip height after render and reposition if needed
   useLayoutEffect(() => {
@@ -153,15 +154,15 @@ export function TutorialTooltip({
   return (
     <div
       ref={tooltipRef}
-      className="z-[70] w-[340px] bg-panel border border-theme-border rounded-lg shadow-xl animate-tooltip-enter overflow-hidden"
+      className="z-[70] w-[340px] bg-panel border border-amber-500/30 rounded-lg shadow-xl animate-tooltip-enter overflow-hidden"
       style={positionStyle}
     >
       <div className="p-4 space-y-3">
         <div>
-          <h3 className="text-base font-semibold text-accent">{step.title}</h3>
+          <h3 className="text-base font-semibold text-amber-500">{step.title}</h3>
           {step.interactive && (
-            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-accent/15 text-accent text-xs font-medium">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-status-pulse" />
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-xs font-medium">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 animate-status-pulse" />
               Try it — interact with the highlighted area
             </span>
           )}
@@ -170,7 +171,7 @@ export function TutorialTooltip({
 
         {summaryText && (
           <div className="mt-2 px-2.5 py-2 rounded bg-surface/50 border border-theme-border">
-            <span className="text-xs font-semibold text-accent uppercase tracking-wider">Your configuration</span>
+            <span className="text-xs font-semibold text-amber-500 uppercase tracking-wider">Your configuration</span>
             <pre className="mt-1 text-xs text-theme-text/70 font-mono whitespace-pre-wrap leading-relaxed">
               {summaryText}
             </pre>
@@ -198,11 +199,19 @@ export function TutorialTooltip({
             )}
             <button
               onClick={onNext}
-              className="px-3 py-1 text-sm rounded bg-accent text-accent-contrast hover:bg-accent-hover transition"
+              disabled={!gateOpen}
+              className={`px-3 py-1 text-sm rounded transition ${
+                gateOpen
+                  ? "bg-amber-500 text-black hover:bg-amber-600"
+                  : "bg-amber-500/30 text-black/50 cursor-not-allowed"
+              }`}
             >
               {isLast ? "Finish" : "Next"}
             </button>
           </div>
+          {!gateOpen && (
+            <p className="text-xs text-amber-400/60 mt-1 text-right">Complete the highlighted action to continue</p>
+          )}
         </div>
       </div>
     </div>

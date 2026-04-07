@@ -131,7 +131,7 @@ export function SessionStartModal() {
 
       // Send paradigm settings to ensure they reach the firmware even if
       // applySessionPreset's command block was skipped (e.g. state-sync delay
-      // on remote sessions).  Mirrors the codes used in ProgramPanel.tsx.
+      // on remote sessions).  Mirrors the codes used in ConfigurationPanel.tsx.
       if (session.paradigmSettings && paradigm !== "pavlovian") {
         const client = getClientForSession(activeSessionId);
         if (paradigm === "fr" || paradigm === "pr") {

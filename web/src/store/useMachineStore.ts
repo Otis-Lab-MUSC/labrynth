@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { DiscoveredDevice, Machine } from "../types";
 import { MachineApiClient } from "../api/client";
+import { DemoMachineApiClient } from "../api/demoClient";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -139,10 +140,10 @@ export const useMachineStore = create<MachineStore>((set, get) => {
           url: "",
           isLocal: true,
           paired: true,
-          online: false,
+          online: true,
           lastSeen: null,
         };
-        _clients.set(LOCAL_PLACEHOLDER_ID, new MachineApiClient(""));
+        _clients.set(LOCAL_PLACEHOLDER_ID, new DemoMachineApiClient());
         set((s) => ({
           machines: [placeholder, ...s.machines.filter((m) => !m.isLocal)],
           activeMachineId: LOCAL_PLACEHOLDER_ID,

@@ -48,9 +48,9 @@ export function TutorialProgress({ current, total, steps, onGoToStep }: Tutorial
                 onClick={() => onGoToStep(s.startIndex)}
                 className={`px-2 py-0.5 rounded-full text-xs font-medium transition ${
                   isActive
-                    ? "bg-accent/20 text-accent"
+                    ? "bg-amber-500/20 text-amber-400"
                     : isPast
-                      ? "text-accent/50 hover:bg-accent/10"
+                      ? "text-amber-500/50 hover:bg-amber-500/10"
                       : "text-theme-text/30 hover:bg-theme-text/5"
                 }`}
               >
@@ -67,7 +67,7 @@ export function TutorialProgress({ current, total, steps, onGoToStep }: Tutorial
         </span>
         <div className="h-1 flex-1 min-w-[40px] max-w-[80px] bg-theme-text/10 rounded-full overflow-hidden">
           <div
-            className="h-full bg-accent rounded-full transition-all duration-200"
+            className="h-full bg-amber-500 rounded-full transition-all duration-200"
             style={{ width: `${pct}%` }}
           />
         </div>

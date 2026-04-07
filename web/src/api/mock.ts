@@ -1,4 +1,4 @@
-import type { BoardInfo, Session } from "../types";
+import type { BoardInfo, BoardType, Session } from "../types";
 import { useSessionStore } from "../store/useSessionStore";
 
 let simulatorTimer: ReturnType<typeof setTimeout> | null = null;
@@ -134,12 +134,15 @@ export const resetSession = async (_id: string) => {};
 
 export const listPorts = async () => ({ ports: ["DEMO-PORT"] });
 
-export const connectSerial = async (_id: string) => ({
-  status: "ok",
-  port: "DEMO-PORT",
-  detected_paradigm: "fr",
-  detected_board: "uno",
-});
+export const connectSerial = async (id: string) => {
+  const session = useSessionStore.getState().sessions.get(id);
+  return {
+    status: "ok",
+    port: "DEMO-PORT",
+    detected_paradigm: session?.paradigm ?? "fr",
+    detected_board: session?.board ?? "uno",
+  };
+};
 
 export const disconnectSerial = async (_id: string) => {};
 
@@ -154,26 +157,33 @@ export const listParadigms = async (_board?: string) => ({
   paradigms: ["fr", "pr", "vi", "omission", "pavlovian"],
 });
 
-export const uploadFirmware = async (_id: string, paradigm: string, board: string = "uno") => ({
-  status: "ok",
-  paradigm,
-  board,
-  firmware_info: {
-    sketch: paradigm,
-    version: "2.0.0",
-    baud_rate: 115200,
-    desc: `Demo ${paradigm.toUpperCase()} firmware`,
-  },
-});
+export const uploadFirmware = async (id: string, paradigm: string, board: string = "uno") => {
+  useSessionStore.getState().setParadigm(id, paradigm);
+  useSessionStore.getState().setBoard(id, board as BoardType);
+  return {
+    status: "ok",
+    paradigm,
+    board,
+    firmware_info: {
+      sketch: paradigm,
+      version: "2.0.0",
+      baud_rate: 115200,
+      desc: `Demo ${paradigm.toUpperCase()} firmware`,
+    },
+  };
+};
 
 export const sendCommand = async (_id: string, _code: number, _value?: number) => ({
   status: "ok",
 });
 
-export const getCommands = async (_id: string) => ({
-  paradigm: "fr",
-  commands: [],
-});
+export const getCommands = async (id: string) => {
+  const session = useSessionStore.getState().sessions.get(id);
+  return {
+    paradigm: session?.paradigm ?? "fr",
+    commands: [],
+  };
+};
 
 export const getConfig = async (_id: string) => ({
   firmware_info: {},
@@ -229,3 +239,41 @@ export const setFileConfig = async (_id: string, body: { filename?: string; dest
   filename: body.filename ?? "demo_session",
   destination: body.destination ?? "~/Demo",
 });
+
+export const splitSegment = async (id: string) => {
+  const session = useSessionStore.getState().sessions.get(id);
+  if (session) {
+    useSessionStore.getState().handleSplit(id, session.segmentNumber + 1);
+  }
+  return { status: "ok" };
+};
+
+export const restartProgram = async (id: string) => {
+  stopSimulator();
+  useSessionStore.getState().updateState(id, "running");
+  startSimulator(id);
+  return { status: "ok" };
+};
+
+function generateSampleCsv(id: string): string {
+  const session = useSessionStore.getState().sessions.get(id);
+  if (!session) return "device,event,start_timestamp,end_timestamp\n";
+  const header = "device,event,start_timestamp,end_timestamp\n";
+  const rows = session.behaviorData
+    .map((e) => `${e.device},${e.event},${e.start_timestamp},${e.end_timestamp}`)
+    .join("\n");
+  return header + rows;
+}
+
+export const downloadExportZip = async (id: string, _filePath: string) => {
+  const csv = generateSampleCsv(id);
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "demo_export.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};

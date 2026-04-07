@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTutorialStore } from "../../store/useTutorialStore";
 import { useSessionStore } from "../../store/useSessionStore";
+import { useMachineStore } from "../../store/useMachineStore";
 import { useThemeStore } from "../../store/useThemeStore";
 
 const DISMISSED_KEY = "labrynth-welcome-dismissed";
@@ -117,9 +118,18 @@ export function WelcomeScreen() {
     startTour("first-session");
   };
 
-  const handleDemo = () => {
+  const handleDemo = async () => {
     dismiss();
     setDemoMode(true);
+    // Auto-seed a connected demo session so panels show meaningful content
+    const { createSession, setParadigm, setBoard, updateState } = useSessionStore.getState();
+    const activeMachineId = useMachineStore.getState().activeMachineId;
+    if (activeMachineId) {
+      const id = await createSession(activeMachineId, "DEMO-PORT");
+      setParadigm(id, "fr");
+      setBoard(id, "uno");
+      updateState(id, "connected");
+    }
   };
 
   if (!visible) return null;
@@ -152,12 +162,14 @@ export function WelcomeScreen() {
           >
             Take the Interactive Tour
           </button>
-          <button
-            onClick={handleDemo}
-            className="w-full rounded-lg border border-accent/30 px-4 py-3 text-accent font-medium hover:bg-accent/10 transition"
-          >
-            {IS_DEMO_SITE ? "Explore Freely" : "Try Demo Mode"}
-          </button>
+          {IS_DEMO_SITE && (
+            <button
+              onClick={handleDemo}
+              className="w-full rounded-lg border border-accent/30 px-4 py-3 text-accent font-medium hover:bg-accent/10 transition"
+            >
+              Explore Freely
+            </button>
+          )}
         </div>
 
         {!IS_DEMO_SITE && (

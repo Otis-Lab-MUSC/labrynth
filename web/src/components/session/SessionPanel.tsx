@@ -157,7 +157,7 @@ export function SessionPanel() {
       </div>
 
       {/* Inline device management */}
-      <details className="card">
+      <details data-tour="machine-management" className="card">
         <summary className="font-medium text-theme-text cursor-pointer select-none">Manage Devices</summary>
         <MachineManagement />
       </details>

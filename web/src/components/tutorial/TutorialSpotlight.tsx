@@ -28,6 +28,7 @@ export function TutorialSpotlight({ rect, visible, interactive }: TutorialSpotli
         width: rect.width + padding * 2,
         height: rect.height + padding * 2,
         boxShadow: "0 0 0 9999px rgba(0,0,0,0.6)",
+        border: "2px solid rgba(245, 158, 11, 0.5)",
         pointerEvents: "none",
       }}
     />

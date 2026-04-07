@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { Panel } from "./useNavigationStore";
 import type { Session } from "../types";
+import { useSessionStore } from "./useSessionStore";
 
 export interface TutorialStep {
   id: string;
@@ -12,6 +13,10 @@ export interface TutorialStep {
   interactive?: boolean;
   section?: string;
   summary?: (session: Session) => string | null;
+  /** If present, "Next" is disabled until predicate returns true. */
+  gate?: (session: Session | null) => boolean;
+  /** If present and returns false, step is skipped when navigating. */
+  visible?: (session: Session | null) => boolean;
 }
 
 interface TutorialStore {
@@ -79,17 +84,33 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
 
   nextStep: () => {
     const { currentStepIndex, steps } = get();
-    if (currentStepIndex < steps.length - 1) {
-      set({ currentStepIndex: currentStepIndex + 1 });
+    const sessionStore = useSessionStore.getState();
+    const session = sessionStore.activeSessionId
+      ? sessionStore.sessions.get(sessionStore.activeSessionId) ?? null
+      : null;
+    let next = currentStepIndex + 1;
+    while (next < steps.length && steps[next].visible && !steps[next].visible!(session)) {
+      next++;
+    }
+    if (next < steps.length) {
+      set({ currentStepIndex: next });
     } else {
       get().endTour();
     }
   },
 
   prevStep: () => {
-    const { currentStepIndex } = get();
-    if (currentStepIndex > 0) {
-      set({ currentStepIndex: currentStepIndex - 1 });
+    const { currentStepIndex, steps } = get();
+    const sessionStore = useSessionStore.getState();
+    const session = sessionStore.activeSessionId
+      ? sessionStore.sessions.get(sessionStore.activeSessionId) ?? null
+      : null;
+    let prev = currentStepIndex - 1;
+    while (prev >= 0 && steps[prev].visible && !steps[prev].visible!(session)) {
+      prev--;
+    }
+    if (prev >= 0) {
+      set({ currentStepIndex: prev });
     }
   },
 
@@ -113,7 +134,10 @@ export const useTutorialStore = create<TutorialStore>((set, get) => ({
   },
 
   demoMode: import.meta.env.VITE_DEMO_SITE === "true",
-  setDemoMode: (on) => set({ demoMode: on }),
+  setDemoMode: (on) => {
+    if (on && import.meta.env.VITE_DEMO_SITE !== "true") return;
+    set({ demoMode: on });
+  },
 
   helpOpen: false,
   helpSection: null,

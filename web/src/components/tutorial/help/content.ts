@@ -10,7 +10,7 @@ export const HELP_CONTENT: HelpSection[] = [
     id: "overview",
     title: "Overview",
     content:
-      "Labrynth is the control interface for REACHER, a neuroscience experiment system for head-fixed rodent operant conditioning. It manages Arduino hardware (levers, pumps, cues, lasers, lick circuits, microscope sync) across five behavioral paradigms: Fixed Ratio (FR), Progressive Ratio (PR), Variable Interval (VI), Omission, and Pavlovian.\n\nThe workflow follows five panels: Session (connect hardware), Program (configure paradigm), Hardware (arm devices), Monitor (run experiment), and Data (export results).",
+      "Labrynth is the control interface for REACHER, a neuroscience experiment system for head-fixed rodent operant conditioning. It manages Arduino hardware (levers, pumps, cues, lasers, lick circuits, microscope sync) across five behavioral paradigms: Fixed Ratio (FR), Progressive Ratio (PR), Variable Interval (VI), Omission, and Pavlovian.\n\nThe workflow follows four panels: Session (connect hardware), Configuration (configure paradigm and arm devices), Monitor (run experiment), and Data (export results).",
   },
   {
     id: "session",
@@ -35,6 +35,12 @@ export const HELP_CONTENT: HelpSection[] = [
         content:
           "The Firmware Upload card lets you change the paradigm running on the Arduino. Select a paradigm (FR, PR, VI, Omission, Pavlovian) and board type (UNO, Mega), then click Upload. Progress is shown in the terminal. The Arduino resets after upload and re-handshakes automatically.",
       },
+      {
+        id: "session.machines",
+        title: "Device Management",
+        content:
+          "The Manage Devices section lets you pair and manage remote REACHER devices. Use a 6-digit pairing code displayed on the remote device, scan for devices on your local network, or add a machine manually by URL and API key.",
+      },
     ],
   },
   {
@@ -52,7 +58,7 @@ export const HELP_CONTENT: HelpSection[] = [
         id: "configuration.paradigm",
         title: "Paradigm Settings",
         content:
-          "Configure paradigm-specific parameters. For FR: the fixed ratio (presses per reinforcement). For PR: starting ratio and step size. For VI: the variable interval range. For Omission: the omission interval. For Pavlovian: trial timing parameters via a dedicated settings panel.\n\nThe Trace Interval sets the delay between cue offset and reinforcement delivery.",
+          "Configure paradigm-specific parameters. For FR: the fixed ratio (presses per reinforcement). For PR: starting ratio and step size. For VI: the variable interval range. For Omission: the omission interval. For Pavlovian: trial timing parameters via a dedicated settings panel.\n\nThe Trace Interval sets the delay between cue offset and reinforcement delivery.\n\nFor Pavlovian paradigms, a dedicated settings panel replaces the standard controls, offering CS+/CS- reward probabilities, tone frequencies, cue durations, trace intervals, ITI parameters, and pulse timing.",
       },
       {
         id: "configuration.limits",
@@ -134,6 +140,12 @@ export const HELP_CONTENT: HelpSection[] = [
         title: "Session Controls",
         content:
           "Three buttons control the running session:\n\n- Start: begins the experiment program\n- Stop: ends the session immediately\n- Pause/Resume: temporarily freezes the experiment timer and event processing",
+      },
+      {
+        id: "monitor.split",
+        title: "Session Segmentation",
+        content:
+          "The Split button creates a segment boundary during a running session. Use this to separate experimental phases (e.g., baseline, drug administration, recovery). The segment counter shows the current segment number. Cumulative statistics remain available alongside per-segment data in exports.",
       },
     ],
   },
