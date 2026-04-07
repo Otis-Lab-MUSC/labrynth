@@ -63,13 +63,13 @@ To launch the dashboard, the application uses `BootstrapTemplate` for theming an
 
 ## **Download Options**
 
-You can download the latest version of **The Labrynth** for your operating system below:
+You can download **The Labrynth v1.1.1** for your operating system below:
 
 | **Operating System**      | **Download Link**                                                                                                                                                    |
 |---------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Windows**               | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest/download/labrynth_x64.exe)   |
-| **Linux (Ubuntu/Debian)** | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest/download/labrynth_amd64.deb) |
-| **macOS**                 | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest/download/labrynth_x64.dmg)   |
+| **Windows**               | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/labrynth/releases/download/v1.1.1/labrynth_x64.exe)   |
+| **Linux (Ubuntu/Debian)** | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/labrynth/releases/download/v1.1.1/labrynth_amd64.deb) |
+| **macOS**                 | [![Download](https://img.shields.io/badge/Download-cyan?style=for-the-badge)](https://github.com/Otis-Lab-MUSC/labrynth/releases/download/v1.1.1/labrynth_x64.dmg)   |
 
 <br>
 
