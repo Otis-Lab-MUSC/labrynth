@@ -56,8 +56,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -71,19 +69,15 @@ jobs:
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v2
-
-      - name: Install Arduino AVR core
-        run: |
-          arduino-cli core update-index
-          arduino-cli core install arduino:avr
+      - name: Install avrdude
+        shell: bash
+        run: choco install avrdude -y
 
       - name: Locate avrdude
         id: avrdude
         shell: bash
         run: |
-          AVRDUDE=$(find "$LOCALAPPDATA/Arduino15/packages/arduino/tools/avrdude" -name "avrdude.exe" -type f | head -1)
+          AVRDUDE=$(which avrdude.exe 2>/dev/null || which avrdude 2>/dev/null || echo "")
           echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
           echo "Found avrdude at: $AVRDUDE"
 
@@ -99,7 +93,7 @@ jobs:
         run: python -m pip install pyinstaller
 
       - name: Build application
-        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --fetch-firmware --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -124,8 +118,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -139,18 +131,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v2
-
-      - name: Install Arduino AVR core
-        run: |
-          arduino-cli core update-index
-          arduino-cli core install arduino:avr
+      - name: Install avrdude
+        run: brew install avrdude
 
       - name: Locate avrdude
         id: avrdude
         run: |
-          AVRDUDE=$(find ~/Library/Arduino15/packages/arduino/tools/avrdude -name "avrdude" -not -path "*/etc/*" -type f | head -1)
+          AVRDUDE=$(which avrdude)
           echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
           echo "Found avrdude at: $AVRDUDE"
 
@@ -165,7 +152,7 @@ jobs:
         run: python -m pip install pyinstaller
 
       - name: Build application
-        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --fetch-firmware --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Create DMG
         env:
@@ -192,8 +179,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -207,18 +192,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v2
-
-      - name: Install Arduino AVR core
-        run: |
-          arduino-cli core update-index
-          arduino-cli core install arduino:avr
+      - name: Install avrdude
+        run: brew install avrdude
 
       - name: Locate avrdude
         id: avrdude
         run: |
-          AVRDUDE=$(find ~/Library/Arduino15/packages/arduino/tools/avrdude -name "avrdude" -not -path "*/etc/*" -type f | head -1)
+          AVRDUDE=$(which avrdude)
           echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
           echo "Found avrdude at: $AVRDUDE"
 
@@ -233,7 +213,7 @@ jobs:
         run: python -m pip install pyinstaller
 
       - name: Build application
-        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --fetch-firmware --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Create DMG
         env:
@@ -260,8 +240,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -275,18 +253,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v2
-
-      - name: Install Arduino AVR core
-        run: |
-          arduino-cli core update-index
-          arduino-cli core install arduino:avr
+      - name: Install avrdude
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq avrdude
 
       - name: Locate avrdude
         id: avrdude
         run: |
-          AVRDUDE=$(find ~/.arduino15/packages/arduino/tools/avrdude -name "avrdude" -not -path "*/etc/*" -type f | head -1)
+          AVRDUDE=$(which avrdude)
           echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
           echo "Found avrdude at: $AVRDUDE"
 
@@ -301,7 +274,7 @@ jobs:
         run: python -m pip install pyinstaller
 
       - name: Build application
-        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --fetch-firmware --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Build DEB package
         env:
