@@ -40,7 +40,7 @@ interface SessionStore {
 
 const ZERO_LEVER: LeverCounts = { active: 0, timeout: 0, inactive: 0 };
 
-const defaultHardwareUiState = (): HardwareUiState => ({
+export const defaultHardwareUiState = (): HardwareUiState => ({
   rhLever: { armed: false, timeout: 20000, ratio: 1 },
   lhLever: { armed: false, timeout: 20000, ratio: 1 },
   primaryCue: { armed: false, frequency: 2900, duration: 1000 },

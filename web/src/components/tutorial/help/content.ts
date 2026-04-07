@@ -38,76 +38,77 @@ export const HELP_CONTENT: HelpSection[] = [
     ],
   },
   {
-    id: "program",
-    title: "Program Panel",
-    content: "The Program panel configures paradigm parameters, session presets, and limits.",
+    id: "configuration",
+    title: "Configuration Panel",
+    content: "The Configuration panel combines session presets, paradigm parameters, limits, and hardware controls in a single view.",
     subsections: [
       {
-        id: "program.presets",
+        id: "configuration.presets",
         title: "Session Presets",
         content:
           "Session presets pre-configure all settings in one click: hardware arm states, paradigm parameters, and limits. Presets are filtered by the detected paradigm. After selecting a preset, you can still adjust individual settings before starting.",
       },
       {
-        id: "program.paradigm",
+        id: "configuration.paradigm",
         title: "Paradigm Settings",
         content:
           "Configure paradigm-specific parameters. For FR: the fixed ratio (presses per reinforcement). For PR: starting ratio and step size. For VI: the variable interval range. For Omission: the omission interval. For Pavlovian: trial timing parameters via a dedicated settings panel.\n\nThe Trace Interval sets the delay between cue offset and reinforcement delivery.",
       },
       {
-        id: "program.limits",
+        id: "configuration.limits",
         title: "Limits",
         content:
           "Session limits determine when the experiment automatically ends. Options include:\n\n- Time: session ends after a set duration (seconds)\n- Infusion: session ends after a set number of infusions\n- Both: whichever limit is reached first\n- Trials (Pavlovian): session ends after a set number of trials\n\nThe Stop Delay adds a grace period after the limit is reached before actually stopping.",
       },
-    ],
-  },
-  {
-    id: "hardware",
-    title: "Hardware Panel",
-    content: "The Hardware panel provides direct control over all connected devices.",
-    subsections: [
       {
-        id: "hardware.arming",
-        title: "Arm / Disarm",
+        id: "configuration.hardware",
+        title: "Hardware Controls",
         content:
-          "Each device has an Arm/Disarm toggle. Armed devices are active during the experiment. Disarmed devices are ignored by the firmware. Always verify arm states before starting — unarmed devices won't respond during the session.",
-      },
-      {
-        id: "hardware.levers",
-        title: "Levers",
-        content:
-          "Two levers (RH and LH) can be configured independently. Parameters:\n\n- Timeout: duration (ms) of the timeout period after a reinforced press\n- Ratio: number of active presses required per reinforcement\n\nPress types: Active (counts toward ratio), Timeout (during timeout period), Inactive (non-reinforced lever).",
-      },
-      {
-        id: "hardware.cues",
-        title: "Cues",
-        content:
-          "Two auditory cues (Primary and Secondary) generate tones via speakers. Parameters:\n\n- Frequency: tone pitch in Hz (typically 2000-4000 Hz)\n- Duration: how long the tone plays in ms",
-      },
-      {
-        id: "hardware.pumps",
-        title: "Pumps",
-        content:
-          "Two syringe pumps (Primary and Secondary) deliver infusions. The Duration parameter (ms) controls how long the pump relay stays active per infusion.",
-      },
-      {
-        id: "hardware.laser",
-        title: "Laser",
-        content:
-          "The laser device supports optogenetic stimulation. Parameters:\n\n- Frequency: pulse frequency in Hz\n- Duration: total stimulation duration in ms\n\nNot available in the Pavlovian paradigm.",
-      },
-      {
-        id: "hardware.lick",
-        title: "Lick Circuit",
-        content:
-          "The lick circuit detects licking behavior via a capacitive sensor. Arm it to record lick events during the session. No additional parameters needed.",
-      },
-      {
-        id: "hardware.microscope",
-        title: "Microscope Sync",
-        content:
-          "The microscope sync output generates TTL pulses for synchronizing with imaging equipment. Arm it to send frame timestamps alongside behavior data.",
+          "The collapsible Hardware Controls section provides direct control over all connected devices. Expand it to arm/disarm devices, configure parameters, and run test commands.",
+        subsections: [
+          {
+            id: "configuration.hardware.arming",
+            title: "Arm / Disarm",
+            content:
+              "Each device has an Arm/Disarm toggle. Armed devices are active during the experiment. Disarmed devices are ignored by the firmware. Always verify arm states before starting — unarmed devices won't respond during the session.",
+          },
+          {
+            id: "configuration.hardware.levers",
+            title: "Levers",
+            content:
+              "Two levers (RH and LH) can be configured independently. Parameters:\n\n- Timeout: duration (ms) of the timeout period after a reinforced press\n- Ratio: number of active presses required per reinforcement\n\nPress types: Active (counts toward ratio), Timeout (during timeout period), Inactive (non-reinforced lever).",
+          },
+          {
+            id: "configuration.hardware.cues",
+            title: "Cues",
+            content:
+              "Two auditory cues (Primary and Secondary) generate tones via speakers. Parameters:\n\n- Frequency: tone pitch in Hz (typically 2000-4000 Hz)\n- Duration: how long the tone plays in ms",
+          },
+          {
+            id: "configuration.hardware.pumps",
+            title: "Pumps",
+            content:
+              "Two syringe pumps (Primary and Secondary) deliver infusions. The Duration parameter (ms) controls how long the pump relay stays active per infusion.",
+          },
+          {
+            id: "configuration.hardware.laser",
+            title: "Laser",
+            content:
+              "The laser device supports optogenetic stimulation. Parameters:\n\n- Frequency: pulse frequency in Hz\n- Duration: total stimulation duration in ms\n\nNot available in the Pavlovian paradigm.",
+          },
+          {
+            id: "configuration.hardware.lick",
+            title: "Lick Circuit",
+            content:
+              "The lick circuit detects licking behavior via a capacitive sensor. Arm it to record lick events during the session. No additional parameters needed.",
+          },
+          {
+            id: "configuration.hardware.microscope",
+            title: "Microscope Sync",
+            content:
+              "The microscope sync output generates TTL pulses for synchronizing with imaging equipment. Arm it to send frame timestamps alongside behavior data.",
+          },
+        ],
       },
     ],
   },

@@ -9,8 +9,7 @@ import { EmberCircuitBackground } from "./components/layout/EmberCircuitBackgrou
 import { NeonGridBackground } from "./components/layout/NeonGridBackground";
 import { CyberpunkGridBackground } from "./components/layout/CyberpunkGridBackground";
 import { SessionPanel } from "./components/session/SessionPanel";
-import { HardwarePanel } from "./components/hardware/HardwarePanel";
-import { ProgramPanel } from "./components/program/ProgramPanel";
+import { ConfigurationPanel } from "./components/configuration/ConfigurationPanel";
 import { MonitorPanel } from "./components/monitor/MonitorPanel";
 import { SessionStartModal } from "./components/monitor/SessionStartModal";
 import { TerminalPanel } from "./components/terminal/TerminalPanel";
@@ -72,8 +71,7 @@ function AppContent() {
 
   const panels: Record<Panel, React.ReactNode> = {
     session: <SessionPanel />,
-    hardware: <HardwarePanel />,
-    program: <ProgramPanel />,
+    configuration: <ConfigurationPanel />,
     monitor: <MonitorPanel />,
     data: <DataExport />,
   };

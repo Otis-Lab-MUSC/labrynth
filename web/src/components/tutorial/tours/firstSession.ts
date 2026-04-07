@@ -126,85 +126,85 @@ export function firstSessionTour(): TutorialStep[] {
       section: "Connection",
     },
 
-    // ── Program ──────────────────────────────────────────
+    // ── Configuration ───────────────────────────────────────
     {
       id: "first-session-6",
-      panel: "program",
+      panel: "configuration",
       target: "preset-select",
       title: "Session Presets",
       content:
         "Try selecting a preset to auto-fill hardware settings, paradigm parameters, and limits in one click.",
       placement: "bottom",
       interactive: true,
-      section: "Program",
+      section: "Configuration",
     },
     {
       id: "first-session-6b",
-      panel: "program",
+      panel: "configuration",
       target: "preset-card",
       title: "Preset Details",
       content:
         "The preset card shows session limits, the device table with arm/disarm toggles for each piece of hardware, and the configured parameters. Review and adjust, then click Apply Preset to push all settings to the session at once.",
       placement: "bottom",
       interactive: true,
-      section: "Program",
+      section: "Configuration",
     },
     {
       id: "first-session-7",
-      panel: "program",
+      panel: "configuration",
       target: "paradigm-settings",
       title: "Paradigm Settings",
       content:
         "Configure paradigm-specific parameters here. Try adjusting the values — they'll be sent to the Arduino when you start.",
       placement: "bottom",
       interactive: true,
-      section: "Program",
+      section: "Configuration",
       summary: formatParadigmSummary,
     },
     {
       id: "first-session-8",
-      panel: "program",
+      panel: "configuration",
       target: "limit-config",
       title: "Session Limits",
       content:
         "Set how the session ends: by time, infusion count, trial count, or a combination. Try configuring a limit now.",
       placement: "bottom",
       interactive: true,
-      section: "Program",
+      section: "Configuration",
       summary: formatLimitSummary,
     },
     {
       id: "first-session-9",
-      panel: "program",
+      panel: "configuration",
       target: "start-session",
       title: "Starting a Session",
       content:
         "When everything is configured, click Start Session. A review modal will let you verify all settings before the experiment begins.",
       placement: "top",
-      section: "Program",
+      section: "Configuration",
     },
 
-    // ── Hardware ─────────────────────────────────────────
+    // ── Configuration: Hardware ────────────────────────────
     {
       id: "first-session-10",
-      panel: "hardware",
+      panel: "configuration",
       target: "system-controls",
       title: "System Controls",
       content:
         "Test Chain triggers a full device check. Try toggling Test Mode to manually activate devices without running a program.",
       placement: "bottom",
       interactive: true,
-      section: "Hardware",
+      section: "Configuration",
     },
     {
       id: "first-session-11",
-      panel: "hardware",
+      panel: "configuration",
       target: "lever-card",
       title: "Arming Devices",
       content:
         "Each device must be armed before a session to participate. Arming sends the activation command to the Arduino — the device enters the control loop and will respond to program events. Disarming removes it cleanly. Only arm the devices your paradigm requires; unneeded hardware can stay disarmed.",
       placement: "bottom",
-      section: "Hardware",
+      section: "Configuration",
     },
 
     // ── Monitor ──────────────────────────────────────────
