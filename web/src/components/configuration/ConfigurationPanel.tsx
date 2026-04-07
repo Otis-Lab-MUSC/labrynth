@@ -18,6 +18,7 @@ import { PumpControl } from "../hardware/PumpControl";
 import { LaserControl } from "../hardware/LaserControl";
 import { LickCircuitControl } from "../hardware/LickCircuitControl";
 import { MicroscopeControl } from "../hardware/MicroscopeControl";
+import { useTutorialStore } from "../../store/useTutorialStore";
 import type { CommandSpec } from "../../types";
 
 /* ── Default baselines for dirty-state detection ─────────────────── */
@@ -93,6 +94,19 @@ export function ConfigurationPanel() {
       setCommands(r.commands as unknown as CommandSpec[]);
     }).catch(() => {});
   }, [activeSessionId, session?.paradigm]);
+
+  // Auto-expand hardware section when tutorial navigates to a hardware step
+  const tutorialActive = useTutorialStore((s) => s.active);
+  const tutorialTarget = useTutorialStore((s) => s.steps[s.currentStepIndex]?.target);
+
+  useEffect(() => {
+    if (tutorialActive) {
+      const hardwareTargets = ["system-controls", "lever-card", "cue-card", "pump-card"];
+      if (hardwareTargets.includes(tutorialTarget)) {
+        setHardwareExpanded(true);
+      }
+    }
+  }, [tutorialActive, tutorialTarget]);
 
   // Session presets filtered by paradigm
   const filteredSessionPresets = useMemo(() => {

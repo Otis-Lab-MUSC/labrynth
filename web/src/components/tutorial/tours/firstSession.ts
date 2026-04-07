@@ -303,7 +303,9 @@ export function firstSessionTour(): TutorialStep[] {
       target: "",
       title: "Tour Complete",
       content:
-        "You're all set! Reopen this tour from the Help panel (? icon), or try Demo Mode to explore without hardware connected.",
+        import.meta.env.VITE_DEMO_SITE === "true"
+          ? "You're all set! Reopen this tour anytime from the Help panel (? icon). Feel free to explore — all interactions use simulated data."
+          : "You're all set! Reopen this tour from the Help panel (? icon), or try Demo Mode to explore without hardware connected.",
       placement: "center",
       section: "Complete",
       summary: formatCompleteSummary,

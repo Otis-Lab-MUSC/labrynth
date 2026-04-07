@@ -100,7 +100,7 @@ function AppContent() {
       {isReacher && (
         <footer className="border-t border-theme-border bg-panel/50 px-4 py-2 text-center"
           style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", letterSpacing: "0.1em", color: "rgb(var(--color-text-dim, var(--color-text-secondary)))" }}>
-          (c) 2026 LOGISTECH // ALL RIGHTS RESERVED // BUILD 2.0.0
+          (c) 2026 LOGISTECH // ALL RIGHTS RESERVED // BUILD 2.1.0
         </footer>
       )}
       <SessionStartModal />
