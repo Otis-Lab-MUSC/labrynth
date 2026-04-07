@@ -1,0 +1,49 @@
+name: Sync Labrynth Demo to Site
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**']
+
+jobs:
+  sync-demo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install labrynth deps
+        run: npm ci
+        working-directory: web
+
+      - name: Build demo
+        run: npm run build:demo
+        working-directory: web
+        env:
+          VITE_BASE: ./
+
+      - uses: actions/checkout@v4
+        with:
+          repository: otis-lab-musc/REACHER-Suite
+          token: ${{ secrets.REACHER_SUITE_SITE_TOKEN }}
+          path: reacher-suite
+
+      - name: Sync demo into site
+        run: |
+          rm -rf reacher-suite/site/public/labrynth-demo
+          mkdir -p reacher-suite/site/public/labrynth-demo
+          cp -r web/dist/. reacher-suite/site/public/labrynth-demo/
+
+      - name: Commit and push
+        run: |
+          cd reacher-suite
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add site/public/labrynth-demo
+          git diff --staged --quiet || git commit -m "chore: sync labrynth demo"
+          git push
