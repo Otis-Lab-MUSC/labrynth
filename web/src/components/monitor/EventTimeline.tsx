@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import type { BehaviorEvent } from "../../types";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useContainerWidth } from "../../hooks/useContainerWidth";
@@ -114,6 +114,30 @@ export function EventTimeline({ events }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [containerRef, containerWidth] = useContainerWidth();
 
+  // Auto-scroll to latest event; pause when user scrolls left, resume at right edge
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollAnchorRef = useRef(true);
+
+  const combinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      scrollRef.current = node;
+      containerRef(node);
+    },
+    [containerRef]
+  );
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !scrollAnchorRef.current) return;
+    el.scrollLeft = el.scrollWidth;
+  }, [events.length]);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    scrollAnchorRef.current = el.scrollWidth - el.scrollLeft - el.clientWidth < 20;
+  }, []);
+
   const handleMouseEnter = useCallback(
     (e: React.MouseEvent, event: BehaviorEvent, baseTs: number) => {
       const rect = svgRef.current?.getBoundingClientRect();
@@ -182,7 +206,7 @@ export function EventTimeline({ events }: Props) {
   return (
     <div className="rounded-lg border border-theme-border bg-panel p-4">
       <h3 className="mb-2 font-medium text-theme-text">Event Timeline</h3>
-      <div ref={containerRef} className="overflow-x-auto" style={{ position: "relative" }}>
+      <div ref={combinedRef} className="overflow-x-auto" style={{ position: "relative" }} onScroll={handleScroll}>
         <svg
           ref={svgRef}
           width={chartWidth}
