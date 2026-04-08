@@ -61,18 +61,15 @@ export function FirmwareUploadCard({ sessionId }: Props) {
         </button>
       </div>
 
-      {/* Progress bar */}
-      {progress && (
+      {/* Upload activity indicator (indeterminate) */}
+      {uploading && (
         <div className="space-y-1">
-          <div className="h-2 w-full rounded-full bg-black border border-theme-border">
-            <div
-              className="h-full rounded-full bg-accent transition-all"
-              style={{ width: `${progress.percent}%` }}
-            />
+          <div className="h-2 w-full overflow-hidden rounded-full border border-theme-border bg-black">
+            <div className="h-full w-full rounded-full bg-accent/70 animate-pulse" />
           </div>
-          <p className="text-xs text-theme-text/60 font-mono">
-            {progress.percent}% — {progress.stage}
-          </p>
+          {progress?.stage && (
+            <p className="text-xs text-theme-text/60 font-mono">{progress.stage}</p>
+          )}
         </div>
       )}
 
