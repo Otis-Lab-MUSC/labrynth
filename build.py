@@ -208,7 +208,13 @@ def validate_assets(avrdude_path):
         print(f"  [OK] avrdude (system): {found}")
         avrdude_path = found
     else:
-        print("  [WARN] avrdude not found — upload feature won't work in bundle")
+        print("  [MISSING] avrdude — firmware upload won't work without it.")
+        print("            Install avrdude before building:")
+        print("              Linux:   sudo apt-get install avrdude")
+        print("              macOS:   brew install avrdude")
+        print("              Windows: choco install avrdude")
+        print("            Or specify path: python build.py --avrdude /path/to/avrdude")
+        ok = False
 
     if not ok:
         print("\nERROR: Required assets missing. Fix the issues above or use --skip-* flags.")

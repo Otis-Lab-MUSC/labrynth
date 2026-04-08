@@ -183,6 +183,10 @@ The Live Stream mode opens a WebSocket connection to the backend and displays ev
 - Python 3.10+
 - Node.js 18+ and npm
 - [reacher](https://github.com/otis-lab-musc/reacher) package installed
+- [avrdude](https://github.com/avrdudes/avrdude) (required for firmware upload in standalone builds)
+  - Linux: `sudo apt-get install avrdude`
+  - macOS: `brew install avrdude`
+  - Windows: `choco install avrdude`
 
 ### Clone and initialize
 
@@ -216,6 +220,8 @@ python -m cli
 ---
 
 ## Building a Standalone Executable
+
+**Requires avrdude** to be installed (or passed via `--avrdude`). The build will exit with an error if avrdude cannot be found — see [Prerequisites](#prerequisites) for install instructions.
 
 ```bash
 python build.py                          # Full build
