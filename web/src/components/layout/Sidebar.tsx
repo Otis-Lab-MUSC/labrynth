@@ -1,5 +1,6 @@
 import { Cable, SlidersHorizontal, Activity, Database } from "lucide-react";
 import { useThemeStore } from "../../store/useThemeStore";
+import { useSessionStore } from "../../store/useSessionStore";
 
 const items = [
   { key: "session", label: "Session", icon: Cable },
@@ -15,6 +16,10 @@ interface Props {
 
 export function Sidebar({ active, onSelect }: Props) {
   const { sidebar, glass } = useThemeStore((s) => s.theme);
+  const sessionState = useSessionStore((s) =>
+    s.activeSessionId ? s.sessions.get(s.activeSessionId)?.state : undefined
+  );
+  const sessionRunning = sessionState === "running";
 
   const glassClasses = glass.enabled
     ? "bg-panel/80 backdrop-blur-sm"
@@ -43,7 +48,10 @@ export function Sidebar({ active, onSelect }: Props) {
               isActive ? activeClasses : inactiveClasses
             }`}
           >
-            <Icon size={18} />
+            <Icon
+              size={18}
+              className={key === "monitor" && sessionRunning ? "motion-safe:animate-status-pulse" : undefined}
+            />
             <span>{sidebar.itemPrefix}{label}</span>
           </button>
         );
