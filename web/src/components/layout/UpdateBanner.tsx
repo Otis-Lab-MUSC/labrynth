@@ -7,7 +7,7 @@ export function UpdateBanner() {
   return (
     <div className="relative z-20 flex items-center justify-center gap-3 bg-accent/10 px-4 py-2 text-sm text-accent border-b border-accent/20">
       <span>
-        REACHER <strong>v{update.latestVersion}</strong> is available
+        Labrynth <strong>v{update.latestVersion}</strong> is available
         <span className="opacity-60"> (current: v{update.currentVersion})</span>
       </span>
       <a

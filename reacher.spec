@@ -102,7 +102,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="REACHER",
+    name="Labrynth",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -119,7 +119,7 @@ if platform.system() == "Darwin":
         exe,
         a.binaries,
         a.datas,
-        name="REACHER.app",
+        name="Labrynth.app",
         icon=None,
         bundle_identifier="com.otislab.reacher",
     )
@@ -131,5 +131,5 @@ else:
         strip=False,
         upx=True,
         upx_exclude=[],
-        name="REACHER",
+        name="Labrynth",
     )

@@ -247,19 +247,19 @@ def report_output():
     system = platform.system()
 
     if system == "Darwin":
-        app_path = os.path.join(SCRIPT_DIR, "dist", "REACHER.app")
+        app_path = os.path.join(SCRIPT_DIR, "dist", "Labrynth.app")
         if os.path.isdir(app_path):
             print(f"  Output: {app_path}")
             print(f"  Run:    open {app_path}")
             return
     elif system == "Windows":
-        exe_path = os.path.join(SCRIPT_DIR, "dist", "REACHER", "REACHER.exe")
+        exe_path = os.path.join(SCRIPT_DIR, "dist", "Labrynth", "Labrynth.exe")
         if os.path.isfile(exe_path):
             print(f"  Output: {os.path.dirname(exe_path)}")
             print(f"  Run:    {exe_path}")
             return
     else:
-        exe_path = os.path.join(SCRIPT_DIR, "dist", "REACHER", "REACHER")
+        exe_path = os.path.join(SCRIPT_DIR, "dist", "Labrynth", "Labrynth")
         if os.path.isfile(exe_path):
             print(f"  Output: {os.path.dirname(exe_path)}")
             print(f"  Run:    {exe_path}")

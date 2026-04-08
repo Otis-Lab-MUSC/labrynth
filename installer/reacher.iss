@@ -17,19 +17,19 @@
 
 [Setup]
 AppId={{B7E3F1A2-9C4D-4E8B-A1F6-3D5E7C9B2A4F}
-AppName=REACHER
+AppName=Labrynth
 AppVersion={#VERSION_NUM}
-AppVerName=REACHER {#VERSION_NUM}
+AppVerName=Labrynth {#VERSION_NUM}
 AppPublisher=Otis Lab, MUSC
-DefaultDirName={autopf}\REACHER
-DefaultGroupName=REACHER
+DefaultDirName={autopf}\Labrynth
+DefaultGroupName=Labrynth
 OutputDir=..\dist
-OutputBaseFilename=REACHER-{#VERSION_NUM}-windows-x64
+OutputBaseFilename=Labrynth-{#VERSION_NUM}-windows-x64
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesAllowed=x64
 WizardStyle=modern
-UninstallDisplayIcon={app}\REACHER.exe
+UninstallDisplayIcon={app}\Labrynth.exe
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -38,12 +38,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "..\dist\REACHER\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\dist\Labrynth\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\REACHER"; Filename: "{app}\REACHER.exe"
-Name: "{group}\{cm:UninstallProgram,REACHER}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\REACHER"; Filename: "{app}\REACHER.exe"; Tasks: desktopicon
+Name: "{group}\Labrynth"; Filename: "{app}\Labrynth.exe"
+Name: "{group}\{cm:UninstallProgram,Labrynth}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\Labrynth"; Filename: "{app}\Labrynth.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\REACHER.exe"; Description: "{cm:LaunchProgram,REACHER}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\Labrynth.exe"; Description: "{cm:LaunchProgram,Labrynth}"; Flags: nowait postinstall skipifsilent

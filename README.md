@@ -238,7 +238,7 @@ The build pipeline:
 5. **Stage 4:** Runs PyInstaller with `reacher.spec`
 6. **Stage 5:** Reports output location
 
-Output: `dist/REACHER/` (Linux/Windows) or `dist/REACHER.app` (macOS)
+Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS)
 
 ---
 
