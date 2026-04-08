@@ -8,19 +8,21 @@ interface Props {
 interface ParadigmStatsConfig {
   pressTypes: ("ACTIVE" | "TIMEOUT" | "INACTIVE")[];
   hasTrials: boolean;
+  showLeverStats: boolean;
 }
 
 const PARADIGM_CONFIG: Record<string, ParadigmStatsConfig> = {
-  fr:        { pressTypes: ["ACTIVE", "TIMEOUT", "INACTIVE"], hasTrials: false },
-  vi:        { pressTypes: ["ACTIVE", "TIMEOUT", "INACTIVE"], hasTrials: false },
-  pr:        { pressTypes: ["ACTIVE", "TIMEOUT", "INACTIVE"], hasTrials: false },
-  pavlovian: { pressTypes: ["ACTIVE", "INACTIVE"],            hasTrials: true  },
-  omission:  { pressTypes: ["ACTIVE", "INACTIVE"],            hasTrials: false },
+  fr:        { pressTypes: ["ACTIVE", "TIMEOUT", "INACTIVE"], hasTrials: false, showLeverStats: true  },
+  vi:        { pressTypes: ["ACTIVE", "TIMEOUT", "INACTIVE"], hasTrials: false, showLeverStats: true  },
+  pr:        { pressTypes: ["ACTIVE", "TIMEOUT", "INACTIVE"], hasTrials: false, showLeverStats: true  },
+  pavlovian: { pressTypes: ["ACTIVE", "INACTIVE"],            hasTrials: true,  showLeverStats: false },
+  omission:  { pressTypes: ["ACTIVE", "INACTIVE"],            hasTrials: false, showLeverStats: true  },
 };
 
 const DEFAULT_CONFIG: ParadigmStatsConfig = {
   pressTypes: ["ACTIVE", "TIMEOUT", "INACTIVE"],
   hasTrials: false,
+  showLeverStats: true,
 };
 
 const PRESS_KEY: Record<string, keyof LeverCounts> = {
@@ -58,8 +60,8 @@ export function LiveStats({ session, elapsed }: Props) {
 
   return (
     <div className="rounded-lg border border-theme-border bg-panel p-4 font-mono text-sm">
-      {/* Lever Activity Section — only when at least one lever is armed */}
-      {(session.hardwareUi.rhLever.armed || session.hardwareUi.lhLever.armed) && (
+      {/* Lever Activity Section — only for lever-based paradigms and when a lever is armed */}
+      {config.showLeverStats && (session.hardwareUi.rhLever.armed || session.hardwareUi.lhLever.armed) && (
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-accent text-xs uppercase tracking-wider font-bold">Lever Activity</span>
@@ -126,11 +128,11 @@ export function LiveStats({ session, elapsed }: Props) {
           {[
             { label: "SEGMENTS", value: session.segmentNumber + 1 },
             { label: "TOTAL INF.", value: session.cumulativeInfusionCount + session.infusionCount },
-            { label: "TOTAL PRESSES", value:
+            ...(config.showLeverStats ? [{ label: "TOTAL PRESSES", value:
                 session.cumulativeRhLeverCounts.active + session.cumulativeRhLeverCounts.timeout + session.cumulativeRhLeverCounts.inactive
               + session.cumulativeLhLeverCounts.active + session.cumulativeLhLeverCounts.timeout + session.cumulativeLhLeverCounts.inactive
               + leverTotal(session.rhLeverCounts) + leverTotal(session.lhLeverCounts)
-            },
+            }] : []),
             ...(config.hasTrials ? [{ label: "TOTAL TRIALS", value: session.cumulativeTrialCount + session.trialCount }] : []),
           ].map((stat) => (
             <div key={stat.label} className="flex justify-between items-baseline py-0.5">
