@@ -364,7 +364,17 @@ export function ConfigurationPanel() {
       {/* Session Preset Selector */}
       {(filteredSessionPresets.builtIn.length > 0 || filteredSessionPresets.custom.length > 0) && (
         <div data-tour="preset-select" className="card space-y-2">
-          <h3 className="font-medium text-theme-text">Session Preset</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-theme-text">Session Preset</h3>
+            {isCustomized && (session.state === "connected" || session.state === "paused") && session.paradigm && (
+              <button
+                onClick={() => setSaveDialogOpen(true)}
+                className="text-xs rounded px-2 py-1 bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-colors font-mono"
+              >
+                Save Preset
+              </button>
+            )}
+          </div>
           <select
             value={selectedPresetId}
             onChange={(e) => setSelectedPresetId(e.target.value)}
@@ -439,17 +449,6 @@ export function ConfigurationPanel() {
         </div>
       )}
 
-      {/* Start Session button */}
-      {canStart && (
-        <button
-          data-tour="start-session"
-          onClick={() => setStartModalOpen(true)}
-          className="w-full rounded bg-green-600 px-4 py-3 text-white font-mono text-lg hover:bg-green-700"
-        >
-          Start Session
-        </button>
-      )}
-
       {/* ── Hardware Section (collapsible) ───────────────────── */}
 
       <div className="card">
@@ -514,14 +513,14 @@ export function ConfigurationPanel() {
         )}
       </div>
 
-      {/* ── Save as New Preset (dirty-gated) ─────────────────── */}
-
-      {isCustomized && (session.state === "connected" || session.state === "paused") && session.paradigm && (
+      {/* Start Session button */}
+      {canStart && (
         <button
-          onClick={() => setSaveDialogOpen(true)}
-          className="w-full rounded py-3 bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-colors font-mono"
+          data-tour="start-session"
+          onClick={() => setStartModalOpen(true)}
+          className="w-full rounded bg-green-600 px-4 py-3 text-white font-mono text-lg hover:bg-green-700"
         >
-          Save as New Preset
+          Start Session
         </button>
       )}
 
