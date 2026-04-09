@@ -242,6 +242,16 @@ def validate_assets(avrdude_path):
         print("            Or specify path: python build.py --avrdude /path/to/avrdude")
         ok = False
 
+    # Guard: reject Chocolatey shims or other tiny redirectors.
+    # Real avrdude is >500 KB; shims are ~24 KB.
+    if avrdude_path and os.path.isfile(avrdude_path):
+        size = os.path.getsize(avrdude_path)
+        if size < 100_000:
+            print(f"  [ERROR] avrdude binary is only {size:,} bytes — likely a Chocolatey")
+            print(f"          shim, not the real binary.  Download avrdude directly from")
+            print(f"          https://github.com/avrdudes/avrdude/releases")
+            ok = False
+
     if not ok:
         print("\nERROR: Required assets missing. Fix the issues above or use --skip-* flags.")
         sys.exit(1)

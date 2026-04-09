@@ -69,29 +69,29 @@ jobs:
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
-      - name: Install avrdude
-        shell: bash
-        run: choco install avrdude -y
-
-      - name: Locate avrdude
+      - name: Download avrdude
         id: avrdude
         shell: pwsh
         run: |
-          # Chocolatey installs a shim at chocolatey\bin\avrdude.exe that
-          # breaks when relocated into a PyInstaller bundle.  Find the real
-          # binary inside the lib directory using PowerShell (avoids Git Bash
-          # path translation issues with Windows paths).
-          $chocoLib = Join-Path $env:ChocolateyInstall "lib\avrdude"
-          $real = Get-ChildItem -Path $chocoLib -Filter "avrdude.exe" -Recurse -File -ErrorAction SilentlyContinue |
-                  Select-Object -First 1
-          if ($real) {
-            $avrdude = $real.FullName
-          } else {
-            $avrdude = (Get-Command avrdude -ErrorAction SilentlyContinue).Source
-            Write-Host "WARNING: Could not find real avrdude in $chocoLib — using shim: $avrdude"
+          # Download avrdude directly from GitHub releases instead of
+          # Chocolatey.  Chocolatey installs a shim that breaks when
+          # relocated into a PyInstaller bundle.  The MSVC build is
+          # statically linked — no DLLs needed.
+          $version = "8.1"
+          $zip = "avrdude-v${version}-windows-x64.zip"
+          $url = "https://github.com/avrdudes/avrdude/releases/download/v${version}/${zip}"
+          Write-Host "Downloading $url"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath avrdude-dist -Force
+          $exe = Get-ChildItem -Path avrdude-dist -Filter "avrdude.exe" -Recurse -File |
+                 Select-Object -First 1
+          if (-not $exe) {
+            Write-Host "ERROR: avrdude.exe not found in archive"
+            Get-ChildItem avrdude-dist -Recurse | ForEach-Object { Write-Host $_.FullName }
+            exit 1
           }
-          "path=$avrdude" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Host "Found avrdude at: $avrdude"
+          Write-Host "Found avrdude at: $($exe.FullName)  ($($exe.Length) bytes)"
+          "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
 
       - name: Install reacher from source
         shell: bash
