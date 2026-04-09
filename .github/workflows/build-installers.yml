@@ -149,7 +149,7 @@ jobs:
           python -c "import reacher; print('reacher OK')"
 
       - name: Install Python build tools
-        run: python -m pip install pyinstaller
+        run: python -m pip install pyinstaller Pillow
 
       - name: Build application
         run: python build.py --fetch-firmware --avrdude "${{ steps.avrdude.outputs.path }}"
