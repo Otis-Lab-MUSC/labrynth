@@ -163,6 +163,31 @@ def build_frontend():
     _run([npm, "run", "build"], cwd=FRONTEND_DIR)
 
 
+def _resolve_avrdude_shim(path):
+    """If *path* is a Chocolatey shim, return the real avrdude binary path.
+
+    Chocolatey installs a small redirector at ``<choco>/bin/avrdude.exe``
+    that launches the real binary from ``<choco>/lib/avrdude/tools/``.
+    The shim breaks when relocated (e.g. into a PyInstaller bundle) because
+    it resolves the real binary via a relative path.
+    """
+    if sys.platform != "win32":
+        return path
+    norm = os.path.normpath(path)
+    parts = norm.lower().replace("\\", "/").split("/")
+    if "chocolatey" in parts and "bin" in parts:
+        idx = norm.lower().index(os.sep + "bin" + os.sep)
+        choco_root = norm[:idx]
+        lib_dir = os.path.join(choco_root, "lib", "avrdude")
+        for root, _dirs, files in os.walk(lib_dir):
+            for f in files:
+                if f.lower() == "avrdude.exe":
+                    real = os.path.join(root, f)
+                    print(f"  [INFO] Resolved Chocolatey shim → {real}")
+                    return real
+    return path
+
+
 def validate_assets(avrdude_path):
     """Validate that all required assets exist before packaging."""
     print("\n=== Stage 3: Validate assets ===")
@@ -202,9 +227,10 @@ def validate_assets(avrdude_path):
 
     # avrdude
     if avrdude_path and os.path.isfile(avrdude_path):
+        avrdude_path = _resolve_avrdude_shim(avrdude_path)
         print(f"  [OK] avrdude: {avrdude_path}")
     elif shutil.which("avrdude"):
-        found = shutil.which("avrdude")
+        found = _resolve_avrdude_shim(shutil.which("avrdude"))
         print(f"  [OK] avrdude (system): {found}")
         avrdude_path = found
     else:

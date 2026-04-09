@@ -77,7 +77,15 @@ jobs:
         id: avrdude
         shell: bash
         run: |
-          AVRDUDE=$(which avrdude.exe 2>/dev/null || which avrdude 2>/dev/null || echo "")
+          # Chocolatey places a shim at chocolatey/bin/avrdude.exe that
+          # breaks when relocated into a PyInstaller bundle.  Search the
+          # lib directory for the real binary first.
+          REAL=$(find "/c/ProgramData/chocolatey/lib/avrdude" -name "avrdude.exe" -type f 2>/dev/null | head -1)
+          if [ -n "$REAL" ]; then
+            AVRDUDE="$REAL"
+          else
+            AVRDUDE=$(which avrdude.exe 2>/dev/null || which avrdude 2>/dev/null || echo "")
+          fi
           echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
           echo "Found avrdude at: $AVRDUDE"
 
