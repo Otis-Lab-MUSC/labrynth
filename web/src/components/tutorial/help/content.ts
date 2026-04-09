@@ -10,7 +10,7 @@ export const HELP_CONTENT: HelpSection[] = [
     id: "overview",
     title: "Overview",
     content:
-      "Labrynth is the control interface for REACHER, a neuroscience experiment system for head-fixed rodent operant conditioning. It manages Arduino hardware (levers, pumps, cues, lasers, lick circuits, microscope sync) across five behavioral paradigms: Fixed Ratio (FR), Progressive Ratio (PR), Variable Interval (VI), Omission, and Pavlovian.\n\nThe workflow follows four panels: Session (connect hardware), Configuration (configure paradigm and arm devices), Monitor (run experiment), and Data (export results).",
+      "Labrynth is the control interface for a neuroscience experiment system for head-fixed rodent operant conditioning. It manages Arduino hardware (levers, pumps, cues, lasers, lick circuits, microscope sync) across five behavioral paradigms: Fixed Ratio (FR), Progressive Ratio (PR), Variable Interval (VI), Omission, and Pavlovian.\n\nThe workflow follows four panels: Session (connect hardware), Configuration (configure paradigm and arm devices), Monitor (run experiment), and Data (export results).",
   },
   {
     id: "session",
@@ -39,7 +39,7 @@ export const HELP_CONTENT: HelpSection[] = [
         id: "session.machines",
         title: "Device Management",
         content:
-          "The Manage Devices section lets you pair and manage remote REACHER devices. Use a 6-digit pairing code displayed on the remote device, scan for devices on your local network, or add a machine manually by URL and API key.",
+          "The Manage Devices section lets you pair and manage remote devices. Use a 6-digit pairing code displayed on the remote device, scan for devices on your local network, or add a machine manually by URL and API key.",
       },
     ],
   },

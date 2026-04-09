@@ -48,7 +48,7 @@ function QuickPairSection() {
         <span className="text-sm font-medium text-theme-text">Pair a Device</span>
       </div>
       <p className="text-xs text-theme-text/50">
-        Enter the 6-digit code shown on the REACHER device's terminal.
+        Enter the 6-digit code shown on the remote device's terminal.
       </p>
       <div className="flex gap-2">
         <input

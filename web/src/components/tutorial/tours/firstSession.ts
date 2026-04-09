@@ -66,7 +66,7 @@ export function firstSessionTour(): TutorialStep[] {
       target: "header",
       title: "Welcome to Labrynth",
       content:
-        "This is the control interface for REACHER experiments. We'll walk through each panel and let you configure a session as you go.",
+        "This is the control interface for your experiments. We'll walk through each panel and let you configure a session as you go.",
       placement: "bottom",
       section: "Getting Started",
     },
@@ -98,7 +98,7 @@ export function firstSessionTour(): TutorialStep[] {
       target: "machine-management",
       title: "Device Management",
       content:
-        "Expand this section to pair remote REACHER devices on your network. You can enter a 6-digit pairing code, scan for discovered devices, or add a machine manually by URL.",
+        "Expand this section to pair remote devices on your network. You can enter a 6-digit pairing code, scan for discovered devices, or add a machine manually by URL.",
       placement: "bottom",
       section: "Getting Started",
     },
