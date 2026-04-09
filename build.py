@@ -163,29 +163,69 @@ def build_frontend():
     _run([npm, "run", "build"], cwd=FRONTEND_DIR)
 
 
-def _resolve_avrdude_shim(path):
-    """If *path* is a Chocolatey shim, return the real avrdude binary path.
+_AVRDUDE_VERSION = "8.1"
+_AVRDUDE_MIN_SIZE = 100_000  # bytes — Chocolatey shims are ~24 KB, real binary is ~7 MB
 
-    Chocolatey installs a small redirector at ``<choco>/bin/avrdude.exe``
-    that launches the real binary from ``<choco>/lib/avrdude/tools/``.
-    The shim breaks when relocated (e.g. into a PyInstaller bundle) because
-    it resolves the real binary via a relative path.
+
+def _ensure_real_avrdude(avrdude_path):
+    """Return a path to a real avrdude binary, downloading one if necessary.
+
+    On Windows, Chocolatey installs a small shim (~24 KB) instead of the
+    real binary.  The shim breaks when relocated into a PyInstaller bundle.
+    This function detects shims by file size and downloads the real avrdude
+    from GitHub releases automatically.
     """
-    if sys.platform != "win32":
-        return path
-    norm = os.path.normpath(path)
-    parts = norm.lower().replace("\\", "/").split("/")
-    if "chocolatey" in parts and "bin" in parts:
-        idx = norm.lower().index(os.sep + "bin" + os.sep)
-        choco_root = norm[:idx]
-        lib_dir = os.path.join(choco_root, "lib", "avrdude")
-        for root, _dirs, files in os.walk(lib_dir):
+    # Happy path: the provided binary is real
+    if avrdude_path and os.path.isfile(avrdude_path):
+        if os.path.getsize(avrdude_path) >= _AVRDUDE_MIN_SIZE:
+            return avrdude_path
+        print(f"  [WARN] avrdude at {avrdude_path} is only "
+              f"{os.path.getsize(avrdude_path):,} bytes (likely a shim)")
+
+    # Only auto-download on Windows — Linux/macOS package managers install real binaries
+    if platform.system() != "Windows":
+        return avrdude_path
+
+    # Check cache from a previous download
+    dist_dir = os.path.join(PROJECT_ROOT, ".avrdude-dist")
+    if os.path.isdir(dist_dir):
+        for root, _dirs, files in os.walk(dist_dir):
             for f in files:
                 if f.lower() == "avrdude.exe":
-                    real = os.path.join(root, f)
-                    print(f"  [INFO] Resolved Chocolatey shim → {real}")
+                    cached = os.path.join(root, f)
+                    if os.path.getsize(cached) >= _AVRDUDE_MIN_SIZE:
+                        print(f"  [OK] Using cached avrdude: {cached}")
+                        return cached
+
+    # Download avrdude from GitHub releases (MSVC build, statically linked, no DLLs)
+    import zipfile
+
+    asset = f"avrdude-v{_AVRDUDE_VERSION}-windows-x64.zip"
+    url = f"https://github.com/avrdudes/avrdude/releases/download/v{_AVRDUDE_VERSION}/{asset}"
+    zip_path = os.path.join(PROJECT_ROOT, asset)
+    print(f"  [INFO] Downloading avrdude v{_AVRDUDE_VERSION} from {url}")
+    try:
+        urllib.request.urlretrieve(url, zip_path)
+    except Exception as exc:
+        print(f"  [ERROR] Failed to download avrdude: {exc}")
+        return avrdude_path
+
+    os.makedirs(dist_dir, exist_ok=True)
+    with zipfile.ZipFile(zip_path) as zf:
+        zf.extractall(dist_dir)
+    os.remove(zip_path)
+
+    for root, _dirs, files in os.walk(dist_dir):
+        for f in files:
+            if f.lower() == "avrdude.exe":
+                real = os.path.join(root, f)
+                if os.path.getsize(real) >= _AVRDUDE_MIN_SIZE:
+                    print(f"  [OK] Downloaded avrdude: {real} "
+                          f"({os.path.getsize(real):,} bytes)")
                     return real
-    return path
+
+    print("  [ERROR] avrdude.exe not found in downloaded archive")
+    return avrdude_path
 
 
 def validate_assets(avrdude_path):
@@ -225,31 +265,21 @@ def validate_assets(avrdude_path):
             else:
                 print(f"  [WARN] No hex files found for {board} in {board_dir}")
 
-    # avrdude
+    # avrdude — ensure we have a real binary, not a Chocolatey shim
     if avrdude_path and os.path.isfile(avrdude_path):
-        avrdude_path = _resolve_avrdude_shim(avrdude_path)
+        avrdude_path = _ensure_real_avrdude(avrdude_path)
         print(f"  [OK] avrdude: {avrdude_path}")
     elif shutil.which("avrdude"):
-        found = _resolve_avrdude_shim(shutil.which("avrdude"))
-        print(f"  [OK] avrdude (system): {found}")
-        avrdude_path = found
+        avrdude_path = _ensure_real_avrdude(shutil.which("avrdude"))
+        print(f"  [OK] avrdude: {avrdude_path}")
     else:
-        print("  [MISSING] avrdude — firmware upload won't work without it.")
-        print("            Install avrdude before building:")
-        print("              Linux:   sudo apt-get install avrdude")
-        print("              macOS:   brew install avrdude")
-        print("              Windows: choco install avrdude")
-        print("            Or specify path: python build.py --avrdude /path/to/avrdude")
-        ok = False
-
-    # Guard: reject Chocolatey shims or other tiny redirectors.
-    # Real avrdude is >500 KB; shims are ~24 KB.
-    if avrdude_path and os.path.isfile(avrdude_path):
-        size = os.path.getsize(avrdude_path)
-        if size < 100_000:
-            print(f"  [ERROR] avrdude binary is only {size:,} bytes — likely a Chocolatey")
-            print(f"          shim, not the real binary.  Download avrdude directly from")
-            print(f"          https://github.com/avrdudes/avrdude/releases")
+        # No avrdude found — try downloading on Windows
+        avrdude_path = _ensure_real_avrdude(None)
+        if avrdude_path and os.path.isfile(avrdude_path):
+            print(f"  [OK] avrdude (downloaded): {avrdude_path}")
+        else:
+            print("  [MISSING] avrdude — firmware upload won't work without it.")
+            print("            Install avrdude or run on Windows to auto-download.")
             ok = False
 
     if not ok:

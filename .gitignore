@@ -2,6 +2,7 @@ node_modules/
 web/dist/
 build/
 dist/
+.avrdude-dist/
 *.egg-info/
 __pycache__/
 .venv/
