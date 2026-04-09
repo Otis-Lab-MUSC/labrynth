@@ -30,6 +30,7 @@ SolidCompression=yes
 ArchitecturesAllowed=x64
 WizardStyle=modern
 UninstallDisplayIcon={app}\Labrynth.exe
+SetupIconFile=..\web\public\favicon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -41,9 +42,9 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "..\dist\Labrynth\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Labrynth"; Filename: "{app}\Labrynth.exe"
+Name: "{group}\Labrynth"; Filename: "{app}\Labrynth.exe"; IconFilename: "{app}\Labrynth.exe"
 Name: "{group}\{cm:UninstallProgram,Labrynth}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\Labrynth"; Filename: "{app}\Labrynth.exe"; Tasks: desktopicon
+Name: "{autodesktop}\Labrynth"; Filename: "{app}\Labrynth.exe"; Tasks: desktopicon; IconFilename: "{app}\Labrynth.exe"
 
 [Run]
 Filename: "{app}\Labrynth.exe"; Description: "{cm:LaunchProgram,Labrynth}"; Flags: nowait postinstall skipifsilent
