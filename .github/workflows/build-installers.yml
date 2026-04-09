@@ -107,7 +107,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
-          path: dist/Labrynth-${{ needs.version-check.outputs.version }}-windows-x64.exe
+          path: dist/labrynth-${{ needs.version-check.outputs.version }}-windows-x64.exe
 
   # -------------------------------------------------------------------
   # macOS — DMG disk image (.dmg) — Apple Silicon (arm64)
@@ -162,13 +162,13 @@ jobs:
             -volname "Labrynth $VERSION" \
             -srcfolder dist/Labrynth.app \
             -ov -format UDZO \
-            "dist/Labrynth-${VERSION}-macos-arm64.dmg"
+            "dist/labrynth-${VERSION}-macos-arm64.dmg"
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
           name: macos-arm64-dmg
-          path: dist/Labrynth-${{ needs.version-check.outputs.version }}-macos-arm64.dmg
+          path: dist/labrynth-${{ needs.version-check.outputs.version }}-macos-arm64.dmg
 
   # -------------------------------------------------------------------
   # Linux — DEB package (.deb), tarball (.tar.gz), AppImage
@@ -244,7 +244,7 @@ jobs:
       - name: Build tarball
         env:
           VERSION: ${{ needs.version-check.outputs.version }}
-        run: tar -czf "Labrynth-${VERSION}-linux-x64.tar.gz" -C dist Labrynth
+        run: tar -czf "labrynth-${VERSION}-linux-x64.tar.gz" -C dist Labrynth
 
       - name: Build AppImage
         env:
@@ -297,7 +297,7 @@ jobs:
           chmod +x appimagetool
 
           # Build the AppImage
-          ARCH=x86_64 ./appimagetool --no-appstream "${APPDIR}" "Labrynth-${VERSION}-linux-x64.AppImage"
+          ARCH=x86_64 ./appimagetool --no-appstream "${APPDIR}" "labrynth-${VERSION}-linux-x64.AppImage"
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
@@ -305,8 +305,8 @@ jobs:
           name: linux-installers
           path: |
             labrynth_${{ needs.version-check.outputs.version }}_amd64.deb
-            Labrynth-${{ needs.version-check.outputs.version }}-linux-x64.tar.gz
-            Labrynth-${{ needs.version-check.outputs.version }}-linux-x64.AppImage
+            labrynth-${{ needs.version-check.outputs.version }}-linux-x64.tar.gz
+            labrynth-${{ needs.version-check.outputs.version }}-linux-x64.AppImage
 
   # -------------------------------------------------------------------
   # Release — publish artifacts to GitHub Releases
@@ -335,11 +335,11 @@ jobs:
 
             | Platform | File | Notes |
             |----------|------|-------|
-            | Windows (x64) | `Labrynth-*-windows-x64.exe` | Installer |
-            | macOS (Apple Silicon) | `Labrynth-*-macos-arm64.dmg` | M1/M2/M3/M4 |
+            | Windows (x64) | `labrynth-*-windows-x64.exe` | Installer |
+            | macOS (Apple Silicon) | `labrynth-*-macos-arm64.dmg` | M1/M2/M3/M4 |
             | Linux (Debian/Ubuntu) | `labrynth_*_amd64.deb` | `sudo dpkg -i *.deb` |
-            | Linux (portable) | `Labrynth-*-linux-x64.AppImage` | Any distro |
-            | Linux (tarball) | `Labrynth-*-linux-x64.tar.gz` | Extract and run |
+            | Linux (portable) | `labrynth-*-linux-x64.AppImage` | Any distro |
+            | Linux (tarball) | `labrynth-*-linux-x64.tar.gz` | Extract and run |
 
             <details>
             <summary>Platform-specific notes</summary>
@@ -355,8 +355,8 @@ jobs:
 
             **Linux AppImage:** Make executable and run:
             ```
-            chmod +x Labrynth-*-linux-x64.AppImage
-            ./Labrynth-*-linux-x64.AppImage
+            chmod +x labrynth-*-linux-x64.AppImage
+            ./labrynth-*-linux-x64.AppImage
             ```
             </details>
           files: |
