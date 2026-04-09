@@ -46,11 +46,26 @@ if os.path.isdir(HEX_DIR):
 else:
     print(f"WARNING: Hex directory not found at {HEX_DIR}")
 
-# avrdude binary + conf → avrdude/
+# avrdude binary + companion DLLs + conf → avrdude/
+#
+# Using ``extra_binaries`` (not ``datas``) for the executable and DLLs so
+# PyInstaller resolves their dynamic-library dependencies.  On Windows,
+# avrdude.exe typically needs libusb0.dll or similar — ``datas`` would copy
+# the file verbatim without analysing imports, causing avrdude to crash
+# with exit code -1 at runtime.
+extra_binaries = []
+
 if AVRDUDE_PATH and os.path.isfile(AVRDUDE_PATH):
-    datas.append((AVRDUDE_PATH, "avrdude"))
-    # Also bundle avrdude.conf if present alongside the binary
+    extra_binaries.append((AVRDUDE_PATH, "avrdude"))
     _avrdude_dir = os.path.dirname(AVRDUDE_PATH)
+
+    # Bundle companion DLLs that live alongside the avrdude binary
+    for _f in os.listdir(_avrdude_dir):
+        _fpath = os.path.join(_avrdude_dir, _f)
+        if os.path.isfile(_fpath) and _f.lower().endswith((".dll", ".so", ".dylib")):
+            extra_binaries.append((_fpath, "avrdude"))
+
+    # Bundle avrdude.conf as data (not a binary)
     for _conf in [
         os.path.join(_avrdude_dir, "..", "etc", "avrdude.conf"),
         os.path.join(_avrdude_dir, "avrdude.conf"),
@@ -59,6 +74,7 @@ if AVRDUDE_PATH and os.path.isfile(AVRDUDE_PATH):
             datas.append((os.path.abspath(_conf), "avrdude"))
             break
 else:
+    extra_binaries = []
     print("NOTE: No avrdude binary bundled (set REACHER_AVRDUDE_PATH or use build.py --avrdude)")
 
 # ---------------------------------------------------------------------------
@@ -85,7 +101,7 @@ hiddenimports = [
 a = Analysis(
     [os.path.join(SPEC_DIR, "launcher.py")],
     pathex=[],
-    binaries=[],
+    binaries=extra_binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
