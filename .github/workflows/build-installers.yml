@@ -75,19 +75,23 @@ jobs:
 
       - name: Locate avrdude
         id: avrdude
-        shell: bash
+        shell: pwsh
         run: |
-          # Chocolatey places a shim at chocolatey/bin/avrdude.exe that
-          # breaks when relocated into a PyInstaller bundle.  Search the
-          # lib directory for the real binary first.
-          REAL=$(find "/c/ProgramData/chocolatey/lib/avrdude" -name "avrdude.exe" -type f 2>/dev/null | head -1)
-          if [ -n "$REAL" ]; then
-            AVRDUDE="$REAL"
-          else
-            AVRDUDE=$(which avrdude.exe 2>/dev/null || which avrdude 2>/dev/null || echo "")
-          fi
-          echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
-          echo "Found avrdude at: $AVRDUDE"
+          # Chocolatey installs a shim at chocolatey\bin\avrdude.exe that
+          # breaks when relocated into a PyInstaller bundle.  Find the real
+          # binary inside the lib directory using PowerShell (avoids Git Bash
+          # path translation issues with Windows paths).
+          $chocoLib = Join-Path $env:ChocolateyInstall "lib\avrdude"
+          $real = Get-ChildItem -Path $chocoLib -Filter "avrdude.exe" -Recurse -File -ErrorAction SilentlyContinue |
+                  Select-Object -First 1
+          if ($real) {
+            $avrdude = $real.FullName
+          } else {
+            $avrdude = (Get-Command avrdude -ErrorAction SilentlyContinue).Source
+            Write-Host "WARNING: Could not find real avrdude in $chocoLib — using shim: $avrdude"
+          }
+          "path=$avrdude" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Found avrdude at: $avrdude"
 
       - name: Install reacher from source
         shell: bash
