@@ -30,7 +30,7 @@ SolidCompression=yes
 ArchitecturesAllowed=x64
 WizardStyle=modern
 UninstallDisplayIcon={app}\Labrynth.exe
-SetupIconFile=..\web\public\favicon.ico
+SetupIconFile=..\installer\icons\labrynth-icon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

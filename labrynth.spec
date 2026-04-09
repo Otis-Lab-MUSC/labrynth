@@ -108,7 +108,7 @@ exe = EXE(
     strip=False,
     upx=True,
     console=False,
-    icon=os.path.join(PROJECT_ROOT, "web", "public", "favicon.ico"),
+    icon=os.path.join(PROJECT_ROOT, "installer", "icons", "labrynth-icon.ico"),
 )
 
 # ---------------------------------------------------------------------------
