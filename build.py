@@ -6,7 +6,7 @@ Orchestrates the full build pipeline:
   1. (Optional) Compile firmware hex files via compile.sh
   2. Build React frontend (npm ci && npm run build)
   3. Validate required assets exist
-  4. Run PyInstaller with reacher.spec
+  4. Run PyInstaller with labrynth.spec
   5. Report output location
 
 Usage:
@@ -37,7 +37,7 @@ FIRMWARE_DIR = os.path.join(PROJECT_ROOT, "firmware")
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, "web")
 HEX_DIR = os.path.join(FIRMWARE_DIR, "hex")
 FRONTEND_DIST = os.path.join(FRONTEND_DIR, "dist")
-SPEC_FILE = os.path.join(SCRIPT_DIR, "reacher.spec")
+SPEC_FILE = os.path.join(SCRIPT_DIR, "labrynth.spec")
 
 PARADIGMS = ("fr", "pr", "vi", "omission", "pavlovian")
 FIRMWARE_REPO = "Otis-Lab-MUSC/reacher-firmware"

@@ -78,7 +78,7 @@ Real-time counters (infusions, lever presses, trials, licks, frames) are driven 
 
 - **`build.py`** — 5-stage orchestrator: (1) validate submodules + reacher install, (2) compile firmware hex files, (3) npm build, (4) verify assets, (5) PyInstaller bundle
 - **`launcher.py`** — PyInstaller entry point; sets `REACHER_STATIC_DIR` env var so the backend serves the bundled frontend
-- **`reacher.spec`** — PyInstaller spec; bundles `web/dist/`, `firmware/hex/`, and avrdude binary
+- **`labrynth.spec`** — PyInstaller spec; bundles `web/dist/`, `firmware/hex/`, and avrdude binary
 - **`firmware/`** — git submodule (`reacher-firmware`, `beta` branch); hex files in `firmware/hex/uno/` and `firmware/hex/mega/`
 
 ### CI/CD

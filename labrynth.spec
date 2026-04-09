@@ -8,7 +8,7 @@ Bundles:
   - Platform avrdude       → _MEIPASS/avrdude/
 
 Build:
-  pyinstaller reacher.spec
+  pyinstaller labrynth.spec
 """
 
 import os
@@ -107,7 +107,8 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True,
+    console=False,
+    icon=os.path.join(PROJECT_ROOT, "web", "public", "favicon.ico"),
 )
 
 # ---------------------------------------------------------------------------
@@ -120,8 +121,8 @@ if platform.system() == "Darwin":
         a.binaries,
         a.datas,
         name="Labrynth.app",
-        icon=None,
-        bundle_identifier="com.otislab.reacher",
+        icon=os.path.join(PROJECT_ROOT, "web", "public", "reacher-icon.png"),
+        bundle_identifier="com.otislab.labrynth",
     )
 else:
     coll = COLLECT(

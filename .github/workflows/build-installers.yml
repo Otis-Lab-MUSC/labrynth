@@ -221,7 +221,7 @@ jobs:
         run: |
           PKG="labrynth_${VERSION}_amd64"
           mkdir -p "${PKG}/DEBIAN"
-          mkdir -p "${PKG}/opt/reacher"
+          mkdir -p "${PKG}/opt/labrynth"
           mkdir -p "${PKG}/usr/local/bin"
 
           cat > "${PKG}/DEBIAN/control" <<EOF
@@ -235,9 +235,9 @@ jobs:
            Head-fixed rodent operant conditioning control software.
           EOF
 
-          cp -r dist/Labrynth/* "${PKG}/opt/reacher/"
-          chmod +x "${PKG}/opt/reacher/Labrynth"
-          ln -s /opt/reacher/Labrynth "${PKG}/usr/local/bin/labrynth"
+          cp -r dist/Labrynth/* "${PKG}/opt/labrynth/"
+          chmod +x "${PKG}/opt/labrynth/Labrynth"
+          ln -s /opt/labrynth/Labrynth "${PKG}/usr/local/bin/labrynth"
 
           dpkg-deb --build "$PKG"
 

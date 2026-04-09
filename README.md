@@ -37,7 +37,7 @@ labrynth/
 │   └── client.py           # ReacherClient — async HTTP wrapper
 ├── firmware/               # Git submodule → reacher-firmware (hex files)
 ├── build.py                # Build orchestrator (firmware → frontend → PyInstaller)
-├── reacher.spec            # PyInstaller spec file
+├── labrynth.spec           # PyInstaller spec file
 ├── launcher.py             # Thin entry point for PyInstaller
 └── pyproject.toml          # Build dependencies
 ```
@@ -235,7 +235,7 @@ The build pipeline:
 2. **Stage 1:** Compiles firmware hex files via `compile.sh`
 3. **Stage 2:** Builds React frontend (`npm ci && npm run build`)
 4. **Stage 3:** Validates required assets exist
-5. **Stage 4:** Runs PyInstaller with `reacher.spec`
+5. **Stage 4:** Runs PyInstaller with `labrynth.spec`
 6. **Stage 5:** Reports output location
 
 Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS)
