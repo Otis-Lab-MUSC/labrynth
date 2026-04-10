@@ -53,7 +53,13 @@ export function LiveStats({ session, elapsed }: Props) {
   const sessionStats: { label: string; value: string | number }[] = [
     { label: "INFUSIONS", value: session.infusionCount },
     { label: "LICKS", value: lickCount },
-    ...(config.hasTrials ? [{ label: "TRIALS", value: session.trialCount }] : []),
+    ...(config.hasTrials
+      ? [
+          { label: "TRIALS", value: session.trialCount },
+          { label: "CS+", value: session.csPlusCount },
+          { label: "CS-", value: session.csMinusCount },
+        ]
+      : []),
     { label: "FRAMES", value: session.frameData.length },
     { label: "ELAPSED", value: fmtTime(elapsed) },
   ];
@@ -133,7 +139,13 @@ export function LiveStats({ session, elapsed }: Props) {
               + session.cumulativeLhLeverCounts.active + session.cumulativeLhLeverCounts.timeout + session.cumulativeLhLeverCounts.inactive
               + leverTotal(session.rhLeverCounts) + leverTotal(session.lhLeverCounts)
             }] : []),
-            ...(config.hasTrials ? [{ label: "TOTAL TRIALS", value: session.cumulativeTrialCount + session.trialCount }] : []),
+            ...(config.hasTrials
+              ? [
+                  { label: "TOTAL TRIALS", value: session.cumulativeTrialCount + session.trialCount },
+                  { label: "TOTAL CS+", value: session.cumulativeCsPlusCount + session.csPlusCount },
+                  { label: "TOTAL CS-", value: session.cumulativeCsMinusCount + session.csMinusCount },
+                ]
+              : []),
           ].map((stat) => (
             <div key={stat.label} className="flex justify-between items-baseline py-0.5">
               <span className="text-theme-text/60 uppercase text-xs tracking-wider">{stat.label}</span>

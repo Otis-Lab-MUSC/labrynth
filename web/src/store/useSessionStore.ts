@@ -77,6 +77,8 @@ const newSession = (id: string, port: string, paradigm: string | null, machineId
   paradigmSettings: null,
   limitSettings: null,
   trialCount: 0,
+  csPlusCount: 0,
+  csMinusCount: 0,
   rhLeverCounts: { ...ZERO_LEVER },
   lhLeverCounts: { ...ZERO_LEVER },
   hardwareUi: defaultHardwareUiState(),
@@ -86,6 +88,8 @@ const newSession = (id: string, port: string, paradigm: string | null, machineId
   cumulativeInfusionCount: 0,
   cumulativePressCount: 0,
   cumulativeTrialCount: 0,
+  cumulativeCsPlusCount: 0,
+  cumulativeCsMinusCount: 0,
   cumulativeRhLeverCounts: { ...ZERO_LEVER },
   cumulativeLhLeverCounts: { ...ZERO_LEVER },
 });
@@ -224,12 +228,16 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           infusionCount: 0,
           pressCount: 0,
           trialCount: 0,
+          csPlusCount: 0,
+          csMinusCount: 0,
           rhLeverCounts: { ...ZERO_LEVER },
           lhLeverCounts: { ...ZERO_LEVER },
           segmentNumber: 0,
           cumulativeInfusionCount: 0,
           cumulativePressCount: 0,
           cumulativeTrialCount: 0,
+          cumulativeCsPlusCount: 0,
+          cumulativeCsMinusCount: 0,
           cumulativeRhLeverCounts: { ...ZERO_LEVER },
           cumulativeLhLeverCounts: { ...ZERO_LEVER },
         }),
@@ -254,6 +262,18 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         event.device === "PAVLOV" && event.event === "TRIAL_START"
           ? sess.trialCount + 1
           : sess.trialCount;
+      const csPlusCount =
+        event.device === "PAVLOV" &&
+        event.event === "TRIAL_START" &&
+        event.trial_type === "CS_PLUS"
+          ? sess.csPlusCount + 1
+          : sess.csPlusCount;
+      const csMinusCount =
+        event.device === "PAVLOV" &&
+        event.event === "TRIAL_START" &&
+        event.trial_type === "CS_MINUS"
+          ? sess.csMinusCount + 1
+          : sess.csMinusCount;
       const isRH = event.device === "RH_LEVER";
       const isLH = event.device === "LH_LEVER";
       const rhLeverCounts = isRH
@@ -276,6 +296,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         infusionCount,
         pressCount,
         trialCount,
+        csPlusCount,
+        csMinusCount,
         rhLeverCounts,
         lhLeverCounts,
       });
@@ -290,12 +312,18 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       let infusionCount = 0;
       let pressCount = 0;
       let trialCount = 0;
+      let csPlusCount = 0;
+      let csMinusCount = 0;
       const rhLeverCounts = { ...ZERO_LEVER };
       const lhLeverCounts = { ...ZERO_LEVER };
       for (const e of events) {
         if (e.device === "PUMP" && e.event === "INFUSION") infusionCount++;
         if ((e.device === "RH_LEVER" || e.device === "LH_LEVER") && e.event.includes("PRESS")) pressCount++;
-        if (e.device === "PAVLOV" && e.event === "TRIAL_START") trialCount++;
+        if (e.device === "PAVLOV" && e.event === "TRIAL_START") {
+          trialCount++;
+          if (e.trial_type === "CS_PLUS") csPlusCount++;
+          else if (e.trial_type === "CS_MINUS") csMinusCount++;
+        }
         if (e.device === "RH_LEVER") {
           if (e.event === "ACTIVE_PRESS") rhLeverCounts.active++;
           if (e.event === "TIMEOUT_PRESS") rhLeverCounts.timeout++;
@@ -313,6 +341,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         infusionCount,
         pressCount,
         trialCount,
+        csPlusCount,
+        csMinusCount,
         rhLeverCounts,
         lhLeverCounts,
       });
@@ -409,6 +439,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         paradigmSettings: null,
         limitSettings: null,
         trialCount: 0,
+        csPlusCount: 0,
+        csMinusCount: 0,
         hardwareSettings: [],
         rhLeverCounts: { ...ZERO_LEVER },
         lhLeverCounts: { ...ZERO_LEVER },
@@ -434,6 +466,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         pausedTime: 0,
         pauseStartTime: null,
         trialCount: 0,
+        csPlusCount: 0,
+        csMinusCount: 0,
         hardwareSettings: [],
         rhLeverCounts: { ...ZERO_LEVER },
         lhLeverCounts: { ...ZERO_LEVER },
@@ -517,6 +551,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         cumulativeInfusionCount: sess.cumulativeInfusionCount + sess.infusionCount,
         cumulativePressCount: sess.cumulativePressCount + sess.pressCount,
         cumulativeTrialCount: sess.cumulativeTrialCount + sess.trialCount,
+        cumulativeCsPlusCount: sess.cumulativeCsPlusCount + sess.csPlusCount,
+        cumulativeCsMinusCount: sess.cumulativeCsMinusCount + sess.csMinusCount,
         cumulativeRhLeverCounts: {
           active: sess.cumulativeRhLeverCounts.active + sess.rhLeverCounts.active,
           timeout: sess.cumulativeRhLeverCounts.timeout + sess.rhLeverCounts.timeout,
@@ -531,6 +567,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         infusionCount: 0,
         pressCount: 0,
         trialCount: 0,
+        csPlusCount: 0,
+        csMinusCount: 0,
         rhLeverCounts: { ...ZERO_LEVER },
         lhLeverCounts: { ...ZERO_LEVER },
       });
@@ -550,12 +588,16 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         infusionCount: 0,
         pressCount: 0,
         trialCount: 0,
+        csPlusCount: 0,
+        csMinusCount: 0,
         rhLeverCounts: { ...ZERO_LEVER },
         lhLeverCounts: { ...ZERO_LEVER },
         segmentNumber: 0,
         cumulativeInfusionCount: 0,
         cumulativePressCount: 0,
         cumulativeTrialCount: 0,
+        cumulativeCsPlusCount: 0,
+        cumulativeCsMinusCount: 0,
         cumulativeRhLeverCounts: { ...ZERO_LEVER },
         cumulativeLhLeverCounts: { ...ZERO_LEVER },
         programStartTime: Date.now(),

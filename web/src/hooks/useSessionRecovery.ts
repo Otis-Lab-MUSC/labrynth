@@ -95,6 +95,8 @@ export function useSessionRecovery() {
                 paradigmSettings: null,
                 limitSettings: null,
                 trialCount: 0,
+                csPlusCount: 0,
+                csMinusCount: 0,
                 rhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
                 lhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
                 hardwareUi: {
@@ -115,6 +117,8 @@ export function useSessionRecovery() {
                 cumulativeInfusionCount: 0,
                 cumulativePressCount: 0,
                 cumulativeTrialCount: 0,
+                cumulativeCsPlusCount: 0,
+                cumulativeCsMinusCount: 0,
                 cumulativeRhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
                 cumulativeLhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
               });

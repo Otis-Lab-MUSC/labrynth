@@ -119,6 +119,8 @@ export interface Session {
   paradigmSettings: { ratio: number; step: number; interval: number; traceInterval: number } | null;
   limitSettings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number } | null;
   trialCount: number;
+  csPlusCount: number;
+  csMinusCount: number;
   rhLeverCounts: LeverCounts;
   lhLeverCounts: LeverCounts;
   hardwareUi: HardwareUiState;
@@ -128,6 +130,8 @@ export interface Session {
   cumulativeInfusionCount: number;
   cumulativePressCount: number;
   cumulativeTrialCount: number;
+  cumulativeCsPlusCount: number;
+  cumulativeCsMinusCount: number;
   cumulativeRhLeverCounts: LeverCounts;
   cumulativeLhLeverCounts: LeverCounts;
 }
@@ -145,6 +149,8 @@ export interface BehaviorEvent {
   event: string;
   start_timestamp: number;
   end_timestamp: number;
+  /** Pavlovian TRIAL_START only: distinguishes CS+ from CS- trials. */
+  trial_type?: "CS_PLUS" | "CS_MINUS";
 }
 
 export interface CommandSpec {
