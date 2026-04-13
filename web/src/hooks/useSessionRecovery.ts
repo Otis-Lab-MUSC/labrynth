@@ -121,6 +121,7 @@ export function useSessionRecovery() {
                 cumulativeCsMinusCount: 0,
                 cumulativeRhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
                 cumulativeLhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
+                cumulativeElapsedTime: 0,
               });
               return {
                 sessions: next,

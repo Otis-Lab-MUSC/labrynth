@@ -134,6 +134,7 @@ export interface Session {
   cumulativeCsMinusCount: number;
   cumulativeRhLeverCounts: LeverCounts;
   cumulativeLhLeverCounts: LeverCounts;
+  cumulativeElapsedTime: number;
 }
 
 export interface FirmwareConfig {

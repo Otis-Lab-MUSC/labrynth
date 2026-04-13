@@ -116,7 +116,7 @@ export function MonitorPanel() {
           disabled={!canControl}
           className="rounded bg-yellow-600 px-4 py-2 text-white font-mono hover:bg-yellow-700 disabled:opacity-50"
         >
-          {session.state === "paused" ? "Play" : "Pause"}
+          {session.state === "paused" ? "Resume" : "Pause"}
         </button>
         <button
           data-tour="split-button"

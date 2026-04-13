@@ -133,6 +133,7 @@ export function LiveStats({ session, elapsed }: Props) {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1">
           {[
             { label: "SEGMENTS", value: session.segmentNumber + 1 },
+            { label: "TOTAL ELAPSED", value: fmtTime(session.cumulativeElapsedTime / 1000 + elapsed) },
             { label: "TOTAL INF.", value: session.cumulativeInfusionCount + session.infusionCount },
             ...(config.showLeverStats ? [{ label: "TOTAL PRESSES", value:
                 session.cumulativeRhLeverCounts.active + session.cumulativeRhLeverCounts.timeout + session.cumulativeRhLeverCounts.inactive

@@ -92,6 +92,7 @@ const newSession = (id: string, port: string, paradigm: string | null, machineId
   cumulativeCsMinusCount: 0,
   cumulativeRhLeverCounts: { ...ZERO_LEVER },
   cumulativeLhLeverCounts: { ...ZERO_LEVER },
+  cumulativeElapsedTime: 0,
 });
 
 export const useSessionStore = create<SessionStore>((set, get) => ({
@@ -240,6 +241,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           cumulativeCsMinusCount: 0,
           cumulativeRhLeverCounts: { ...ZERO_LEVER },
           cumulativeLhLeverCounts: { ...ZERO_LEVER },
+          cumulativeElapsedTime: 0,
         }),
       });
       return { sessions: next };
@@ -544,6 +546,11 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     set((s) => {
       const sess = s.sessions.get(id);
       if (!sess) return s;
+      const now = Date.now();
+      const segmentElapsedMs = sess.programStartTime
+        ? now - sess.programStartTime - sess.pausedTime
+          - (sess.state === "paused" && sess.pauseStartTime ? now - sess.pauseStartTime : 0)
+        : 0;
       const next = new Map(s.sessions);
       next.set(id, {
         ...sess,
@@ -563,6 +570,11 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           timeout: sess.cumulativeLhLeverCounts.timeout + sess.lhLeverCounts.timeout,
           inactive: sess.cumulativeLhLeverCounts.inactive + sess.lhLeverCounts.inactive,
         },
+        cumulativeElapsedTime: sess.cumulativeElapsedTime + segmentElapsedMs,
+        programStartTime: now,
+        programEndTime: null,
+        pausedTime: 0,
+        pauseStartTime: sess.state === "paused" ? now : null,
         behaviorData: [],
         infusionCount: 0,
         pressCount: 0,
@@ -600,6 +612,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         cumulativeCsMinusCount: 0,
         cumulativeRhLeverCounts: { ...ZERO_LEVER },
         cumulativeLhLeverCounts: { ...ZERO_LEVER },
+        cumulativeElapsedTime: 0,
         programStartTime: Date.now(),
         programEndTime: null,
         pausedTime: 0,
