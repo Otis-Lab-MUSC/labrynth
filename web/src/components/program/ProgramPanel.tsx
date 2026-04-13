@@ -24,6 +24,8 @@ export function ProgramPanel() {
 
   const userPresets = useUserPresetStore((s) => s.userPresets);
   const saveUserPreset = useUserPresetStore((s) => s.savePreset);
+  const updateUserPreset = useUserPresetStore((s) => s.updatePreset);
+  const renameUserPreset = useUserPresetStore((s) => s.renamePreset);
   const deleteUserPreset = useUserPresetStore((s) => s.deletePreset);
 
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
@@ -31,6 +33,7 @@ export function ProgramPanel() {
   const [presetKey, setPresetKey] = useState(0);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [updateConfirm, setUpdateConfirm] = useState<string | null>(null);
 
   const paradigm = session?.paradigm?.toLowerCase();
 
@@ -66,6 +69,19 @@ export function ProgramPanel() {
     deleteUserPreset(id);
     setDeleteConfirm(null);
     if (selectedPresetId === id) setSelectedPresetId("");
+  };
+
+  const handleUpdatePreset = (id: string) => {
+    if (!session || !session.paradigm) return;
+    const existing = userPresets.find((p) => p.id === id);
+    if (!existing) return;
+    const updated = buildPresetFromSession(existing.name, session);
+    updateUserPreset(id, updated);
+    setUpdateConfirm(null);
+  };
+
+  const handleRenamePreset = (id: string, name: string) => {
+    renameUserPreset(id, name);
   };
 
   // Apply a session preset: hardware + paradigm settings + limits + commands
@@ -281,6 +297,12 @@ export function ProgramPanel() {
           onApply={(overrides) => applySessionPreset(selectedSessionPreset, overrides)}
           isUserPreset={selectedSessionPreset.id.startsWith("user-")}
           onDelete={() => setDeleteConfirm(selectedSessionPreset.id)}
+          onUpdate={() => setUpdateConfirm(selectedSessionPreset.id)}
+          onRename={(name) => handleRenamePreset(selectedSessionPreset.id, name)}
+          canUpdate={
+            (session?.state === "connected" || session?.state === "paused") &&
+            !!session?.paradigm
+          }
         />
       )}
 
@@ -342,11 +364,27 @@ export function ProgramPanel() {
       <ConfirmDialog
         open={deleteConfirm !== null}
         title="Delete Preset"
-        message="This will permanently remove this custom preset."
+        message={`Permanently delete "${userPresets.find((p) => p.id === deleteConfirm)?.name ?? "this preset"}"? This cannot be undone.`}
         confirmLabel="Delete"
         variant="danger"
         onConfirm={() => deleteConfirm && handleDeletePreset(deleteConfirm)}
         onCancel={() => setDeleteConfirm(null)}
+      />
+      <ConfirmDialog
+        open={updateConfirm !== null}
+        title="Update Preset"
+        message={(() => {
+          const target = userPresets.find((p) => p.id === updateConfirm);
+          if (!target) return "";
+          const paradigmChanged = session?.paradigm && target.paradigm !== session.paradigm;
+          return paradigmChanged
+            ? `This will overwrite "${target.name}" with the current session configuration and change its paradigm from "${target.paradigm}" to "${session.paradigm}". This cannot be undone.`
+            : `This will overwrite "${target.name}" with the current session configuration. This cannot be undone.`;
+        })()}
+        confirmLabel="Update"
+        variant="warning"
+        onConfirm={() => updateConfirm && handleUpdatePreset(updateConfirm)}
+        onCancel={() => setUpdateConfirm(null)}
       />
     </div>
   );

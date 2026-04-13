@@ -19,6 +19,8 @@ function persistPresets(presets: SessionPreset[]): void {
 interface UserPresetStore {
   userPresets: SessionPreset[];
   savePreset: (preset: SessionPreset) => void;
+  updatePreset: (id: string, preset: SessionPreset) => void;
+  renamePreset: (id: string, name: string) => void;
   deletePreset: (id: string) => void;
 }
 
@@ -27,6 +29,22 @@ export const useUserPresetStore = create<UserPresetStore>((set, get) => ({
 
   savePreset: (preset) => {
     const next = [...get().userPresets, preset];
+    persistPresets(next);
+    set({ userPresets: next });
+  },
+
+  updatePreset: (id, preset) => {
+    const next = get().userPresets.map((p) =>
+      p.id === id ? { ...preset, id } : p
+    );
+    persistPresets(next);
+    set({ userPresets: next });
+  },
+
+  renamePreset: (id, name) => {
+    const next = get().userPresets.map((p) =>
+      p.id === id ? { ...p, name } : p
+    );
     persistPresets(next);
     set({ userPresets: next });
   },

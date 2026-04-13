@@ -1,12 +1,16 @@
 import { useState, useCallback } from "react";
 import type { SessionPreset, PresetDeviceEntry } from "./types";
 import type { HardwareUiState } from "../../../types";
+import { PresetActionMenu } from "./PresetActionMenu";
 
 interface Props {
   preset: SessionPreset;
   onApply: (hardwareOverrides: Record<string, boolean>) => Promise<void>;
   isUserPreset?: boolean;
   onDelete?: () => void;
+  onUpdate?: () => void;
+  onRename?: (name: string) => void;
+  canUpdate?: boolean;
 }
 
 function DeviceRow({
@@ -62,9 +66,11 @@ function formatTimeLimit(seconds: number): string {
   return `${seconds}s`;
 }
 
-export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete }: Props) {
+export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete, onUpdate, onRename, canUpdate }: Props) {
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(preset.name);
 
   // Initialize toggle state from preset hardware
   const [armState, setArmState] = useState<Record<string, boolean>>(() => {
@@ -105,7 +111,34 @@ export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete }: P
     <div data-tour="preset-card" className="card border-l-4 border-l-accent space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <h3 className="font-semibold text-theme-text text-base">{preset.name}</h3>
+        {renaming ? (
+          <input
+            autoFocus
+            className="input-base text-base font-semibold w-48"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && renameValue.trim()) {
+                onRename?.(renameValue.trim());
+                setRenaming(false);
+              }
+              if (e.key === "Escape") {
+                setRenameValue(preset.name);
+                setRenaming(false);
+              }
+            }}
+            onBlur={() => {
+              if (renameValue.trim() && renameValue.trim() !== preset.name) {
+                onRename?.(renameValue.trim());
+              } else {
+                setRenameValue(preset.name);
+              }
+              setRenaming(false);
+            }}
+          />
+        ) : (
+          <h3 className="font-semibold text-theme-text text-base">{preset.name}</h3>
+        )}
         <span className="rounded bg-accent/15 px-2 py-0.5 text-xs font-mono text-accent uppercase tracking-wide">
           {preset.paradigm}
         </span>
@@ -114,15 +147,13 @@ export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete }: P
             Custom
           </span>
         )}
-        {isUserPreset && onDelete && (
-          <button
-            type="button"
-            onClick={onDelete}
-            className="ml-auto text-red-400/60 hover:text-red-400 transition-colors text-sm"
-            title="Delete preset"
-          >
-            ✕
-          </button>
+        {isUserPreset && (
+          <PresetActionMenu
+            onUpdate={onUpdate ?? (() => {})}
+            onRename={() => setRenaming(true)}
+            onDelete={onDelete ?? (() => {})}
+            canUpdate={canUpdate ?? false}
+          />
         )}
       </div>
 

@@ -5,6 +5,7 @@ export { PAV_ACQUISITION_PRESET, PAV_REVERSAL_PRESET } from "./pavlovianPresets"
 export { SessionPresetCard } from "./SessionPresetCard";
 export { buildPresetFromSession } from "./deviceMetadata";
 export { SavePresetDialog } from "./SavePresetDialog";
+export { PresetActionMenu } from "./PresetActionMenu";
 
 import { SA_HIGH_PRESET, SA_MID_PRESET, SA_LOW_PRESET, SA_EXTINCTION_PRESET } from "./frSaPresets";
 import { PAV_ACQUISITION_PRESET, PAV_REVERSAL_PRESET } from "./pavlovianPresets";
