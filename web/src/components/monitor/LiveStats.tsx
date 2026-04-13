@@ -115,9 +115,9 @@ export function LiveStats({ session, elapsed }: Props) {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1">
           {sessionStats.map((stat) => (
-            <div key={stat.label} className="flex justify-between items-baseline py-0.5">
+            <div key={stat.label} className="flex items-baseline gap-2 py-0.5">
               <span className="text-theme-text/60 uppercase text-xs tracking-wider">{stat.label}</span>
-              <span className="text-accent font-bold tabular-nums ml-3">{stat.value}</span>
+              <span className="text-accent font-bold tabular-nums">{stat.value}</span>
             </div>
           ))}
         </div>
@@ -148,9 +148,9 @@ export function LiveStats({ session, elapsed }: Props) {
                 ]
               : []),
           ].map((stat) => (
-            <div key={stat.label} className="flex justify-between items-baseline py-0.5">
+            <div key={stat.label} className="flex items-baseline gap-2 py-0.5">
               <span className="text-theme-text/60 uppercase text-xs tracking-wider">{stat.label}</span>
-              <span className="text-accent font-bold tabular-nums ml-3">{stat.value}</span>
+              <span className="text-accent font-bold tabular-nums">{stat.value}</span>
             </div>
           ))}
         </div>

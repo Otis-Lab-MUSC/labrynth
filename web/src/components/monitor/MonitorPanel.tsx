@@ -4,6 +4,7 @@ import { getClientForSession } from "../../api/sessionClient";
 import { EventTimeline } from "./EventTimeline";
 import { LiveStats } from "./LiveStats";
 import { SessionProgress } from "./SessionProgress";
+import { ConfirmDialog } from "../layout/ConfirmDialog";
 import type { SessionState } from "../../types";
 
 function RunningMouseIndicator({ state }: { state: SessionState }) {
@@ -58,6 +59,7 @@ export function MonitorPanel() {
   const setStartModalOpen = useSessionStore((s) => s.setStartModalOpen);
   const [, forceUpdate] = useState(0);
   const [confirmRestart, setConfirmRestart] = useState(false);
+  const [confirmStop, setConfirmStop] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
@@ -105,7 +107,7 @@ export function MonitorPanel() {
           Start
         </button>
         <button
-          onClick={() => getClientForSession(activeSessionId)?.stopProgram(activeSessionId)}
+          onClick={() => setConfirmStop(true)}
           disabled={!canControl}
           className="rounded bg-red-600 px-4 py-2 text-white font-mono hover:bg-red-700 disabled:opacity-50"
         >
@@ -166,6 +168,30 @@ export function MonitorPanel() {
       <SessionProgress session={session} elapsed={elapsed} />
       <div data-tour="live-stats"><LiveStats session={session} elapsed={elapsed} /></div>
       <EventTimeline events={session.behaviorData} />
+
+      <ConfirmDialog
+        open={confirmStop}
+        title="Stop Session"
+        message="Stopping will end the program and disconnect the serial connection. This cannot be undone. If you want a temporary pause, use the Pause button instead."
+        confirmLabel="Stop"
+        variant="danger"
+        secondaryAction={
+          session.state === "running"
+            ? {
+                label: "Pause Instead",
+                onClick: () => {
+                  getClientForSession(activeSessionId)?.pauseProgram(activeSessionId);
+                  setConfirmStop(false);
+                },
+              }
+            : undefined
+        }
+        onConfirm={() => {
+          getClientForSession(activeSessionId)?.stopProgram(activeSessionId);
+          setConfirmStop(false);
+        }}
+        onCancel={() => setConfirmStop(false)}
+      />
     </div>
   );
 }
