@@ -4,6 +4,7 @@ import { useTutorialStore } from "../store/useTutorialStore";
 
 // Fix: FE-001 — Filename validation to prevent path traversal
 const UNSAFE_FILENAME_RE = /[<>:"/\\|?*\x00-\x1f]/;
+const ARCHIVE_SUFFIX_RE = /\.(zip|tar\.gz|tgz|tar|gz)$/i;
 export function sanitizeFilename(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) return trimmed;
@@ -13,7 +14,9 @@ export function sanitizeFilename(name: string): string {
   if (trimmed.startsWith(".") || trimmed.includes("..")) {
     throw new Error(`Invalid filename: path traversal attempt`);
   }
-  return trimmed;
+  // Strip a trailing archive suffix so `experiment.zip` doesn't become
+  // `experiment.zip.zip` once the backend appends its own `.zip`.
+  return trimmed.replace(ARCHIVE_SUFFIX_RE, "");
 }
 
 function isDemoMode() {
