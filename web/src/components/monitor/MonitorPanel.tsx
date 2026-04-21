@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Play, Pause, Square, Scissors, RotateCcw } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { getClientForSession } from "../../api/sessionClient";
 import { EventTimeline } from "./EventTimeline";
@@ -98,63 +99,73 @@ export function MonitorPanel() {
       </div>
 
       {/* Control buttons */}
-      <div data-tour="experiment-controls" className="flex flex-wrap gap-3">
-        <button
-          onClick={() => setStartModalOpen(true)}
-          disabled={session.state === "running"}
-          className="rounded bg-green-600 px-4 py-2 text-white font-mono hover:bg-green-700 disabled:opacity-50"
-        >
-          Start
-        </button>
-        <button
-          onClick={() => setConfirmStop(true)}
-          disabled={!canControl}
-          className="rounded bg-red-600 px-4 py-2 text-white font-mono hover:bg-red-700 disabled:opacity-50"
-        >
-          Stop
-        </button>
-        <button
-          onClick={() => getClientForSession(activeSessionId)?.pauseProgram(activeSessionId)}
-          disabled={!canControl}
-          className="rounded bg-yellow-600 px-4 py-2 text-white font-mono hover:bg-yellow-700 disabled:opacity-50"
-        >
-          {session.state === "paused" ? "Resume" : "Pause"}
-        </button>
-        <button
-          data-tour="split-button"
-          onClick={() => getClientForSession(activeSessionId)?.splitSegment(activeSessionId)}
-          disabled={!canControl}
-          className="rounded bg-blue-600 px-4 py-2 text-white font-mono hover:bg-blue-700 disabled:opacity-50"
-        >
-          Split
-        </button>
-        {!confirmRestart ? (
+      <div data-tour="experiment-controls" className="flex flex-wrap items-center gap-4">
+        {/* Transport group */}
+        <div role="group" aria-label="Session transport controls" className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setStartModalOpen(true)}
+            disabled={session.state === "running"}
+            aria-label="Start session"
+            title="Start a new session"
+            className="inline-flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-white font-mono transition hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          >
+            <Play size={16} aria-hidden="true" />
+            Start
+          </button>
+
+          <button
+            onClick={() => getClientForSession(activeSessionId)?.pauseProgram(activeSessionId)}
+            disabled={!canControl}
+            aria-label={session.state === "paused" ? "Resume session" : "Pause session"}
+            title={session.state === "paused" ? "Resume the paused session" : "Pause the running session"}
+            className="inline-flex items-center gap-2 rounded bg-yellow-600 px-4 py-2 text-white font-mono transition hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          >
+            {session.state === "paused"
+              ? <Play size={16} aria-hidden="true" />
+              : <Pause size={16} aria-hidden="true" />}
+            {session.state === "paused" ? "Resume" : "Pause"}
+          </button>
+
+          <button
+            onClick={() => setConfirmStop(true)}
+            disabled={!canControl}
+            aria-label="Stop session"
+            title="Stop the session (requires confirmation)"
+            className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-white font-mono transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          >
+            <Square size={16} aria-hidden="true" />
+            Stop
+          </button>
+        </div>
+
+        {/* Divider — hidden when row wraps on narrow screens */}
+        <div aria-hidden="true" className="hidden sm:block w-px self-stretch bg-theme-border" />
+
+        {/* Tools group */}
+        <div role="group" aria-label="Session tools" className="flex flex-wrap gap-2">
+          <button
+            data-tour="split-button"
+            onClick={() => getClientForSession(activeSessionId)?.splitSegment(activeSessionId)}
+            disabled={!canControl}
+            aria-label="Split segment"
+            title="Start a new segment (current segment is marked complete)"
+            className="inline-flex items-center gap-2 rounded border border-theme-border bg-transparent px-3 py-2 font-mono text-sm text-theme-text/80 transition hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+          >
+            <Scissors size={16} aria-hidden="true" />
+            Split
+          </button>
+
           <button
             onClick={() => setConfirmRestart(true)}
             disabled={!canControl}
-            className="rounded bg-amber-600 px-4 py-2 text-white font-mono hover:bg-amber-700 disabled:opacity-50"
+            aria-label="Restart session"
+            title="Restart the session (requires confirmation)"
+            className="inline-flex items-center gap-2 rounded border border-theme-border bg-transparent px-3 py-2 font-mono text-sm text-theme-text/80 transition hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >
+            <RotateCcw size={16} aria-hidden="true" />
             Restart
           </button>
-        ) : (
-          <span className="flex items-center gap-1">
-            <button
-              onClick={() => {
-                getClientForSession(activeSessionId)?.restartProgram(activeSessionId);
-                setConfirmRestart(false);
-              }}
-              className="rounded bg-amber-600 px-3 py-2 text-white font-mono hover:bg-amber-700 text-sm"
-            >
-              Confirm
-            </button>
-            <button
-              onClick={() => setConfirmRestart(false)}
-              className="rounded bg-theme-border px-3 py-2 text-theme-text font-mono hover:bg-theme-border/80 text-sm"
-            >
-              Cancel
-            </button>
-          </span>
-        )}
+        </div>
       </div>
 
       {/* Segment indicator */}
@@ -191,6 +202,19 @@ export function MonitorPanel() {
           setConfirmStop(false);
         }}
         onCancel={() => setConfirmStop(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmRestart}
+        title="Restart Session"
+        message="Restarting will reset the program to its initial state and begin again from the start."
+        confirmLabel="Restart"
+        variant="warning"
+        onConfirm={() => {
+          getClientForSession(activeSessionId)?.restartProgram(activeSessionId);
+          setConfirmRestart(false);
+        }}
+        onCancel={() => setConfirmRestart(false)}
       />
     </div>
   );
