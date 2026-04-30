@@ -1,6 +1,6 @@
 export const HARDWARE_PINS: Record<string, string> = {
   LEVER_RH: "10",
-  LEVER_LH: "12",
+  LEVER_LH: "13",
   CUE: "3",
   CUE_2: "7",
   PUMP: "4",
