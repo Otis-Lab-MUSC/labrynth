@@ -1,6 +1,6 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
-import { HARDWARE_PINS } from "./pins";
+import { PinField } from "./PinField";
 import { SquareWaveCanvas } from "./SquareWaveCanvas";
 
 interface Props {
@@ -22,7 +22,7 @@ export function LaserControl({ sessionId, paradigm }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">
         Laser
-        <span className="ml-2 text-xs font-mono text-theme-text/40">Pin {HARDWARE_PINS.LASER}</span>
+        <PinField sessionId={sessionId} component="laser" />
       </h3>
       <div className="flex flex-wrap gap-2">
         <button

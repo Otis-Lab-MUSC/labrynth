@@ -190,6 +190,11 @@ export const getConfig = async (_id: string) => ({
   hardware_settings: [],
 });
 
+export const setPins = async (_id: string, assignments: Record<string, number>) => ({
+  applied: assignments,
+  errors: [] as Array<{ component: string; error: string }>,
+});
+
 export const startProgram = async (id: string) => {
   useSessionStore.getState().updateState(id, "running");
   startSimulator(id);

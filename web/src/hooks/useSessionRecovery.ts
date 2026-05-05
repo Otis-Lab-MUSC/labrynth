@@ -111,6 +111,7 @@ export function useSessionRecovery() {
                   microscope: { armed: false, frameRate: null, frameAveraging: null },
                   testMode: false,
                 },
+                pinOverrides: {},
                 fileConfig: { filename: "", destination: "" },
                 exportState: { exporting: false, result: null, error: null },
                 segmentNumber: 0,

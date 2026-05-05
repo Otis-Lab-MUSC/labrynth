@@ -124,6 +124,9 @@ export interface Session {
   rhLeverCounts: LeverCounts;
   lhLeverCounts: LeverCounts;
   hardwareUi: HardwareUiState;
+  /** Per-component Arduino pin overrides (lowercase Component keys). Empty
+   *  object means firmware defaults are in effect. */
+  pinOverrides: Record<string, number>;
   fileConfig: { filename: string; destination: string };
   exportState: { exporting: boolean; result: string | null; error: string | null };
   segmentNumber: number;

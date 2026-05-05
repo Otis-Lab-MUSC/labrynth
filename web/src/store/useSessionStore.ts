@@ -32,6 +32,7 @@ interface SessionStore {
   setSessionNotes: (id: string, notes: string) => void;
   pushHardwareSetting: (id: string, config: FirmwareConfig) => void;
   updateHardwareUi: (id: string, updater: (prev: HardwareUiState) => Partial<HardwareUiState>) => void;
+  setPinOverrides: (id: string, overrides: Record<string, number>) => void;
   setFileConfig: (id: string, config: Partial<{ filename: string; destination: string }>) => void;
   setExportState: (id: string, partial: Partial<{ exporting: boolean; result: string | null; error: string | null }>) => void;
   handleSplit: (id: string, segmentNumber: number) => void;
@@ -82,6 +83,7 @@ const newSession = (id: string, port: string, paradigm: string | null, machineId
   rhLeverCounts: { ...ZERO_LEVER },
   lhLeverCounts: { ...ZERO_LEVER },
   hardwareUi: defaultHardwareUiState(),
+  pinOverrides: {},
   fileConfig: { filename: "", destination: "" },
   exportState: { exporting: false, result: null, error: null },
   segmentNumber: 0,
@@ -521,6 +523,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       if (!sess) return s;
       const next = new Map(s.sessions);
       next.set(id, { ...sess, hardwareUi: { ...sess.hardwareUi, ...updater(sess.hardwareUi) } });
+      return { sessions: next };
+    }),
+
+  setPinOverrides: (id, overrides) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, { ...sess, pinOverrides: { ...sess.pinOverrides, ...overrides } });
       return { sessions: next };
     }),
 

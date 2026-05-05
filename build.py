@@ -97,9 +97,9 @@ def fetch_firmware():
     """Download pre-compiled hex files from the reacher-firmware GitHub repository.
 
     Fetches from the ``develop`` branch of Otis-Lab-MUSC/reacher-firmware using
-    raw.githubusercontent.com (no rate limits, no auth required).  The repo uses
-    a flat layout (``hex/{paradigm}.hex``) and currently only compiles for UNO.
-    Downloaded files are stored in ``firmware/hex/{board}/{paradigm}.hex``.
+    raw.githubusercontent.com (no rate limits, no auth required).  The repo
+    publishes a board-aware layout (``hex/{board}/{paradigm}.hex``) so we
+    download directly into the matching ``firmware/hex/{board}/{paradigm}.hex``.
     """
     print(f"\n=== Stage 1: Fetch firmware from GitHub ({FIRMWARE_BRANCH} branch) ===")
     errors = []
@@ -108,10 +108,9 @@ def fetch_firmware():
         os.makedirs(board_dir, exist_ok=True)
         for paradigm in PARADIGMS:
             sketch = PARADIGM_TO_SKETCH[paradigm]
-            # Repo uses flat layout (hex/{sketch}.hex) — no board subdirs
-            url = f"{FIRMWARE_RAW_BASE}/{sketch}.hex"
+            url = f"{FIRMWARE_RAW_BASE}/{board}/{sketch}.hex"
             dest = os.path.join(board_dir, f"{sketch}.hex")
-            print(f"  Fetching {sketch}.hex -> {board}/{sketch}.hex ...", end=" ", flush=True)
+            print(f"  Fetching {board}/{sketch}.hex ...", end=" ", flush=True)
             try:
                 urllib.request.urlretrieve(url, dest)
                 print("OK")

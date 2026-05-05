@@ -1,6 +1,6 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
-import { HARDWARE_PINS } from "./pins";
+import { PinField } from "./PinField";
 
 interface Props {
   sessionId: string;
@@ -36,7 +36,7 @@ export function PumpControl({ sessionId, label, prefix }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">
         {label} Pump
-        <span className="ml-2 text-xs font-mono text-theme-text/40">Pin {HARDWARE_PINS[prefix === "2" ? "PUMP_2" : "PUMP"]}</span>
+        <PinField sessionId={sessionId} component={prefix === "2" ? "pump2" : "pump"} />
       </h3>
       <div className="flex flex-wrap gap-2">
         <button

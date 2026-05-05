@@ -18,6 +18,7 @@ import { PumpControl } from "../hardware/PumpControl";
 import { LaserControl } from "../hardware/LaserControl";
 import { LickCircuitControl } from "../hardware/LickCircuitControl";
 import { MicroscopeControl } from "../hardware/MicroscopeControl";
+import { usePinOverridesHydration } from "../hardware/usePinOverridesHydration";
 import { useTutorialStore } from "../../store/useTutorialStore";
 import type { CommandSpec } from "../../types";
 
@@ -71,6 +72,8 @@ export function ConfigurationPanel() {
   const userPresets = useUserPresetStore((s) => s.userPresets);
   const saveUserPreset = useUserPresetStore((s) => s.savePreset);
   const deleteUserPreset = useUserPresetStore((s) => s.deletePreset);
+
+  usePinOverridesHydration(activeSessionId);
 
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
   const [selectedDevicePresetId, setSelectedDevicePresetId] = useState<string>("");

@@ -197,6 +197,11 @@ export class MachineApiClient {
     this.request<{ paradigm: string; commands: Array<Record<string, unknown>> }>(`/hardware/${id}/commands`);
   getConfig = (id: string) =>
     this.request<{ firmware_info: Record<string, unknown>; hardware_settings: unknown[] }>(`/hardware/${id}/config`);
+  setPins = (id: string, assignments: Record<string, number>) =>
+    this.request<{ applied: Record<string, number>; errors: Array<{ component: string; error: string }> }>(
+      `/hardware/${id}/pins`,
+      { method: "PUT", body: JSON.stringify({ assignments }) },
+    );
 
   // --- Program ---
   startProgram = (id: string) =>
@@ -326,6 +331,8 @@ export const getCommands = (id: string) =>
   isDemoMode() ? mock.getCommands(id) : getLocalClient().getCommands(id);
 export const getConfig = (id: string) =>
   isDemoMode() ? mock.getConfig(id) : getLocalClient().getConfig(id);
+export const setPins = (id: string, assignments: Record<string, number>) =>
+  isDemoMode() ? mock.setPins(id, assignments) : getLocalClient().setPins(id, assignments);
 
 // --- Program ---
 export const startProgram = (id: string) =>

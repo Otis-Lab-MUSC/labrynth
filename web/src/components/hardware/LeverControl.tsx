@@ -1,6 +1,6 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
-import { HARDWARE_PINS } from "./pins";
+import { PinField } from "./PinField";
 
 interface Props {
   sessionId: string;
@@ -34,7 +34,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">
         {side} Lever
-        <span className="ml-2 text-xs font-mono text-theme-text/40">Pin {HARDWARE_PINS[`LEVER_${side}`]}</span>
+        <PinField sessionId={sessionId} component={side === "RH" ? "lever_rh" : "lever_lh"} />
       </h3>
       <div className="flex flex-wrap gap-2">
         <button

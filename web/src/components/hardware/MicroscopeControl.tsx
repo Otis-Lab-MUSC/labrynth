@@ -1,6 +1,6 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
-import { HARDWARE_PINS } from "./pins";
+import { PinField } from "./PinField";
 
 interface Props {
   sessionId: string;
@@ -18,7 +18,8 @@ export function MicroscopeControl({ sessionId }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">
         Microscope Sync
-        <span className="ml-2 text-xs font-mono text-theme-text/40">Pins {HARDWARE_PINS.MICROSCOPE}</span>
+        <span className="ml-2 text-xs font-mono text-theme-text/40">Timestamp pin 2 (fixed)</span>
+        <PinField sessionId={sessionId} component="microscope_trigger" />
       </h3>
       <div className="flex gap-2">
         <button

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Project Is
 
-**Labrynth** is the application shell and orchestrator for the REACHER neuroscience experiment control platform — it bundles a React frontend, Python terminal CLI, Arduino firmware, and a build pipeline into standalone cross-platform installers. The actual experiment backend logic lives in the separate `reacher` Python package (installed as a dependency).
+**Labrynth** is the application shell and orchestrator for the REACHER neuroscience experiment control platform — it bundles a React frontend, Python terminal CLI, Arduino firmware (as a submodule), and a build pipeline into standalone cross-platform installers. The actual experiment backend logic lives in the separate `reacher` Python package (installed as a `pip` dependency, not vendored here). Backend behavior changes require modifying `reacher`, not labrynth.
 
 ## Commands
 
@@ -12,97 +12,110 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 cd web
-npm ci              # Install dependencies
-npm run dev         # Dev server at http://localhost:5173 (proxies API to localhost:6229)
-npm run build       # TypeScript check + Vite production build → web/dist/
-npm run build:demo  # Same but with VITE_DEMO_SITE=true for static hosting
-npm run lint        # ESLint check
+npm ci
+npm run dev         # Dev server :5173 — proxies /api and /ws to localhost:6229
+npm run build       # tsc -b && vite build → web/dist/
+npm run build:demo  # Same with VITE_DEMO_SITE=true (deploys to static hosting via deploy-demo.yml)
+npm run lint        # ESLint
+```
+
+### Backend for frontend dev
+
+```bash
+export REACHER_STATIC_DIR=$(pwd)/web/dist
+export REACHER_HEX_DIR=$(pwd)/firmware/hex
+python -m reacher   # Backend at http://localhost:6229
 ```
 
 ### Python CLI
 
 ```bash
-pip install -e ".[cli]"   # Install CLI with dependencies (prompt_toolkit, httpx, websockets)
-python -m cli             # Start backend automatically + open terminal UI
-python -m cli --no-server # Terminal UI only (assumes backend already running at localhost:6229)
+pip install -e ".[cli]"      # prompt_toolkit, httpx, websockets
+python -m cli                # Auto-starts backend subprocess (waits up to 15s) + opens TUI
+python -m cli --no-server    # TUI only — backend must already be running
+python -m cli --port 6229    # Custom port
+reacher-cli                  # Console-script alias (same as `python -m cli`)
 ```
 
-### Full Build (produces standalone executables)
+### Full standalone build
 
 ```bash
-python build.py                        # All 5 stages: validate → firmware → frontend → assets → PyInstaller
-python build.py --skip-firmware        # Skip Arduino compilation
-python build.py --skip-frontend        # Skip npm build
-python build.py --avrdude /path/avrdude  # Bundle specific avrdude binary
+git submodule update --init --recursive   # First-time only — pulls reacher-firmware
+python build.py                           # All 5 stages
+python build.py --skip-firmware           # Reuse existing firmware/hex/
+python build.py --skip-frontend           # Reuse existing web/dist/
+python build.py --avrdude /usr/bin/avrdude  # Bundle a specific avrdude binary
 ```
 
-**Build outputs:** `dist/REACHER/` (Linux/Windows) or `dist/REACHER.app` (macOS)
+Build pipeline: (0) validate env (submodule + reacher install) → (1) compile/fetch firmware hex via `firmware/compile.sh` or GitHub raw → (2) `npm ci && npm run build` → (3) verify assets → (4) PyInstaller. **Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS).**
 
-### Running the Backend for Frontend Development
+### Versioning
 
 ```bash
-export REACHER_STATIC_DIR=$(pwd)/web/dist
-export REACHER_HEX_DIR=$(pwd)/firmware/hex
-python -m reacher   # Starts backend at http://localhost:6229
+python scripts/bump-version.py              # Print current version across all files
+python scripts/bump-version.py 2.1.20       # Set version in pyproject.toml + web/package.json
+python scripts/bump-version.py --check 2.1.20  # Verify all files match (CI uses this)
 ```
+
+### Testing
+
+There is **no test framework configured** here (no pytest, no Vitest/Jest). ESLint is the only automated quality check. Verify changes by running the frontend dev server against a live backend.
 
 ## Architecture
 
 ```
-Arduino Firmware ◄──serial──► reacher (Python pkg) ◄──REST + WebSocket──► React Frontend (web/)
-                                        ▲
-                                   cli/ (terminal UI wraps same REST API)
+Arduino firmware ──serial──► reacher (external pip pkg) ──REST + WS──► React (web/)
+                                          ▲                                ▲
+                                     cli/ (TUI, same REST API)             │
+                                                                Multi-machine: local +
+                                                                remote REACHER hosts
 ```
 
-**The `reacher` package is external** — Labrynth consumes it but does not contain it. Changes to backend behavior require modifying the `reacher` package separately.
+### Multi-machine model (key concept)
+
+The frontend talks to **multiple REACHER instances simultaneously**. `useMachineStore` owns the list of paired machines (local + remote, persisted to `localStorage`). Each machine gets its own `MachineApiClient`. There are two communication modes:
+
+- **Local / direct mode** — same-origin or trusted base URL; the browser holds an API key directly.
+- **Proxy mode** — for paired remote machines, all calls route through `/api/proxy/{deviceId}/...` on the *local* REACHER server, which holds the remote API key server-side. The browser never sees remote API keys. WebSocket tokens for proxy-mode machines require an async fetch (`getWsTokenAsync`); local machines have synchronous tokens.
+
+Machine discovery uses mDNS (polled by `useMachineStore.startDiscoveryPolling`). `useSessionRecovery` waits for `useMachineStore.ready` before restoring sessions from `localStorage`.
 
 ### Frontend (`web/src/`)
 
-- **`api/client.ts`** — all REST calls; **`api/websocket.ts`** — auto-reconnecting WebSocket
-- **`store/`** — Zustand stores: `useSessionStore` (sessions, events, counters; persisted) and `useThemeStore` (dark/light; persisted to `localStorage`)
-- **`hooks/useWebSocket.ts`** — central message router: dispatches incoming WebSocket events to store and component handlers
-- **`components/`** — organized by feature area: `monitor/`, `program/`, `hardware/`, `session/`, `data/`, `layout/`, `tutorial/`
-- **`types/index.ts`** — all shared TypeScript interfaces (`Session`, `BehaviorEvent`, etc.)
+- **`api/`** — `client.ts` (`MachineApiClient`, all REST), `websocket.ts` (auto-reconnecting `ReacherWebSocket`), `sessionClient.ts` (session-scoped helpers), `demoClient.ts` + `mock.ts` (demo-mode fakes).
+- **`store/`** — Zustand stores: `useSessionStore` (sessions Map, events, counters, draft sessions), `useMachineStore` (machines + discovery + per-machine `MachineApiClient` cache outside Zustand state), `useThemeStore`, `useNavigationStore` (active panel: `session | configuration | monitor | data`), `useLogStore`, `useTutorialStore` (also owns `demoMode`), `useUserPresetStore`.
+- **`hooks/useSessionWebSockets.ts`** — central WS router: opens one `ReacherWebSocket` per non-draft session, dispatches all incoming message types (`event | frame | config | log | error | upload_progress | session_state | disconnect | export_failed | kernel_error | split | restart`) to the appropriate stores. Skips draft sessions and demo-prefixed IDs. Recovers missed events on reconnect via `client.getBehavior(sessionId)`.
+- **`hooks/useSingleTab.ts`** — enforces single-tab usage (other tabs see a blocked screen).
+- **`components/`** — feature-area folders: `session/`, `configuration/`, `monitor/`, `data/`, `hardware/`, `program/`, `machines/`, `terminal/`, `layout/`, `tutorial/`.
+- **`themes/`** — 5 named themes (`reacher`, `terminal`, `neural`, `midnight`, `ember`), each with a `dark` and `light` palette plus background, font, radius, glass tokens. Theme is applied by writing CSS variables on `:root` (no Tailwind dark-mode toggle alone — `apply()` in `useThemeStore` sets `--color-*`, `--font-*`, etc.). Default: `reacher`. Persistence: `localStorage["labrynth-mode"]`.
+- **`types/index.ts`** — shared TypeScript interfaces (`Session`, `Machine`, `BehaviorEvent`, `FirmwareConfig`, …).
 
-Session lifecycle state machine: `idle → uploading → connected → running → paused → stopped`
-
-Real-time counters (infusions, lever presses, trials, licks, frames) are driven entirely by WebSocket events.
+Session lifecycle: `idle → uploading → connected → running → paused → stopped` (plus `disconnected` for serial drop). Real-time counters (infusions, presses, trials, frames, CS+/CS−) are driven entirely by WebSocket events, not by polling.
 
 ### CLI (`cli/`)
 
-- **`app.py`** (~63KB) — prompt_toolkit terminal UI with 4 modes: `MENU` (arrow-key navigation), `INPUT` (text prompts), `SELECT` (dynamic list), `MONITOR` (live WebSocket event feed)
-- **`client.py`** — async HTTP wrapper (`ReacherClient`) mirroring all REST endpoints
-- **`__main__.py`** — entry point; optionally auto-starts the reacher backend subprocess before launching the TUI
+- **`__main__.py`** — entry point. If backend isn't already on the port, spawns `python -m reacher` as a subprocess and waits up to 15 s for it to become reachable.
+- **`app.py`** — `ReacherCLI` (prompt_toolkit). Four modes: `MENU`, `INPUT`, `SELECT`, `MONITOR` (live WS feed). State + counters live on `SessionState` dataclass.
+- **`client.py`** — `ReacherClient`, async HTTP wrapper around the REST endpoints.
 
-### Build System
+The CLI mirrors browser-UI capabilities (sessions, hardware, program presets, limits, data export, live monitor).
 
-- **`build.py`** — 5-stage orchestrator: (1) validate submodules + reacher install, (2) compile firmware hex files, (3) npm build, (4) verify assets, (5) PyInstaller bundle
-- **`launcher.py`** — PyInstaller entry point; sets `REACHER_STATIC_DIR` env var so the backend serves the bundled frontend
-- **`labrynth.spec`** — PyInstaller spec; bundles `web/dist/`, `firmware/hex/`, and avrdude binary
-- **`firmware/`** — git submodule (`reacher-firmware`, `beta` branch); hex files in `firmware/hex/uno/` and `firmware/hex/mega/`
+### Build system
 
-### CI/CD
+- **`build.py`** — 5-stage orchestrator. **Firmware fetch defaults to the `develop` branch** of `Otis-Lab-MUSC/reacher-firmware` (via raw GitHub URLs) when `--use-github` is passed; otherwise compiles locally via `firmware/compile.sh`. The `firmware/` submodule itself tracks `develop`.
+- **`launcher.py`** — PyInstaller entry point; sets `REACHER_STATIC_DIR` so the bundled backend serves `web/dist/`.
+- **`labrynth.spec`** — bundles `web/dist/` → `static/`, `firmware/hex/` → `hex/`, and avrdude (binary, companion DLLs/`.so`/`.dylib`, and `avrdude.conf`) → `avrdude/` inside `_MEIPASS`. Avrdude path comes from `REACHER_AVRDUDE_PATH` env var (set by `build.py --avrdude`).
 
-`.github/workflows/build-installers.yml` triggers on version tags (`v*.*.*`) and produces:
-- Windows: Inno Setup `.exe` (via `installer/reacher.iss`)
-- macOS: `.dmg` disk image
-- Linux: `.deb` package + `.tar.gz` tarball
+### CI/CD (`.github/workflows/`)
 
-## Key Configuration
+- **`build-installers.yml`** — on `v*.*.*` tags, builds Windows `.exe` (Inno Setup `installer/reacher.iss`), macOS `.dmg`, Linux `.deb` + `.tar.gz`.
+- **`deploy-demo.yml`** — deploys `web/dist/` (built with `VITE_DEMO_SITE=true`) as a static demo site. Demo mode swaps the API client for `demoClient.ts` + `mock.ts` and disables real backend calls.
 
-| File | Purpose |
-|------|---------|
-| `web/vite.config.ts` | Proxies `/api/*` and `/ws/*` to `localhost:6229` in dev |
-| `web/tsconfig.json` | Strict TypeScript, ESNext target |
-| `pyproject.toml` | Python packaging; `[cli]` optional extras; `reacher-cli` console script |
+## Conventions
 
-## Frontend Design System
-
-- **Theme:** Dark mode default (black bg, neon green `#00FF41` accent); light mode (`#16A34A`)
-- **Font:** JetBrains Mono (monospace throughout)
-- **CSS:** Tailwind CSS 3.4 with custom theme layers in `web/src/index.css`
-- **Theme persistence:** `localStorage` keys `labrynth-mode` and `labrynth-theme-id`
-
-## No Test Framework
-
-There is currently no test framework configured (no pytest, no Vitest/Jest). Linting via ESLint is the only automated quality check for the frontend.
+- Backend port is **6229** (`REACHER_PORT`); frontend dev port is **5173**. Vite proxies `/api` and `/ws` from `:5173` to `:6229`.
+- All `/api/*` routes require `Authorization: Bearer <key>`; WebSocket uses `?token=<key>`. The browser never sees remote machines' API keys (proxy mode).
+- Versions in `pyproject.toml` and `web/package.json` are kept in sync via `scripts/bump-version.py` — never bump them by hand.
+- `__APP_VERSION__` is injected at Vite build time from `web/package.json` and shown in the footer for the `reacher` theme.
+- Don't add a test framework without coordinating — the project deliberately has none.
+- The `firmware/` submodule and the `reacher` package are external dependencies; changes to firmware behavior or backend logic happen in those repos, not here.
