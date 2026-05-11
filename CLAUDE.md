@@ -52,10 +52,27 @@ Build pipeline: (0) validate env (submodule + reacher install) → (1) compile/f
 ### Versioning
 
 ```bash
-python scripts/bump-version.py              # Print current version across all files
+python scripts/bump-version.py              # Print current version + firmware submodule SHA
 python scripts/bump-version.py 2.1.20       # Set version in pyproject.toml + web/package.json
 python scripts/bump-version.py --check 2.1.20  # Verify all files match (CI uses this)
+python scripts/bump-version.py --check-firmware  # Verify firmware submodule matches develop HEAD
 ```
+
+**Pre-bump checklist:** before bumping to a new version, confirm the firmware submodule is current:
+
+```bash
+python scripts/bump-version.py --check-firmware
+```
+
+If stale, sync first:
+
+```bash
+git submodule update --remote --merge firmware
+git add firmware
+git commit -m "chore(firmware): sync submodule to develop HEAD"
+```
+
+CI (`build-installers.yml`) also rejects tag builds where the submodule pointer diverges from `reacher-firmware` develop HEAD. If the submodule is deliberately pinned to a non-develop commit, trigger the build via `workflow_dispatch` instead of a tag push.
 
 ### Testing
 

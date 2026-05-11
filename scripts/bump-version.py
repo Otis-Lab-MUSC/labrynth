@@ -2,21 +2,26 @@
 """Bump or verify the version string across all Labrynth source files.
 
 Usage:
-    python scripts/bump-version.py                # print current version
-    python scripts/bump-version.py 2.1.0          # set version to 2.1.0
-    python scripts/bump-version.py --check 2.1.0  # verify all files match 2.1.0 (exit 1 if not)
+    python scripts/bump-version.py                       # print current version + firmware SHA
+    python scripts/bump-version.py 2.1.0                 # set version to 2.1.0
+    python scripts/bump-version.py --check 2.1.0         # verify all files match 2.1.0 (exit 1 if not)
+    python scripts/bump-version.py --check-firmware      # verify firmware submodule matches develop HEAD
 """
 
 from __future__ import annotations
 
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$")
+
+FIRMWARE_REMOTE = "https://github.com/otis-lab-musc/reacher-firmware.git"
+FIRMWARE_REF = "refs/heads/develop"
 
 # -- TOML-based files (regex replacement) ------------------------------------
 
@@ -34,6 +39,38 @@ TOML_FILES: list[tuple[Path, str, str]] = [
 JSON_FILES: list[Path] = [
     ROOT / "web" / "package.json",
 ]
+
+
+def read_firmware_sha() -> tuple[str, str]:
+    """Return (local_sha, remote_sha). remote_sha is '<fetch-failed>' on error."""
+    local = subprocess.check_output(
+        ["git", "-C", str(ROOT / "firmware"), "rev-parse", "HEAD"],
+        text=True,
+    ).strip()
+    try:
+        raw = subprocess.check_output(
+            ["git", "ls-remote", FIRMWARE_REMOTE, FIRMWARE_REF],
+            text=True,
+            timeout=10,
+        ).strip()
+        remote = raw.split()[0] if raw else "<not found>"
+    except Exception:
+        remote = "<fetch-failed>"
+    return local, remote
+
+
+def check_firmware_sha() -> bool:
+    """Return True if local submodule matches remote develop HEAD."""
+    local, remote = read_firmware_sha()
+    print(f"  firmware local  : {local}")
+    print(f"  firmware remote : {remote}")
+    if remote.startswith("<"):
+        print("  WARNING: could not reach remote — skipping comparison.")
+        return True  # non-fatal locally; CI is the authoritative gate
+    ok = local == remote
+    if not ok:
+        print("  MISMATCH: run `git submodule update --remote --merge firmware`")
+    return ok
 
 
 def read_versions() -> dict[str, str]:
@@ -87,6 +124,15 @@ def main() -> None:
         print("Current versions:")
         for file, version in read_versions().items():
             print(f"  {file}: {version}")
+        local, _ = read_firmware_sha()
+        print(f"  firmware/  (submodule): {local[:12]}")
+        return
+
+    if args[0] == "--check-firmware":
+        print("Checking firmware submodule against develop HEAD:")
+        if not check_firmware_sha():
+            sys.exit(1)
+        print("Firmware submodule is current.")
         return
 
     if args[0] == "--check":
