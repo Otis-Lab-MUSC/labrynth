@@ -192,13 +192,21 @@ export function useSessionWebSockets() {
       if (machineClient?.deviceId) {
         // Proxy client: WS token requires an async fetch from the local server
         pendingRef.current.add(id);
+        const machineId = sess!.machineId!;
+        const onGiveUp = () => {
+          // Fix: F-015 — Mark remote machine offline when WS exhausts reconnect attempts.
+          // Buffered event data is preserved: the Pi writes event_log.jsonl regardless of
+          // WS state, and the frontend React session state is not cleared on disconnect.
+          useMachineStore.getState().setMachineOnline(machineId, false);
+          useLogStore.getState().pushLog("error", "Remote host offline — session data preserved", id);
+        };
         machineClient.getWsTokenAsync().then((wsInfo) => {
           pendingRef.current.delete(id);
           if (connectionsRef.current.has(id)) return; // already opened by a concurrent update
           if (wsInfo) {
             connectionsRef.current.set(
               id,
-              new ReacherWebSocket(id, handleMessage, wsInfo.wsUrl, wsInfo.token, () => recoverMissedEvents(id)),
+              new ReacherWebSocket(id, handleMessage, wsInfo.wsUrl, wsInfo.token, () => recoverMissedEvents(id), onGiveUp),
             );
           }
         });

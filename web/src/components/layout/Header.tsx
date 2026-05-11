@@ -221,6 +221,7 @@ export function Header() {
       const client = getClientForSession(activeSessionId);
       await client?.resetSession(activeSessionId);
       softResetSessionData(activeSessionId);
+      setActivePanel("session");
     } catch (e) {
       useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Reset failed");
       useLogStore.getState().setOpen(true);
@@ -234,6 +235,7 @@ export function Header() {
       const client = getClientForSession(activeSessionId);
       await client?.resetSession(activeSessionId);
       resetSessionData(activeSessionId);
+      setActivePanel("session");
     } catch (e) {
       useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Reset failed");
       useLogStore.getState().setOpen(true);

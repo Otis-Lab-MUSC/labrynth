@@ -28,14 +28,16 @@ export class ReacherWebSocket {
   /** Pre-supplied token for remote machines (skips the /api/auth/token fetch). */
   private overrideToken: string | null;
   private onReconnect: (() => void) | null;
+  private onGiveUp: (() => void) | null;
   private hasConnectedOnce = false;
 
-  constructor(sessionId: string, handler: MessageHandler, baseWsUrl?: string, token?: string, onReconnect?: () => void) {
+  constructor(sessionId: string, handler: MessageHandler, baseWsUrl?: string, token?: string, onReconnect?: () => void, onGiveUp?: () => void) {
     this.sessionId = sessionId;
     this.handler = handler;
     this.baseWsUrl = baseWsUrl ?? null;
     this.overrideToken = token ?? null;
     this.onReconnect = onReconnect ?? null;
+    this.onGiveUp = onGiveUp ?? null;
     this.setupVisibilityListener();
     this.connect();
   }
@@ -96,6 +98,7 @@ export class ReacherWebSocket {
     // Fix: FE-002 — Give up after MAX_RECONNECT_ATTEMPTS consecutive failures
     if (this.reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
       console.warn(`[ReacherWS] Gave up reconnecting after ${MAX_RECONNECT_ATTEMPTS} attempts`);
+      this.onGiveUp?.();
       return;
     }
     this.clearReconnectTimer();

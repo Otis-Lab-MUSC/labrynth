@@ -18,6 +18,7 @@ import { TutorialOverlay } from "./components/tutorial/TutorialOverlay";
 import { HelpPanel } from "./components/tutorial/HelpPanel";
 import { WelcomeScreen } from "./components/tutorial/WelcomeScreen";
 import { DemoModeBanner } from "./components/tutorial/DemoModeBanner";
+import { HostOfflineBanner } from "./components/layout/HostOfflineBanner";
 import { UpdateBanner } from "./components/layout/UpdateBanner";
 import { useThemeStore } from "./store/useThemeStore";
 import { useNavigationStore } from "./store/useNavigationStore";
@@ -80,6 +81,7 @@ function AppContent() {
     <div className="flex h-screen flex-col">
       <BackgroundLayer />
       <DemoModeBanner />
+      <HostOfflineBanner />
       <UpdateBanner />
       <Header />
       <div className="flex flex-1 overflow-hidden">
