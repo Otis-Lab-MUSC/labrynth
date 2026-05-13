@@ -40,7 +40,7 @@ const DEFAULT_LIMIT_SETTINGS: SessionPreset["limitDefaults"] = {
   limitType: "Both",
   timeLimit: 3600,
   infusionLimit: 30,
-  delay: 60,
+  delay: 10,
 };
 
 export function buildPresetFromSession(name: string, session: Session): SessionPreset {

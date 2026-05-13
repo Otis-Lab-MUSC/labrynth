@@ -113,11 +113,18 @@ export function LiveStats({ session, elapsed }: Props) {
           </span>
           <div className="flex-1 border-b border-dashed border-theme-border" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {sessionStats.map((stat) => (
-            <div key={stat.label} className="flex items-baseline gap-2 py-0.5">
-              <span className="text-theme-text/60 uppercase text-xs tracking-wider">{stat.label}</span>
-              <span className="text-accent font-bold tabular-nums">{stat.value}</span>
+            <div
+              key={stat.label}
+              className="rounded-md border border-theme-border/40 bg-theme-bg/30 px-3 py-2 flex flex-col"
+            >
+              <span className="text-theme-text/60 text-[10px] uppercase tracking-wider">
+                {stat.label}
+              </span>
+              <span className="text-accent font-bold text-lg tabular-nums leading-tight mt-0.5">
+                {stat.value}
+              </span>
             </div>
           ))}
         </div>
@@ -130,7 +137,7 @@ export function LiveStats({ session, elapsed }: Props) {
           <span className="text-accent text-xs uppercase tracking-wider font-bold">Cumulative</span>
           <div className="flex-1 border-b border-dashed border-theme-border" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {[
             { label: "SEGMENTS", value: session.segmentNumber + 1 },
             { label: "TOTAL ELAPSED", value: fmtTime(session.cumulativeElapsedTime / 1000 + elapsed) },
@@ -148,9 +155,16 @@ export function LiveStats({ session, elapsed }: Props) {
                 ]
               : []),
           ].map((stat) => (
-            <div key={stat.label} className="flex items-baseline gap-2 py-0.5">
-              <span className="text-theme-text/60 uppercase text-xs tracking-wider">{stat.label}</span>
-              <span className="text-accent font-bold tabular-nums">{stat.value}</span>
+            <div
+              key={stat.label}
+              className="rounded-md border border-theme-border/40 bg-theme-bg/30 px-3 py-2 flex flex-col"
+            >
+              <span className="text-theme-text/60 text-[10px] uppercase tracking-wider">
+                {stat.label}
+              </span>
+              <span className="text-accent font-bold text-lg tabular-nums leading-tight mt-0.5">
+                {stat.value}
+              </span>
             </div>
           ))}
         </div>

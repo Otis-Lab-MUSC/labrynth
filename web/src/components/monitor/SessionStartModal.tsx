@@ -81,7 +81,7 @@ export function SessionStartModal() {
   const [limitType, setLimitType] = useState("");
   const [timeLimit, setTimeLimit] = useState(3600);
   const [infusionLimit, setInfusionLimit] = useState(30);
-  const [delay, setDelay] = useState(60);
+  const [delay, setDelay] = useState(10);
   const [name, setName] = useState("");
 
   const paradigm = session?.paradigm?.toLowerCase();
@@ -93,7 +93,7 @@ export function SessionStartModal() {
     setLimitType(session.limitSettings?.limitType ?? (isPavlovian ? "Trials" : "Time"));
     setTimeLimit(session.limitSettings?.timeLimit ?? 3600);
     setInfusionLimit(session.limitSettings?.infusionLimit ?? 30);
-    setDelay(session.limitSettings?.delay ?? 60);
+    setDelay(session.limitSettings?.delay ?? 10);
     // Auto-generate name if empty
     const autoName = session.name || `${(session.paradigm ?? "Session").toUpperCase()} ${session.port}`;
     setName(autoName);

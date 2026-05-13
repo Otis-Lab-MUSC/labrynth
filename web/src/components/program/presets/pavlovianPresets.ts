@@ -70,7 +70,7 @@ export const PAV_ACQUISITION_PRESET: SessionPreset = {
     384: 200,   // CS- Pulse On (ms)
     385: 200,   // CS- Pulse Off (ms)
   },
-  limitDefaults: { limitType: "Trials", timeLimit: 7200, infusionLimit: 100, delay: 60 },
+  limitDefaults: { limitType: "Trials", timeLimit: 7200, infusionLimit: 100, delay: 10 },
 };
 
 export const PAV_REVERSAL_PRESET: SessionPreset = {
@@ -103,5 +103,5 @@ export const PAV_REVERSAL_PRESET: SessionPreset = {
     384: 200,   // CS- Pulse On (ms)
     385: 200,   // CS- Pulse Off (ms)
   },
-  limitDefaults: { limitType: "Trials", timeLimit: 7200, infusionLimit: 100, delay: 60 },
+  limitDefaults: { limitType: "Trials", timeLimit: 7200, infusionLimit: 100, delay: 10 },
 };

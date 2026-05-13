@@ -17,7 +17,7 @@ export function LimitConfig({ sessionId, paradigm }: Props) {
   const [limitType, setLimitType] = useState(() => session?.limitSettings?.limitType ?? defaultLimitType);
   const [timeLimit, setTimeLimit] = useState(() => session?.limitSettings?.timeLimit ?? 3600);
   const [infusionLimit, setInfusionLimit] = useState(() => session?.limitSettings?.infusionLimit ?? 30);
-  const [delay, setDelay] = useState(() => session?.limitSettings?.delay ?? 60);
+  const [delay, setDelay] = useState(() => session?.limitSettings?.delay ?? 10);
 
   const handleSet = async () => {
     try {

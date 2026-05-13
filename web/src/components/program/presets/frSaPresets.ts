@@ -56,7 +56,7 @@ export const SA_HIGH_PRESET: SessionPreset = {
   devices: [...CORE_DEVICES, PUMP_DEVICE, ...OPTIONAL_DEVICES],
   hardware: { ...CORE_HARDWARE, ...PUMP_HARDWARE, ...OPTIONAL_HARDWARE },
   paradigmSettings: PARADIGM_SETTINGS,
-  limitDefaults: { limitType: "Both", timeLimit: 3600, infusionLimit: 10, delay: 60 },
+  limitDefaults: { limitType: "Both", timeLimit: 3600, infusionLimit: 10, delay: 10 },
 };
 
 export const SA_MID_PRESET: SessionPreset = {
@@ -67,7 +67,7 @@ export const SA_MID_PRESET: SessionPreset = {
   devices: [...CORE_DEVICES, PUMP_DEVICE, ...OPTIONAL_DEVICES],
   hardware: { ...CORE_HARDWARE, ...PUMP_HARDWARE, ...OPTIONAL_HARDWARE },
   paradigmSettings: PARADIGM_SETTINGS,
-  limitDefaults: { limitType: "Both", timeLimit: 3600, infusionLimit: 20, delay: 60 },
+  limitDefaults: { limitType: "Both", timeLimit: 3600, infusionLimit: 20, delay: 10 },
 };
 
 export const SA_LOW_PRESET: SessionPreset = {
@@ -78,7 +78,7 @@ export const SA_LOW_PRESET: SessionPreset = {
   devices: [...CORE_DEVICES, PUMP_DEVICE, ...OPTIONAL_DEVICES],
   hardware: { ...CORE_HARDWARE, ...PUMP_HARDWARE, ...OPTIONAL_HARDWARE },
   paradigmSettings: PARADIGM_SETTINGS,
-  limitDefaults: { limitType: "Both", timeLimit: 3600, infusionLimit: 40, delay: 60 },
+  limitDefaults: { limitType: "Both", timeLimit: 3600, infusionLimit: 40, delay: 10 },
 };
 
 export const SA_EXTINCTION_PRESET: SessionPreset = {
@@ -89,5 +89,5 @@ export const SA_EXTINCTION_PRESET: SessionPreset = {
   devices: [...CORE_DEVICES, PUMP_DEVICE, ...OPTIONAL_DEVICES],
   hardware: { ...CORE_HARDWARE, primaryPump: { armed: false, duration: 2000 }, ...OPTIONAL_HARDWARE },
   paradigmSettings: PARADIGM_SETTINGS,
-  limitDefaults: { limitType: "Time", timeLimit: 3600, infusionLimit: 30, delay: 60 },
+  limitDefaults: { limitType: "Time", timeLimit: 3600, infusionLimit: 30, delay: 10 },
 };
