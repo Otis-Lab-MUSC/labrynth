@@ -64,8 +64,8 @@ export const SA_MID_PRESET: SessionPreset = {
   name: "Self-Administration - Mid Day",
   menuLabel: "SA Mid",
   paradigm: "fr",
-  devices: [...CORE_DEVICES, PUMP_DEVICE],
-  hardware: { ...CORE_HARDWARE, ...PUMP_HARDWARE },
+  devices: [...CORE_DEVICES, PUMP_DEVICE, ...OPTIONAL_DEVICES],
+  hardware: { ...CORE_HARDWARE, ...PUMP_HARDWARE, ...OPTIONAL_HARDWARE },
   paradigmSettings: PARADIGM_SETTINGS,
   limitDefaults: { limitType: "Both", timeLimit: 3600, infusionLimit: 20, delay: 60 },
 };
@@ -75,8 +75,8 @@ export const SA_LOW_PRESET: SessionPreset = {
   name: "Self-Administration - Low Day",
   menuLabel: "SA Low",
   paradigm: "fr",
-  devices: [...CORE_DEVICES, PUMP_DEVICE],
-  hardware: { ...CORE_HARDWARE, ...PUMP_HARDWARE },
+  devices: [...CORE_DEVICES, PUMP_DEVICE, ...OPTIONAL_DEVICES],
+  hardware: { ...CORE_HARDWARE, ...PUMP_HARDWARE, ...OPTIONAL_HARDWARE },
   paradigmSettings: PARADIGM_SETTINGS,
   limitDefaults: { limitType: "Both", timeLimit: 3600, infusionLimit: 40, delay: 60 },
 };
@@ -86,8 +86,8 @@ export const SA_EXTINCTION_PRESET: SessionPreset = {
   name: "Self-Administration - Extinction",
   menuLabel: "SA Extinction",
   paradigm: "fr",
-  devices: [...CORE_DEVICES],
-  hardware: { ...CORE_HARDWARE },
+  devices: [...CORE_DEVICES, PUMP_DEVICE, ...OPTIONAL_DEVICES],
+  hardware: { ...CORE_HARDWARE, primaryPump: { armed: false, duration: 2000 }, ...OPTIONAL_HARDWARE },
   paradigmSettings: PARADIGM_SETTINGS,
   limitDefaults: { limitType: "Time", timeLimit: 3600, infusionLimit: 30, delay: 60 },
 };
