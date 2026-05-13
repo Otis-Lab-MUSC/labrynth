@@ -29,7 +29,6 @@ export class ReacherWebSocket {
   private overrideToken: string | null;
   private onReconnect: (() => void) | null;
   private onGiveUp: (() => void) | null;
-  private hasConnectedOnce = false;
 
   constructor(sessionId: string, handler: MessageHandler, baseWsUrl?: string, token?: string, onReconnect?: () => void, onGiveUp?: () => void) {
     this.sessionId = sessionId;
@@ -125,14 +124,11 @@ export class ReacherWebSocket {
 
       this.ws = new WebSocket(url);
     this.ws.onopen = () => {
-      this.reconnectAttempt = 0;
-      if (this.hasConnectedOnce && this.onReconnect) {
-        this.onReconnect();
-      }
-      this.hasConnectedOnce = true;
+      this.onReconnect?.();
       this.startHeartbeat();
     };
     this.ws.onmessage = (ev) => {
+      this.reconnectAttempt = 0;
       this.resetStaleTimer();
       try {
         const msg: WSMessage = JSON.parse(ev.data);

@@ -35,6 +35,9 @@ function handleMessage(msg: WSMessage) {
   switch (msg.type) {
     case "event": {
       const eventData = msg.data as BehaviorEvent;
+      if (useSessionStore.getState().sessions.get(msg.session_id)?.state === "connected") {
+        updateState(msg.session_id, "running");
+      }
       pushEvent(msg.session_id, eventData);
       if (eventData.device === "CONTROLLER" && eventData.event === "END") {
         updateState(msg.session_id, "stopped");
@@ -134,7 +137,7 @@ function handleMessage(msg: WSMessage) {
 async function recoverMissedEvents(sessionId: string) {
   const { sessions, replaceEvents } = useSessionStore.getState();
   const sess = sessions.get(sessionId);
-  if (!sess || sess.state !== "running") return;
+  if (!sess || sess.state === "idle" || sess.state === "stopped") return;
 
   const client = useMachineStore.getState().getClient(sess.machineId);
   if (!client) return;
@@ -142,6 +145,9 @@ async function recoverMissedEvents(sessionId: string) {
   try {
     const { data, total } = await client.getBehavior(sessionId);
     if (total > sess.behaviorData.length) {
+      if (useSessionStore.getState().sessions.get(sessionId)?.state === "connected") {
+        useSessionStore.getState().updateState(sessionId, "running");
+      }
       replaceEvents(sessionId, data as unknown as BehaviorEvent[]);
       useLogStore.getState().pushLog(
         "info",
@@ -198,6 +204,7 @@ export function useSessionWebSockets() {
           // Buffered event data is preserved: the Pi writes event_log.jsonl regardless of
           // WS state, and the frontend React session state is not cleared on disconnect.
           useMachineStore.getState().setMachineOnline(machineId, false);
+          useSessionStore.getState().updateState(id, "disconnected");
           useLogStore.getState().pushLog("error", "Remote host offline — session data preserved", id);
         };
         machineClient.getWsTokenAsync().then((wsInfo) => {

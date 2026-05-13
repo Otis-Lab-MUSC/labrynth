@@ -90,6 +90,7 @@ export function MonitorPanel() {
   }
 
   const canControl = session.state === "running" || session.state === "paused";
+  const isHostOffline = session.state === "disconnected";
 
   return (
     <div className="space-y-6">
@@ -97,6 +98,12 @@ export function MonitorPanel() {
         <h2 className="text-xl font-semibold text-theme-text">Monitor</h2>
         <RunningMouseIndicator state={session.state} />
       </div>
+
+      {isHostOffline && (
+        <div role="status" className="rounded border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-mono text-red-400">
+          Host offline — controls disabled. Session data is preserved.
+        </div>
+      )}
 
       {/* Control buttons */}
       <div data-tour="experiment-controls" className="flex flex-wrap items-center gap-4">

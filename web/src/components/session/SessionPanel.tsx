@@ -237,7 +237,7 @@ export function SessionPanel() {
               className="flex-1 input-base"
             />
           </div>
-          {(activeSession.state === "connected" || activeSession.state === "stopped") && (
+          {(activeSession.state === "connected" || activeSession.state === "stopped" || activeSession.state === "disconnected") && (
             <button
               onClick={handleDisconnect}
               disabled={loading}

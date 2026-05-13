@@ -12,10 +12,14 @@ export function HostOfflineBanner() {
   const machine = activeSession?.machineId ? machines.find((m) => m.deviceId === activeSession.machineId) : null;
   const show = !dismissed && !!machine && !machine.isLocal && !machine.online && activeSession?.state !== "idle";
 
-  // Reset dismissed when the machine comes back online
+  // Reset dismissed when the machine comes back online or when a new offline event fires
   useEffect(() => {
     if (machine?.online) setDismissed(false);
   }, [machine?.online]);
+
+  useEffect(() => {
+    if (activeSession?.state === "disconnected") setDismissed(false);
+  }, [activeSession?.state]);
 
   if (!show) return null;
 

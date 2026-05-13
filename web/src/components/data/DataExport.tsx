@@ -1,4 +1,5 @@
 import { useSessionStore } from "../../store/useSessionStore";
+import { useMachineStore } from "../../store/useMachineStore";
 import { getClientForSession } from "../../api/sessionClient";
 import { ArduinoConfig } from "./ArduinoConfig";
 import { SessionNotes } from "./SessionNotes";
@@ -10,6 +11,7 @@ export function DataExport() {
   );
   const setFileConfig = useSessionStore((s) => s.setFileConfig);
   const setExportState = useSessionStore((s) => s.setExportState);
+  const machines = useMachineStore((s) => s.machines);
 
   if (!activeSessionId || !session || session.draft) {
     return <p className="text-theme-text/60 font-mono">No active session.</p>;
@@ -58,6 +60,8 @@ export function DataExport() {
   };
 
   const hasData = session.behaviorData.length > 0;
+  const machine = session.machineId ? machines.find((m) => m.deviceId === session.machineId) : null;
+  const isHostOffline = session.state === "disconnected" || (!machine?.isLocal && machine?.online === false);
 
   return (
     <div className="space-y-6">
@@ -95,12 +99,17 @@ export function DataExport() {
         <p className="text-sm text-theme-text/60 font-mono">
           {session.behaviorData.length} behavior events, {session.frameData.length} frame timestamps
         </p>
+        {isHostOffline && (
+          <p className="text-sm font-mono text-red-400">
+            Export unavailable while host is offline. Data is preserved on the remote device and can be exported after reconnecting.
+          </p>
+        )}
         <div className="flex items-center gap-2">
           <button
             onClick={handleZipExport}
-            disabled={!hasData || exporting}
+            disabled={!hasData || exporting || isHostOffline}
             className={`rounded px-4 py-1.5 text-sm font-mono ${
-              hasData
+              hasData && !isHostOffline
                 ? "bg-accent text-accent-contrast hover:bg-accent-hover"
                 : "bg-gray-700 text-gray-500 pointer-events-none"
             } disabled:opacity-50`}
