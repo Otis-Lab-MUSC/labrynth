@@ -15,11 +15,12 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
   const [step, setStep] = useState(() => session?.paradigmSettings?.step ?? 1);
   const [interval, setInterval_] = useState(() => session?.paradigmSettings?.interval ?? 30000);
   const [traceInterval, setTraceInterval] = useState(() => session?.paradigmSettings?.traceInterval ?? 0);
+  const [pump2Active, setPump2Active] = useState(() => session?.paradigmSettings?.pump2Active ?? false);
 
   // Sync to store whenever values change
   useEffect(() => {
-    setParadigmSettings(sessionId, { ratio, step, interval, traceInterval });
-  }, [ratio, step, interval, traceInterval, sessionId]);
+    setParadigmSettings(sessionId, { ratio, step, interval, traceInterval, pump2Active });
+  }, [ratio, step, interval, traceInterval, pump2Active, sessionId]);
 
   const send = (code: number, value: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
@@ -74,6 +75,20 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
           <button onClick={() => send(220, traceInterval)} className="btn-sm bg-accent text-accent-contrast">Set</button>
         </div>
       )}
+
+      <div className="flex items-center gap-2">
+        <label className="text-sm w-24 text-theme-text/60">Reward Pump:</label>
+        <button
+          onClick={() => {
+            const next = !pump2Active;
+            setPump2Active(next);
+            send(221, next ? 1 : 0);
+          }}
+          className={`btn-sm ${pump2Active ? "bg-accent text-accent-contrast" : "bg-theme-surface text-theme-text border border-theme-border"}`}
+        >
+          {pump2Active ? "Secondary (Pump 2)" : "Primary (Pump 1)"}
+        </button>
+      </div>
     </div>
   );
 }
