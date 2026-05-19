@@ -159,6 +159,7 @@ export function SessionStartModal() {
         if (!mapping || deviceKey === "testMode") continue;
         const state = deviceState as { armed?: boolean; [k: string]: unknown };
         if (!state.armed) continue;
+        if ((deviceKey === "rhLever" || deviceKey === "lhLever") && isPavlovian) continue;
 
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, mapping.arm);
         // Send device params (frequency, duration, timeout, ratio)

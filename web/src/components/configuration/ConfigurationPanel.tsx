@@ -206,6 +206,7 @@ export function ConfigurationPanel() {
         if (!mapping || deviceKey === "testMode") continue;
 
         const state = deviceState as { armed?: boolean; [k: string]: unknown };
+        if ((deviceKey === "rhLever" || deviceKey === "lhLever") && paradigm === "pavlovian") continue;
         const armed = deviceKey in armOverrides ? armOverrides[deviceKey] : state.armed;
         if (armed !== undefined) {
           await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,armed ? mapping.arm : mapping.disarm);
@@ -299,6 +300,7 @@ export function ConfigurationPanel() {
         if (!mapping || deviceKey === "testMode") continue;
 
         const state = deviceState as { armed?: boolean; [k: string]: unknown };
+        if ((deviceKey === "rhLever" || deviceKey === "lhLever") && paradigm === "pavlovian") continue;
         if (state.armed !== undefined) {
           await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,state.armed ? mapping.arm : mapping.disarm);
         }
