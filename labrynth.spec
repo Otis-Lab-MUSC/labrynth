@@ -92,6 +92,15 @@ hiddenimports = [
     "uvicorn.protocols.websockets.websockets_impl",
     "uvicorn.loops.auto",
     "uvicorn.loops.asyncio",
+    # pyserial platform dispatchers are hidden behind runtime `if sys.platform`
+    # guards in list_ports.py — PyInstaller's static tracer skips them.
+    # List all variants so the correct module is present on every build target.
+    "serial.tools.list_ports",
+    "serial.tools.list_ports_common",
+    "serial.tools.list_ports_windows",
+    "serial.tools.list_ports_posix",
+    "serial.tools.list_ports_linux",
+    "serial.tools.list_ports_osx",
 ]
 
 # ---------------------------------------------------------------------------

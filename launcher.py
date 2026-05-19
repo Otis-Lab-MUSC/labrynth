@@ -3,7 +3,12 @@ import os
 import sys
 
 _LABRYNTH_ROOT = os.path.dirname(os.path.abspath(__file__))
-_STATIC_DIR = os.path.join(_LABRYNTH_ROOT, "web", "dist")
+# In a frozen PyInstaller build _MEIPASS/static holds the React dist;
+# in dev the frontend lives at web/dist relative to the repo root.
+if hasattr(sys, "_MEIPASS"):
+    _STATIC_DIR = os.path.join(sys._MEIPASS, "static")
+else:
+    _STATIC_DIR = os.path.join(_LABRYNTH_ROOT, "web", "dist")
 if os.path.isdir(_STATIC_DIR) and not os.environ.get("REACHER_STATIC_DIR"):
     os.environ["REACHER_STATIC_DIR"] = _STATIC_DIR
 
