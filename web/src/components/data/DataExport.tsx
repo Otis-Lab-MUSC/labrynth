@@ -42,10 +42,12 @@ export function DataExport() {
         ...(micro.armed && micro.frameRate != null && { microscope_frame_rate: micro.frameRate }),
         ...(micro.armed && micro.frameAveraging != null && { microscope_frame_averaging: micro.frameAveraging }),
       });
-      // Trigger browser download of the ZIP file
-      if (result?.file_path) {
+      // For remote/proxy sessions the browser download is the only way the user
+      // receives the file; for local sessions the file is already on disk.
+      const client = getClientForSession(activeSessionId);
+      if (result?.file_path && client?.isRemote) {
         try {
-          await getClientForSession(activeSessionId)?.downloadExportZip(activeSessionId, result.file_path);
+          await client.downloadExportZip(activeSessionId, result.file_path);
         } catch {
           // Download failed — the server-side path is still shown as fallback
         }
@@ -84,7 +86,7 @@ export function DataExport() {
           <input
             value={destination}
             onChange={(e) => setFileConfig(activeSessionId, { destination: e.target.value })}
-            placeholder="~/REACHER/DATA"
+            placeholder="~/Downloads"
             className="flex-1 input-base"
           />
         </div>

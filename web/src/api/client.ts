@@ -56,6 +56,11 @@ export class MachineApiClient {
     this.deviceId = deviceId ?? null;
   }
 
+  /** True when this client routes through the local proxy (remote machine). */
+  get isRemote(): boolean {
+    return this.deviceId !== null;
+  }
+
   /** WebSocket base URL derived from this machine's base URL. */
   get wsBaseUrl(): string {
     if (!this.baseUrl) {
