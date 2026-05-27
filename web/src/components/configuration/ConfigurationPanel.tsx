@@ -359,8 +359,6 @@ export function ConfigurationPanel() {
     } catch { /* picker unavailable — silently ignore */ }
   };
 
-  const isRemoteSession = getClientForSession(activeSessionId)?.isRemote ?? false;
-
   /* ── Hardware section helpers ─────────────────────────────────── */
 
   const testMode = session?.hardwareUi.testMode ?? false;
@@ -381,6 +379,8 @@ export function ConfigurationPanel() {
   if (!activeSessionId || !session || session.draft) {
     return <p className="text-theme-text/60 font-mono">No active session.</p>;
   }
+
+  const isRemoteSession = getClientForSession(activeSessionId)?.isRemote ?? false;
 
   return (
     <div className="space-y-6">
