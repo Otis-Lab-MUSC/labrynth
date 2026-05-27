@@ -176,6 +176,23 @@ export function MonitorPanel() {
         </div>
       </div>
 
+      {/* Export status — compact alert anchored near controls */}
+      {session.state === "stopped" && session.exportState.result && (
+        <div className="rounded border border-green-500/30 bg-green-500/10 px-3 py-1.5 text-xs font-mono text-green-400">
+          Data saved: {session.exportState.result}
+        </div>
+      )}
+      {session.state === "stopped" && session.exportState.error && !session.exportState.result && (
+        <div className="rounded border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-mono text-red-400">
+          Auto-export failed: {session.exportState.error}
+        </div>
+      )}
+      {session.state === "stopped" && session.exportState.exporting && (
+        <div className="rounded border border-accent/30 bg-accent/10 px-3 py-1.5 text-xs font-mono text-accent">
+          Saving session data…
+        </div>
+      )}
+
       {/* Segment indicator */}
       {session.segmentNumber > 0 && (
         <div data-tour="segment-indicator" className="text-sm font-mono text-theme-text/60">
@@ -187,23 +204,6 @@ export function MonitorPanel() {
       <SessionProgress session={session} elapsed={elapsed} />
       <div data-tour="live-stats"><LiveStats session={session} elapsed={elapsed} /></div>
       <EventTimeline events={session.behaviorData} />
-
-      {/* Export status — shown after session ends */}
-      {session.state === "stopped" && session.exportState.result && (
-        <div className="rounded border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm font-mono text-green-400">
-          Data saved: {session.exportState.result}
-        </div>
-      )}
-      {session.state === "stopped" && session.exportState.error && !session.exportState.result && (
-        <div className="rounded border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-mono text-red-400">
-          Auto-export failed: {session.exportState.error}
-        </div>
-      )}
-      {session.state === "stopped" && session.exportState.exporting && (
-        <div className="rounded border border-accent/30 bg-accent/10 px-4 py-2 text-sm font-mono text-accent">
-          Saving session data…
-        </div>
-      )}
 
       <SessionNotes sessionId={activeSessionId} notes={session.notes} />
 

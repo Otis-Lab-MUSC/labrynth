@@ -427,7 +427,7 @@ export function ConfigurationPanel() {
             {isCustomized && (session.state === "connected" || session.state === "paused") && session.paradigm && (
               <button
                 onClick={() => setSaveDialogOpen(true)}
-                className="text-xs rounded px-2 py-1 bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-colors font-mono"
+                className="btn-sm bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-colors font-mono"
               >
                 Save Preset
               </button>
