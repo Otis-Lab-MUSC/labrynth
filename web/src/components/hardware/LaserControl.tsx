@@ -2,7 +2,6 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
 import { SquareWaveCanvas } from "./SquareWaveCanvas";
-import { HintIcon } from "../tutorial/HintIcon";
 
 interface Props {
   sessionId: string;
@@ -23,7 +22,6 @@ export function LaserControl({ sessionId, paradigm }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">
         Laser
-        <HintIcon hint="Arm for optogenetic stimulation. Supports contingent, independent, and trial-paired modes." helpSection="configuration.hardware.laser" />
         <PinField sessionId={sessionId} component="laser" />
       </h3>
       <div className="flex flex-wrap gap-2">
@@ -94,7 +92,7 @@ export function LaserControl({ sessionId, paradigm }: Props) {
         </div>
       )}
       <div className="flex items-center gap-2">
-        <label className="text-sm text-theme-text/60 inline-flex items-center" title="Integer ms timing causes ~2-4% error at 30/40 Hz. Exact at 1, 10, 20, 25, 50 Hz.">Freq (Hz):<HintIcon hint="Pulse frequency in Hz. Integer ms timing introduces ~2-4% error at some frequencies." helpSection="configuration.hardware.laser" /></label>
+        <label className="text-sm text-theme-text/60" title="Integer ms timing causes ~2-4% error at 30/40 Hz. Exact at 1, 10, 20, 25, 50 Hz.">Freq (Hz):</label>
         <input type="number" value={frequency} min={1} max={65535}
           onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, frequency: +e.target.value } }))}
           className="w-24 input-base" />

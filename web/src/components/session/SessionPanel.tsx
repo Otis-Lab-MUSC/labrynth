@@ -7,7 +7,6 @@ import type { BoardType, Session } from "../../types";
 import { FirmwareUploadCard } from "./FirmwareUploadCard";
 import { ConfirmDialog } from "../layout/ConfirmDialog";
 import { MachineManagement } from "./MachineManagement";
-import { HintIcon } from "../tutorial/HintIcon";
 
 function getDisconnectWarning(session: Session): { title: string; message: string; variant: "danger" | "warning" } | null {
   if (session.programStartTime !== null) {
@@ -159,13 +158,13 @@ export function SessionPanel() {
 
       {/* Inline device management */}
       <details data-tour="machine-management" className="card">
-        <summary className="font-medium text-theme-text cursor-pointer select-none inline-flex items-center">Manage Devices<HintIcon hint="Pair and manage remote REACHER hosts. Use a 6-digit pairing code or scan your local network." helpSection="session.machines" /></summary>
+        <summary className="font-medium text-theme-text cursor-pointer select-none">Manage Devices</summary>
         <MachineManagement />
       </details>
 
       {/* Port selection + connect */}
       <div data-tour="port-select" className="card">
-        <h3 className="font-medium text-theme-text">COM Port<HintIcon hint="Lists all serial ports detected on this system. Click Refresh after plugging in a new Arduino." helpSection="session.ports" /></h3>
+        <h3 className="font-medium text-theme-text">COM Port</h3>
         <div className="flex items-center gap-2">
           <select
             value={selectedPort}
@@ -212,7 +211,7 @@ export function SessionPanel() {
       {/* Active session info */}
       {activeSession && !activeSession.draft && (
         <div data-tour="active-session" className="card">
-          <h3 className="font-medium text-theme-text">Active Session<HintIcon hint="Creates a backend session and opens the serial connection at 115200 baud. The firmware paradigm is auto-detected on connect." helpSection="session.connecting" /></h3>
+          <h3 className="font-medium text-theme-text">Active Session</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <span className="text-theme-text/60">Machine:</span>
             <span className="font-mono text-theme-text/80">
@@ -234,7 +233,7 @@ export function SessionPanel() {
             <input
               value={activeSession.name}
               onChange={(e) => setSessionName(activeSessionId!, e.target.value)}
-              placeholder="Session name..."
+              placeholder="What would you like to name this session? (e.g., BOX_1)"
               className="flex-1 input-base"
             />
           </div>

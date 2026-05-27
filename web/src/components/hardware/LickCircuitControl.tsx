@@ -1,7 +1,6 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
-import { HintIcon } from "../tutorial/HintIcon";
 
 interface Props {
   sessionId: string;
@@ -16,7 +15,6 @@ export function LickCircuitControl({ sessionId }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">
         Lick Circuit
-        <HintIcon hint="Arm to record lick events via the capacitive sensor during the session." helpSection="configuration.hardware.lick" />
         <PinField sessionId={sessionId} component="lick" />
       </h3>
       <div className="flex gap-2">

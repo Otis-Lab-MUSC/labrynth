@@ -20,7 +20,6 @@ import { LickCircuitControl } from "../hardware/LickCircuitControl";
 import { MicroscopeControl } from "../hardware/MicroscopeControl";
 import { usePinOverridesHydration } from "../hardware/usePinOverridesHydration";
 import { useTutorialStore } from "../../store/useTutorialStore";
-import { HintIcon } from "../tutorial/HintIcon";
 import type { CommandSpec } from "../../types";
 
 /* ── Default baselines for dirty-state detection ─────────────────── */
@@ -395,7 +394,7 @@ export function ConfigurationPanel() {
           <input
             value={session.fileConfig.filename}
             onChange={(e) => setFileConfig(activeSessionId, { filename: e.target.value })}
-            placeholder="experiment_001"
+            placeholder="What would you like to name this file? (e.g., experiment_001)"
             className="flex-1 input-base"
           />
         </div>
@@ -404,7 +403,7 @@ export function ConfigurationPanel() {
           <input
             value={session.fileConfig.destination}
             onChange={(e) => setFileConfig(activeSessionId, { destination: e.target.value })}
-            placeholder="~/Downloads"
+            placeholder="Where would you like to save this data? (e.g., ~/Downloads)"
             className="flex-1 input-base"
           />
           {!isRemoteSession && (
@@ -424,7 +423,7 @@ export function ConfigurationPanel() {
       {(filteredSessionPresets.builtIn.length > 0 || filteredSessionPresets.custom.length > 0) && (
         <div data-tour="preset-select" className="card space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-theme-text">Session Preset<HintIcon hint="Applies a full configuration in one click: hardware arm states, paradigm parameters, and limits." helpSection="configuration.presets" /></h3>
+            <h3 className="font-medium text-theme-text">Session Preset</h3>
             {isCustomized && (session.state === "connected" || session.state === "paused") && session.paradigm && (
               <button
                 onClick={() => setSaveDialogOpen(true)}
@@ -516,7 +515,7 @@ export function ConfigurationPanel() {
           className="flex w-full items-center justify-between py-1 text-left"
         >
           <div>
-            <h3 className="font-medium text-theme-text">Hardware Controls<HintIcon hint="Arm or disarm devices and configure parameters before starting the experiment." helpSection="configuration.hardware" /></h3>
+            <h3 className="font-medium text-theme-text">Hardware Controls</h3>
             <p className="text-sm text-theme-text/60 font-mono">
               Paradigm: <span className="font-medium text-accent">{session.paradigm?.toUpperCase() ?? "Unknown"}</span>
               {" — "}{commands.length} commands available
@@ -534,7 +533,7 @@ export function ConfigurationPanel() {
             {/* System Controls */}
             {showSystemControls && (
               <div data-tour="system-controls" className="rounded-lg border border-theme-border/30 p-3">
-                <h4 className="text-sm font-medium text-theme-text mb-2 inline-flex items-center">System Controls<HintIcon hint="Test Chain fires all armed devices in sequence. Test Mode holds devices in a continuous active state." helpSection="configuration.hardware.arming" /></h4>
+                <h4 className="text-sm font-medium text-theme-text mb-2">System Controls</h4>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={handleTestChain}

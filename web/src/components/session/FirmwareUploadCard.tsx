@@ -3,7 +3,6 @@ import type { BoardType } from "../../types";
 import * as api from "../../api/client";
 import { useFirmwareUpload } from "../../hooks/useFirmwareUpload";
 import { useSessionStore } from "../../store/useSessionStore";
-import { HintIcon } from "../tutorial/HintIcon";
 
 interface Props {
   sessionId: string;
@@ -28,7 +27,7 @@ export function FirmwareUploadCard({ sessionId }: Props) {
 
   return (
     <div className="card">
-      <h3 className="font-medium text-theme-text">Firmware Upload<HintIcon hint="Flashes a new paradigm onto the Arduino. The board resets and re-handshakes automatically after upload." helpSection="session.firmware" /></h3>
+      <h3 className="font-medium text-theme-text">Firmware Upload</h3>
       <div className="flex items-center gap-2">
         <select
           value={selectedBoard}

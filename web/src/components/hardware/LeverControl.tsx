@@ -1,7 +1,6 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
-import { HintIcon } from "../tutorial/HintIcon";
 
 interface Props {
   sessionId: string;
@@ -35,7 +34,6 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">
         {side} Lever
-        <HintIcon hint="Arm this lever to make it respond during the session. Disarmed levers are ignored by the firmware." helpSection="configuration.hardware.levers" />
         <PinField sessionId={sessionId} component={side === "RH" ? "lever_rh" : "lever_lh"} />
       </h3>
       <div className="flex flex-wrap gap-2">
@@ -56,7 +54,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
       </div>
       {showTimeout && (
         <div className="flex items-center gap-2">
-          <label className="text-sm text-theme-text/60 inline-flex items-center">Timeout (ms):<HintIcon hint="Lockout period in ms after a reinforced press during which additional presses are not counted." helpSection="configuration.hardware.levers" /></label>
+          <label className="text-sm text-theme-text/60">Timeout (ms):</label>
           <input
             type="number" value={timeout} min={0} max={600000}
             onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], timeout: +e.target.value } }))}

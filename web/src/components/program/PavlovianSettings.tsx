@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
-import { HintIcon } from "../tutorial/HintIcon";
 
 interface Props {
   sessionId: string;
@@ -88,7 +87,7 @@ export function PavlovianSettings({ sessionId }: Props) {
   return (
     <div className="card">
       <div className="flex items-center justify-between">
-        <h3 className="font-medium text-theme-text">Pavlovian Parameters<HintIcon hint="CS+/CS− trial timing and probability settings. Use Send All to push all values to the board at once." helpSection="configuration.paradigm" /></h3>
+        <h3 className="font-medium text-theme-text">Pavlovian Parameters</h3>
         <button onClick={sendAll} disabled={!itiValid}
           className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Send All</button>
       </div>
@@ -109,7 +108,7 @@ export function PavlovianSettings({ sessionId }: Props) {
 
       {/* Pulse Configuration */}
       <div className="mt-4 border-t border-theme-border pt-4">
-        <span className="text-sm font-medium text-theme-text inline-flex items-center">Pulse Configuration<HintIcon hint="Set CS+ Pulse On to 0 for a continuous tone. CS− defaults to 200ms/200ms pulsed." helpSection="configuration.paradigm" /></span>
+        <span className="text-sm font-medium text-theme-text">Pulse Configuration</span>
         <p className="text-xs text-theme-text/40 mt-1">Set pulse ON to 0 for continuous tone. CS+ defaults to continuous; CS- defaults to 200ms/200ms pulsed.</p>
         <div className="grid gap-2 sm:grid-cols-2 mt-3">
           {PULSE_PARAMS.map((p) => (
@@ -130,7 +129,7 @@ export function PavlovianSettings({ sessionId }: Props) {
 
       {/* ITI Configuration */}
       <div className="mt-4 border-t border-theme-border pt-4">
-        <span className="text-sm font-medium text-theme-text inline-flex items-center">ITI Distribution<HintIcon hint="Inter-trial interval is sampled from a uniform distribution between Min and Max." helpSection="configuration.paradigm" /></span>
+        <span className="text-sm font-medium text-theme-text">ITI Distribution</span>
         {!itiValid && (
           <p className="text-xs text-red-500 mt-1">ITI values must satisfy: Min &le; Mean &le; Max (all &ge; 0, Max &gt; 0)</p>
         )}
