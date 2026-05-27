@@ -8,6 +8,7 @@ import { LaserControl } from "./LaserControl";
 import { LickCircuitControl } from "./LickCircuitControl";
 import { MicroscopeControl } from "./MicroscopeControl";
 import type { CommandSpec } from "../../types";
+import { HintIcon } from "../tutorial/HintIcon";
 
 export function HardwarePanel() {
   const activeSessionId = useSessionStore((s) => s.activeSessionId);
@@ -43,7 +44,7 @@ export function HardwarePanel() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-theme-text">Hardware Controls</h2>
+      <h2 className="text-xl font-semibold text-theme-text">Hardware Controls<HintIcon hint="Direct hardware control for testing outside a running session." helpSection="configuration.hardware" /></h2>
       <p className="text-sm text-theme-text/60 font-mono">
         Paradigm: <span className="font-medium text-accent">{session.paradigm?.toUpperCase() ?? "Unknown"}</span>
         {" — "}{commands.length} commands available
@@ -52,7 +53,7 @@ export function HardwarePanel() {
       {/* System Controls — Issue #2A */}
       {showSystemControls && (
         <div data-tour="system-controls" className="card">
-          <h3 className="font-medium text-theme-text">System Controls</h3>
+          <h3 className="font-medium text-theme-text">System Controls<HintIcon hint="Test Chain fires all armed devices in sequence. Test Mode holds devices in a continuous active state." helpSection="configuration.hardware.arming" /></h3>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={handleTestChain}

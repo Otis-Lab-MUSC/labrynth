@@ -1,4 +1,5 @@
 import type { Session, LeverCounts } from "../../types";
+import { HintIcon } from "../tutorial/HintIcon";
 
 interface Props {
   session: Session;
@@ -108,8 +109,9 @@ export function LiveStats({ session, elapsed }: Props) {
       {/* Session Section */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-accent text-xs uppercase tracking-wider font-bold">
+          <span className="text-accent text-xs uppercase tracking-wider font-bold inline-flex items-center gap-1">
             {session.segmentNumber > 0 ? `Segment ${session.segmentNumber + 1}` : "Session"}
+            <HintIcon hint="Running totals updated in real time from WebSocket events." helpSection="monitor.stats" />
           </span>
           <div className="flex-1 border-b border-dashed border-theme-border" />
         </div>

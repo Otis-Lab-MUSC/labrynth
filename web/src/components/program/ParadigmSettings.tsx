@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
+import { HintIcon } from "../tutorial/HintIcon";
 
 interface Props {
   sessionId: string;
@@ -28,11 +29,11 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
 
   return (
     <div className="card">
-      <h3 className="font-medium text-theme-text">Paradigm Settings — <span className="text-accent">{paradigm.toUpperCase()}</span></h3>
+      <h3 className="font-medium text-theme-text">Paradigm Settings — <span className="text-accent">{paradigm.toUpperCase()}</span><HintIcon hint="Configure the behavioral paradigm parameters. Changes take effect when Set is clicked for each field." helpSection="configuration.paradigm" /></h3>
 
       {(paradigm === "fr" || paradigm === "pr") && (
         <div className="flex items-center gap-2">
-          <label className="text-sm w-24 text-theme-text/60">Ratio:</label>
+          <label className="text-sm w-24 text-theme-text/60 inline-flex items-center">Ratio:<HintIcon hint="Presses required per reinforcement (FR) or starting ratio (PR)." helpSection="configuration.paradigm" /></label>
           <input type="number" value={ratio} onChange={(e) => setRatio(+e.target.value)}
             className="w-24 input-base" />
           <button onClick={() => send(201, ratio)} className="btn-sm bg-accent text-accent-contrast">Set</button>
@@ -41,7 +42,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
 
       {paradigm === "pr" && (
         <div className="flex items-center gap-2">
-          <label className="text-sm w-24 text-theme-text/60">PR Step:</label>
+          <label className="text-sm w-24 text-theme-text/60 inline-flex items-center">PR Step:<HintIcon hint="Amount added to the ratio after each reinforcement in Progressive Ratio." helpSection="configuration.paradigm" /></label>
           <input type="number" value={step} onChange={(e) => setStep(+e.target.value)}
             className="w-24 input-base" />
           <button onClick={() => send(205, step)} className="btn-sm bg-accent text-accent-contrast">Set</button>
@@ -50,7 +51,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
 
       {paradigm === "vi" && (
         <div className="flex items-center gap-2">
-          <label className="text-sm w-24 text-theme-text/60">VI Interval (ms):</label>
+          <label className="text-sm w-24 text-theme-text/60 inline-flex items-center">VI Interval (ms):<HintIcon hint="Variable interval in ms. The firmware samples a random wait within this range." helpSection="configuration.paradigm" /></label>
           <input type="number" value={interval} onChange={(e) => setInterval_(+e.target.value)}
             className="w-24 input-base" />
           <button onClick={() => send(204, interval)} className="btn-sm bg-accent text-accent-contrast">Set</button>
@@ -69,7 +70,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
       {/* Issue #2C: Trace Interval */}
       {showTrace && (
         <div className="flex items-center gap-2">
-          <label className="text-sm w-24 text-theme-text/60">Trace Interval (ms):</label>
+          <label className="text-sm w-24 text-theme-text/60 inline-flex items-center">Trace Interval (ms):<HintIcon hint="Delay in ms between cue offset and reinforcement delivery." helpSection="configuration.paradigm" /></label>
           <input type="number" value={traceInterval} onChange={(e) => setTraceInterval(+e.target.value)}
             className="w-24 input-base" />
           <button onClick={() => send(220, traceInterval)} className="btn-sm bg-accent text-accent-contrast">Set</button>

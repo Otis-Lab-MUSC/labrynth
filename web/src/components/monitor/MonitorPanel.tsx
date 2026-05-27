@@ -7,6 +7,7 @@ import { LiveStats } from "./LiveStats";
 import { SessionProgress } from "./SessionProgress";
 import { ConfirmDialog } from "../layout/ConfirmDialog";
 import { SessionNotes } from "../data/SessionNotes";
+import { HintIcon } from "../tutorial/HintIcon";
 import type { SessionState } from "../../types";
 
 function RunningMouseIndicator({ state }: { state: SessionState }) {
@@ -109,7 +110,8 @@ export function MonitorPanel() {
       {/* Control buttons */}
       <div data-tour="experiment-controls" className="flex flex-wrap items-center gap-4">
         {/* Transport group */}
-        <div role="group" aria-label="Session transport controls" className="flex flex-wrap gap-2">
+        <div role="group" aria-label="Session transport controls" className="flex flex-wrap items-center gap-2">
+          <HintIcon hint="Start begins the program. Pause freezes timers without stopping. Stop ends and auto-saves the session." helpSection="monitor.controls" placement="bottom" />
           <button
             onClick={() => setStartModalOpen(true)}
             disabled={session.state === "running"}
@@ -151,17 +153,20 @@ export function MonitorPanel() {
 
         {/* Tools group */}
         <div role="group" aria-label="Session tools" className="flex flex-wrap gap-2">
-          <button
-            data-tour="split-button"
-            onClick={() => getClientForSession(activeSessionId)?.splitSegment(activeSessionId)}
-            disabled={!canControl}
-            aria-label="Split segment"
-            title="Start a new segment (current segment is marked complete)"
-            className="inline-flex items-center gap-2 rounded border border-theme-border bg-transparent px-3 py-2 font-mono text-sm text-theme-text/80 transition hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
-          >
-            <Scissors size={16} aria-hidden="true" />
-            Split
-          </button>
+          <div className="inline-flex items-center gap-1">
+            <button
+              data-tour="split-button"
+              onClick={() => getClientForSession(activeSessionId)?.splitSegment(activeSessionId)}
+              disabled={!canControl}
+              aria-label="Split segment"
+              title="Start a new segment (current segment is marked complete)"
+              className="inline-flex items-center gap-2 rounded border border-theme-border bg-transparent px-3 py-2 font-mono text-sm text-theme-text/80 transition hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            >
+              <Scissors size={16} aria-hidden="true" />
+              Split
+            </button>
+            <HintIcon hint="Creates a segment boundary. Cumulative and per-segment stats are both available in exports." helpSection="monitor.split" placement="bottom" />
+          </div>
 
           <button
             onClick={() => setConfirmRestart(true)}

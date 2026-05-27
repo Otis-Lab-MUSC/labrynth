@@ -1,6 +1,7 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
+import { HintIcon } from "../tutorial/HintIcon";
 
 interface Props {
   sessionId: string;
@@ -18,6 +19,7 @@ export function MicroscopeControl({ sessionId }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">
         Microscope Sync
+        <HintIcon hint="Arm to emit TTL pulses for synchronizing frame timestamps with imaging equipment." helpSection="configuration.hardware.microscope" />
         <span className="ml-2 text-xs font-mono text-theme-text/40">Timestamp pin 2 (fixed)</span>
         <PinField sessionId={sessionId} component="microscope_trigger" />
       </h3>

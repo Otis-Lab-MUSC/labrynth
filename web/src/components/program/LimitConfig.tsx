@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
+import { HintIcon } from "../tutorial/HintIcon";
 
 interface Props {
   sessionId: string;
@@ -41,7 +42,7 @@ export function LimitConfig({ sessionId, paradigm }: Props) {
 
   return (
     <div className="card">
-      <h3 className="font-medium text-theme-text">Limits</h3>
+      <h3 className="font-medium text-theme-text">Limits<HintIcon hint="The experiment stops automatically when any enabled limit is reached." helpSection="configuration.limits" /></h3>
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Type:</label>
         <select
@@ -82,7 +83,7 @@ export function LimitConfig({ sessionId, paradigm }: Props) {
               className="w-24 input-base" />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm w-32 text-theme-text/60">Stop Delay (s):</label>
+            <label className="text-sm w-32 text-theme-text/60 inline-flex items-center">Stop Delay (s):<HintIcon hint="Grace period after the limit is reached before the session actually stops." helpSection="configuration.limits" /></label>
             <input type="number" value={delay} min={0} max={86400}
               onChange={(e) => setDelay(+e.target.value)}
               className="w-24 input-base" />

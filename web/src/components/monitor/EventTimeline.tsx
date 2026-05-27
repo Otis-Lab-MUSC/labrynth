@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import type { BehaviorEvent } from "../../types";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useContainerWidth } from "../../hooks/useContainerWidth";
+import { HintIcon } from "../tutorial/HintIcon";
 
 function readAccentRgb(): string {
   const raw = getComputedStyle(document.documentElement)
@@ -205,7 +206,7 @@ export function EventTimeline({ events }: Props) {
 
   return (
     <div className="rounded-lg border border-theme-border bg-panel p-4">
-      <h3 className="mb-2 font-medium text-theme-text">Event Timeline</h3>
+      <h3 className="mb-2 font-medium text-theme-text">Event Timeline<HintIcon hint="Scrolling log of all behavior events, color-coded by device and type." helpSection="monitor.timeline" /></h3>
       <div ref={combinedRef} className="overflow-x-auto" style={{ position: "relative" }} onScroll={handleScroll}>
         <svg
           ref={svgRef}

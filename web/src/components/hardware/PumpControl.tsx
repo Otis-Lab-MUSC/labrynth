@@ -1,6 +1,7 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
+import { HintIcon } from "../tutorial/HintIcon";
 
 interface Props {
   sessionId: string;
@@ -36,6 +37,7 @@ export function PumpControl({ sessionId, label, prefix }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">
         {label} Pump
+        <HintIcon hint="Arm to include this syringe pump. Duration controls how long the relay stays open per infusion." helpSection="configuration.hardware.pumps" />
         <PinField sessionId={sessionId} component={prefix === "2" ? "pump2" : "pump"} />
       </h3>
       <div className="flex flex-wrap gap-2">
