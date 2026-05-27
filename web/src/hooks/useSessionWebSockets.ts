@@ -5,6 +5,7 @@ import { useSessionStore } from "../store/useSessionStore";
 import { useMachineStore } from "../store/useMachineStore";
 import { useTutorialStore } from "../store/useTutorialStore";
 import { useLogStore } from "../store/useLogStore";
+import { getClientForSession } from "../api/sessionClient";
 import type { LogLevel } from "../store/useLogStore";
 import type { WSMessage, BehaviorEvent, FirmwareConfig, SessionState } from "../types";
 
@@ -27,6 +28,40 @@ const DEVICE_TO_UI_KEY: Record<string, string> = {
   LEVER_LH: "lhLever",
 };
 
+async function triggerAutoExport(sessionId: string) {
+  const sess = useSessionStore.getState().sessions.get(sessionId);
+  if (!sess || !sess.behaviorData.length) return;
+  const client = getClientForSession(sessionId);
+  if (!client) return;
+
+  const { setExportState } = useSessionStore.getState();
+  const { pushLog } = useLogStore.getState();
+  setExportState(sessionId, { exporting: true, result: null, error: null });
+  try {
+    const micro = sess.hardwareUi.microscope;
+    const result = await client.exportZip(sessionId, {
+      session_name: sess.name || undefined,
+      notes: sess.notes || undefined,
+      infusion_count: sess.infusionCount,
+      press_count: sess.pressCount,
+      trial_count: sess.trialCount,
+      program_start_time: sess.programStartTime,
+      ...(micro.armed && micro.frameRate != null && { microscope_frame_rate: micro.frameRate }),
+      ...(micro.armed && micro.frameAveraging != null && { microscope_frame_averaging: micro.frameAveraging }),
+    });
+    if (result?.file_path && client.isRemote) {
+      try { await client.downloadExportZip(sessionId, result.file_path); } catch { /* log already surfaces remote errors */ }
+    }
+    setExportState(sessionId, { exporting: false, result: result?.file_path ?? null });
+    pushLog("info", `Session data saved: ${result?.file_path}`, sessionId);
+  } catch (e) {
+    setExportState(sessionId, {
+      exporting: false,
+      error: e instanceof Error ? e.message : "Auto-export failed",
+    });
+  }
+}
+
 function handleMessage(msg: WSMessage) {
   const { updateState, pushEvent, pushFrame, setFirmwareInfo, pushHardwareSetting, setUploadProgress, updateHardwareUi } =
     useSessionStore.getState();
@@ -41,6 +76,7 @@ function handleMessage(msg: WSMessage) {
       pushEvent(msg.session_id, eventData);
       if (eventData.device === "CONTROLLER" && eventData.event === "END") {
         updateState(msg.session_id, "stopped");
+        triggerAutoExport(msg.session_id);
       }
       break;
     }

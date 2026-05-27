@@ -272,6 +272,9 @@ export class MachineApiClient {
     this.request("/lifecycle/shutdown", { method: "POST" });
 
   // --- File ---
+  browseFolder = () =>
+    this.request<{ path: string | null }>("/file/browse");
+
   setFileConfig = (id: string, body: { filename?: string; destination?: string }) => {
     if (body.filename) sanitizeFilename(body.filename);
     return this.request<{ filename: string; destination: string }>(`/file/${id}/config`, {

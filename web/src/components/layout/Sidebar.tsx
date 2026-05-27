@@ -1,12 +1,11 @@
-import { Cable, SlidersHorizontal, Activity, Database } from "lucide-react";
+import { Cable, SlidersHorizontal, Activity } from "lucide-react";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useSessionStore } from "../../store/useSessionStore";
 
 const items = [
-  { key: "session", label: "Session", icon: Cable },
-  { key: "configuration", label: "Configuration", icon: SlidersHorizontal },
-  { key: "monitor", label: "Monitor", icon: Activity },
-  { key: "data", label: "Data", icon: Database },
+  { key: "session", label: "Device Setup", icon: Cable },
+  { key: "configuration", label: "Session Configuration", icon: SlidersHorizontal },
+  { key: "monitor", label: "Session", icon: Activity },
 ] as const;
 
 interface Props {

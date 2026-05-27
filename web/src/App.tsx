@@ -13,7 +13,6 @@ import { ConfigurationPanel } from "./components/configuration/ConfigurationPane
 import { MonitorPanel } from "./components/monitor/MonitorPanel";
 import { SessionStartModal } from "./components/monitor/SessionStartModal";
 import { TerminalPanel } from "./components/terminal/TerminalPanel";
-import { DataExport } from "./components/data/DataExport";
 import { TutorialOverlay } from "./components/tutorial/TutorialOverlay";
 import { HelpPanel } from "./components/tutorial/HelpPanel";
 import { WelcomeScreen } from "./components/tutorial/WelcomeScreen";
@@ -74,7 +73,6 @@ function AppContent() {
     session: <SessionPanel />,
     configuration: <ConfigurationPanel />,
     monitor: <MonitorPanel />,
-    data: <DataExport />,
   };
 
   return (

@@ -264,12 +264,12 @@ export function firstSessionTour(): TutorialStep[] {
     // ── Data ─────────────────────────────────────────────
     {
       id: "first-session-17",
-      panel: "data",
+      panel: "configuration",
       target: "file-config",
       title: "File Configuration",
       content:
-        "Set a filename and destination folder for your exported data. If left blank, the system defaults to a timestamp-based filename saved to your machine's Downloads folder. " +
-        "Separately, the Python engine appends every behavioral event to an on-disk log (~/REACHER/LOG/) in real time — fsynced per-event — so your data is safe even if the export step is skipped or the session crashes.",
+        "Set a filename and destination folder for your exported data before starting the session. If left blank, the system defaults to a timestamp-based filename saved to your machine's Downloads folder. " +
+        "The Python engine also appends every behavioral event to an on-disk log (~/REACHER/LOG/) in real time, so your data is safe even if the export step fails.",
       placement: "bottom",
       interactive: true,
       section: "Data",
@@ -277,11 +277,11 @@ export function firstSessionTour(): TutorialStep[] {
     },
     {
       id: "first-session-18",
-      panel: "data",
-      target: "export-card",
-      title: "Data Export",
+      panel: "monitor",
+      target: "monitor-heading",
+      title: "Auto-Export",
       content:
-        "After the session ends, click Export ZIP to save all recorded data including behavior events, frame timestamps, and a session summary.",
+        "When the session ends — whether manually stopped or by reaching its limit — data is automatically saved to the configured destination (or ~/Downloads by default). The save path appears on the Session page.",
       placement: "bottom",
       section: "Data",
     },

@@ -151,20 +151,20 @@ export const HELP_CONTENT: HelpSection[] = [
   },
   {
     id: "data",
-    title: "Data Panel",
-    content: "The Data panel handles file configuration, data export, and session notes.",
+    title: "Data & Export",
+    content: "Session data is saved automatically when the session ends.",
     subsections: [
       {
         id: "data.fileconfig",
         title: "File Configuration",
         content:
-          "Set the output filename and destination directory. Click Save Config to persist these to the backend. The filename is used as the base name for exported files.",
+          "Set the output filename and destination directory on the Session Configuration page before starting. Click Save Config to persist these to the backend. If left blank, the system defaults to a timestamp-based filename saved to ~/Downloads.",
       },
       {
         id: "data.export",
-        title: "Export",
+        title: "Auto-Export",
         content:
-          "After a session ends, click Export ZIP to save all data. The ZIP contains:\n\n- Behavior events (CSV with device, event, timestamps)\n- Frame timestamps (for microscope sync)\n- Session metadata (paradigm, settings, limits, counts)\n\nExport is only available when behavior data has been recorded.",
+          "When a session ends (manually or by reaching its limit), data is automatically saved. The ZIP contains:\n\n- Behavior events (CSV with device, event, timestamps)\n- Frame timestamps (for microscope sync)\n- Session metadata (paradigm, settings, limits, counts)\n\nThe save path is shown on the Session page after the session stops.",
       },
     ],
   },

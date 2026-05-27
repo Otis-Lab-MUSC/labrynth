@@ -66,8 +66,8 @@ export function ConfigurationPanel() {
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
   const setParadigmSettings = useSessionStore((s) => s.setParadigmSettings);
   const setLimitSettings = useSessionStore((s) => s.setLimitSettings);
-  const setStartModalOpen = useSessionStore((s) => s.setStartModalOpen);
   const setPavlovianParams = useSessionStore((s) => s.setPavlovianParams);
+  const setFileConfig = useSessionStore((s) => s.setFileConfig);
 
   const userPresets = useUserPresetStore((s) => s.userPresets);
   const saveUserPreset = useUserPresetStore((s) => s.savePreset);
@@ -337,7 +337,29 @@ export function ConfigurationPanel() {
   };
 
   const selectedDevicePreset = filteredDevicePresets.find((p) => p.id === selectedDevicePresetId);
-  const canStart = session?.state === "connected" || session?.state === "stopped";
+
+  /* ── File config handlers ────────────────────────────────────── */
+
+  const handleSaveConfig = async () => {
+    if (!activeSessionId || !session) return;
+    const confirmed = await getClientForSession(activeSessionId)?.setFileConfig(activeSessionId, {
+      filename: session.fileConfig.filename || undefined,
+      destination: session.fileConfig.destination || undefined,
+    });
+    if (confirmed) setFileConfig(activeSessionId, confirmed);
+  };
+
+  const handleBrowse = async () => {
+    if (!activeSessionId) return;
+    const client = getClientForSession(activeSessionId);
+    if (!client || client.isRemote) return;
+    try {
+      const res = await client.browseFolder();
+      if (res.path) setFileConfig(activeSessionId, { destination: res.path });
+    } catch { /* picker unavailable — silently ignore */ }
+  };
+
+  const isRemoteSession = getClientForSession(activeSessionId)?.isRemote ?? false;
 
   /* ── Hardware section helpers ─────────────────────────────────── */
 
@@ -362,7 +384,38 @@ export function ConfigurationPanel() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-theme-text">Configuration</h2>
+      <h2 className="text-xl font-semibold text-theme-text">Session Configuration</h2>
+
+      {/* ── File Configuration ───────────────────────────────── */}
+      <div data-tour="file-config" className="card">
+        <h3 className="font-medium text-theme-text">File Configuration</h3>
+        <div className="flex items-center gap-2">
+          <label className="text-sm w-28 text-theme-text/60">Filename:</label>
+          <input
+            value={session.fileConfig.filename}
+            onChange={(e) => setFileConfig(activeSessionId, { filename: e.target.value })}
+            placeholder="experiment_001"
+            className="flex-1 input-base"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-sm w-28 text-theme-text/60">Destination:</label>
+          <input
+            value={session.fileConfig.destination}
+            onChange={(e) => setFileConfig(activeSessionId, { destination: e.target.value })}
+            placeholder="~/Downloads"
+            className="flex-1 input-base"
+          />
+          {!isRemoteSession && (
+            <button onClick={handleBrowse} className="btn-sm bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-colors font-mono shrink-0">
+              Browse
+            </button>
+          )}
+        </div>
+        <button onClick={handleSaveConfig} className="btn-sm bg-accent text-accent-contrast hover:bg-accent-hover">
+          Save Config
+        </button>
+      </div>
 
       {/* ── Program Section ──────────────────────────────────── */}
 
@@ -517,17 +570,6 @@ export function ConfigurationPanel() {
           </div>
         )}
       </div>
-
-      {/* Start Session button */}
-      {canStart && (
-        <button
-          data-tour="start-session"
-          onClick={() => setStartModalOpen(true)}
-          className="w-full rounded bg-green-600 px-4 py-3 text-white font-mono text-lg hover:bg-green-700"
-        >
-          Start Session
-        </button>
-      )}
 
       {/* ── Dialogs ──────────────────────────────────────────── */}
 
