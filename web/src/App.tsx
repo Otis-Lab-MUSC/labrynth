@@ -18,6 +18,7 @@ import { HelpPanel } from "./components/tutorial/HelpPanel";
 import { WelcomeScreen } from "./components/tutorial/WelcomeScreen";
 import { DemoModeBanner } from "./components/tutorial/DemoModeBanner";
 import { HostOfflineBanner } from "./components/layout/HostOfflineBanner";
+import { ServerSuspendedOverlay } from "./components/layout/ServerSuspendedOverlay";
 import { UpdateBanner } from "./components/layout/UpdateBanner";
 import { useThemeStore } from "./store/useThemeStore";
 import { useNavigationStore } from "./store/useNavigationStore";
@@ -80,6 +81,7 @@ function AppContent() {
       <BackgroundLayer />
       <DemoModeBanner />
       <HostOfflineBanner />
+      <ServerSuspendedOverlay />
       <UpdateBanner />
       <Header />
       <div className="flex flex-1 overflow-hidden">

@@ -5,6 +5,7 @@ import { useSessionStore } from "../store/useSessionStore";
 import { useMachineStore } from "../store/useMachineStore";
 import { useTutorialStore } from "../store/useTutorialStore";
 import { useLogStore } from "../store/useLogStore";
+import { useAppStore } from "../store/useAppStore";
 import { getClientForSession } from "../api/sessionClient";
 import type { LogLevel } from "../store/useLogStore";
 import type { WSMessage, BehaviorEvent, FirmwareConfig, SessionState } from "../types";
@@ -163,6 +164,16 @@ function handleMessage(msg: WSMessage) {
       pushLog("info", "Program restarted", msg.session_id);
       break;
     }
+    case "server_suspended": {
+      const { hard_kill_in } = msg.data as { reason: string; hard_kill_in: number };
+      useAppStore.getState().setServerSuspended(true, hard_kill_in);
+      pushLog("warn", `Server suspended (idle watchdog). Hard kill in ~${Math.round(hard_kill_in / 60)} min.`, msg.session_id);
+      break;
+    }
+    case "server_resumed": {
+      useAppStore.getState().setServerSuspended(false);
+      break;
+    }
     // Fix: F-014 — Log unhandled message types so future protocol changes are visible
     default:
       console.warn(`[ReacherWS] Unhandled message type: ${(msg as { type: string }).type}`, msg);
@@ -255,12 +266,18 @@ export function useSessionWebSockets() {
         });
       } else {
         // Local machine or legacy remote with synchronous token
+        const localOnGiveUp = () => {
+          useAppStore.getState().setServerSuspended(true);
+          useSessionStore.getState().updateState(id, "disconnected");
+          useLogStore.getState().pushLog("warn", "Server unreachable — session timed out", id);
+        };
         current.set(id, new ReacherWebSocket(
           id,
           handleMessage,
           machineClient?.wsBaseUrl,
           machineClient?.getWsToken(),
           () => recoverMissedEvents(id),
+          localOnGiveUp,
         ));
       }
     }

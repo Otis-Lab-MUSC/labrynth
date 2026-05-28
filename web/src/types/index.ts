@@ -177,4 +177,6 @@ export type WSMessage =
   | { type: "export_failed"; session_id: string; data: { reason: string } }  // Fix: F-005
   | { type: "kernel_error"; session_id: string; data: { reason: string; raw: string } }  // Fix: F-006
   | { type: "split"; session_id: string; data: { segment_number: number; export_path: string } }
-  | { type: "restart"; session_id: string; data: Record<string, never> };
+  | { type: "restart"; session_id: string; data: Record<string, never> }
+  | { type: "server_suspended"; session_id: string; data: { reason: string; hard_kill_in: number } }
+  | { type: "server_resumed"; session_id: string; data: Record<string, never> };
