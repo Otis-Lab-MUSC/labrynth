@@ -23,6 +23,7 @@ import { UpdateBanner } from "./components/layout/UpdateBanner";
 import { useThemeStore } from "./store/useThemeStore";
 import { useNavigationStore } from "./store/useNavigationStore";
 import { useMachineStore } from "./store/useMachineStore";
+import { useSessionStore } from "./store/useSessionStore";
 import { useSessionWebSockets } from "./hooks/useSessionWebSockets";
 import { useSessionRecovery } from "./hooks/useSessionRecovery";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
@@ -65,9 +66,15 @@ function AppContent() {
     };
   }, []);
 
+  const hasActiveSession = useSessionStore(
+    (s) => [...s.sessions.values()].some(
+      (sess) => sess.state === "connected" || sess.state === "running" || sess.state === "paused"
+    )
+  );
+
   useSessionRecovery();
   useSessionWebSockets();
-  useBeforeUnload(false);
+  useBeforeUnload(hasActiveSession);
   useScrollReveal();
 
   const panels: Record<Panel, React.ReactNode> = {
