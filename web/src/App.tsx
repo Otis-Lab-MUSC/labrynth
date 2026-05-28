@@ -27,6 +27,7 @@ import { useSessionStore } from "./store/useSessionStore";
 import { useSessionWebSockets } from "./hooks/useSessionWebSockets";
 import { useSessionRecovery } from "./hooks/useSessionRecovery";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
+import { useIdleTimer } from "./hooks/useIdleTimer";
 import { useSingleTab } from "./hooks/useSingleTab";
 import { useScrollReveal } from "./hooks/useScrollReveal";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
@@ -75,6 +76,7 @@ function AppContent() {
   useSessionRecovery();
   useSessionWebSockets();
   useBeforeUnload(hasActiveSession);
+  useIdleTimer(hasActiveSession);
   useScrollReveal();
 
   const panels: Record<Panel, React.ReactNode> = {

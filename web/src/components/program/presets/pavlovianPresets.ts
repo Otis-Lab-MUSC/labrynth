@@ -58,9 +58,6 @@ export const PAV_ACQUISITION_PRESET: SessionPreset = {
     207: 0,     // CS- Reward Prob (%)
     208: 50,    // CS+ Count
     209: 50,    // CS- Count
-    210: 12000, // CS+ Frequency (Hz)
-    211: 3000,  // CS- Frequency (Hz)
-    213: 2000,  // Cue Duration (ms)
     214: 1000,  // Trace Interval (ms)
     216: 30000, // ITI Mean (ms)
     217: 20000, // ITI Min (ms)
@@ -91,9 +88,6 @@ export const PAV_REVERSAL_PRESET: SessionPreset = {
     207: 100,   // CS- Reward Prob (%) — reversed
     208: 50,    // CS+ Count
     209: 50,    // CS- Count
-    210: 12000, // CS+ Frequency (Hz)
-    211: 3000,  // CS- Frequency (Hz)
-    213: 2000,  // Cue Duration (ms)
     214: 1000,  // Trace Interval (ms)
     216: 30000, // ITI Mean (ms)
     217: 20000, // ITI Min (ms)

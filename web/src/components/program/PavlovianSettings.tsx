@@ -17,9 +17,6 @@ const PAV_PARAMS: PavParam[] = [
   { code: 207, label: "CS- Reward Prob (%)", default: 0 },
   { code: 208, label: "CS+ Count", default: 50 },
   { code: 209, label: "CS- Count", default: 50 },
-  { code: 210, label: "CS+ Frequency (Hz)", default: 12000 },
-  { code: 211, label: "CS- Frequency (Hz)", default: 3000 },
-  { code: 213, label: "Cue Duration (ms)", default: 2000 },
   { code: 214, label: "Trace Interval (ms)", default: 1000 },
 ];
 
