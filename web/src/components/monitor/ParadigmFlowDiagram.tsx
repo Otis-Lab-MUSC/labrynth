@@ -74,7 +74,7 @@ const LANE_GAP = 4;
 const BAR_H = 26;
 const HEADER_H = 8;
 const FOOTER_H = 28;
-const MIN_BAR_PX = 36;
+const MIN_BAR_PX = 6;
 const TICK_H = 6;
 const FONT_SIZE = 10;
 const SUB_FONT_SIZE = 8.5;
@@ -442,7 +442,9 @@ function TimelineDiagram({ timeline, isDark, containerW }: { timeline: TrialTime
               stroke={color}
               strokeWidth={1.5}
               strokeDasharray={bar.dashed ? "4 2" : undefined}
-            />
+            >
+              <title>{bar.label}{bar.sublabel ? ` ${bar.sublabel}` : ""} — {bar.endMs - bar.startMs}ms</title>
+            </rect>
             {textFits ? (
               <>
                 <text

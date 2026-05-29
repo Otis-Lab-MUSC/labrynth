@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { useMachineStore } from "../../store/useMachineStore";
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
@@ -38,6 +39,7 @@ export function SessionPanel() {
   const [selectedPort, setSelectedPort] = useState("");
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [manageDevicesOpen, setManageDevicesOpen] = useState(false);
   const { activeSessionId, sessions, createSession, destroySession, setSessionName, setParadigm, setBoard, updateState } = useSessionStore();
   const { machines, activeMachineId, setActiveMachine, getClient } = useMachineStore();
 
@@ -157,10 +159,20 @@ export function SessionPanel() {
       </div>
 
       {/* Inline device management */}
-      <details data-tour="machine-management" className="card">
-        <summary className="font-medium text-theme-text cursor-pointer select-none">Manage Devices</summary>
-        <MachineManagement />
-      </details>
+      <div data-tour="machine-management" className="card">
+        <button
+          onClick={() => setManageDevicesOpen((v) => !v)}
+          className="flex w-full items-center justify-between py-1 text-left"
+        >
+          <h3 className="font-medium text-theme-text">Manage Devices</h3>
+          {manageDevicesOpen ? (
+            <ChevronDown size={20} className="shrink-0 text-accent" />
+          ) : (
+            <ChevronRight size={20} className="shrink-0 text-theme-text/40" />
+          )}
+        </button>
+        {manageDevicesOpen && <MachineManagement />}
+      </div>
 
       {/* Port selection + connect */}
       <div data-tour="port-select" className="card">
@@ -189,13 +201,23 @@ export function SessionPanel() {
           >
             Refresh
           </button>
-          <button
-            onClick={handleConnect}
-            disabled={!selectedPort || loading || !activeMachine?.online || (activeSession != null && !activeSession.draft && activeSession.state !== "idle")}
-            className="btn-sm bg-accent text-accent-contrast hover:bg-accent-hover disabled:opacity-50"
-          >
-            Connect
-          </button>
+          {activeSession && !activeSession.draft && (activeSession.state === "connected" || activeSession.state === "stopped" || activeSession.state === "disconnected") ? (
+            <button
+              onClick={handleDisconnect}
+              disabled={loading}
+              className="btn-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+            >
+              Disconnect
+            </button>
+          ) : (
+            <button
+              onClick={handleConnect}
+              disabled={!selectedPort || loading || !activeMachine?.online || (activeSession != null && !activeSession.draft && activeSession.state !== "idle")}
+              className="btn-sm bg-accent text-accent-contrast hover:bg-accent-hover disabled:opacity-50"
+            >
+              Connect
+            </button>
+          )}
         </div>
       </div>
 
@@ -212,6 +234,15 @@ export function SessionPanel() {
       {activeSession && !activeSession.draft && (
         <div data-tour="active-session" className="card">
           <h3 className="font-medium text-theme-text">Active Session</h3>
+          <div className="flex items-center gap-2">
+            <label className="text-sm w-28 text-theme-text/60">Name:</label>
+            <input
+              value={activeSession.name}
+              onChange={(e) => setSessionName(activeSessionId!, e.target.value)}
+              placeholder="What would you like to name this session? (e.g., BOX_1)"
+              className="flex-1 input-base"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <span className="text-theme-text/60">Machine:</span>
             <span className="font-mono text-theme-text/80">
@@ -228,24 +259,6 @@ export function SessionPanel() {
             <span className="text-theme-text/60">State:</span>
             <span className="capitalize font-mono">{activeSession.state}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm w-28 text-theme-text/60">Name:</label>
-            <input
-              value={activeSession.name}
-              onChange={(e) => setSessionName(activeSessionId!, e.target.value)}
-              placeholder="What would you like to name this session? (e.g., BOX_1)"
-              className="flex-1 input-base"
-            />
-          </div>
-          {(activeSession.state === "connected" || activeSession.state === "stopped" || activeSession.state === "disconnected") && (
-            <button
-              onClick={handleDisconnect}
-              disabled={loading}
-              className="btn-sm bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-            >
-              Disconnect Serial
-            </button>
-          )}
         </div>
       )}
 

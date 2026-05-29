@@ -221,13 +221,8 @@ export function SessionStartModal() {
               <span className="font-mono">{session.board?.toUpperCase() ?? "—"}</span>
             </div>
             <div className="flex items-center gap-2 mt-2">
-              <label className="text-sm text-theme-text/60">Name:</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="flex-1 input-base"
-                placeholder="Session name..."
-              />
+              <span className="text-sm text-theme-text/60">Name:</span>
+              <span className="flex-1 font-mono text-theme-text">{name || <span className="text-theme-text/40">—</span>}</span>
             </div>
           </section>
 
@@ -294,45 +289,24 @@ export function SessionStartModal() {
             </section>
           )}
 
-          {/* Limits (inline-editable) */}
+          {/* Limits (read-only) */}
           <section>
             <h3 className="text-sm font-medium text-theme-text/60 uppercase tracking-wide mb-2">Limits</h3>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <label className="text-sm w-32 text-theme-text/60">Type:</label>
-                <select value={limitType} onChange={(e) => setLimitType(e.target.value)} className="input-base">
-                  {isPavlovian ? (
-                    <>
-                      <option value="Trials">Trials</option>
-                      <option value="Infusion">Infusion</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="Time">Time</option>
-                      <option value="Infusion">Infusion</option>
-                      <option value="Both">Both</option>
-                    </>
-                  )}
-                </select>
-              </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+              <span className="text-theme-text/60">Type:</span>
+              <span className="font-mono text-theme-text">{limitType || "—"}</span>
               {!isPavlovian && (limitType === "Time" || limitType === "Both") && (
-                <div className="flex items-center gap-2">
-                  <label className="text-sm w-32 text-theme-text/60">Time Limit (s):</label>
-                  <input type="number" value={timeLimit} onChange={(e) => setTimeLimit(+e.target.value)} className="w-24 input-base" />
-                </div>
+                <>
+                  <span className="text-theme-text/60">Time Limit:</span>
+                  <span className="font-mono text-theme-text">{timeLimit}s</span>
+                </>
               )}
               {(limitType === "Infusion" || limitType === "Both" || limitType === "Trials") && (
                 <>
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm w-32 text-theme-text/60">
-                      {limitType === "Trials" ? "Trial Limit:" : "Infusion Limit:"}
-                    </label>
-                    <input type="number" value={infusionLimit} onChange={(e) => setInfusionLimit(+e.target.value)} className="w-24 input-base" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm w-32 text-theme-text/60">Stop Delay (s):</label>
-                    <input type="number" value={delay} onChange={(e) => setDelay(+e.target.value)} className="w-24 input-base" />
-                  </div>
+                  <span className="text-theme-text/60">{limitType === "Trials" ? "Trial Limit:" : "Infusion Limit:"}</span>
+                  <span className="font-mono text-theme-text">{infusionLimit}</span>
+                  <span className="text-theme-text/60">Stop Delay:</span>
+                  <span className="font-mono text-theme-text">{delay}s</span>
                 </>
               )}
             </div>

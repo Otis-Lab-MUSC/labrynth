@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import type { BoardType } from "../../types";
 import * as api from "../../api/client";
 import { useFirmwareUpload } from "../../hooks/useFirmwareUpload";
@@ -61,15 +62,10 @@ export function FirmwareUploadCard({ sessionId }: Props) {
         </button>
       </div>
 
-      {/* Upload activity indicator (indeterminate) */}
       {uploading && (
-        <div className="space-y-1">
-          <div className="h-2 w-full overflow-hidden rounded-full border border-theme-border bg-black">
-            <div className="h-full w-full rounded-full bg-accent/70 animate-pulse" />
-          </div>
-          {progress?.stage && (
-            <p className="text-xs text-theme-text/60 font-mono">{progress.stage}</p>
-          )}
+        <div className="flex items-center gap-2 font-mono text-xs text-theme-text/60">
+          <Loader2 size={14} className="animate-spin text-accent shrink-0" />
+          <span>{progress?.stage ?? "Uploading…"}</span>
         </div>
       )}
 

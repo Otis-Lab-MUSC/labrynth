@@ -12,6 +12,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.2.9-dev] - 2026-05-29
+
+### Added
+- Elapsed time display (start time + running elapsed clock) anchored below the animated mouse indicator in the Session monitor header
+
+### Changed
+- Connect/Disconnect merged into a single toggle button in the COM Port card (was two separate buttons)
+- Session name field promoted to first item in the Active Session card
+- "Manage Devices" collapse now uses ChevronDown/Right icons, consistent with Hardware Controls
+- Hardware renamed to numerical convention: CUE 1/CUE 2, PUMP 1/PUMP 2 (was Primary/Secondary)
+- Session confirmation modal limits and name are now read-only; configure limits in Session Configuration before starting
+- Paradigm flow diagram minimum bar width reduced for more accurate proportions; hover tooltips show exact event duration in ms
+- Firmware upload progress replaced with `Loader2` spinner + cycling stage text
+
+### Removed
+- ELAPSED and TOTAL ELAPSED removed from stats grid; timing now shown in monitor header under the mouse indicator
+
+---
+
 ## [2.2.0-dev] - 2026-05-27
 
 ### Added

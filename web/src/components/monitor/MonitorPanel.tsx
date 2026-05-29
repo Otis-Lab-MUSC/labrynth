@@ -97,7 +97,33 @@ export function MonitorPanel() {
     <div className="space-y-6">
       <div data-tour="monitor-heading" className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-theme-text">Session</h2>
-        <RunningMouseIndicator state={session.state} />
+        <div className="flex flex-col items-end gap-0.5">
+          <RunningMouseIndicator state={session.state} />
+          {session.programStartTime && (
+            <div className="font-mono text-xs text-theme-text/50 text-right">
+              <span>
+                {new Date(session.programStartTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </span>
+              <span className="mx-1 text-theme-text/30">·</span>
+              <span className="text-theme-text/70">
+                {elapsed > 0
+                  ? `${String(Math.floor(elapsed / 3600)).padStart(2, "0")}:${String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0")}:${String(Math.floor(elapsed % 60)).padStart(2, "0")}`
+                  : "00:00:00"}
+              </span>
+              {session.segmentNumber > 0 && (
+                <>
+                  <span className="mx-1 text-theme-text/30">/</span>
+                  <span className="text-theme-text/50">
+                    {(() => {
+                      const t = (session.cumulativeElapsedTime / 1000 + elapsed);
+                      return `${String(Math.floor(t / 3600)).padStart(2, "0")}:${String(Math.floor((t % 3600) / 60)).padStart(2, "0")}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+                    })()}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {isHostOffline && (
@@ -202,7 +228,7 @@ export function MonitorPanel() {
       )}
 
       <SessionProgress session={session} elapsed={elapsed} />
-      <div data-tour="live-stats"><LiveStats session={session} elapsed={elapsed} /></div>
+      <div data-tour="live-stats"><LiveStats session={session} /></div>
       <EventTimeline events={session.behaviorData} />
 
       <SessionNotes sessionId={activeSessionId} notes={session.notes} />

@@ -2,7 +2,6 @@ import type { Session, LeverCounts } from "../../types";
 
 interface Props {
   session: Session;
-  elapsed: number;
 }
 
 interface ParadigmStatsConfig {
@@ -31,18 +30,11 @@ const PRESS_KEY: Record<string, keyof LeverCounts> = {
   INACTIVE: "inactive",
 };
 
-function fmtTime(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
-
 function leverTotal(counts: LeverCounts): number {
   return counts.active + counts.timeout + counts.inactive;
 }
 
-export function LiveStats({ session, elapsed }: Props) {
+export function LiveStats({ session }: Props) {
   const config: ParadigmStatsConfig =
     (session.paradigm ? PARADIGM_CONFIG[session.paradigm] : undefined) ?? DEFAULT_CONFIG;
 
@@ -61,7 +53,6 @@ export function LiveStats({ session, elapsed }: Props) {
         ]
       : []),
     { label: "FRAMES", value: session.frameData.length },
-    { label: "ELAPSED", value: fmtTime(elapsed) },
   ];
 
   return (
@@ -140,7 +131,6 @@ export function LiveStats({ session, elapsed }: Props) {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {[
             { label: "SEGMENTS", value: session.segmentNumber + 1 },
-            { label: "TOTAL ELAPSED", value: fmtTime(session.cumulativeElapsedTime / 1000 + elapsed) },
             { label: "TOTAL INF.", value: session.cumulativeInfusionCount + session.infusionCount },
             ...(config.showLeverStats ? [{ label: "TOTAL PRESSES", value:
                 session.cumulativeRhLeverCounts.active + session.cumulativeRhLeverCounts.timeout + session.cumulativeRhLeverCounts.inactive

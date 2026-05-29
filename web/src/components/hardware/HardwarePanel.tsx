@@ -77,10 +77,10 @@ export function HardwarePanel() {
             <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
           </>
         )}
-        <CueControl sessionId={activeSessionId} label="Secondary" prefix="2" />
-        <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="Primary" prefix="" /></div>
-        <PumpControl sessionId={activeSessionId} label="Secondary" prefix="2" />
-        <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="Primary" prefix="" /></div>
+        <CueControl sessionId={activeSessionId} label="2" prefix="2" />
+        <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="1" prefix="" /></div>
+        <PumpControl sessionId={activeSessionId} label="2" prefix="2" />
+        <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="1" prefix="" /></div>
         <LickCircuitControl sessionId={activeSessionId} />
         <MicroscopeControl sessionId={activeSessionId} />
         <LaserControl sessionId={activeSessionId} paradigm={paradigm} />
