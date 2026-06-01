@@ -2,6 +2,30 @@ import type { BoardInfo, BoardType } from "../types";
 import * as mock from "./mock";
 import { useTutorialStore } from "../store/useTutorialStore";
 
+// ---------------------------------------------------------------------------
+// Session config validation types (AI-assisted pre-start check)
+// ---------------------------------------------------------------------------
+
+export interface ValidationWarning {
+  field: string;
+  message: string;
+  severity: "warning" | "error";
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  warnings: ValidationWarning[];
+  suggestions: string;
+}
+
+export type ValidateConfigPayload = {
+  paradigm?: string;
+  paradigmSettings?: Record<string, unknown>;
+  hardwareUi?: Record<string, unknown>;
+  pavlovianParams?: Record<string, unknown>;
+  limitSettings?: Record<string, unknown>;
+};
+
 // Fix: FE-001 — Filename validation to prevent path traversal
 const UNSAFE_FILENAME_RE = /[<>:"/\\|?*\x00-\x1f]/;
 const ARCHIVE_SUFFIX_RE = /\.(zip|tar\.gz|tgz|tar|gz)$/i;
@@ -282,6 +306,13 @@ export class MachineApiClient {
       body: JSON.stringify(body),
     });
   };
+
+  // --- Validate ---
+  validateConfig = (payload: ValidateConfigPayload): Promise<ValidationResult> =>
+    this.request<ValidationResult>("/validate/config", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
 }
 
 // ---------------------------------------------------------------------------

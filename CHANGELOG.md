@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- AI config review panel in Session Start Modal: calls the backend `/api/validate/config` endpoint (Ollama-powered) before `start_program()` and surfaces structured warnings with severity badges; researcher can dismiss or acknowledge and proceed
+- `ValidationWarningPanel` component for displaying AI validation warnings inline inside the modal
+
 ---
 
 ## [2.2.9-dev] - 2026-05-29

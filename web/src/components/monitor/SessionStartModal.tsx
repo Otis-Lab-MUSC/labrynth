@@ -6,6 +6,8 @@ import { useNavigationStore } from "../../store/useNavigationStore";
 import { getClientForSession } from "../../api/sessionClient";
 import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "../program/devicePresets";
 import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
+import { ValidationWarningPanel } from "./ValidationWarningPanel";
+import type { ValidationResult } from "../../api/client";
 
 const PAV_CODE_LABELS: Record<number, string> = {
   206: "CS+ Reward Prob (%)",
@@ -76,6 +78,9 @@ export function SessionStartModal() {
   const setLimitSettings = useSessionStore((s) => s.setLimitSettings);
 
   const [starting, setStarting] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationAcknowledged, setValidationAcknowledged] = useState(false);
 
   // Inline-editable limit fields
   const [limitType, setLimitType] = useState("");
@@ -97,10 +102,36 @@ export function SessionStartModal() {
     // Auto-generate name if empty
     const autoName = session.name || `${(session.paradigm ?? "Session").toUpperCase()} ${session.port}`;
     setName(autoName);
+    // Reset validation state on each modal open
+    setValidationResult(null);
+    setValidationAcknowledged(false);
   }, [startModalOpen, session?.id]);
 
   const handleStart = useCallback(async () => {
     if (!activeSessionId || !session) return;
+
+    // AI config validation — non-blocking; falls through on error
+    if (!validationAcknowledged) {
+      setValidating(true);
+      try {
+        const result = await getClientForSession(activeSessionId)?.validateConfig({
+          paradigm: session.paradigm ?? undefined,
+          paradigmSettings: session.paradigmSettings ?? undefined,
+          hardwareUi: session.hardwareUi as unknown as Record<string, unknown>,
+          pavlovianParams: session.pavlovianParams ?? undefined,
+          limitSettings: session.limitSettings ?? undefined,
+        });
+        setValidating(false);
+        if (result && result.warnings.length > 0) {
+          setValidationResult(result);
+          return;
+        }
+      } catch {
+        setValidating(false);
+        // Ollama unavailable — proceed without validation
+      }
+    }
+
     setStarting(true);
     try {
       // Build limit payload with only relevant fields
@@ -194,7 +225,7 @@ export function SessionStartModal() {
     } finally {
       setStarting(false);
     }
-  }, [activeSessionId, session, limitType, timeLimit, infusionLimit, delay, name]);
+  }, [activeSessionId, session, limitType, timeLimit, infusionLimit, delay, name, validationAcknowledged]);
 
   if (!startModalOpen || !session) return null;
 
@@ -345,6 +376,20 @@ export function SessionStartModal() {
             </div>
           </section>
 
+          {/* AI Validation Warnings */}
+          {validationResult && validationResult.warnings.length > 0 && (
+            <ValidationWarningPanel
+              warnings={validationResult.warnings}
+              suggestions={validationResult.suggestions}
+              onDismiss={() => setValidationResult(null)}
+              onProceed={() => {
+                setValidationAcknowledged(true);
+                setValidationResult(null);
+                handleStart();
+              }}
+            />
+          )}
+
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
             <button
@@ -355,10 +400,10 @@ export function SessionStartModal() {
             </button>
             <button
               onClick={handleStart}
-              disabled={starting || session.state === "running"}
+              disabled={starting || validating || session.state === "running"}
               className="rounded bg-green-600 px-6 py-2 text-white font-mono hover:bg-green-700 disabled:opacity-50"
             >
-              {starting ? "Starting…" : "Start Session"}
+              {validating ? "Checking…" : starting ? "Starting…" : "Start Session"}
             </button>
           </div>
         </div>
