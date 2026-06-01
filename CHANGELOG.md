@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Session Start Modal now shows a "config validator unavailable" indicator in the action bar when Ollama is unreachable, distinguishing a clean validation result from a skipped check
+- Validation backend requires `qwen2.5:7b` (or override via `REACHER_OLLAMA_MODEL`); qwen3-family models additionally require `think: false` and `num_ctx: 16384` in the Ollama payload (fixed in reacher 2.0.3)
 
 ---
 
