@@ -10,13 +10,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [2.2.14-dev] - 2026-06-01
+
+### Changed
+- Config review panel annotation updated to reflect rule-based validation — UI label, comments, and inline annotations that previously referenced "AI" or "Ollama" have been corrected (requires reacher develop)
+
+---
+
+## [2.2.13-dev] - 2026-06-01
+
 ### Added
-- AI config review panel in Session Start Modal: calls the backend `/api/validate/config` endpoint (Ollama-powered) before `start_program()` and surfaces structured warnings with severity badges; researcher can dismiss or acknowledge and proceed
-- `ValidationWarningPanel` component for displaying AI validation warnings inline inside the modal
+- Config review panel in Session Start Modal: calls the backend `/api/validate/config` endpoint before `start_program()` and surfaces structured warnings with severity badges; researcher can dismiss or acknowledge and proceed
+- `ValidationWarningPanel` component for displaying config validation warnings inline inside the modal
 
 ### Fixed
-- Session Start Modal now shows a "config validator unavailable" indicator in the action bar when Ollama is unreachable, distinguishing a clean validation result from a skipped check
-- Validation backend requires `qwen2.5:7b` (or override via `REACHER_OLLAMA_MODEL`); qwen3-family models additionally require `think: false` and `num_ctx: 16384` in the Ollama payload (fixed in reacher 2.0.3)
+- Session Start Modal shows a "config validator unavailable" indicator when the validation endpoint cannot be reached, distinguishing a clean result from a skipped check
 
 ---
 
