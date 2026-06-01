@@ -19,7 +19,7 @@ export function ValidationWarningPanel({ warnings, suggestions, onDismiss, onPro
   return (
     <div className="rounded border border-yellow-500/50 bg-yellow-500/5 p-3 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-yellow-400">AI Config Review — {label} found</span>
+        <span className="text-sm font-medium text-yellow-400">Config Review — {label} found</span>
       </div>
 
       <ul className="space-y-1">

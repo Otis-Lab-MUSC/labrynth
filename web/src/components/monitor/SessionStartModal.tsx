@@ -112,7 +112,7 @@ export function SessionStartModal() {
   const handleStart = useCallback(async () => {
     if (!activeSessionId || !session) return;
 
-    // AI config validation — non-blocking; falls through on error
+    // Config validation — non-blocking; falls through on error
     if (!validationAcknowledged) {
       setValidating(true);
       try {
@@ -131,7 +131,7 @@ export function SessionStartModal() {
       } catch {
         setValidating(false);
         setValidatorUnavailable(true);
-        // Ollama unavailable — proceed without validation
+        // Validator unavailable — proceed without validation
       }
     }
 

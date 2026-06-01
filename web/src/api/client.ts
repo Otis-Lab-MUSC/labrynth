@@ -3,7 +3,7 @@ import * as mock from "./mock";
 import { useTutorialStore } from "../store/useTutorialStore";
 
 // ---------------------------------------------------------------------------
-// Session config validation types (AI-assisted pre-start check)
+// Session config validation types (rule-based pre-start check)
 // ---------------------------------------------------------------------------
 
 export interface ValidationWarning {
