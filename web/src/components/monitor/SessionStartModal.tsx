@@ -81,6 +81,7 @@ export function SessionStartModal() {
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [validationAcknowledged, setValidationAcknowledged] = useState(false);
+  const [validatorUnavailable, setValidatorUnavailable] = useState(false);
 
   // Inline-editable limit fields
   const [limitType, setLimitType] = useState("");
@@ -105,6 +106,7 @@ export function SessionStartModal() {
     // Reset validation state on each modal open
     setValidationResult(null);
     setValidationAcknowledged(false);
+    setValidatorUnavailable(false);
   }, [startModalOpen, session?.id]);
 
   const handleStart = useCallback(async () => {
@@ -128,6 +130,7 @@ export function SessionStartModal() {
         }
       } catch {
         setValidating(false);
+        setValidatorUnavailable(true);
         // Ollama unavailable — proceed without validation
       }
     }
@@ -225,7 +228,7 @@ export function SessionStartModal() {
     } finally {
       setStarting(false);
     }
-  }, [activeSessionId, session, limitType, timeLimit, infusionLimit, delay, name, validationAcknowledged]);
+  }, [activeSessionId, session, limitType, timeLimit, infusionLimit, delay, name, validationAcknowledged, setValidatorUnavailable]);
 
   if (!startModalOpen || !session) return null;
 
@@ -392,6 +395,11 @@ export function SessionStartModal() {
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
+            {validatorUnavailable && (
+              <span className="self-center text-xs font-mono text-theme-text/30">
+                config validator unavailable
+              </span>
+            )}
             <button
               onClick={() => setStartModalOpen(false)}
               className="rounded border border-theme-border px-4 py-2 text-theme-text font-mono hover:bg-accent/10"
