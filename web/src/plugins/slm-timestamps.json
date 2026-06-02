@@ -1,0 +1,25 @@
+{
+  "id": "slm-timestamps",
+  "displayName": "SLM Timestamps",
+  "version": "1.0.0",
+  "description": "Records high-voltage timestamp pulses from a Spatial Light Modulator for 2-photon imaging synchronisation. Events appear as instantaneous tick marks in the session swimlane.",
+  "author": "REACHER-Suite",
+  "eventLevel": "009",
+  "deviceName": "SLM",
+  "commands": {
+    "arm": 1101,
+    "disarm": 1100,
+    "setPin": 1176
+  },
+  "defaultPin": 11,
+  "pinConstraint": {
+    "requiresPcint": true,
+    "allowedPins": [8, 9, 10, 11, 12, 13]
+  },
+  "visualization": {
+    "type": "instantaneous_tick",
+    "color": { "dark": "#ff00ff", "light": "#9333ea" },
+    "laneLabel": "SLM"
+  },
+  "requiresMicroscope": true
+}

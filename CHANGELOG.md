@@ -12,6 +12,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.3.1-dev] - 2026-06-02
+
+### Added
+- SLM (Spatial Light Modulator) plugin system: manifest-based `PluginManifest` type, bundled `PLUGIN_REGISTRY`, `usePluginStore` Zustand store (localStorage-persisted) with install/uninstall actions
+- `PluginManager` and `PluginCard` components in Hardware panel for installing optional device plugins
+- SLM plugin manifest (`slm-timestamps.json`): arm/disarm/pin commands (1100/1101/1176), PCINT0 pin constraint (pins 8–13), magenta visualization color
+- `EventTimeline` SLM swimlane (magenta `#ff00ff` dark / purple `#9333ea` light) with instantaneous-tick rendering via existing behavioral-event path
+- `SlmUiState` type (`{ armed: boolean; pin: number }`) added to `HardwareUiState`; `slmData: number[]` added to `Session`
+- `getSlmEvents(sessionId)` API client method calling `GET /api/data/{id}/slm`
+- SLM component in `pinMeta.ts` (code 1176, default pin 11, PCINT0 group, no PWM requirement); `validPinsFor()` respects `COMPONENT_REQUIRES_PCINT`
+
+---
+
 ## [2.2.19-dev] - 2026-06-02
 
 ### Fixed

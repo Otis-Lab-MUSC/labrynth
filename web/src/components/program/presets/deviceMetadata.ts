@@ -14,6 +14,7 @@ const DEVICE_METADATA: Record<DeviceKey, { label: string; role: string }> = {
   laser:         { label: "Laser",          role: "Optogenetic stimulus" },
   lickCircuit:   { label: "Lick Circuit",   role: "Lick detection" },
   microscope:    { label: "Microscope",     role: "Imaging synchronization" },
+  slm:           { label: "SLM",           role: "Spatial light modulator timestamps" },
 };
 
 function buildDeviceEntries(hw: HardwareUiState): PresetDeviceEntry[] {

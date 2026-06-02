@@ -51,6 +51,10 @@ export interface MicroscopeUiState extends DeviceArmState {
   frameAveraging: number | null;
 }
 
+export interface SlmUiState extends DeviceArmState {
+  pin: number;
+}
+
 export interface HardwareUiState {
   rhLever: LeverUiState;
   lhLever: LeverUiState;
@@ -61,6 +65,7 @@ export interface HardwareUiState {
   laser: LaserUiState;
   lickCircuit: DeviceArmState;
   microscope: MicroscopeUiState;
+  slm: SlmUiState;
   testMode: boolean;
 }
 
@@ -109,6 +114,7 @@ export interface Session {
   hardwareSettings: FirmwareConfig[];
   behaviorData: BehaviorEvent[];
   frameData: number[];
+  slmData: number[];
   infusionCount: number;
   pressCount: number;
   programStartTime: number | null;

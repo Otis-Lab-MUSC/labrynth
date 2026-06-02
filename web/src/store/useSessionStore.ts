@@ -51,6 +51,7 @@ export const defaultHardwareUiState = (): HardwareUiState => ({
   laser: { armed: false, frequency: 40, duration: 5000, mode: "contingent", phase: "reward" },
   lickCircuit: { armed: false },
   microscope: { armed: false, frameRate: null, frameAveraging: null },
+  slm: { armed: false, pin: 11 },
   testMode: false,
 });
 
@@ -68,6 +69,7 @@ const newSession = (id: string, port: string, paradigm: string | null, machineId
   hardwareSettings: [],
   behaviorData: [],
   frameData: [],
+  slmData: [],
   infusionCount: 0,
   pressCount: 0,
   programStartTime: null,
@@ -228,6 +230,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         ...(isNewStart && {
           behaviorData: [],
           frameData: [],
+          slmData: [],
           infusionCount: 0,
           pressCount: 0,
           trialCount: 0,
@@ -433,6 +436,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         name: "",
         behaviorData: [],
         frameData: [],
+        slmData: [],
         infusionCount: 0,
         pressCount: 0,
         programStartTime: null,
@@ -463,6 +467,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         ...sess,
         behaviorData: [],
         frameData: [],
+        slmData: [],
         infusionCount: 0,
         pressCount: 0,
         programStartTime: null,
@@ -608,6 +613,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         state: "running",
         behaviorData: [],
         frameData: [],
+        slmData: [],
         infusionCount: 0,
         pressCount: 0,
         trialCount: 0,

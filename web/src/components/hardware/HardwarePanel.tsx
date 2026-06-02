@@ -7,6 +7,7 @@ import { PumpControl } from "./PumpControl";
 import { LaserControl } from "./LaserControl";
 import { LickCircuitControl } from "./LickCircuitControl";
 import { MicroscopeControl } from "./MicroscopeControl";
+import { PluginManager } from "../plugins/PluginManager";
 import type { CommandSpec } from "../../types";
 
 export function HardwarePanel() {
@@ -85,6 +86,8 @@ export function HardwarePanel() {
         <MicroscopeControl sessionId={activeSessionId} />
         <LaserControl sessionId={activeSessionId} paradigm={paradigm} />
       </div>
+
+      <PluginManager sessionId={activeSessionId} />
     </div>
   );
 }

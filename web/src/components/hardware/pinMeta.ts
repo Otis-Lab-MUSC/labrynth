@@ -18,7 +18,8 @@ export type Component =
   | "pump2"
   | "lick"
   | "laser"
-  | "microscope_trigger";
+  | "microscope_trigger"
+  | "slm";
 
 /** Stable order used by the UI grid. */
 export const COMPONENT_KEYS: readonly Component[] = [
@@ -31,6 +32,7 @@ export const COMPONENT_KEYS: readonly Component[] = [
   "lick",
   "laser",
   "microscope_trigger",
+  "slm",
 ] as const;
 
 /** Backend SET_PIN command codes (suffix x76). */
@@ -44,6 +46,7 @@ export const SET_PIN_CODE: Record<Component, number> = {
   lick: 576,
   laser: 676,
   microscope_trigger: 976,
+  slm: 1176,
 };
 
 /** Human-readable labels for the pin assignment table. */
@@ -57,6 +60,7 @@ export const COMPONENT_LABEL: Record<Component, string> = {
   lick: "Lick Circuit",
   laser: "Laser",
   microscope_trigger: "Microscope Trigger",
+  slm: "SLM Timestamp",
 };
 
 /** Components whose pins must support hardware PWM. */
@@ -69,6 +73,21 @@ export const COMPONENT_REQUIRES_PWM: Record<Component, boolean> = {
   pump: false,
   pump2: false,
   lick: false,
+  microscope_trigger: false,
+  slm: false,
+};
+
+/** Components restricted to the PCINT0 group (Arduino pins 8–13). */
+export const COMPONENT_REQUIRES_PCINT: Record<Component, boolean> = {
+  slm: true,
+  lever_rh: false,
+  lever_lh: false,
+  cue: false,
+  cue2: false,
+  pump: false,
+  pump2: false,
+  lick: false,
+  laser: false,
   microscope_trigger: false,
 };
 
@@ -83,6 +102,7 @@ export const DEFAULT_PIN: Record<Component, number> = {
   lick: 5,
   laser: 6,
   microscope_trigger: 9,
+  slm: 11,
 };
 
 // --- Board pin sets (must mirror backend pin_overrides.py) ---
@@ -92,6 +112,7 @@ const range = (start: number, endInclusive: number): number[] =>
 
 export const UNO_DIGITAL: readonly number[] = range(2, 13);
 export const UNO_PWM = new Set([3, 5, 6, 9, 10, 11]);
+export const PCINT0_PINS: readonly number[] = range(8, 13);
 // UNO_INT = {2, 3} — only used by microscope timestamp (not remappable)
 
 export const MEGA_DIGITAL: readonly number[] = range(2, 53);
@@ -118,10 +139,11 @@ export function validPinsFor(
   board: BoardType | null | undefined,
   excludePins?: ReadonlySet<number>,
 ): number[] {
-  const digital = digitalPinsFor(board);
+  const requirePcint = COMPONENT_REQUIRES_PCINT[component];
+  const digital = requirePcint ? PCINT0_PINS : digitalPinsFor(board);
   const requirePwm = COMPONENT_REQUIRES_PWM[component];
   const pwm = pwmPinsFor(board);
-  return digital.filter((p) => {
+  return [...digital].filter((p) => {
     if (requirePwm && !pwm.has(p)) return false;
     if (excludePins && excludePins.has(p)) return false;
     return true;

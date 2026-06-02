@@ -253,6 +253,8 @@ export class MachineApiClient {
     );
   getFrames = (id: string) =>
     this.request<{ frames: unknown[]; count: number }>(`/data/${id}/frames`);
+  getSlmEvents = (id: string) =>
+    this.request<{ slm: number[]; count: number }>(`/data/${id}/slm`);
   exportZip = (
     id: string,
     body: {
@@ -401,6 +403,8 @@ export const getBehavior = (id: string, since?: number) =>
   isDemoMode() ? mock.getBehavior(id, since) : getLocalClient().getBehavior(id, since);
 export const getFrames = (id: string) =>
   isDemoMode() ? mock.getFrames(id) : getLocalClient().getFrames(id);
+export const getSlmEvents = (id: string) =>
+  getLocalClient().getSlmEvents(id);
 export const exportZip = (
   id: string,
   body: {

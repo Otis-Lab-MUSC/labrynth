@@ -28,6 +28,7 @@ const DEVICE_COLORS: Record<string, { dark: string; light: string }> = {
   PUMP: { dark: "#00aaff", light: "#2563eb" },
   LICK: { dark: "#ff55ff", light: "#c026d3" },
   LASER: { dark: "#ff4444", light: "#dc2626" },
+  SLM: { dark: "#ff00ff", light: "#9333ea" },
   CONTROLLER: { dark: "#888888", light: "#6b7280" },
 };
 
@@ -175,7 +176,7 @@ export function EventTimeline({ events }: Props) {
   }
 
   // Compute active lanes from unique device names, preserving a stable order
-  const deviceOrder = ["RH_LEVER", "LH_LEVER", "CUE", "PUMP", "LICK", "LASER", "CONTROLLER"];
+  const deviceOrder = ["RH_LEVER", "LH_LEVER", "CUE", "PUMP", "LICK", "LASER", "SLM", "CONTROLLER"];
   const activeDevices = new Set(displayEvents.map((e) => e.device));
   const activeLanes = deviceOrder.filter((d) => activeDevices.has(d));
   // Append any unknown devices
