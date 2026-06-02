@@ -10,9 +10,19 @@ export interface UpdateInfo {
   downloadUrl: string;
 }
 
-function isDismissed(version: string): boolean {
+function isDismissed(latestVersion: string): boolean {
   try {
-    return localStorage.getItem(DISMISSED_KEY) === version;
+    const raw = localStorage.getItem(DISMISSED_KEY);
+    if (!raw) return false;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return false; // old plain-string format — treat as not dismissed
+    }
+    if (typeof parsed !== "object" || parsed === null) return false;
+    const { dismissed, asOf } = parsed as { dismissed?: string; asOf?: string };
+    return dismissed === latestVersion && asOf === __APP_VERSION__;
   } catch {
     return false;
   }
@@ -43,7 +53,10 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
     const { update } = get();
     if (update) {
       try {
-        localStorage.setItem(DISMISSED_KEY, update.latestVersion);
+        localStorage.setItem(
+          DISMISSED_KEY,
+          JSON.stringify({ dismissed: update.latestVersion, asOf: update.currentVersion }),
+        );
       } catch { /* localStorage unavailable */ }
       set({ update: null });
     }
@@ -58,7 +71,12 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
         const res = await fetch(GITHUB_RELEASE_URL, {
           signal: AbortSignal.timeout(10_000),
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (import.meta.env.DEV) {
+            console.warn(`[useUpdateStore] GitHub API returned ${res.status} — update check skipped`);
+          }
+          return;
+        }
 
         const release = await res.json();
         const latestTag: string = release.tag_name ?? "";
@@ -69,7 +87,11 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
             update: { currentVersion, latestVersion, downloadUrl: release.html_url ?? "" },
           });
         }
-      } catch { /* network errors — silently ignore */ }
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.warn("[useUpdateStore] update check failed:", err);
+        }
+      }
     }
 
     check();
@@ -83,3 +105,7 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
     }
   },
 }));
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => useUpdateStore.getState().stopPolling());
+}
