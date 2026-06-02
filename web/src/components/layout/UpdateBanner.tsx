@@ -16,7 +16,7 @@ export function UpdateBanner() {
         rel="noopener noreferrer"
         className="rounded border border-accent/40 px-2 py-0.5 font-medium hover:bg-accent/20 transition-colors"
       >
-        Download
+        View Release
       </a>
       <button
         onClick={dismiss}

@@ -21,6 +21,7 @@ import { HostOfflineBanner } from "./components/layout/HostOfflineBanner";
 import { ServerSuspendedOverlay } from "./components/layout/ServerSuspendedOverlay";
 import { UpdateBanner } from "./components/layout/UpdateBanner";
 import { useThemeStore } from "./store/useThemeStore";
+import { useUpdateStore } from "./store/useUpdateStore";
 import { useNavigationStore } from "./store/useNavigationStore";
 import { useMachineStore } from "./store/useMachineStore";
 import { useSessionStore } from "./store/useSessionStore";
@@ -61,9 +62,11 @@ function AppContent() {
       startPolling();
       startDiscoveryPolling();
     });
+    useUpdateStore.getState().startPolling();
     return () => {
       stopPolling();
       stopDiscoveryPolling();
+      useUpdateStore.getState().stopPolling();
     };
   }, []);
 

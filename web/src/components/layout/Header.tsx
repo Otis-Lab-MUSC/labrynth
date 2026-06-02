@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Plus, Moon, Sun, RotateCcw, X } from "lucide-react";
+import { Plus, Moon, Sun, RotateCcw, X, Info } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useLogStore } from "../../store/useLogStore";
 import { useNavigationStore } from "../../store/useNavigationStore";
 
+import { AboutModal } from "./AboutModal";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { HelpButton } from "../tutorial/HelpButton";
 import { getClientForSession } from "../../api/sessionClient";
@@ -206,6 +207,7 @@ export function Header() {
   const [editValue, setEditValue] = useState("");
   const [closingId, setClosingId] = useState<string | null>(null);
   const [resetOpen, setResetOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
@@ -424,6 +426,15 @@ export function Header() {
       {/* Help button */}
       <HelpButton />
 
+      {/* About button */}
+      <button
+        onClick={() => setAboutOpen(true)}
+        className="rounded p-1.5 hover:bg-accent/10 text-theme-text"
+        title="About Labrynth"
+      >
+        <Info size={18} />
+      </button>
+
       {/* Mode toggle */}
       <button
         onClick={toggleMode}
@@ -455,6 +466,8 @@ export function Header() {
         onConfirm={handleFullReset}
         onCancel={() => setResetOpen(false)}
       />
+
+      <AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />
     </header>
   );
 }
