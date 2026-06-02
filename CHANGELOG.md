@@ -12,6 +12,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.2.17-dev] - 2026-06-02
+
+### Added
+- In-app installer download and launch: update banner and About modal now offer a "Download" button that streams the platform-specific installer (`.exe` / `.dmg` / `.deb` / `.AppImage`) from GitHub releases, shows download progress as a percentage bar, then launches the installer via the OS and triggers a graceful backend shutdown
+- New backend endpoints: `GET /api/update/info`, `POST /api/update/download`, `GET /api/update/status`, `POST /api/update/launch` (added to `reacher` develop)
+- `startDownload` / `launchInstaller` actions added to `useUpdateStore`; download state machine drives `UpdateBanner` through idle → downloading → ready → launching → error states
+
+---
+
 ## [2.2.15-dev] - 2026-06-02
 
 ### Added

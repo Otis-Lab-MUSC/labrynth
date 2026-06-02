@@ -1,7 +1,7 @@
 {
   "name": "labrynth-frontend",
   "private": true,
-  "version": "2.2.15-dev",
+  "version": "2.2.17-dev",
   "type": "module",
   "scripts": {
     "dev": "vite",

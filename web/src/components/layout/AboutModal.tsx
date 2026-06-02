@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ExternalLink, X } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { useUpdateCheck } from "../../hooks/useUpdateCheck";
+import { useUpdateStore } from "../../store/useUpdateStore";
 import { getLocalClient } from "../../api/client";
 
 interface AboutModalProps {
@@ -11,6 +13,12 @@ interface AboutModalProps {
 
 export function AboutModal({ open, onClose }: AboutModalProps) {
   const { update, dismiss } = useUpdateCheck();
+  const { downloadStatus, startDownload } = useUpdateStore(
+    useShallow((s) => ({
+      downloadStatus: s.downloadStatus,
+      startDownload: s.startDownload,
+    })),
+  );
   const [backendVersion, setBackendVersion] = useState<string | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -97,6 +105,13 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
               >
                 View Release Notes <ExternalLink size={11} />
               </a>
+              <button
+                onClick={startDownload}
+                disabled={downloadStatus !== "idle"}
+                className="text-xs text-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Download
+              </button>
               <button
                 onClick={dismiss}
                 className="text-xs text-theme-text/50 transition hover:text-theme-text/80"

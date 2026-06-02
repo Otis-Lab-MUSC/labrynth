@@ -295,6 +295,19 @@ export class MachineApiClient {
   shutdown = () =>
     this.request("/lifecycle/shutdown", { method: "POST" });
 
+  // --- Update ---
+  getUpdateInfo = () =>
+    this.request<{ currentVersion: string; latestVersion: string; assetUrl: string | null; assetName: string | null }>("/update/info");
+  startUpdateDownload = (body: { assetUrl: string; assetName: string }) =>
+    this.request<{ status: string }>("/update/download", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  getUpdateStatus = () =>
+    this.request<{ status: string; percent: number; local_path: string | null; error: string | null }>("/update/status");
+  launchUpdate = () =>
+    this.request<{ status: string }>("/update/launch", { method: "POST" });
+
   // --- File ---
   browseFolder = () =>
     this.request<{ path: string | null }>("/file/browse");
