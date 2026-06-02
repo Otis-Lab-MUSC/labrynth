@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.2.15-dev] - 2026-06-02
+
+### Added
+- In-app version update notifications: dismissible `UpdateBanner` and `AboutModal` with Labrynth + backend version info, linking to GitHub release notes (closes #10)
+- `useUpdateStore` Zustand singleton for update-check polling (4-hour interval, app-lifecycle scoped)
+
+### Fixed
+- Version source: update check now compares Labrynth's own `__APP_VERSION__` against the latest GitHub release, not the reacher backend version
+- Infinite re-render regression caused by missing `useShallow` in `useUpdateCheck` selector (Zustand v5 `useSyncExternalStore` pattern)
+
+---
+
 ## [2.2.14-dev] - 2026-06-01
 
 ### Changed
