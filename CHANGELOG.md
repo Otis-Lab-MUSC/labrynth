@@ -12,6 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.2.19-dev] - 2026-06-02
+
+### Fixed
+- Update version detection: switch from `/releases/latest` (returns most recently *published* release, not highest semantic version) to `/releases?per_page=10` and reduce by semantic version; fixes false-negative update checks when CI releases are published out of order
+
+---
+
 ## [2.2.18-test] - 2026-06-02
 
 ### Changed
