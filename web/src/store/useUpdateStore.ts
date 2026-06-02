@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { getLocalClient } from "../api/client";
 import { useTutorialStore } from "./useTutorialStore";
 
-const GITHUB_RELEASE_URL = "https://api.github.com/repos/Otis-Lab-MUSC/labrynth/releases/latest";
+const GITHUB_RELEASE_URL = "https://api.github.com/repos/Otis-Lab-MUSC/labrynth/releases?per_page=10";
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
 const DISMISSED_KEY = "labrynth-update-dismissed";
 
@@ -185,13 +185,25 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
           return;
         }
 
-        const release = await res.json();
-        const latestTag: string = release.tag_name ?? "";
+        const releases = (await res.json()) as Array<{ tag_name: string; html_url: string; prerelease: boolean }>;
+        if (releases.length === 0) return;
+
+        // Filter out prerelease releases; find highest semantic version among the rest
+        const nonPrerelease = releases.filter((r) => !r.prerelease);
+        if (nonPrerelease.length === 0) return;
+
+        const latestRelease = nonPrerelease.reduce((best, current) => {
+          const bestVersion = best.tag_name.replace(/^v/, "");
+          const currentVersion = current.tag_name.replace(/^v/, "");
+          return compareVersions(bestVersion, currentVersion) ? current : best;
+        });
+
+        const latestTag: string = latestRelease.tag_name ?? "";
         const latestVersion = latestTag.replace(/^v/, "");
 
         if (compareVersions(currentVersion, latestVersion) && !isDismissed(latestVersion)) {
           set({
-            update: { currentVersion, latestVersion, downloadUrl: release.html_url ?? "" },
+            update: { currentVersion, latestVersion, downloadUrl: latestRelease.html_url ?? "" },
           });
         }
       } catch (err) {
