@@ -16,6 +16,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Update version detection: switch from `/releases/latest` (returns most recently *published* release, not highest semantic version) to `/releases?per_page=10` and reduce by semantic version; fixes false-negative update checks when CI releases are published out of order
+- Installer download: `httpx` streaming call now follows redirects (`follow_redirects=True`) — GitHub release asset URLs return a 302 to the CDN; without this the download failed immediately with `302: Failed to download asset` (requires reacher develop)
+
+---
+
+## [2.2.18-dev] - 2026-06-02
+
+### Fixed
+- Linux installer download: backend asset suffix patterns corrected to match CI-produced filenames (`_amd64.deb`, `-linux-x64.tar.gz`, `-linux-x64.AppImage`); previous patterns never matched any release asset, causing "No download link available for this platform" on all Linux installs (requires reacher develop)
 
 ---
 
