@@ -12,6 +12,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.3.3-dev] - 2026-06-03
+
+### Changed
+- SLM promoted from plugin system to first-class native hardware control: `SLMControl` component added to Configuration hardware grid alongside Lick Circuit and Microscope; firmware config sync wired via `DEVICE_TO_UI_KEY`; `PRESET_COMMAND_MAP` updated with SLM arm/disarm codes (1101/1100)
+- Plugin infrastructure removed: `PluginManager`, `PluginCard`, `usePluginStore`, plugin manifest (`slm-timestamps.json`), and plugin registry deleted — SLM was the sole plugin
+
+---
+
 ## [2.3.1-dev] - 2026-06-02
 
 ### Added

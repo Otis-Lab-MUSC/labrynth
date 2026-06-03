@@ -27,6 +27,7 @@ const DEVICE_TO_UI_KEY: Record<string, string> = {
   MICROSCOPE: "microscope",
   LEVER_RH: "rhLever",
   LEVER_LH: "lhLever",
+  SLM: "slm",
 };
 
 async function triggerAutoExport(sessionId: string) {

@@ -18,7 +18,7 @@ import { PumpControl } from "../hardware/PumpControl";
 import { LaserControl } from "../hardware/LaserControl";
 import { LickCircuitControl } from "../hardware/LickCircuitControl";
 import { MicroscopeControl } from "../hardware/MicroscopeControl";
-import { PluginManager } from "../plugins/PluginManager";
+import { SLMControl } from "../hardware/SLMControl";
 import { usePinOverridesHydration } from "../hardware/usePinOverridesHydration";
 import { useTutorialStore } from "../../store/useTutorialStore";
 import type { CommandSpec } from "../../types";
@@ -566,9 +566,9 @@ export function ConfigurationPanel() {
               <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="1" prefix="" /></div>
               <LickCircuitControl sessionId={activeSessionId} />
               <MicroscopeControl sessionId={activeSessionId} />
+              <SLMControl sessionId={activeSessionId} />
               <LaserControl sessionId={activeSessionId} paradigm={paradigm} />
             </div>
-            <PluginManager sessionId={activeSessionId} />
           </div>
         )}
       </div>

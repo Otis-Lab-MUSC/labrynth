@@ -42,4 +42,5 @@ export const PRESET_COMMAND_MAP: Record<string, { arm: number; disarm: number; p
   laser:         { arm: 601,  disarm: 600,  params: { frequency: 671, duration: 672 } },
   lickCircuit:   { arm: 501,  disarm: 500 },
   microscope:    { arm: 901,  disarm: 900 },
+  slm:           { arm: 1101, disarm: 1100 },
 };
