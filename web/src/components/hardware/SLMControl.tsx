@@ -8,7 +8,6 @@ interface Props {
 
 export function SLMControl({ sessionId }: Props) {
   const armed = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi.slm.armed ?? false);
-  const microscopeArmed = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi.microscope.armed ?? false);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
   const send = (code: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code);
 
@@ -19,11 +18,6 @@ export function SLMControl({ sessionId }: Props) {
         <span className="ml-2 text-xs font-mono text-theme-text/40">PCINT0 pins 8–13</span>
         <PinField sessionId={sessionId} component="slm" />
       </h3>
-      {!microscopeArmed && (
-        <p className="text-xs text-yellow-500 font-mono">
-          Microscope not armed — SLM timestamps will lack imaging context.
-        </p>
-      )}
       <div className="flex gap-2">
         <button
           onClick={() => { send(1101); updateHardwareUi(sessionId, (prev) => ({ slm: { ...prev.slm, armed: true } })); }}

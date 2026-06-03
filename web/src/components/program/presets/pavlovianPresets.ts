@@ -11,8 +11,9 @@ const CORE_DEVICES: PresetDeviceEntry[] = [
 
 const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
   { key: "laser",       label: "Laser",       role: "Optogenetic stimulus — trial-paired or independent", required: false },
-  { key: "lickCircuit", label: "Lick Circuit", role: "Lick detection — user-enabled", required: false },
-  { key: "microscope",  label: "Microscope",   role: "Imaging sync — user-enabled",   required: false },
+  { key: "lickCircuit", label: "Lick Circuit", role: "Lick detection — user-enabled",                    required: false },
+  { key: "microscope",  label: "Microscope",   role: "Imaging sync — user-enabled",                      required: false },
+  { key: "slm",         label: "SLM",          role: "SLM timestamps — user-enabled",                    required: false },
 ];
 
 /* ── Shared hardware settings ──────────────────────────────────────── */
@@ -27,6 +28,7 @@ const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
   laser:       { armed: false, frequency: 40, duration: 5000, mode: "cs_plus" as const, phase: "reward" as const },
   lickCircuit: { armed: true },
   microscope:  { armed: false, frameRate: null, frameAveraging: null },
+  slm:         { armed: false, pin: 11 },
 };
 
 /* ── Dummy paradigm settings (not used by Pavlovian, required by type) */

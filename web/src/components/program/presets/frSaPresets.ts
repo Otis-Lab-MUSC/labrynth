@@ -17,6 +17,7 @@ const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
   { key: "laser",       label: "Laser",       role: "Optogenetic stimulus — paired with pump", required: false },
   { key: "lickCircuit", label: "Lick Circuit", role: "Lick detection — user-enabled",          required: false },
   { key: "microscope",  label: "Microscope",   role: "Imaging sync — user-enabled",            required: false },
+  { key: "slm",         label: "SLM",          role: "SLM timestamps — user-enabled",          required: false },
 ];
 
 /* ── Shared hardware settings ──────────────────────────────────────── */
@@ -35,6 +36,7 @@ const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
   laser:       { armed: false, frequency: 40, duration: 5000, mode: "contingent" as const },
   lickCircuit: { armed: false },
   microscope:  { armed: false, frameRate: null, frameAveraging: null },
+  slm:         { armed: false, pin: 11 },
 };
 
 /* ── Shared paradigm settings ──────────────────────────────────────── */

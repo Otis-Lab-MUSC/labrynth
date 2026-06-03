@@ -12,6 +12,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.3.4-dev] - 2026-06-03
+
+### Changed
+- Hardware grid split into "Behavior Devices" and "Two-Photon Imaging" sections; Microscope and SLM moved under a labeled subsection for visual differentiation from operant behavior devices
+- SLM advisory ("Microscope not armed") removed from `SLMControl` — no other device has an equivalent cross-device warning
+- SLM added to all built-in presets (SA High/Mid/Low/Extinction, Pavlovian Acquisition/Reversal) as an optional disarmed device at default pin 11
+
+---
+
 ## [2.3.3-dev] - 2026-06-03
 
 ### Changed

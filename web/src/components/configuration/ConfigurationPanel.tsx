@@ -553,21 +553,28 @@ export function ConfigurationPanel() {
             )}
 
             {/* Device Controls Grid */}
-            <div className="grid gap-4 lg:grid-cols-2">
-              {paradigm !== "pavlovian" && (
-                <>
-                  <LeverControl sessionId={activeSessionId} side="LH" paradigm={paradigm} />
-                  <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
-                </>
-              )}
-              <CueControl sessionId={activeSessionId} label="2" prefix="2" />
-              <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="1" prefix="" /></div>
-              <PumpControl sessionId={activeSessionId} label="2" prefix="2" />
-              <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="1" prefix="" /></div>
-              <LickCircuitControl sessionId={activeSessionId} />
-              <MicroscopeControl sessionId={activeSessionId} />
-              <SLMControl sessionId={activeSessionId} />
-              <LaserControl sessionId={activeSessionId} paradigm={paradigm} />
+            <div className="flex flex-col gap-6">
+              <div className="grid gap-4 lg:grid-cols-2">
+                {paradigm !== "pavlovian" && (
+                  <>
+                    <LeverControl sessionId={activeSessionId} side="LH" paradigm={paradigm} />
+                    <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
+                  </>
+                )}
+                <CueControl sessionId={activeSessionId} label="2" prefix="2" />
+                <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="1" prefix="" /></div>
+                <PumpControl sessionId={activeSessionId} label="2" prefix="2" />
+                <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="1" prefix="" /></div>
+                <LickCircuitControl sessionId={activeSessionId} />
+                <LaserControl sessionId={activeSessionId} paradigm={paradigm} />
+              </div>
+              <div>
+                <p className="text-xs font-mono text-theme-text/40 mb-3">Two-Photon Imaging</p>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <MicroscopeControl sessionId={activeSessionId} />
+                  <SLMControl sessionId={activeSessionId} />
+                </div>
+              </div>
             </div>
           </div>
         )}
