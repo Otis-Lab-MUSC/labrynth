@@ -26,7 +26,6 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
   const codes = CODES[side];
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
-  const showActiveInactive = paradigm !== "pavlovian";
   const showTimeout = paradigm !== "omission" && paradigm !== "pavlovian";
   const showRatio = paradigm === "fr" || paradigm === "pr";
 
@@ -45,12 +44,6 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
           onClick={() => { send(codes.disarm); updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], armed: false } })); }}
           className={`btn-sm ${!armed ? "btn-toggle-red-on" : "btn-toggle-red-off"}`}
         >Disarm</button>
-        {showActiveInactive && (
-          <>
-            <button onClick={() => send(codes.active)} className="btn-sm bg-blue-600 text-white">Active</button>
-            <button onClick={() => send(codes.inactive)} className="btn-sm bg-gray-500 text-white">Inactive</button>
-          </>
-        )}
       </div>
       {showTimeout && (
         <div className="flex items-center gap-2">

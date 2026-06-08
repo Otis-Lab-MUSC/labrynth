@@ -2,7 +2,7 @@ import type { HardwareUiState } from "../../../types";
 import type { Session } from "../../../types";
 import type { SessionPreset, PresetDeviceEntry } from "./types";
 
-type DeviceKey = keyof Omit<HardwareUiState, "testMode">;
+type DeviceKey = keyof Omit<HardwareUiState, "testMode" | "activeLever">;
 
 const DEVICE_METADATA: Record<DeviceKey, { label: string; role: string }> = {
   rhLever:       { label: "RH Lever",       role: "Right-hand lever" },

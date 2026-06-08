@@ -19,9 +19,12 @@ const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
 /* ── Shared hardware settings ──────────────────────────────────────── */
 
 const CORE_HARDWARE: Partial<HardwareUiState> = {
-  primaryCue:   { armed: true,  frequency: 12000, duration: 2000 },
-  secondaryCue: { armed: true,  frequency: 3000,  duration: 2000 },
-  primaryPump:  { armed: true,  duration: 2000 },
+  primaryCue:   { armed: true,  frequency: 12000, duration: 2000,
+    contingency: { rhLever: false, lhLever: false, lickCircuit: false, delay: 0 } },
+  secondaryCue: { armed: true,  frequency: 3000,  duration: 2000,
+    contingency: { rhLever: false, lhLever: false, lickCircuit: false, delay: 0 } },
+  primaryPump:  { armed: true,  duration: 2000,
+    contingency: { rhLever: false, lhLever: false, lickCircuit: false, delay: 0 } },
 };
 
 const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {

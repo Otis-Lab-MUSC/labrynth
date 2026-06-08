@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useSessionStore } from "../store/useSessionStore";
+import { useSessionStore, defaultHardwareUiState } from "../store/useSessionStore";
 import { useMachineStore, LOCAL_PLACEHOLDER_ID } from "../store/useMachineStore";
 import type { SessionState } from "../types";
 
@@ -100,19 +100,7 @@ export function useSessionRecovery() {
                 csMinusCount: 0,
                 rhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
                 lhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
-                hardwareUi: {
-                  rhLever: { armed: false, timeout: 20000, ratio: 1 },
-                  lhLever: { armed: false, timeout: 20000, ratio: 1 },
-                  primaryCue: { armed: false, frequency: 2900, duration: 1000 },
-                  secondaryCue: { armed: false, frequency: 2900, duration: 1000 },
-                  primaryPump: { armed: false, duration: 3000 },
-                  secondaryPump: { armed: false, duration: 3000 },
-                  laser: { armed: false, frequency: 40, duration: 5000, mode: "contingent", phase: "reward" },
-                  lickCircuit: { armed: false },
-                  microscope: { armed: false, frameRate: null, frameAveraging: null },
-                  slm: { armed: false, pin: 11 },
-                  testMode: false,
-                },
+                hardwareUi: defaultHardwareUiState(),
                 pinOverrides: {},
                 fileConfig: { filename: "", destination: "" },
                 exportState: { exporting: false, result: null, error: null },

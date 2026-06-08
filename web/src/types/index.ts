@@ -25,6 +25,14 @@ export interface DeviceArmState {
   armed: boolean;
 }
 
+export interface ContingencyConfig {
+  rhLever: boolean;
+  lhLever: boolean;
+  lickCircuit: boolean;
+  /** UI-only — no firmware command for Cue/Pump onset delay yet. */
+  delay: number;
+}
+
 export interface LeverUiState extends DeviceArmState {
   timeout: number;
   ratio: number;
@@ -33,16 +41,18 @@ export interface LeverUiState extends DeviceArmState {
 export interface CueUiState extends DeviceArmState {
   frequency: number;
   duration: number;
+  contingency: ContingencyConfig;
 }
 
 export interface PumpUiState extends DeviceArmState {
   duration: number;
+  contingency: ContingencyConfig;
 }
 
 export interface LaserUiState extends DeviceArmState {
   frequency: number;
   duration: number;
-  mode: "contingent" | "independent" | "cs_plus" | "cs_minus" | "cs_both";
+  mode: "contingent" | "independent" | "rh_lever" | "cs_plus" | "cs_minus" | "cs_both";
   phase?: "reward" | "cue";  // Pavlovian only — which trial phase triggers laser
 }
 
@@ -58,6 +68,9 @@ export interface SlmUiState extends DeviceArmState {
 export interface HardwareUiState {
   rhLever: LeverUiState;
   lhLever: LeverUiState;
+  /** Which lever is currently the "active" lever per firmware (commands
+   *  1081/1381 set active; 1080/1380 set inactive). null = neither. */
+  activeLever: "rh" | "lh" | null;
   primaryCue: CueUiState;
   secondaryCue: CueUiState;
   primaryPump: PumpUiState;

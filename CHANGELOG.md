@@ -12,6 +12,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.3.5-dev] - 2026-06-08
+
+### Added
+- `ContingencyConfig` type (`{ rhLever, lhLever, lickCircuit: boolean; delay: number }`) embedded in `CueUiState` and `PumpUiState`; `activeLever: "rh" | "lh" | null` added to `HardwareUiState` as global source of truth for which lever is firmware-active
+- `ContingencySection` component: "Contingent on" multi-checkbox area (RH Lever, LH Lever, Lick Circuit) + onset delay field rendered under each CUE and PUMP output device card; lever checkboxes mirror across all four output devices to reflect firmware's global active-lever semantics; delay field is UI-stored pending firmware command support
+- Laser `RH Only` mode button (command 684) with onset delay input (command 673, 0–60000 ms) in `LaserControl` for non-Pavlovian paradigms
+- `rh_lever: 684` entry in `LASER_MODE_COMMANDS` map; `ProgramPanel` preset-apply paths exclude `rh_lever` from Pavlovian trial-paired preamble
+
+### Changed
+- Hardware Controls layout restructured into three labeled sections: **Input Devices** (RH Lever → LH Lever → Lick Circuit), **Output Devices** (CUE 1 → CUE 2 → PUMP 1 → PUMP 2 → Laser), **Two-Photon Devices** (Microscope + SLM); numeric device ordering corrected (CUE 1 now left of CUE 2, PUMP 1 left of PUMP 2)
+- Lever cards no longer show Active/Inactive toggle buttons; active/inactive lever state is now set by checking the RH Lever or LH Lever checkbox on any output device's Contingent-on section
+- `LickCircuitControl` Arm/Disarm now mirrors `lickCircuit.armed` state into all four output device contingency configs for bidirectional sync
+- `SA Extinction` preset: Primary Cue and Primary Pump demoted from `required: true` to `required: false` in the device list; only levers are required for extinction
+- SA High/Mid/Low presets: `primaryCue` and `primaryPump` hardware defaults now include `contingency: { rhLever: true, ... }` reflecting canonical SA contingency (RH lever drives outputs)
+- Pavlovian presets: cue and pump hardware entries include null contingency defaults (`rhLever: false, lhLever: false`)
+- `useSessionRecovery` hardcoded `hardwareUi` object replaced with `defaultHardwareUiState()` call
+
+---
+
 ## [2.3.4-dev] - 2026-06-03
 
 ### Changed

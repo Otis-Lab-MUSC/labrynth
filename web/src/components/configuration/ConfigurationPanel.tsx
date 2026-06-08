@@ -231,8 +231,8 @@ export function ConfigurationPanel() {
       // 2b. Send laser mode command if preset specifies a mode
       const laserState = preset.hardware.laser as { mode?: keyof typeof LASER_MODE_COMMANDS; phase?: "reward" | "cue" } | undefined;
       if (laserState?.mode) {
-        // Trial-paired modes require contingent (681) before filter command
-        if (laserState.mode !== "independent" && laserState.mode !== "contingent") {
+        // Pavlovian trial-paired modes require contingent (681) before filter command
+        if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever") {
           await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
         }
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode]);
@@ -317,8 +317,8 @@ export function ConfigurationPanel() {
       // Send laser mode command if preset specifies a mode
       const laserState = preset.hardware.laser as { mode?: keyof typeof LASER_MODE_COMMANDS; phase?: "reward" | "cue" } | undefined;
       if (laserState?.mode) {
-        // Trial-paired modes require contingent (681) before filter command
-        if (laserState.mode !== "independent" && laserState.mode !== "contingent") {
+        // Pavlovian trial-paired modes require contingent (681) before filter command
+        if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever") {
           await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
         }
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode]);
@@ -552,30 +552,40 @@ export function ConfigurationPanel() {
               </div>
             )}
 
-            {/* Device Controls Grid */}
-            <div className="flex flex-col gap-6">
+            {/* Input Devices */}
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Input Devices</h4>
               <div className="grid gap-4 lg:grid-cols-2">
                 {paradigm !== "pavlovian" && (
                   <>
-                    <LeverControl sessionId={activeSessionId} side="LH" paradigm={paradigm} />
                     <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
+                    <LeverControl sessionId={activeSessionId} side="LH" paradigm={paradigm} />
                   </>
                 )}
-                <CueControl sessionId={activeSessionId} label="2" prefix="2" />
-                <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="1" prefix="" /></div>
-                <PumpControl sessionId={activeSessionId} label="2" prefix="2" />
-                <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="1" prefix="" /></div>
                 <LickCircuitControl sessionId={activeSessionId} />
+              </div>
+            </section>
+
+            {/* Output Devices */}
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Output Devices</h4>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="1" prefix="" paradigm={paradigm} /></div>
+                <CueControl sessionId={activeSessionId} label="2" prefix="2" paradigm={paradigm} />
+                <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="1" prefix="" paradigm={paradigm} /></div>
+                <PumpControl sessionId={activeSessionId} label="2" prefix="2" paradigm={paradigm} />
                 <LaserControl sessionId={activeSessionId} paradigm={paradigm} />
               </div>
-              <div>
-                <p className="text-xs font-mono text-theme-text/40 mb-3">Two-Photon Imaging</p>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <MicroscopeControl sessionId={activeSessionId} />
-                  <SLMControl sessionId={activeSessionId} />
-                </div>
+            </section>
+
+            {/* Two-Photon Devices */}
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Two-Photon Devices</h4>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <MicroscopeControl sessionId={activeSessionId} />
+                <SLMControl sessionId={activeSessionId} />
               </div>
-            </div>
+            </section>
           </div>
         )}
       </div>

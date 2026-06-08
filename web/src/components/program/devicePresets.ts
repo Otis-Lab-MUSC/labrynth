@@ -23,9 +23,9 @@ export const DEVICE_PRESETS: DevicePreset[] = [
   // },
 ];
 
-/** Command code for laser mode: contingent = 681, independent = 682, Pavlovian trial types = 691-693 */
+/** Command code for laser mode: contingent = 681, independent = 682, rh_lever = 684, Pavlovian trial types = 691-693 */
 export const LASER_MODE_COMMANDS = {
-  contingent: 681, independent: 682,
+  contingent: 681, independent: 682, rh_lever: 684,
   cs_plus: 691, cs_minus: 692, cs_both: 693,
 } as const;
 

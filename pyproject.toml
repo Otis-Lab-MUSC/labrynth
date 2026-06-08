@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "labrynth"
-version = "2.3.4-dev"
+version = "2.3.5-dev"
 description = "Labrynth application shell — build orchestrator and frontend"
 requires-python = ">=3.10"
 dependencies = [

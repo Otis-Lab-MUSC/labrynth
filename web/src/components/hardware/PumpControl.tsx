@@ -1,11 +1,13 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
+import { ContingencySection } from "./ContingencySection";
 
 interface Props {
   sessionId: string;
   label: string;
   prefix: "" | "2";
+  paradigm?: string;
 }
 
 const CODES = {
@@ -18,7 +20,7 @@ const STORE_KEY = { "": "primaryPump", "2": "secondaryPump" } as const;
 const MIN_DURATION = 1;
 const MAX_DURATION = 600000;
 
-export function PumpControl({ sessionId, label, prefix }: Props) {
+export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
   const storeKey = STORE_KEY[prefix];
   const pump = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[storeKey]);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
@@ -58,6 +60,7 @@ export function PumpControl({ sessionId, label, prefix }: Props) {
           disabled={duration < MIN_DURATION || duration > MAX_DURATION}
           className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
       </div>
+      <ContingencySection sessionId={sessionId} deviceKey={storeKey} paradigm={paradigm} />
     </div>
   );
 }

@@ -1,11 +1,13 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
+import { ContingencySection } from "./ContingencySection";
 
 interface Props {
   sessionId: string;
   label: string;
   prefix: "" | "2";
+  paradigm?: string;
 }
 
 const CODES = {
@@ -15,7 +17,7 @@ const CODES = {
 
 const STORE_KEY = { "": "primaryCue", "2": "secondaryCue" } as const;
 
-export function CueControl({ sessionId, label, prefix }: Props) {
+export function CueControl({ sessionId, label, prefix, paradigm }: Props) {
   const storeKey = STORE_KEY[prefix];
   const cue = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[storeKey]);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
@@ -61,6 +63,7 @@ export function CueControl({ sessionId, label, prefix }: Props) {
           disabled={duration < 1 || duration > 600000}
           className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
       </div>
+      <ContingencySection sessionId={sessionId} deviceKey={storeKey} paradigm={paradigm} />
     </div>
   );
 }
