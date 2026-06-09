@@ -2,15 +2,15 @@ import type { HardwareUiState } from "../../../types";
 import type { Session } from "../../../types";
 import type { SessionPreset, PresetDeviceEntry } from "./types";
 
-type DeviceKey = keyof Omit<HardwareUiState, "testMode" | "activeLever">;
+type DeviceKey = keyof Omit<HardwareUiState, "testMode">;
 
 const DEVICE_METADATA: Record<DeviceKey, { label: string; role: string }> = {
   rhLever:       { label: "RH Lever",       role: "Right-hand lever" },
   lhLever:       { label: "LH Lever",       role: "Left-hand lever" },
-  primaryCue:    { label: "Primary Cue",    role: "Primary auditory cue" },
-  secondaryCue:  { label: "Secondary Cue",  role: "Secondary auditory cue" },
-  primaryPump:   { label: "Primary Pump",   role: "Primary syringe pump" },
-  secondaryPump: { label: "Secondary Pump", role: "Secondary syringe pump" },
+  primaryCue:    { label: "CUE 1",  role: "Primary auditory cue" },
+  secondaryCue:  { label: "CUE 2",  role: "Secondary auditory cue" },
+  primaryPump:   { label: "PUMP 1", role: "Primary syringe pump" },
+  secondaryPump: { label: "PUMP 2", role: "Secondary syringe pump" },
   laser:         { label: "Laser",          role: "Optogenetic stimulus" },
   lickCircuit:   { label: "Lick Circuit",   role: "Lick detection" },
   microscope:    { label: "Microscope",     role: "Imaging synchronization" },

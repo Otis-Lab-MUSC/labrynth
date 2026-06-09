@@ -21,26 +21,14 @@ export function LickCircuitControl({ sessionId }: Props) {
         <button
           onClick={() => {
             send(501);
-            updateHardwareUi(sessionId, (prev) => ({
-              lickCircuit: { armed: true },
-              primaryCue:    { ...prev.primaryCue,    contingency: { ...prev.primaryCue.contingency,    lickCircuit: true } },
-              secondaryCue:  { ...prev.secondaryCue,  contingency: { ...prev.secondaryCue.contingency,  lickCircuit: true } },
-              primaryPump:   { ...prev.primaryPump,   contingency: { ...prev.primaryPump.contingency,   lickCircuit: true } },
-              secondaryPump: { ...prev.secondaryPump, contingency: { ...prev.secondaryPump.contingency, lickCircuit: true } },
-            }));
+            updateHardwareUi(sessionId, () => ({ lickCircuit: { armed: true } }));
           }}
           className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
           onClick={() => {
             send(500);
-            updateHardwareUi(sessionId, (prev) => ({
-              lickCircuit: { armed: false },
-              primaryCue:    { ...prev.primaryCue,    contingency: { ...prev.primaryCue.contingency,    lickCircuit: false } },
-              secondaryCue:  { ...prev.secondaryCue,  contingency: { ...prev.secondaryCue.contingency,  lickCircuit: false } },
-              primaryPump:   { ...prev.primaryPump,   contingency: { ...prev.primaryPump.contingency,   lickCircuit: false } },
-              secondaryPump: { ...prev.secondaryPump, contingency: { ...prev.secondaryPump.contingency, lickCircuit: false } },
-            }));
+            updateHardwareUi(sessionId, () => ({ lickCircuit: { armed: false } }));
           }}
           className={`btn-sm ${!armed ? "btn-toggle-red-on" : "btn-toggle-red-off"}`}
         >Disarm</button>

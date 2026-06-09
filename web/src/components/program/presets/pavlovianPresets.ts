@@ -4,9 +4,9 @@ import type { HardwareUiState } from "../../../types";
 /* ── Shared device entries ─────────────────────────────────────────── */
 
 const CORE_DEVICES: PresetDeviceEntry[] = [
-  { key: "primaryCue",   label: "Primary Cue",   role: "CS+ tone — predicts reward",   required: true },
-  { key: "secondaryCue", label: "Secondary Cue",  role: "CS- tone — no reward",         required: true },
-  { key: "primaryPump",  label: "Primary Pump",   role: "Syringe pump — delivers reward", required: true },
+  { key: "primaryCue",   label: "CUE 1",  role: "CS+ tone — predicts reward",      required: true },
+  { key: "secondaryCue", label: "CUE 2",  role: "CS- tone — no reward",            required: true },
+  { key: "primaryPump",  label: "PUMP 1", role: "Syringe pump — delivers reward",  required: true },
 ];
 
 const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
@@ -20,11 +20,11 @@ const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
 
 const CORE_HARDWARE: Partial<HardwareUiState> = {
   primaryCue:   { armed: true,  frequency: 12000, duration: 2000,
-    contingency: { rhLever: false, lhLever: false, lickCircuit: false, delay: 0 } },
+    contingency: { leverFilter: "none", delay: 0 } },
   secondaryCue: { armed: true,  frequency: 3000,  duration: 2000,
-    contingency: { rhLever: false, lhLever: false, lickCircuit: false, delay: 0 } },
+    contingency: { leverFilter: "none", delay: 0 } },
   primaryPump:  { armed: true,  duration: 2000,
-    contingency: { rhLever: false, lhLever: false, lickCircuit: false, delay: 0 } },
+    contingency: { leverFilter: "none", delay: 0 } },
 };
 
 const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {

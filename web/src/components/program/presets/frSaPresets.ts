@@ -4,13 +4,13 @@ import type { HardwareUiState } from "../../../types";
 /* ── Shared device entries ─────────────────────────────────────────── */
 
 const CORE_DEVICES: PresetDeviceEntry[] = [
-  { key: "rhLever",    label: "RH Lever",    role: "Active lever — triggers reward chain", required: true },
-  { key: "lhLever",    label: "LH Lever",    role: "Inactive lever — tracking only",       required: true },
-  { key: "primaryCue", label: "Primary Cue", role: "Tone cue — signals reward",            required: true },
+  { key: "rhLever",    label: "RH Lever", role: "Active lever — triggers reward chain", required: true },
+  { key: "lhLever",    label: "LH Lever", role: "Inactive lever — tracking only",       required: true },
+  { key: "primaryCue", label: "CUE 1",    role: "Tone cue — signals reward",            required: true },
 ];
 
 const PUMP_DEVICE: PresetDeviceEntry = {
-  key: "primaryPump", label: "Primary Pump", role: "Syringe pump — delivers infusion", required: true,
+  key: "primaryPump", label: "PUMP 1", role: "Syringe pump — delivers infusion", required: true,
 };
 
 const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
@@ -26,12 +26,12 @@ const CORE_HARDWARE: Partial<HardwareUiState> = {
   rhLever:    { armed: true,  timeout: 20000, ratio: 1 },
   lhLever:    { armed: true,  timeout: 20000, ratio: 1 },
   primaryCue: { armed: true,  frequency: 8000, duration: 1600,
-    contingency: { rhLever: true, lhLever: false, lickCircuit: false, delay: 0 } },
+    contingency: { leverFilter: "rh", delay: 0 } },
 };
 
 const PUMP_HARDWARE: Partial<HardwareUiState> = {
   primaryPump: { armed: true, duration: 2000,
-    contingency: { rhLever: true, lhLever: false, lickCircuit: false, delay: 0 } },
+    contingency: { leverFilter: "rh", delay: 0 } },
 };
 
 const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
@@ -40,9 +40,9 @@ const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
   microscope:   { armed: false, frameRate: null, frameAveraging: null },
   slm:          { armed: false, pin: 11 },
   secondaryCue: { armed: false, frequency: 2900, duration: 1000,
-    contingency: { rhLever: false, lhLever: false, lickCircuit: false, delay: 0 } },
+    contingency: { leverFilter: "none", delay: 0 } },
   secondaryPump: { armed: false, duration: 3000,
-    contingency: { rhLever: false, lhLever: false, lickCircuit: false, delay: 0 } },
+    contingency: { leverFilter: "none", delay: 0 } },
 };
 
 /* ── Shared paradigm settings ──────────────────────────────────────── */
@@ -90,10 +90,10 @@ export const SA_LOW_PRESET: SessionPreset = {
 };
 
 const EXTINCTION_DEVICES: PresetDeviceEntry[] = [
-  { key: "rhLever",     label: "RH Lever",     role: "Active lever — tracked but no reward", required: true },
-  { key: "lhLever",     label: "LH Lever",     role: "Inactive lever — tracking only",       required: true },
-  { key: "primaryCue",  label: "Primary Cue",  role: "Disabled during extinction",           required: false },
-  { key: "primaryPump", label: "Primary Pump", role: "Disabled during extinction",           required: false },
+  { key: "rhLever",     label: "RH Lever", role: "Active lever — tracked but no reward", required: true },
+  { key: "lhLever",     label: "LH Lever", role: "Inactive lever — tracking only",       required: true },
+  { key: "primaryCue",  label: "CUE 1",    role: "Disabled during extinction",           required: false },
+  { key: "primaryPump", label: "PUMP 1",   role: "Disabled during extinction",           required: false },
   ...OPTIONAL_DEVICES,
 ];
 
@@ -107,9 +107,9 @@ export const SA_EXTINCTION_PRESET: SessionPreset = {
     rhLever: { armed: true, timeout: 20000, ratio: 1 },
     lhLever: { armed: true, timeout: 20000, ratio: 1 },
     primaryCue:  { armed: false, frequency: 8000, duration: 1600,
-      contingency: { rhLever: false, lhLever: false, lickCircuit: false, delay: 0 } },
+      contingency: { leverFilter: "none", delay: 0 } },
     primaryPump: { armed: false, duration: 2000,
-      contingency: { rhLever: false, lhLever: false, lickCircuit: false, delay: 0 } },
+      contingency: { leverFilter: "none", delay: 0 } },
     ...OPTIONAL_HARDWARE,
   },
   paradigmSettings: PARADIGM_SETTINGS,

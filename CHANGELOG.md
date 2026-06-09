@@ -12,6 +12,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.4.1-dev] - 2026-06-09
+
+### Added
+- Per-device lever routing in output device cards: each CUE and PUMP card independently exposes a compact **Any / RH / LH** toggle ("Trigger on") in its contingency section; selecting RH or LH sends the new firmware filter commands (378/388/478/488) alongside the appropriate `LEVER_SET_ACTIVE` pair (1081/1080, 1381/1380) for ratio counting; conflict indicator (⚠) shown when armed output devices have different non-"any" filters, since current firmware routes all filter commands to `Trigger[0]`
+- `ContingencyConfig.leverFilter: "none" | "rh" | "lh"` — replaces the boolean `rhLever / lhLever / lickCircuit` fields with a single discriminated selector; `delay` field retained (UI-only, pending firmware command)
+- `leverFilter` param wired into `PRESET_COMMAND_MAP` for all four output devices (command codes 378/388/478/488); both `ProgramPanel` preset-apply paths convert the string value to its firmware numeric before sending (0/1/2)
+- `ContingencySection` "Trigger on" toggle hidden entirely when `paradigm === "pavlovian"` (Pavlovian has no lever-based reward routing)
+
+### Changed
+- `ContingencyConfig` simplified from `{ rhLever, lhLever, lickCircuit: boolean; delay }` to `{ leverFilter: "none" | "rh" | "lh"; delay }` — cascades through `types/index.ts`, store defaults, preset data, and component state
+- `HardwareUiState.activeLever` field removed; per-device `leverFilter` on each output device replaces the global active-lever concept; `Omit` references in `presets/types.ts` and `presets/deviceMetadata.ts` updated accordingly
+- Lick Circuit removed from the "Contingent on" section of output device cards; `LickCircuitControl` Arm/Disarm handlers no longer mirror state into output device contingency configs
+- SA High/Mid/Low presets updated to new contingency format: `{ leverFilter: "rh", delay: 0 }` for `primaryCue` and `primaryPump`; `"none"` for inactive/optional output devices
+- SA Extinction and Pavlovian Acquisition/Reversal presets updated to `{ leverFilter: "none", delay: 0 }` across all cue/pump entries
+- Preset popup device labels updated to match current naming convention: "Primary Cue" → **CUE 1**, "Secondary Cue" → **CUE 2**, "Primary Pump" → **PUMP 1**, "Secondary Pump" → **PUMP 2** in all built-in preset device lists and `deviceMetadata.ts`
+- Hardware Controls sections separated by horizontal dividers with 24 px clearance (`divide-y divide-theme-text/10`, `pt-6`) for visual breathing room between Input Devices / Output Devices / Two-Photon Devices groups
+
+---
+
 ## [2.3.5-dev] - 2026-06-08
 
 ### Added

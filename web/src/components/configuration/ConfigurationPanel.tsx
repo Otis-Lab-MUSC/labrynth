@@ -552,40 +552,42 @@ export function ConfigurationPanel() {
               </div>
             )}
 
-            {/* Input Devices */}
-            <section className="space-y-2">
-              <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Input Devices</h4>
-              <div className="grid gap-4 lg:grid-cols-2">
-                {paradigm !== "pavlovian" && (
-                  <>
-                    <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
-                    <LeverControl sessionId={activeSessionId} side="LH" paradigm={paradigm} />
-                  </>
-                )}
-                <LickCircuitControl sessionId={activeSessionId} />
-              </div>
-            </section>
+            <div className="space-y-6 divide-y divide-theme-text/10">
+              {/* Input Devices */}
+              <section className="space-y-2">
+                <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Input Devices</h4>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {paradigm !== "pavlovian" && (
+                    <>
+                      <div data-tour="lever-card"><LeverControl sessionId={activeSessionId} side="RH" paradigm={paradigm} /></div>
+                      <LeverControl sessionId={activeSessionId} side="LH" paradigm={paradigm} />
+                    </>
+                  )}
+                  <LickCircuitControl sessionId={activeSessionId} />
+                </div>
+              </section>
 
-            {/* Output Devices */}
-            <section className="space-y-2">
-              <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Output Devices</h4>
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="1" prefix="" paradigm={paradigm} /></div>
-                <CueControl sessionId={activeSessionId} label="2" prefix="2" paradigm={paradigm} />
-                <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="1" prefix="" paradigm={paradigm} /></div>
-                <PumpControl sessionId={activeSessionId} label="2" prefix="2" paradigm={paradigm} />
-                <LaserControl sessionId={activeSessionId} paradigm={paradigm} />
-              </div>
-            </section>
+              {/* Output Devices */}
+              <section className="space-y-4 pt-6">
+                <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Output Devices</h4>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div data-tour="cue-card"><CueControl sessionId={activeSessionId} label="1" prefix="" paradigm={paradigm} /></div>
+                  <CueControl sessionId={activeSessionId} label="2" prefix="2" paradigm={paradigm} />
+                  <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="1" prefix="" paradigm={paradigm} /></div>
+                  <PumpControl sessionId={activeSessionId} label="2" prefix="2" paradigm={paradigm} />
+                  <LaserControl sessionId={activeSessionId} paradigm={paradigm} />
+                </div>
+              </section>
 
-            {/* Two-Photon Devices */}
-            <section className="space-y-2">
-              <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Two-Photon Devices</h4>
-              <div className="grid gap-4 lg:grid-cols-2">
-                <MicroscopeControl sessionId={activeSessionId} />
-                <SLMControl sessionId={activeSessionId} />
-              </div>
-            </section>
+              {/* Two-Photon Devices */}
+              <section className="space-y-4 pt-6">
+                <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Two-Photon Devices</h4>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <MicroscopeControl sessionId={activeSessionId} />
+                  <SLMControl sessionId={activeSessionId} />
+                </div>
+              </section>
+            </div>
           </div>
         )}
       </div>

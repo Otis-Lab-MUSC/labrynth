@@ -129,7 +129,11 @@ export function ProgramPanel() {
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
             if (state[paramKey] !== undefined) {
-              await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
+              let value = state[paramKey];
+              if (paramKey === "leverFilter") {
+                value = value === "rh" ? 1 : value === "lh" ? 2 : 0;
+              }
+              await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, value as number);
             }
           }
         }
@@ -215,7 +219,11 @@ export function ProgramPanel() {
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
             if (state[paramKey] !== undefined) {
-              await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
+              let value = state[paramKey];
+              if (paramKey === "leverFilter") {
+                value = value === "rh" ? 1 : value === "lh" ? 2 : 0;
+              }
+              await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, value as number);
             }
           }
         }

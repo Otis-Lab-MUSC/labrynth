@@ -26,9 +26,7 @@ export interface DeviceArmState {
 }
 
 export interface ContingencyConfig {
-  rhLever: boolean;
-  lhLever: boolean;
-  lickCircuit: boolean;
+  leverFilter: "none" | "rh" | "lh";
   /** UI-only — no firmware command for Cue/Pump onset delay yet. */
   delay: number;
 }
@@ -68,9 +66,6 @@ export interface SlmUiState extends DeviceArmState {
 export interface HardwareUiState {
   rhLever: LeverUiState;
   lhLever: LeverUiState;
-  /** Which lever is currently the "active" lever per firmware (commands
-   *  1081/1381 set active; 1080/1380 set inactive). null = neither. */
-  activeLever: "rh" | "lh" | null;
   primaryCue: CueUiState;
   secondaryCue: CueUiState;
   primaryPump: PumpUiState;

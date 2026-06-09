@@ -1,5 +1,6 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
+import type { HardwareUiState } from "../../types";
 
 interface Props {
   sessionId: string;
@@ -7,102 +8,104 @@ interface Props {
   paradigm?: string;
 }
 
-const LEVER_CMD = {
+// Per-device lever routing filter commands (0=any, 1=RH_only, 2=LH_only)
+const FILTER_CMD: Record<Props["deviceKey"], number> = {
+  primaryCue:    378,
+  secondaryCue:  388,
+  primaryPump:   478,
+  secondaryPump: 488,
+};
+
+const LEVER_ACTIVE_CMD = {
   rh: { active: 1081, inactive: 1080 },
   lh: { active: 1381, inactive: 1380 },
 };
 
 export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
-  const device = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[deviceKey]);
-  const activeLever = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi.activeLever ?? null);
-  const lickArmed = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi.lickCircuit.armed ?? false);
+  const device    = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[deviceKey]);
+  const hardwareUi = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
 
-  if (!device) return null;
+  if (!device || !hardwareUi) return null;
 
-  const showLevers = paradigm !== "pavlovian";
   const contingency = device.contingency;
-  const send = (code: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code);
+  const leverFilter = contingency.leverFilter;
 
-  const rhChecked = activeLever === "rh";
-  const lhChecked = activeLever === "lh";
+  const send = (code: number, value?: number) =>
+    getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
-  const toggleLever = (side: "rh" | "lh", next: boolean) => {
-    const sideKey = side === "rh" ? "rhLever" : "lhLever";
-    if (next) {
-      send(LEVER_CMD[side].active);
-      updateHardwareUi(sessionId, (prev) => ({
-        activeLever: side,
-        primaryCue:    { ...prev.primaryCue,    contingency: { ...prev.primaryCue.contingency,    rhLever: side === "rh", lhLever: side === "lh" } },
-        secondaryCue:  { ...prev.secondaryCue,  contingency: { ...prev.secondaryCue.contingency,  rhLever: side === "rh", lhLever: side === "lh" } },
-        primaryPump:   { ...prev.primaryPump,   contingency: { ...prev.primaryPump.contingency,   rhLever: side === "rh", lhLever: side === "lh" } },
-        secondaryPump: { ...prev.secondaryPump, contingency: { ...prev.secondaryPump.contingency, rhLever: side === "rh", lhLever: side === "lh" } },
-      }));
-    } else {
-      send(LEVER_CMD[side].inactive);
-      updateHardwareUi(sessionId, (prev) => ({
-        activeLever: null,
-        primaryCue:    { ...prev.primaryCue,    contingency: { ...prev.primaryCue.contingency,    [sideKey]: false } },
-        secondaryCue:  { ...prev.secondaryCue,  contingency: { ...prev.secondaryCue.contingency,  [sideKey]: false } },
-        primaryPump:   { ...prev.primaryPump,   contingency: { ...prev.primaryPump.contingency,   [sideKey]: false } },
-        secondaryPump: { ...prev.secondaryPump, contingency: { ...prev.secondaryPump.contingency, [sideKey]: false } },
-      }));
+  // Check if any armed output device has a conflicting non-"none" lever filter
+  const armedOutputKeys: (keyof HardwareUiState)[] = ["primaryCue", "secondaryCue", "primaryPump", "secondaryPump"];
+  const armedFilters = armedOutputKeys
+    .map((k) => (hardwareUi[k] as { armed?: boolean; contingency?: { leverFilter?: string } } | undefined))
+    .filter((d) => d?.armed && d?.contingency?.leverFilter && d.contingency.leverFilter !== "none")
+    .map((d) => d!.contingency!.leverFilter);
+  const uniqueFilters = new Set(armedFilters);
+  const hasConflict = uniqueFilters.size > 1;
+
+  const setFilter = (value: "none" | "rh" | "lh") => {
+    const numVal = value === "rh" ? 1 : value === "lh" ? 2 : 0;
+
+    // 1. Send per-device filter command to firmware
+    send(FILTER_CMD[deviceKey], numVal);
+
+    // 2. Send LEVER_SET_ACTIVE for ratio counting
+    if (value !== "none") {
+      const other = value === "rh" ? "lh" : "rh";
+      send(LEVER_ACTIVE_CMD[value].active);
+      send(LEVER_ACTIVE_CMD[other].inactive);
     }
-  };
 
-  const toggleLick = (next: boolean) => {
-    send(next ? 501 : 500);
+    // 3. Update only this device's UI state (no global mirroring)
     updateHardwareUi(sessionId, (prev) => ({
-      lickCircuit: { armed: next },
-      primaryCue:    { ...prev.primaryCue,    contingency: { ...prev.primaryCue.contingency,    lickCircuit: next } },
-      secondaryCue:  { ...prev.secondaryCue,  contingency: { ...prev.secondaryCue.contingency,  lickCircuit: next } },
-      primaryPump:   { ...prev.primaryPump,   contingency: { ...prev.primaryPump.contingency,   lickCircuit: next } },
-      secondaryPump: { ...prev.secondaryPump, contingency: { ...prev.secondaryPump.contingency, lickCircuit: next } },
+      [deviceKey]: {
+        ...(prev[deviceKey] as typeof device),
+        contingency: {
+          ...(prev[deviceKey] as typeof device).contingency,
+          leverFilter: value,
+        },
+      },
     }));
   };
 
   const setDelay = (ms: number) => {
     updateHardwareUi(sessionId, (prev) => ({
-      [deviceKey]: { ...prev[deviceKey], contingency: { ...prev[deviceKey].contingency, delay: ms } },
+      [deviceKey]: {
+        ...(prev[deviceKey] as typeof device),
+        contingency: {
+          ...(prev[deviceKey] as typeof device).contingency,
+          delay: ms,
+        },
+      },
     }));
   };
+
+  const showLevers = paradigm !== "pavlovian";
 
   return (
     <div className="border-t border-theme-text/10 pt-2 mt-1 space-y-2">
       <div className="text-xs font-medium uppercase tracking-wide text-theme-text/60">Contingent on</div>
-      <div className="flex flex-wrap gap-3 items-center">
-        {showLevers && (
-          <>
-            <label className="flex items-center gap-1 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={rhChecked}
-                onChange={(e) => toggleLever("rh", e.target.checked)}
-                className="cursor-pointer"
-              />
-              RH Lever
-            </label>
-            <label className="flex items-center gap-1 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={lhChecked}
-                onChange={(e) => toggleLever("lh", e.target.checked)}
-                className="cursor-pointer"
-              />
-              LH Lever
-            </label>
-          </>
-        )}
-        <label className="flex items-center gap-1 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={lickArmed && contingency.lickCircuit}
-            onChange={(e) => toggleLick(e.target.checked)}
-            className="cursor-pointer"
-          />
-          Lick Circuit
-        </label>
-      </div>
+      {showLevers && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-theme-text/60">Trigger on:</span>
+          {(["none", "rh", "lh"] as const).map((opt) => (
+            <button
+              key={opt}
+              onClick={() => setFilter(opt)}
+              className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                leverFilter === opt
+                  ? "bg-theme-accent text-white"
+                  : "bg-theme-text/10 text-theme-text/70 hover:bg-theme-text/20"
+              }`}
+            >
+              {opt === "none" ? "Any" : opt.toUpperCase()}
+            </button>
+          ))}
+          {hasConflict && (
+            <span className="text-amber-500 text-xs ml-1">⚠ Conflict</span>
+          )}
+        </div>
+      )}
       <div className="flex items-center gap-2">
         <label className="text-xs text-theme-text/60">Delay (ms):</label>
         <input

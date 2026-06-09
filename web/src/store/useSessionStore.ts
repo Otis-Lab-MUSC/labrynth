@@ -42,13 +42,12 @@ interface SessionStore {
 const ZERO_LEVER: LeverCounts = { active: 0, timeout: 0, inactive: 0 };
 
 const DEFAULT_CONTINGENCY = (): ContingencyConfig => ({
-  rhLever: false, lhLever: false, lickCircuit: false, delay: 0,
+  leverFilter: "none", delay: 0,
 });
 
 export const defaultHardwareUiState = (): HardwareUiState => ({
   rhLever: { armed: false, timeout: 20000, ratio: 1 },
   lhLever: { armed: false, timeout: 20000, ratio: 1 },
-  activeLever: null,
   primaryCue:   { armed: false, frequency: 2900, duration: 1000, contingency: DEFAULT_CONTINGENCY() },
   secondaryCue: { armed: false, frequency: 2900, duration: 1000, contingency: DEFAULT_CONTINGENCY() },
   primaryPump:  { armed: false, duration: 3000, contingency: DEFAULT_CONTINGENCY() },
