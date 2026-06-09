@@ -21,18 +21,37 @@ interface Props {
   events: BehaviorEvent[];
 }
 
+// Firmware v2.4.x+ names; legacy v2.3.x names kept as aliases so old sessions still render
 const DEVICE_COLORS: Record<string, { dark: string; light: string }> = {
+  LEVER_RH:   { dark: "#00ff41", light: "#16a34a" },
+  LEVER_LH:   { dark: "#41ff00", light: "#65a30d" },
+  CUE_1:      { dark: "#ffaa00", light: "#d97706" },
+  CUE_2:      { dark: "#ffcc44", light: "#b45309" },
+  PUMP_1:     { dark: "#00aaff", light: "#2563eb" },
+  PUMP_2:     { dark: "#44ccff", light: "#1d4ed8" },
+  LICK:       { dark: "#ff55ff", light: "#c026d3" },
+  LASER:      { dark: "#ff4444", light: "#dc2626" },
+  SLM:        { dark: "#ff00ff", light: "#9333ea" },
+  CONTROLLER: { dark: "#888888", light: "#6b7280" },
+  // Legacy aliases (firmware < v2.4.x)
   RH_LEVER: { dark: "#00ff41", light: "#16a34a" },
   LH_LEVER: { dark: "#41ff00", light: "#65a30d" },
-  CUE: { dark: "#ffaa00", light: "#d97706" },
-  PUMP: { dark: "#00aaff", light: "#2563eb" },
-  LICK: { dark: "#ff55ff", light: "#c026d3" },
-  LASER: { dark: "#ff4444", light: "#dc2626" },
-  SLM: { dark: "#ff00ff", light: "#9333ea" },
-  CONTROLLER: { dark: "#888888", light: "#6b7280" },
+  CUE:      { dark: "#ffaa00", light: "#d97706" },
+  PUMP:     { dark: "#00aaff", light: "#2563eb" },
 };
 
 const LEVER_EVENT_COLORS: Record<string, Record<string, { dark: string; light: string }>> = {
+  LEVER_RH: {
+    ACTIVE_PRESS:   { dark: "#00ff41", light: "#16a34a" },
+    TIMEOUT_PRESS:  { dark: "#00aa2e", light: "#4d7c0f" },
+    INACTIVE_PRESS: { dark: "#666666", light: "#9ca3af" },
+  },
+  LEVER_LH: {
+    ACTIVE_PRESS:   { dark: "#41ff00", light: "#65a30d" },
+    TIMEOUT_PRESS:  { dark: "#2eaa00", light: "#4d7c0f" },
+    INACTIVE_PRESS: { dark: "#666666", light: "#9ca3af" },
+  },
+  // Legacy aliases
   RH_LEVER: {
     ACTIVE_PRESS:   { dark: "#00ff41", light: "#16a34a" },
     TIMEOUT_PRESS:  { dark: "#00aa2e", light: "#4d7c0f" },
@@ -44,6 +63,26 @@ const LEVER_EVENT_COLORS: Record<string, Record<string, { dark: string; light: s
     INACTIVE_PRESS: { dark: "#666666", light: "#9ca3af" },
   },
 };
+
+const DEVICE_DISPLAY_NAMES: Record<string, string> = {
+  LEVER_RH: "Right Lever",
+  LEVER_LH: "Left Lever",
+  CUE_1: "CUE 1",
+  CUE_2: "CUE 2",
+  PUMP_1: "PUMP 1",
+  PUMP_2: "PUMP 2",
+  LASER: "Laser",
+  LICK: "Lick Circuit",
+  MICROSCOPE: "Microscope",
+  CONTROLLER: "Controller",
+  // Legacy firmware labels
+  RH_LEVER: "Right Lever",
+  LH_LEVER: "Left Lever",
+  CUE: "CUE 1",
+  PUMP: "PUMP 1",
+};
+
+const displayName = (raw: string): string => DEVICE_DISPLAY_NAMES[raw] ?? raw;
 
 const LEVER_DEVICES = new Set(Object.keys(LEVER_EVENT_COLORS));
 
@@ -176,7 +215,8 @@ export function EventTimeline({ events }: Props) {
   }
 
   // Compute active lanes from unique device names, preserving a stable order
-  const deviceOrder = ["RH_LEVER", "LH_LEVER", "CUE", "PUMP", "LICK", "LASER", "SLM", "CONTROLLER"];
+  const deviceOrder = ["LEVER_RH", "LEVER_LH", "CUE_1", "CUE_2", "PUMP_1", "PUMP_2", "LICK", "LASER", "SLM", "CONTROLLER",
+                       "RH_LEVER", "LH_LEVER", "CUE", "PUMP"];
   const activeDevices = new Set(displayEvents.map((e) => e.device));
   const activeLanes = deviceOrder.filter((d) => activeDevices.has(d));
   // Append any unknown devices
@@ -236,7 +276,7 @@ export function EventTimeline({ events }: Props) {
                   fontSize={11}
                   fontFamily="JetBrains Mono, monospace"
                 >
-                  {device}
+                  {displayName(device)}
                 </text>
               </g>
             );
