@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.4.3-dev] - 2026-06-09
+
+### Fixed
+- Firmware: per-device output filter wiped on every `ReconfigureChain()` call — sketch-level shadow globals (`CUE_SOURCE_FILTER`, `PUMP_SOURCE_FILTER`, `PUMP2_SOURCE_FILTER`) now thread filter state through all chain rebuilds so a mid-session cue/pump duration change no longer silently clears the contingency lever assignment
+- Firmware: LH lever presses not counted toward ratio threshold when an LH-contingent output filter was active — contingency lever now promoted to `ACTIVE` via `SetActiveLever(true)` at filter assignment time, allowing both levers to count simultaneously while routing outputs independently
+- Firmware: lever routing filter rearchitected from trigger-level to action-level `sourceFilter` on the `Action` struct; `Scheduler` stores `_lastInputSource` in `OnInputEvent()` and filters at enqueue time in `FireChain()`, enabling per-device independent output routing that survives every reconfiguration event
+
+### Internal
+- Firmware submodule bumped to `35f6008` (reacher-firmware develop)
+
+---
+
 ## [2.4.1-dev] - 2026-06-09
 
 ### Added
