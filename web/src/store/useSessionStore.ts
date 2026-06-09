@@ -22,7 +22,7 @@ interface SessionStore {
   setFirmwareInfo: (id: string, info: FirmwareConfig) => void;
   setUploadProgress: (id: string, percent: number, stage: string) => void;
   setPavlovianParams: (id: string, params: Record<number, number>) => void;
-  setParadigmSettings: (id: string, settings: { ratio: number; step: number; interval: number; traceInterval: number; pump2Active?: boolean }) => void;
+  setParadigmSettings: (id: string, settings: { ratio: number; step: number; interval: number; traceInterval: number }) => void;
   setLimitSettings: (id: string, settings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number }) => void;
   setParadigm: (id: string, paradigm: string) => void;
   setBoard: (id: string, board: BoardType) => void;

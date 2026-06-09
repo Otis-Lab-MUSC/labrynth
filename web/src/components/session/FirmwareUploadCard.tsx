@@ -7,9 +7,10 @@ import { useSessionStore } from "../../store/useSessionStore";
 
 interface Props {
   sessionId: string;
+  detectedBoard?: string | null;
 }
 
-export function FirmwareUploadCard({ sessionId }: Props) {
+export function FirmwareUploadCard({ sessionId, detectedBoard }: Props) {
   const [boards, setBoards] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedBoard, setSelectedBoard] = useState<BoardType>("uno");
   const [paradigms, setParadigms] = useState<string[]>([]);
@@ -22,6 +23,10 @@ export function FirmwareUploadCard({ sessionId }: Props) {
   }, []);
 
   useEffect(() => {
+    if (detectedBoard) setSelectedBoard(detectedBoard as BoardType);
+  }, [detectedBoard]);
+
+  useEffect(() => {
     setSelectedParadigm("");
     api.listParadigms(selectedBoard).then((r) => setParadigms(r.paradigms)).catch(() => {});
   }, [selectedBoard]);
@@ -30,17 +35,22 @@ export function FirmwareUploadCard({ sessionId }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">Firmware Upload</h3>
       <div className="flex items-center gap-2">
-        <select
-          value={selectedBoard}
-          onChange={(e) => setSelectedBoard(e.target.value as BoardType)}
-          className="input-base"
-        >
-          {boards.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-0.5">
+          <select
+            value={selectedBoard}
+            onChange={(e) => setSelectedBoard(e.target.value as BoardType)}
+            className="input-base"
+          >
+            {boards.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+          {detectedBoard && selectedBoard === detectedBoard && (
+            <span className="text-xs text-theme-text/50 font-mono">Auto-detected</span>
+          )}
+        </div>
         <select
           value={selectedParadigm}
           onChange={(e) => setSelectedParadigm(e.target.value)}

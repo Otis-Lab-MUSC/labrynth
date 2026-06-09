@@ -194,7 +194,7 @@ export class MachineApiClient {
 
   // --- Serial ---
   listPorts = () =>
-    this.request<{ ports: string[] }>("/serial/ports");
+    this.request<{ ports: string[]; portBoards: Record<string, string | null> }>("/serial/ports");
   connectSerial = (id: string) =>
     this.request<{ status: string; port: string; detected_paradigm: string | null; detected_board: string | null }>(
       `/serial/${id}/connect`,

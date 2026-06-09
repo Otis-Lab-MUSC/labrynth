@@ -12,6 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.4.5-dev] - 2026-06-09
+
+### Added
+- Firmware upload board selector auto-fills from USB VID/PID detection when a port is selected in the COM Port dropdown; shows an "Auto-detected" hint beneath the selector; manual override available
+
+### Fixed
+- Device Setup panel heading was labelled "Session" — now correctly reads "Device Setup"
+- Reward Pump toggle removed from Paradigm Settings; pump routing via command 221 was made obsolete by the per-output lever filter introduced in v2.4.1-dev
+
+---
+
 ## [2.4.4-dev] - 2026-06-09
 
 ### Added

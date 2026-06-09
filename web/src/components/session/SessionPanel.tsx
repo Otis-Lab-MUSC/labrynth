@@ -36,7 +36,9 @@ function getDisconnectWarning(session: Session): { title: string; message: strin
 
 export function SessionPanel() {
   const [ports, setPorts] = useState<string[]>([]);
+  const [portBoards, setPortBoards] = useState<Record<string, string | null>>({});
   const [selectedPort, setSelectedPort] = useState("");
+  const [detectedBoard, setDetectedBoard] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [manageDevicesOpen, setManageDevicesOpen] = useState(false);
@@ -125,7 +127,7 @@ export function SessionPanel() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-theme-text">Session</h2>
+      <h2 className="text-xl font-semibold text-theme-text">Device Setup</h2>
 
       {/* Machine selection */}
       <div className="card">
@@ -180,7 +182,10 @@ export function SessionPanel() {
         <div className="flex items-center gap-2">
           <select
             value={selectedPort}
-            onChange={(e) => setSelectedPort(e.target.value)}
+            onChange={(e) => {
+              setSelectedPort(e.target.value);
+              setDetectedBoard(portBoards[e.target.value] ?? null);
+            }}
             disabled={!activeMachine?.online}
             className="input-base"
           >
@@ -194,7 +199,7 @@ export function SessionPanel() {
           <button
             onClick={() => {
               const client = activeMachineId ? getClient(activeMachineId) : null;
-              client?.listPorts().then((r) => setPorts(r.ports));
+              client?.listPorts().then((r) => { setPorts(r.ports); setPortBoards(r.portBoards ?? {}); });
             }}
             disabled={!activeMachine?.online}
             className="btn-sm bg-panel border border-theme-border text-theme-text hover:bg-accent/10 disabled:opacity-50"
@@ -264,7 +269,7 @@ export function SessionPanel() {
 
       {/* Firmware upload */}
       {activeSession && !activeSession.draft && (
-        <div data-tour="firmware-card"><FirmwareUploadCard key={activeSession.id} sessionId={activeSession.id} /></div>
+        <div data-tour="firmware-card"><FirmwareUploadCard key={activeSession.id} sessionId={activeSession.id} detectedBoard={detectedBoard} /></div>
       )}
 
       {(() => {

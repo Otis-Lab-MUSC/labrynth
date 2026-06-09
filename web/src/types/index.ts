@@ -129,7 +129,7 @@ export interface Session {
   pausedTime: number;
   pauseStartTime: number | null;
   pavlovianParams: Record<number, number> | null;
-  paradigmSettings: { ratio: number; step: number; interval: number; traceInterval: number; pump2Active?: boolean } | null;
+  paradigmSettings: { ratio: number; step: number; interval: number; traceInterval: number } | null;
   limitSettings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number } | null;
   trialCount: number;
   csPlusCount: number;
