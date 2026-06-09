@@ -65,8 +65,8 @@ const LEVER_EVENT_COLORS: Record<string, Record<string, { dark: string; light: s
 };
 
 const DEVICE_DISPLAY_NAMES: Record<string, string> = {
-  LEVER_RH: "Right Lever",
-  LEVER_LH: "Left Lever",
+  LEVER_RH: "RH LEVER",
+  LEVER_LH: "LH LEVER",
   CUE_1: "CUE 1",
   CUE_2: "CUE 2",
   PUMP_1: "PUMP 1",
@@ -76,8 +76,8 @@ const DEVICE_DISPLAY_NAMES: Record<string, string> = {
   MICROSCOPE: "Microscope",
   CONTROLLER: "Controller",
   // Legacy firmware labels
-  RH_LEVER: "Right Lever",
-  LH_LEVER: "Left Lever",
+  RH_LEVER: "RH LEVER",
+  LH_LEVER: "LH LEVER",
   CUE: "CUE 1",
   PUMP: "PUMP 1",
 };
@@ -379,7 +379,7 @@ export function EventTimeline({ events }: Props) {
             }}
           >
             <div className="font-semibold" style={{ color: getDeviceColor(tooltip.device, isDark, tooltip.event) }}>
-              {tooltip.device}
+              {displayName(tooltip.device)}
             </div>
             <div className="text-theme-text">{tooltip.event}</div>
             <div className="text-theme-text/60">
@@ -399,7 +399,7 @@ export function EventTimeline({ events }: Props) {
             const subtypes = LEVER_EVENT_COLORS[device];
             return Object.entries(subtypes).map(([eventType, colors]) => {
               const color = isDark ? colors.dark : colors.light;
-              const label = `${device} ${eventType.replace("_PRESS", "").toLowerCase()}`;
+              const label = `${displayName(device)} ${eventType.replace("_PRESS", "").toLowerCase()}`;
               return (
                 <span key={`${device}-${eventType}`} className="flex items-center gap-1">
                   <span
@@ -418,7 +418,7 @@ export function EventTimeline({ events }: Props) {
                 className="inline-block h-2.5 w-2.5 rounded-sm"
                 style={{ backgroundColor: color }}
               />
-              {device}
+              {displayName(device)}
             </span>
           );
         })}

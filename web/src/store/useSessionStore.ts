@@ -266,7 +266,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           ? sess.infusionCount + 1
           : sess.infusionCount;
       const pressCount =
-        (event.device === "RH_LEVER" || event.device === "LH_LEVER") && event.event.includes("PRESS")
+        (event.device === "RH_LEVER" || event.device === "LH_LEVER" || event.device === "LEVER_RH" || event.device === "LEVER_LH") && event.event.includes("PRESS")
           ? sess.pressCount + 1
           : sess.pressCount;
       const trialCount =
@@ -285,8 +285,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         event.trial_type === "CS_MINUS"
           ? sess.csMinusCount + 1
           : sess.csMinusCount;
-      const isRH = event.device === "RH_LEVER";
-      const isLH = event.device === "LH_LEVER";
+      const isRH = event.device === "RH_LEVER" || event.device === "LEVER_RH";
+      const isLH = event.device === "LH_LEVER" || event.device === "LEVER_LH";
       const rhLeverCounts = isRH
         ? {
             active:   sess.rhLeverCounts.active   + (event.event === "ACTIVE_PRESS" ? 1 : 0),
@@ -329,18 +329,18 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const lhLeverCounts = { ...ZERO_LEVER };
       for (const e of events) {
         if (e.device === "PUMP" && e.event === "INFUSION") infusionCount++;
-        if ((e.device === "RH_LEVER" || e.device === "LH_LEVER") && e.event.includes("PRESS")) pressCount++;
+        if ((e.device === "RH_LEVER" || e.device === "LH_LEVER" || e.device === "LEVER_RH" || e.device === "LEVER_LH") && e.event.includes("PRESS")) pressCount++;
         if (e.device === "PAVLOV" && e.event === "TRIAL_START") {
           trialCount++;
           if (e.trial_type === "CS_PLUS") csPlusCount++;
           else if (e.trial_type === "CS_MINUS") csMinusCount++;
         }
-        if (e.device === "RH_LEVER") {
+        if (e.device === "RH_LEVER" || e.device === "LEVER_RH") {
           if (e.event === "ACTIVE_PRESS") rhLeverCounts.active++;
           if (e.event === "TIMEOUT_PRESS") rhLeverCounts.timeout++;
           if (e.event === "INACTIVE_PRESS") rhLeverCounts.inactive++;
         }
-        if (e.device === "LH_LEVER") {
+        if (e.device === "LH_LEVER" || e.device === "LEVER_LH") {
           if (e.event === "ACTIVE_PRESS") lhLeverCounts.active++;
           if (e.event === "TIMEOUT_PRESS") lhLeverCounts.timeout++;
           if (e.event === "INACTIVE_PRESS") lhLeverCounts.inactive++;

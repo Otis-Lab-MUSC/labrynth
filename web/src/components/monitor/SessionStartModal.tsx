@@ -203,6 +203,15 @@ export function SessionStartModal() {
               await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, code, state[paramKey] as number);
             }
           }
+          // leverFilter and delay are nested at state.contingency.* — flat lookup above skips them.
+          const contingency = (state as { contingency?: { leverFilter?: string; delay?: number } }).contingency;
+          if (contingency?.leverFilter && contingency.leverFilter !== "none" && mapping.params.leverFilter !== undefined) {
+            const numVal = contingency.leverFilter === "rh" ? 1 : contingency.leverFilter === "lh" ? 2 : 0;
+            await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, mapping.params.leverFilter, numVal);
+          }
+          if (contingency?.delay && contingency.delay > 0 && mapping.params.delay !== undefined) {
+            await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, mapping.params.delay, contingency.delay);
+          }
         }
       }
 

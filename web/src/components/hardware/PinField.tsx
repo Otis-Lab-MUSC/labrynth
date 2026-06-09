@@ -56,7 +56,7 @@ export function PinField({ sessionId, component }: Props) {
 
   if (!isConnected) {
     return (
-      <span className="ml-2 text-xs font-mono text-theme-text/40">
+      <span className="ml-2 text-xs font-mono text-theme-text/40" title="Connect a device to reassign this pin">
         Pin {currentPin}
       </span>
     );

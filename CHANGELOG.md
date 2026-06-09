@@ -12,6 +12,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [2.4.4-dev] - 2026-06-09
+
+### Added
+- Per-device onset delay for CUE and PUMP output devices: each device card exposes an onset delay field (ms from trigger to activation); sends firmware commands CUE_SET_ONSET_DELAY (377), PUMP_SET_ONSET_DELAY (477), and cue2/pump2 variants on UI change and at session start via `PRESET_COMMAND_MAP`
+
+### Fixed
+- Contingency lever filter (RH/LH) now re-applied at session start via `PRESET_COMMAND_MAP`; previously sent only in the pre-start "connected" state where the backend rejects serial commands
+- Event Timeline lever display names standardised to "RH LEVER" / "LH LEVER" (was "Right Lever" / "Left Lever"); tooltip now calls `displayName()` instead of rendering raw firmware device key
+- Press counter in `useSessionStore` now accepts both legacy (`RH_LEVER`/`LH_LEVER`) and v2.4.x (`LEVER_RH`/`LEVER_LH`) device name formats — fixes silent zero-count regression for live sessions
+- Pin assignment field now shows tooltip hint ("Connect a device to reassign this pin") in pre-connection state so the feature is discoverable
+
+### Changed
+- Demo mode device names updated to v2.4.x format: `LEVER_RH`, `LEVER_LH`, `PUMP_1`, `CUE_1`, etc.
+
+### Internal
+- Board target changed to Arduino Mega 2560 (MEGA-only); `mock.ts` and `boards.py` default updated to `"mega"`; `hex/uno/` removed from firmware submodule
+- Firmware submodule bumped to `5c63fa7` (reacher-firmware develop)
+
+---
+
 ## [2.4.3-dev] - 2026-06-09
 
 ### Fixed

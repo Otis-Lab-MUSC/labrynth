@@ -26,20 +26,20 @@ function buildEventPool(session: Session): Array<{ weight: number; entry: SimEve
 
   if (hw.rhLever.armed) {
     leverEvents.forEach((ev, i) => {
-      pool.push({ weight: leverWeights[i] * (paradigm === "pavlovian" ? 0.3 : 0.5), entry: { device: "RH_LEVER", event: ev, duration: randomBetween(50, 200) } });
+      pool.push({ weight: leverWeights[i] * (paradigm === "pavlovian" ? 0.3 : 0.5), entry: { device: "LEVER_RH", event: ev, duration: randomBetween(50, 200) } });
     });
   }
   if (hw.lhLever.armed) {
     leverEvents.forEach((ev, i) => {
-      pool.push({ weight: leverWeights[i] * 0.2, entry: { device: "LH_LEVER", event: ev, duration: randomBetween(50, 200) } });
+      pool.push({ weight: leverWeights[i] * 0.2, entry: { device: "LEVER_LH", event: ev, duration: randomBetween(50, 200) } });
     });
   }
   if (hw.primaryPump.armed || hw.secondaryPump.armed) {
-    const pumpDevice = hw.primaryPump.armed ? "PRIMARY_PUMP" : "SECONDARY_PUMP";
+    const pumpDevice = hw.primaryPump.armed ? "PUMP_1" : "PUMP_2";
     pool.push({ weight: 0.2, entry: { device: pumpDevice, event: "INFUSION", duration: 3000 } });
   }
   if (hw.primaryCue.armed || hw.secondaryCue.armed) {
-    const cueDevice = hw.primaryCue.armed ? "PRIMARY_CUE" : "SECONDARY_CUE";
+    const cueDevice = hw.primaryCue.armed ? "CUE_1" : "CUE_2";
     const cueWeight = paradigm === "pavlovian" ? 0.35 : 0.15;
     pool.push({ weight: cueWeight, entry: { device: cueDevice, event: "TONE_ON", duration: 1000 } });
   }
@@ -50,11 +50,11 @@ function buildEventPool(session: Session): Array<{ weight: number; entry: SimEve
   // Fallback to generic pool if nothing is armed
   if (pool.length === 0) {
     return [
-      { weight: 0.35, entry: { device: "RH_LEVER", event: "ACTIVE_PRESS", duration: randomBetween(50, 200) } },
-      { weight: 0.15, entry: { device: "RH_LEVER", event: "TIMEOUT_PRESS", duration: randomBetween(50, 200) } },
-      { weight: 0.1, entry: { device: "LH_LEVER", event: "INACTIVE_PRESS", duration: randomBetween(50, 200) } },
-      { weight: 0.2, entry: { device: "PUMP", event: "INFUSION", duration: 3000 } },
-      { weight: 0.15, entry: { device: "CUE", event: "TONE_ON", duration: 1000 } },
+      { weight: 0.35, entry: { device: "LEVER_RH", event: "ACTIVE_PRESS", duration: randomBetween(50, 200) } },
+      { weight: 0.15, entry: { device: "LEVER_RH", event: "TIMEOUT_PRESS", duration: randomBetween(50, 200) } },
+      { weight: 0.1, entry: { device: "LEVER_LH", event: "INACTIVE_PRESS", duration: randomBetween(50, 200) } },
+      { weight: 0.2, entry: { device: "PUMP_1", event: "INFUSION", duration: 3000 } },
+      { weight: 0.15, entry: { device: "CUE_1", event: "TONE_ON", duration: 1000 } },
       { weight: 0.05, entry: { device: "LICK", event: "LICK", duration: 50 } },
     ];
   }
@@ -140,7 +140,7 @@ export const connectSerial = async (id: string) => {
     status: "ok",
     port: "DEMO-PORT",
     detected_paradigm: session?.paradigm ?? "fr",
-    detected_board: session?.board ?? "uno",
+    detected_board: session?.board ?? "mega",
   };
 };
 
@@ -148,7 +148,6 @@ export const disconnectSerial = async (_id: string) => {};
 
 export const listBoards = async () => ({
   boards: [
-    { id: "uno", name: "Arduino UNO" },
     { id: "mega", name: "Arduino Mega" },
   ] as BoardInfo[],
 });
@@ -157,7 +156,7 @@ export const listParadigms = async (_board?: string) => ({
   paradigms: ["fr", "pr", "vi", "omission", "pavlovian"],
 });
 
-export const uploadFirmware = async (id: string, paradigm: string, board: string = "uno") => {
+export const uploadFirmware = async (id: string, paradigm: string, board: string = "mega") => {
   useSessionStore.getState().setParadigm(id, paradigm);
   useSessionStore.getState().setBoard(id, board as BoardType);
   return {

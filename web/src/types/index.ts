@@ -27,7 +27,6 @@ export interface DeviceArmState {
 
 export interface ContingencyConfig {
   leverFilter: "none" | "rh" | "lh";
-  /** UI-only — no firmware command for Cue/Pump onset delay yet. */
   delay: number;
 }
 

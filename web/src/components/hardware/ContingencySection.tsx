@@ -15,6 +15,14 @@ const FILTER_CMD: Record<Props["deviceKey"], number> = {
   secondaryPump: 488,
 };
 
+// Per-device onset delay commands (ms from trigger to device activation)
+const DELAY_CMD: Record<Props["deviceKey"], number> = {
+  primaryCue:    377,
+  secondaryCue:  387,
+  primaryPump:   477,
+  secondaryPump: 487,
+};
+
 export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
   const device    = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[deviceKey]);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
@@ -42,6 +50,7 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
   };
 
   const setDelay = (ms: number) => {
+    send(DELAY_CMD[deviceKey], ms);
     updateHardwareUi(sessionId, (prev) => ({
       [deviceKey]: {
         ...(prev[deviceKey] as typeof device),
@@ -85,7 +94,7 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
           value={contingency.delay}
           onChange={(e) => setDelay(+e.target.value)}
           className="w-24 input-base"
-          title="Onset delay — UI-only; firmware support not yet available"
+          title="Onset delay from trigger to device activation"
         />
       </div>
     </div>
