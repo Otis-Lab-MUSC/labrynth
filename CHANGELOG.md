@@ -10,6 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Firmware is now sourced from the `reacher` pip dependency (which ships hex as package data) instead of the `reacher-firmware` git submodule. Bumped the `reacher` pin to `>=2.4.0`.
+
+### Removed
+- The `firmware/` git submodule and its `.gitmodules` entry. Firmware source moved into the [reacher](https://github.com/otis-lab-musc/reacher) repo (`firmware/`), and the standalone `reacher-firmware` repo was archived.
+- `build.py` firmware stage (`compile_firmware`/`fetch_firmware`, `--skip-firmware`/`--fetch-firmware` flags) — hex now comes from the installed reacher package via `resolve_reacher_hex_dir()`.
+- `bump-version.py --check-firmware` and the CI `firmware-check` job — firmware version is pinned by the `reacher` dependency.
+
 ---
 
 ## [2.4.5-dev] - 2026-06-09

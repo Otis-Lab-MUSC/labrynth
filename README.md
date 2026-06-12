@@ -20,10 +20,9 @@
 
 - A **React 19 + TypeScript frontend** (Vite + Tailwind CSS) for browser-based experiment control
 - A **terminal CLI** (`cli/`) using prompt_toolkit for arrow-key navigable menus, text prompts, and live WebSocket event streaming
-- A **build pipeline** (`build.py`) that compiles firmware, builds the frontend, and packages everything into a standalone executable via PyInstaller
-- A **firmware submodule** linking to [reacher-firmware](https://github.com/otis-lab-musc/reacher-firmware) for pre-compiled hex files
+- A **build pipeline** (`build.py`) that builds the frontend and packages everything into a standalone executable via PyInstaller
 
-The Python backend ([reacher](https://github.com/otis-lab-musc/reacher)) is installed as a pip dependency.
+The Python backend ([reacher](https://github.com/otis-lab-musc/reacher)) is installed as a pip dependency. It also ships the pre-compiled Arduino firmware hex files as package data (firmware source moved into the reacher repo when `reacher-firmware` was archived), so labrynth no longer carries a firmware submodule.
 
 ---
 
@@ -36,8 +35,7 @@ labrynth/
 │   ├── __main__.py         # Entry point, auto-start logic
 │   ├── app.py              # ReacherCLI — menus, rendering, actions
 │   └── client.py           # ReacherClient — async HTTP wrapper
-├── firmware/               # Git submodule → reacher-firmware (hex files)
-├── build.py                # Build orchestrator (firmware → frontend → PyInstaller)
+├── build.py                # Build orchestrator (frontend → PyInstaller; hex from reacher pkg)
 ├── labrynth.spec           # PyInstaller spec file
 ├── launcher.py             # Thin entry point for PyInstaller
 └── pyproject.toml          # Build dependencies
@@ -45,9 +43,8 @@ labrynth/
 
 **Dependency flow:**
 ```
-labrynth ──pip install──→ reacher (Python library)
+labrynth ──pip install──→ reacher (Python library + firmware hex as package data)
 labrynth ──pip install──→ prompt_toolkit, httpx, websockets (CLI deps)
-labrynth ──git submodule──→ reacher-firmware (hex files)
 ```
 
 ---
@@ -194,8 +191,7 @@ The Live Stream mode opens a WebSocket connection to the backend and displays ev
 ```bash
 git clone https://github.com/Otis-Lab-MUSC/labrynth.git
 cd labrynth
-git submodule update --init --recursive
-pip install -e /path/to/reacher
+pip install -e ../reacher   # or: pip install reacher  (ships firmware hex)
 ```
 
 ### Frontend development
@@ -206,9 +202,10 @@ cd web && npm ci && npm run build && cd ..
 
 # Set env vars and run the server
 export REACHER_STATIC_DIR=$(pwd)/web/dist
-export REACHER_HEX_DIR=$(pwd)/firmware/hex
 python -m reacher
 # → Opens browser to http://localhost:6229
+# Firmware hex comes from the installed reacher package; set REACHER_HEX_DIR
+# only to override with a local hex tree.
 ```
 
 ### CLI development
@@ -226,32 +223,26 @@ python -m cli
 
 ```bash
 python build.py                          # Full build
-python build.py --skip-firmware          # Skip hex compilation (use existing)
 python build.py --skip-frontend          # Skip npm build (use existing web/dist/)
 python build.py --avrdude /usr/bin/avrdude  # Bundle specific avrdude binary
 ```
 
 The build pipeline:
-1. **Stage 0:** Validates environment (submodule + reacher package)
-2. **Stage 1:** Compiles firmware hex files via `compile.sh`
-3. **Stage 2:** Builds React frontend (`npm ci && npm run build`)
-4. **Stage 3:** Validates required assets exist
-5. **Stage 4:** Runs PyInstaller with `labrynth.spec`
-6. **Stage 5:** Reports output location
+1. **Stage 0:** Validates environment (reacher package + its bundled firmware hex)
+2. **Stage 1:** Builds React frontend (`npm ci && npm run build`)
+3. **Stage 2:** Validates required assets exist
+4. **Stage 3:** Runs PyInstaller with `labrynth.spec`
+5. **Stage 4:** Reports output location
+
+Firmware hex is sourced from the installed `reacher` package (`reacher/hex/<board>/`) — no compile or fetch step.
 
 Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS)
 
 ---
 
-## Updating the Firmware Submodule
+## Updating the Firmware
 
-When [reacher-firmware](https://github.com/otis-lab-musc/reacher-firmware) is updated:
-
-```bash
-cd firmware && git pull origin main && cd ..
-git add firmware
-git commit -m "Bump firmware submodule"
-```
+Firmware ships inside the `reacher` package. To pick up a newer firmware build, bump the `reacher` dependency pin in `pyproject.toml` (e.g. `reacher>=2.4.0`) and reinstall. Firmware source and hex live in the [reacher](https://github.com/otis-lab-musc/reacher) repo under `firmware/` and `src/reacher/hex/`.
 
 ---
 

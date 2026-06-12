@@ -2,20 +2,25 @@
 """Cross-platform build orchestrator for Labrynth standalone packaging.
 
 Orchestrates the full build pipeline:
-  0. Validate environment (submodule + reacher package)
-  1. (Optional) Compile firmware hex files via compile.sh
-  2. Build React frontend (npm ci && npm run build)
-  3. Validate required assets exist
-  4. Run PyInstaller with labrynth.spec
-  5. Report output location
+  0. Validate environment (reacher package + its bundled firmware hex)
+  1. Build React frontend (npm ci && npm run build)
+  2. Validate required assets exist
+  3. Run PyInstaller with labrynth.spec
+  4. Report output location
+
+Firmware hex files are no longer compiled or fetched here — they ship as
+package data inside the ``reacher`` pip dependency (firmware source lives in
+the reacher repo since reacher-firmware was archived). This build sources hex
+straight from the installed reacher package, so the version is pinned by the
+``reacher`` dependency in pyproject.toml.
 
 Usage:
   python build.py                          # full build
-  python build.py --skip-firmware          # skip hex compilation
   python build.py --skip-frontend          # skip npm build
   python build.py --avrdude /usr/bin/avrdude  # explicit avrdude path
 
-Requires: Python 3.10+, Node.js, npm, PyInstaller (pip install pyinstaller)
+Requires: Python 3.10+, Node.js, npm, PyInstaller (pip install pyinstaller),
+and the reacher package installed (pip install reacher or -e ../reacher).
 """
 
 import argparse
@@ -33,25 +38,30 @@ import urllib.request
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = SCRIPT_DIR
 
-FIRMWARE_DIR = os.path.join(PROJECT_ROOT, "firmware")
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, "web")
-HEX_DIR = os.path.join(FIRMWARE_DIR, "hex")
 FRONTEND_DIST = os.path.join(FRONTEND_DIR, "dist")
 SPEC_FILE = os.path.join(SCRIPT_DIR, "labrynth.spec")
 
 PARADIGMS = ("fr", "pr", "vi", "omission", "pavlovian")
-FIRMWARE_REPO = "Otis-Lab-MUSC/reacher-firmware"
-FIRMWARE_BRANCH = "develop"  # Will migrate to "main" in a future pass
-FIRMWARE_RAW_BASE = f"https://raw.githubusercontent.com/{FIRMWARE_REPO}/{FIRMWARE_BRANCH}/hex"
-
-PARADIGM_TO_SKETCH = {
-    "fr": "fr",
-    "pr": "pr",
-    "vi": "vi",
-    "omission": "omission",
-    "pavlovian": "pavlovian",
-}
 BOARDS = ("uno", "mega")
+
+
+def resolve_reacher_hex_dir():
+    """Return the firmware hex directory shipped inside the installed reacher package.
+
+    Firmware hex is package data at ``reacher/hex/<board>/<paradigm>.hex``.
+    Returns the absolute path to that ``hex`` directory, or None if reacher is
+    not importable or ships no hex tree. Shared by build.py (asset validation)
+    and labrynth.spec (bundling) so both agree on the source of truth.
+    """
+    try:
+        from importlib import resources
+
+        hex_dir = resources.files("reacher") / "hex"
+        path = os.fspath(hex_dir)
+    except (ImportError, ModuleNotFoundError, AttributeError):
+        return None
+    return path if os.path.isdir(path) else None
 
 
 def _run(cmd, cwd=None, env=None):
@@ -67,92 +77,33 @@ def _run(cmd, cwd=None, env=None):
 # Build stages
 # ---------------------------------------------------------------------------
 
-def validate_environment(fetch_firmware_flag: bool = False):
-    """Verify submodules are initialized and reacher is installed."""
+def validate_environment():
+    """Verify reacher is installed and ships firmware hex as package data."""
     print("\n=== Stage 0: Validate environment ===")
-
-    # Check firmware submodule
-    if not os.path.isfile(os.path.join(FIRMWARE_DIR, "compile.sh")):
-        if fetch_firmware_flag:
-            print("  [WARN] firmware/ submodule not initialized — will fetch from GitHub instead.")
-        else:
-            print("ERROR: firmware/ submodule not initialized.")
-            print("       Run: git submodule update --init --recursive")
-            print("       Or:  python build.py --fetch-firmware")
-            sys.exit(1)
-    else:
-        print("  [OK] Firmware submodule")
 
     # Check reacher package
     try:
         import reacher
-        print(f"  [OK] reacher package (v{reacher.__version__ if hasattr(reacher, '__version__') else 'unknown'})")
+        version = getattr(reacher, "__version__", "unknown")
+        print(f"  [OK] reacher package (v{version})")
     except ImportError:
         print("ERROR: reacher package not installed.")
-        print("       Run: pip install -e /path/to/reacher")
+        print("       Run: pip install -e ../reacher   (or: pip install reacher)")
         sys.exit(1)
 
-
-def fetch_firmware():
-    """Download pre-compiled hex files from the reacher-firmware GitHub repository.
-
-    Fetches from the ``develop`` branch of Otis-Lab-MUSC/reacher-firmware using
-    raw.githubusercontent.com (no rate limits, no auth required).  The repo
-    publishes a board-aware layout (``hex/{board}/{paradigm}.hex``) so we
-    download directly into the matching ``firmware/hex/{board}/{paradigm}.hex``.
-    """
-    print(f"\n=== Stage 1: Fetch firmware from GitHub ({FIRMWARE_BRANCH} branch) ===")
-    errors = []
-    for board in BOARDS:
-        board_dir = os.path.join(HEX_DIR, board)
-        os.makedirs(board_dir, exist_ok=True)
-        for paradigm in PARADIGMS:
-            sketch = PARADIGM_TO_SKETCH[paradigm]
-            url = f"{FIRMWARE_RAW_BASE}/{board}/{sketch}.hex"
-            dest = os.path.join(board_dir, f"{sketch}.hex")
-            print(f"  Fetching {board}/{sketch}.hex ...", end=" ", flush=True)
-            try:
-                urllib.request.urlretrieve(url, dest)
-                print("OK")
-            except Exception as exc:
-                print(f"FAILED ({exc})")
-                errors.append((board, paradigm, str(exc)))
-
-    if errors:
-        print(f"\nWARNING: {len(errors)} hex file(s) could not be fetched:")
-        for board, paradigm, reason in errors:
-            print(f"  {board}/{paradigm}: {reason}")
-        if len(errors) == len(PARADIGMS) * len(BOARDS):
-            print("ERROR: No hex files could be fetched. Check network connectivity.")
-            sys.exit(1)
+    # Check the reacher package actually carries firmware hex
+    hex_dir = resolve_reacher_hex_dir()
+    if hex_dir:
+        print(f"  [OK] Firmware hex (from reacher package): {hex_dir}")
     else:
-        print(f"  [OK] All hex files fetched to {HEX_DIR}")
-
-
-def compile_firmware():
-    """Compile firmware hex files via compile.sh."""
-    print("\n=== Stage 1: Compile firmware ===")
-    compile_script = os.path.join(FIRMWARE_DIR, "compile.sh")
-    if not os.path.isfile(compile_script):
-        print(f"ERROR: compile.sh not found at {compile_script}")
+        print("ERROR: reacher package ships no firmware hex (reacher/hex/).")
+        print("       Reinstall reacher: pip install -e ../reacher")
         sys.exit(1)
-
-    if platform.system() == "Windows":
-        # On Windows, try git-bash or WSL
-        git_bash = shutil.which("bash")
-        if git_bash:
-            _run([git_bash, compile_script], cwd=FIRMWARE_DIR)
-        else:
-            print("ERROR: bash not found — cannot run compile.sh on Windows")
-            print("       Install Git for Windows or use --skip-firmware")
-            sys.exit(1)
-    else:
-        _run(["bash", compile_script], cwd=FIRMWARE_DIR)
 
 
 def build_frontend():
     """Build the React frontend."""
-    print("\n=== Stage 2: Build frontend ===")
+    print("\n=== Stage 1: Build frontend ===")
     if not os.path.isfile(os.path.join(FRONTEND_DIR, "package.json")):
         print(f"ERROR: package.json not found at {FRONTEND_DIR}")
         sys.exit(1)
@@ -229,7 +180,7 @@ def _ensure_real_avrdude(avrdude_path):
 
 def validate_assets(avrdude_path):
     """Validate that all required assets exist before packaging."""
-    print("\n=== Stage 3: Validate assets ===")
+    print("\n=== Stage 2: Validate assets ===")
     ok = True
 
     # Frontend dist
@@ -240,27 +191,18 @@ def validate_assets(avrdude_path):
         print(f"  [MISSING] Frontend dist: {index_html}")
         ok = False
 
-    # Hex files (board-aware subdirectory layout)
-    for board in BOARDS:
-        board_hex = []
-        board_dir = os.path.join(HEX_DIR, board)
-        for p in PARADIGMS:
-            sketch = PARADIGM_TO_SKETCH[p]
-            path = os.path.join(board_dir, f"{sketch}.hex")
-            if os.path.isfile(path):
-                board_hex.append(p)
-        if board_hex:
-            print(f"  [OK] Hex files ({board}): {', '.join(board_hex)}")
-        else:
-            # Fallback: check flat layout for uno only
-            if board == "uno":
-                flat_found = [p for p in PARADIGMS
-                              if os.path.isfile(os.path.join(HEX_DIR, f"{PARADIGM_TO_SKETCH[p]}.hex"))]
-                if flat_found:
-                    print(f"  [WARN] Hex files ({board}): using deprecated flat layout — "
-                          f"migrate to hex/{board}/. Found: {', '.join(flat_found)}")
-                else:
-                    print(f"  [WARN] No hex files found for {board}")
+    # Hex files come from the installed reacher package (board-aware layout).
+    hex_dir = resolve_reacher_hex_dir()
+    if not hex_dir:
+        print("  [MISSING] reacher package firmware hex (reacher/hex/)")
+        ok = False
+    else:
+        for board in BOARDS:
+            board_dir = os.path.join(hex_dir, board)
+            board_hex = [p for p in PARADIGMS
+                         if os.path.isfile(os.path.join(board_dir, f"{p}.hex"))]
+            if board_hex:
+                print(f"  [OK] Hex files ({board}): {', '.join(board_hex)}")
             else:
                 print(f"  [WARN] No hex files found for {board} in {board_dir}")
 
@@ -290,7 +232,7 @@ def validate_assets(avrdude_path):
 
 def run_pyinstaller(avrdude_path):
     """Run PyInstaller with the spec file."""
-    print("\n=== Stage 4: Run PyInstaller ===")
+    print("\n=== Stage 3: Run PyInstaller ===")
     if not shutil.which("pyinstaller"):
         print("ERROR: pyinstaller not found. Install with: pip install pyinstaller")
         sys.exit(1)
@@ -308,7 +250,7 @@ def run_pyinstaller(avrdude_path):
 
 def report_output():
     """Report the location of the built artifact."""
-    print("\n=== Stage 5: Build complete ===")
+    print("\n=== Stage 4: Build complete ===")
     system = platform.system()
 
     if system == "Darwin":
@@ -344,17 +286,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Build Labrynth standalone executable",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Example: python build.py --skip-firmware --avrdude /usr/bin/avrdude",
-    )
-    parser.add_argument(
-        "--skip-firmware",
-        action="store_true",
-        help="Skip firmware hex compilation (use existing hex files)",
-    )
-    parser.add_argument(
-        "--fetch-firmware",
-        action="store_true",
-        help=f"Fetch pre-compiled hex files from GitHub ({FIRMWARE_REPO}@{FIRMWARE_BRANCH}) instead of compiling locally",
+        epilog="Example: python build.py --skip-frontend --avrdude /usr/bin/avrdude",
     )
     parser.add_argument(
         "--skip-frontend",
@@ -374,34 +306,22 @@ def main():
     print(f"  Python:   {sys.version.split()[0]}")
     print(f"  Project:  {PROJECT_ROOT}")
 
-    # Stage 0: Validate
-    validate_environment(fetch_firmware_flag=args.fetch_firmware)
+    # Stage 0: Validate (reacher package + its bundled firmware hex)
+    validate_environment()
 
-    # Stage 1: Firmware
-    if args.skip_firmware:
-        print("\n=== Stage 1: Compile firmware [SKIPPED] ===")
-    elif args.fetch_firmware:
-        fetch_firmware()
-    elif not os.path.isfile(os.path.join(FIRMWARE_DIR, "compile.sh")):
-        # Submodule absent and no explicit flag — auto-fall back to GitHub fetch
-        print("\n  [INFO] Firmware submodule absent; auto-fetching from GitHub.")
-        fetch_firmware()
-    else:
-        compile_firmware()
-
-    # Stage 2: Frontend
+    # Stage 1: Frontend
     if args.skip_frontend:
-        print("\n=== Stage 2: Build frontend [SKIPPED] ===")
+        print("\n=== Stage 1: Build frontend [SKIPPED] ===")
     else:
         build_frontend()
 
-    # Stage 3: Validate
+    # Stage 2: Validate
     avrdude_path = validate_assets(args.avrdude)
 
-    # Stage 4: PyInstaller
+    # Stage 3: PyInstaller
     run_pyinstaller(avrdude_path)
 
-    # Stage 5: Report
+    # Stage 4: Report
     report_output()
 
 

@@ -23,7 +23,15 @@ SPEC_DIR = os.path.abspath(SPECPATH)
 PROJECT_ROOT = SPEC_DIR
 
 FRONTEND_DIST = os.path.join(PROJECT_ROOT, "web", "dist")
-HEX_DIR = os.path.join(PROJECT_ROOT, "firmware", "hex")
+
+# Firmware hex ships as package data inside the installed reacher dependency
+# (firmware source moved into the reacher repo when reacher-firmware was
+# archived). Resolve it via build.py's shared helper so spec and orchestrator
+# agree on the source of truth.
+sys.path.insert(0, SPEC_DIR)
+from build import resolve_reacher_hex_dir  # noqa: E402
+
+HEX_DIR = resolve_reacher_hex_dir()
 
 # avrdude — default platform location; override via build.py --avrdude
 AVRDUDE_PATH = os.environ.get("REACHER_AVRDUDE_PATH", "")
@@ -40,11 +48,11 @@ if os.path.isdir(FRONTEND_DIST):
 else:
     print(f"WARNING: Frontend dist not found at {FRONTEND_DIST}")
 
-# Firmware hex files → hex/
-if os.path.isdir(HEX_DIR):
+# Firmware hex files (from the reacher package) → hex/
+if HEX_DIR and os.path.isdir(HEX_DIR):
     datas.append((HEX_DIR, "hex"))
 else:
-    print(f"WARNING: Hex directory not found at {HEX_DIR}")
+    print(f"WARNING: reacher firmware hex directory not found (resolved: {HEX_DIR})")
 
 # avrdude binary + companion DLLs + conf → avrdude/
 #

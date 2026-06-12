@@ -48,37 +48,10 @@ jobs:
         run: python scripts/bump-version.py --check "${{ steps.version.outputs.version }}"
 
   # -------------------------------------------------------------------
-  # Gate — verify firmware submodule matches reacher-firmware develop HEAD
-  # -------------------------------------------------------------------
-  firmware-check:
-    runs-on: ubuntu-latest
-    if: github.ref_type == 'tag'
-    steps:
-      - name: Checkout (with submodules)
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-
-      - name: Verify firmware submodule is current
-        run: |
-          LOCAL=$(git -C firmware rev-parse HEAD)
-          REMOTE=$(git ls-remote https://github.com/otis-lab-musc/reacher-firmware.git refs/heads/develop | awk '{print $1}')
-          echo "firmware local  : $LOCAL"
-          echo "firmware remote : $REMOTE"
-          if [ "$LOCAL" != "$REMOTE" ]; then
-            echo ""
-            echo "ERROR: firmware submodule is stale."
-            echo "Run:  git submodule update --remote --merge firmware"
-            echo "Then: git add firmware && git commit -m 'chore(firmware): sync submodule to develop HEAD'"
-            exit 1
-          fi
-          echo "OK: submodule matches develop HEAD."
-
-  # -------------------------------------------------------------------
   # Windows — Inno Setup installer (.exe)
   # -------------------------------------------------------------------
   build-windows:
-    needs: [version-check, firmware-check]
+    needs: [version-check]
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -132,7 +105,7 @@ jobs:
         run: python -m pip install pyinstaller
 
       - name: Build application
-        run: python build.py --fetch-firmware --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -152,7 +125,7 @@ jobs:
   # macOS — DMG disk image (.dmg) — Apple Silicon (arm64)
   # -------------------------------------------------------------------
   build-macos-arm64:
-    needs: [version-check, firmware-check]
+    needs: [version-check]
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -191,7 +164,7 @@ jobs:
         run: python -m pip install pyinstaller Pillow
 
       - name: Build application
-        run: python build.py --fetch-firmware --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Create DMG
         env:
@@ -213,7 +186,7 @@ jobs:
   # Linux — DEB package (.deb), tarball (.tar.gz), AppImage
   # -------------------------------------------------------------------
   build-linux:
-    needs: [version-check, firmware-check]
+    needs: [version-check]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -252,7 +225,7 @@ jobs:
         run: python -m pip install pyinstaller
 
       - name: Build application
-        run: python build.py --fetch-firmware --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Build DEB package
         env:

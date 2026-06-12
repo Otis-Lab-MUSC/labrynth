@@ -1,4 +1,0 @@
-[submodule "firmware"]
-	path = firmware
-	url = https://github.com/otis-lab-musc/reacher-firmware.git
-	branch = develop

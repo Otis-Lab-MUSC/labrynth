@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Project Is
 
-**Labrynth** is the application shell and orchestrator for the REACHER neuroscience experiment control platform — it bundles a React frontend, Python terminal CLI, Arduino firmware (as a submodule), and a build pipeline into standalone cross-platform installers. The actual experiment backend logic lives in the separate `reacher` Python package (installed as a `pip` dependency, not vendored here). Backend behavior changes require modifying `reacher`, not labrynth.
+**Labrynth** is the application shell and orchestrator for the REACHER neuroscience experiment control platform — it bundles a React frontend, Python terminal CLI, and a build pipeline into standalone cross-platform installers. The actual experiment backend logic lives in the separate `reacher` Python package (installed as a `pip` dependency, not vendored here), which **also ships the Arduino firmware hex artifacts as package data** (`reacher/hex/<board>/`). Firmware source moved into the reacher repo when `reacher-firmware` was archived — labrynth no longer carries a firmware submodule. Backend or firmware changes require modifying `reacher`, not labrynth.
 
 ## Commands
 
@@ -23,8 +23,9 @@ npm run lint        # ESLint
 
 ```bash
 export REACHER_STATIC_DIR=$(pwd)/web/dist
-export REACHER_HEX_DIR=$(pwd)/firmware/hex
 python -m reacher   # Backend at http://localhost:6229
+# Firmware hex is resolved from the installed reacher package automatically;
+# set REACHER_HEX_DIR only to override with a local hex tree.
 ```
 
 ### Python CLI
@@ -40,39 +41,23 @@ reacher-cli                  # Console-script alias (same as `python -m cli`)
 ### Full standalone build
 
 ```bash
-git submodule update --init --recursive   # First-time only — pulls reacher-firmware
-python build.py                           # All 5 stages
-python build.py --skip-firmware           # Reuse existing firmware/hex/
+pip install -e ../reacher                 # First-time/dev: install reacher (ships firmware hex)
+python build.py                           # All 4 stages
 python build.py --skip-frontend           # Reuse existing web/dist/
 python build.py --avrdude /usr/bin/avrdude  # Bundle a specific avrdude binary
 ```
 
-Build pipeline: (0) validate env (submodule + reacher install) → (1) compile/fetch firmware hex via `firmware/compile.sh` or GitHub raw → (2) `npm ci && npm run build` → (3) verify assets → (4) PyInstaller. **Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS).**
+Build pipeline: (0) validate env (reacher install + its bundled firmware hex) → (1) `npm ci && npm run build` → (2) verify assets → (3) PyInstaller. Firmware hex is sourced from the installed `reacher` package (`reacher/hex/<board>/`) — no compile or fetch step. **Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS).**
 
 ### Versioning
 
 ```bash
-python scripts/bump-version.py              # Print current version + firmware submodule SHA
+python scripts/bump-version.py              # Print current version
 python scripts/bump-version.py 2.1.20       # Set version in pyproject.toml + web/package.json
 python scripts/bump-version.py --check 2.1.20  # Verify all files match (CI uses this)
-python scripts/bump-version.py --check-firmware  # Verify firmware submodule matches develop HEAD
 ```
 
-**Pre-bump checklist:** before bumping to a new version, confirm the firmware submodule is current:
-
-```bash
-python scripts/bump-version.py --check-firmware
-```
-
-If stale, sync first:
-
-```bash
-git submodule update --remote --merge firmware
-git add firmware
-git commit -m "chore(firmware): sync submodule to develop HEAD"
-```
-
-CI (`build-installers.yml`) also rejects tag builds where the submodule pointer diverges from `reacher-firmware` develop HEAD. If the submodule is deliberately pinned to a non-develop commit, trigger the build via `workflow_dispatch` instead of a tag push.
+Firmware version is pinned by the `reacher` dependency in `pyproject.toml` (`reacher>=2.4.0`); bump that pin to ship a newer firmware. CI (`build-installers.yml`) gates tag builds on version consistency only — the firmware-submodule divergence gate was removed with the submodule.
 
 ### Testing
 
@@ -119,9 +104,9 @@ The CLI mirrors browser-UI capabilities (sessions, hardware, program presets, li
 
 ### Build system
 
-- **`build.py`** — 5-stage orchestrator. **Firmware fetch defaults to the `develop` branch** of `Otis-Lab-MUSC/reacher-firmware` (via raw GitHub URLs) when `--use-github` is passed; otherwise compiles locally via `firmware/compile.sh`. The `firmware/` submodule itself tracks `develop`.
+- **`build.py`** — 4-stage orchestrator. Firmware hex is sourced from the installed `reacher` package via `resolve_reacher_hex_dir()` (uses `importlib.resources`); there is no firmware compile/fetch step. `labrynth.spec` imports the same resolver so both agree on the hex source.
 - **`launcher.py`** — PyInstaller entry point; sets `REACHER_STATIC_DIR` so the bundled backend serves `web/dist/`.
-- **`labrynth.spec`** — bundles `web/dist/` → `static/`, `firmware/hex/` → `hex/`, and avrdude (binary, companion DLLs/`.so`/`.dylib`, and `avrdude.conf`) → `avrdude/` inside `_MEIPASS`. Avrdude path comes from `REACHER_AVRDUDE_PATH` env var (set by `build.py --avrdude`).
+- **`labrynth.spec`** — bundles `web/dist/` → `static/`, the reacher package's `hex/` → `hex/` (resolved via `build.resolve_reacher_hex_dir()`), and avrdude (binary, companion DLLs/`.so`/`.dylib`, and `avrdude.conf`) → `avrdude/` inside `_MEIPASS`. Avrdude path comes from `REACHER_AVRDUDE_PATH` env var (set by `build.py --avrdude`).
 
 ### CI/CD (`.github/workflows/`)
 
@@ -135,4 +120,4 @@ The CLI mirrors browser-UI capabilities (sessions, hardware, program presets, li
 - Versions in `pyproject.toml` and `web/package.json` are kept in sync via `scripts/bump-version.py` — never bump them by hand.
 - `__APP_VERSION__` is injected at Vite build time from `web/package.json` and shown in the footer for the `reacher` theme.
 - Don't add a test framework without coordinating — the project deliberately has none.
-- The `firmware/` submodule and the `reacher` package are external dependencies; changes to firmware behavior or backend logic happen in those repos, not here.
+- The `reacher` package is an external dependency that bundles both backend logic and firmware hex; changes to firmware behavior or backend logic happen in the reacher repo, not here.
