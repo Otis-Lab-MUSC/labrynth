@@ -4,14 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-> Labrynth uses development versioning (`-dev` suffix) between releases. Entries here are grouped by minor-version series.
+> Labrynth follows semantic versioning with an explicit prerelease ladder for
+> beta testers: `X.Y.Z-alpha.N` (lab/internal) → `-beta.N` (external testers) →
+> `-rc.N` → stable `X.Y.Z`. The old `-dev` suffix is retired as of v3.0.0.
 
 ---
 
 ## [Unreleased]
 
+---
+
+## [3.0.0-alpha.1] - 2026-06-12
+
+_First release of the **v3** line and the first cut under the new semver
+prerelease policy. The v2 series shipped only as `-dev` tags; this alpha moves
+Labrynth onto a `main`-based release flow with prerelease channels for testers.
+Pre-stable, intended for lab/internal testing._
+
 ### Changed
-- Firmware is now sourced from the `reacher` pip dependency (which ships hex as package data) instead of the `reacher-firmware` git submodule. Bumped the `reacher` pin to `>=2.4.0`.
+- Version bumped to **3.0.0-alpha.1**; retired the `-dev` versioning scheme in favor of the `alpha → beta → rc → stable` ladder.
+- Firmware is now sourced from the `reacher` pip dependency (which ships hex as package data) instead of the `reacher-firmware` git submodule. Bumped the `reacher` pin to `>=3.0.0a1` to ship the v3 backend + firmware.
 
 ### Removed
 - The `firmware/` git submodule and its `.gitmodules` entry. Firmware source moved into the [reacher](https://github.com/otis-lab-musc/reacher) repo (`firmware/`), and the standalone `reacher-firmware` repo was archived.

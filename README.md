@@ -2,7 +2,7 @@
 
 **Build orchestrator, React frontend, and terminal CLI for the REACHER ecosystem**
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/Otis-Lab-MUSC/labrynth)
+[![Version](https://img.shields.io/badge/version-3.0.0--alpha.1-blue)](https://github.com/Otis-Lab-MUSC/labrynth/releases)
 [![Python](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-orange)](CHANGELOG.md)
@@ -11,6 +11,27 @@
 *Written by*: Joshua Boquiren
 
 [![](https://img.shields.io/badge/@thejoshbq-grey?style=flat&logo=github)](https://github.com/thejoshbq)
+
+---
+
+## Download
+
+Prebuilt installers for **Windows (`.exe`)**, **macOS (`.dmg`)**, and **Linux
+(`.deb` / `.AppImage`)** are attached to each [GitHub Release](https://github.com/Otis-Lab-MUSC/labrynth/releases).
+
+**Release channels** (newest first reach testers earliest):
+
+| Channel | Tag form | Audience | Marked |
+|---|---|---|---|
+| Alpha | `vX.Y.Z-alpha.N` | Lab / internal testing | Pre-release |
+| Beta | `vX.Y.Z-beta.N` | Trusted external testers | Pre-release |
+| Release candidate | `vX.Y.Z-rc.N` | Final validation | Pre-release |
+| Stable | `vX.Y.Z` | General use | Latest |
+
+> **Beta testers:** grab the newest **pre-release** from the
+> [releases page](https://github.com/Otis-Lab-MUSC/labrynth/releases) and pick
+> the asset for your OS. Stable builds appear under
+> [Latest release](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest).
 
 ---
 
