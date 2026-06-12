@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       reacher_ref:
-        description: 'reacher repo branch/tag to install (default: develop)'
+        description: 'reacher repo branch/tag to install (default: main)'
         required: false
-        default: 'develop'
+        default: 'main'
 
 permissions:
   contents: write
@@ -96,7 +96,7 @@ jobs:
       - name: Install reacher from source
         shell: bash
         run: |
-          REF="${{ inputs.reacher_ref || 'develop' }}"
+          REF="${{ inputs.reacher_ref || 'main' }}"
           git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
           python -m pip install ./_reacher
           python -c "import reacher; print('reacher OK')"
@@ -155,7 +155,7 @@ jobs:
 
       - name: Install reacher from source
         run: |
-          REF="${{ inputs.reacher_ref || 'develop' }}"
+          REF="${{ inputs.reacher_ref || 'main' }}"
           git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
           python -m pip install ./_reacher
           python -c "import reacher; print('reacher OK')"
@@ -216,7 +216,7 @@ jobs:
 
       - name: Install reacher from source
         run: |
-          REF="${{ inputs.reacher_ref || 'develop' }}"
+          REF="${{ inputs.reacher_ref || 'main' }}"
           git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
           python -m pip install ./_reacher
           python -c "import reacher; print('reacher OK')"
