@@ -14,6 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.0-beta.4] - 2026-06-15
+
+### Fixed
+- Infusion counter and primary-pump arm-state sync now recognise `PUMP_1` emitted by operant-paradigm firmware (FR/PR/VI/Omission) alongside legacy `PUMP`; real operant sessions silently skipped the counter increment while demo mode (which already used `PUMP_1`) worked correctly ([#45](https://github.com/Otis-Lab-MUSC/labrynth/issues/45))
+
+---
+
 ## [3.0.0-alpha.1] - 2026-06-12
 
 _First release of the **v3** line and the first cut under the new semver
