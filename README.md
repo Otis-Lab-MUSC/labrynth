@@ -263,7 +263,7 @@ Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS)
 
 ## Updating the Firmware
 
-Firmware ships inside the `reacher` package. To pick up a newer firmware build, bump the `reacher` dependency pin in `pyproject.toml` (e.g. `reacher>=2.4.0`) and reinstall. Firmware source and hex live in the [reacher](https://github.com/otis-lab-musc/reacher) repo under `firmware/` and `src/reacher/hex/`.
+Firmware ships inside the `reacher` package. To pick up a newer firmware build, bump the `reacher` dependency pin with `python scripts/bump-version.py --reacher-pin <reacher-semver>` (it writes the PEP 440 form, e.g. `reacher>=3.0.0a1`) and reinstall. Firmware source and hex live in the [reacher](https://github.com/otis-lab-musc/reacher) repo under `firmware/` and `src/reacher/hex/`.
 
 ---
 

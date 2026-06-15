@@ -1,12 +1,12 @@
-name: Build & Release Labrynth
+name: Build & Release Labrynth (Prerelease)
 
 on:
   push:
-    tags: ['v[0-9]+.[0-9]+.[0-9]+']   # stable tags only — prerelease tags handled by build-prerelease.yml
+    tags: ['v*.*.*-alpha.*', 'v*.*.*-beta.*', 'v*.*.*-rc.*']
   workflow_dispatch:
     inputs:
       reacher_ref:
-        description: 'reacher branch/tag to install (use a stable tag for stable releases)'
+        description: 'reacher branch/tag to bundle (e.g. v3.0.0-alpha.2, main, or a branch name)'
         required: false
         default: 'main'
 
@@ -19,14 +19,14 @@ env:
 
 jobs:
   # -------------------------------------------------------------------
-  # Gate — verify source files match the tag version
+  # Gate — verify source files match the tag version + resolve reacher ref
   # -------------------------------------------------------------------
   version-check:
     runs-on: ubuntu-latest
-    # Belt-and-suspenders: reject prerelease tags on workflow_dispatch (tag filter handles push)
-    if: github.ref_type != 'tag' || (!contains(github.ref_name, '-alpha') && !contains(github.ref_name, '-beta') && !contains(github.ref_name, '-rc'))
     outputs:
       version: ${{ steps.version.outputs.version }}
+      reacher_ref: ${{ steps.reacher_ref.outputs.ref }}
+      reacher_ref_source: ${{ steps.reacher_ref.outputs.source }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,15 +39,45 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
           else
             echo "version=0.0.0-dev" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Verify tag is a prerelease
+        if: github.ref_type == 'tag'
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ -(alpha|beta|rc)\. ]]; then
+            echo "ERROR: build-prerelease.yml triggered by a non-prerelease tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
       - name: Verify version consistency
         if: github.ref_type == 'tag'
-        run: python scripts/bump-version.py --check "${{ steps.version.outputs.version }}"
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: python scripts/bump-version.py --check "$VERSION"
+
+      - name: Resolve reacher ref
+        id: reacher_ref
+        env:
+          REACHER_REF_INPUT: ${{ inputs.reacher_ref || 'main' }}
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            # Tag-triggered: derive deterministically from the committed reacher pin
+            REF=$(python scripts/bump-version.py --print-reacher-ref)
+            if [ -z "$REF" ]; then
+              echo "ERROR: Could not determine reacher ref from pyproject.toml pin" >&2
+              exit 1
+            fi
+            echo "ref=$REF" >> "$GITHUB_OUTPUT"
+            echo "source=pyproject_pin" >> "$GITHUB_OUTPUT"
+          else
+            # workflow_dispatch: use the provided input (defaults to 'main')
+            echo "ref=$REACHER_REF_INPUT" >> "$GITHUB_OUTPUT"
+            echo "source=workflow_dispatch" >> "$GITHUB_OUTPUT"
+          fi
 
   # -------------------------------------------------------------------
   # Windows — Inno Setup installer (.exe)
@@ -55,6 +85,7 @@ jobs:
   build-windows:
     needs: [version-check]
     runs-on: windows-latest
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -96,12 +127,13 @@ jobs:
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
 
       - name: Install reacher from source
+        env:
+          REACHER_REF: ${{ needs.version-check.outputs.reacher_ref }}
         shell: bash
         run: |
-          REF="${{ inputs.reacher_ref || 'main' }}"
-          git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
+          git clone --depth 1 --branch "$REACHER_REF" https://github.com/otis-lab-musc/reacher.git _reacher
           python -m pip install ./_reacher
-          python -c "import reacher; print('reacher OK')"
+          python -c "import reacher; print('reacher OK:', reacher.__version__)"
 
       - name: Install Python build tools
         run: python -m pip install pyinstaller
@@ -129,6 +161,7 @@ jobs:
   build-macos-arm64:
     needs: [version-check]
     runs-on: macos-latest
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -156,11 +189,12 @@ jobs:
           echo "Found avrdude at: $AVRDUDE"
 
       - name: Install reacher from source
+        env:
+          REACHER_REF: ${{ needs.version-check.outputs.reacher_ref }}
         run: |
-          REF="${{ inputs.reacher_ref || 'main' }}"
-          git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
+          git clone --depth 1 --branch "$REACHER_REF" https://github.com/otis-lab-musc/reacher.git _reacher
           python -m pip install ./_reacher
-          python -c "import reacher; print('reacher OK')"
+          python -c "import reacher; print('reacher OK:', reacher.__version__)"
 
       - name: Install Python build tools
         run: python -m pip install pyinstaller Pillow
@@ -190,6 +224,7 @@ jobs:
   build-linux:
     needs: [version-check]
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -217,11 +252,12 @@ jobs:
           echo "Found avrdude at: $AVRDUDE"
 
       - name: Install reacher from source
+        env:
+          REACHER_REF: ${{ needs.version-check.outputs.reacher_ref }}
         run: |
-          REF="${{ inputs.reacher_ref || 'main' }}"
-          git clone --depth 1 --branch "$REF" https://github.com/otis-lab-musc/reacher.git _reacher
+          git clone --depth 1 --branch "$REACHER_REF" https://github.com/otis-lab-musc/reacher.git _reacher
           python -m pip install ./_reacher
-          python -c "import reacher; print('reacher OK')"
+          python -c "import reacher; print('reacher OK:', reacher.__version__)"
 
       - name: Install Python build tools
         run: python -m pip install pyinstaller
@@ -323,12 +359,14 @@ jobs:
             labrynth-${{ needs.version-check.outputs.version }}-linux-x64.AppImage
 
   # -------------------------------------------------------------------
-  # Release — publish artifacts to GitHub Releases
+  # Release — publish artifacts; proceeds even with partial platform coverage
   # -------------------------------------------------------------------
   release:
     needs: [build-windows, build-macos-arm64, build-linux, version-check]
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag'
+    # Run even if some build jobs failed (continue-on-error makes them report 'success'),
+    # but only for tag-triggered runs and only if version-check passed.
+    if: always() && github.ref_type == 'tag' && needs.version-check.result == 'success'
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -341,10 +379,18 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
+        env:
+          VERSION: ${{ needs.version-check.outputs.version }}
+          REACHER_REF: ${{ needs.version-check.outputs.reacher_ref }}
+          REACHER_REF_SOURCE: ${{ needs.version-check.outputs.reacher_ref_source }}
         with:
           generate_release_notes: true
-          prerelease: false
+          prerelease: true
           body: |
+            > **Pre-release build** — for lab beta-testers. May contain known bugs. Do not use in production experiments without explicit sign-off.
+
+            **Labrynth:** `${{ needs.version-check.outputs.version }}` | **reacher bundled:** `${{ needs.version-check.outputs.reacher_ref }}` (resolved from ${{ needs.version-check.outputs.reacher_ref_source }})
+
             ## Downloads
 
             | Platform | File | Notes |
@@ -354,6 +400,11 @@ jobs:
             | Linux (Debian/Ubuntu) | `labrynth_*_amd64.deb` | `sudo dpkg -i *.deb` |
             | Linux (portable) | `labrynth-*-linux-x64.AppImage` | Any distro |
             | Linux (tarball) | `labrynth-*-linux-x64.tar.gz` | Extract and run |
+
+            > Not all platforms may be available for this build — check the attached assets.
+
+            ## Reporting issues
+            Include: OS version, exact installer filename, and the reacher version shown in the app's About modal.
 
             <details>
             <summary>Platform-specific notes</summary>

@@ -52,12 +52,29 @@ Build pipeline: (0) validate env (reacher install + its bundled firmware hex) �
 ### Versioning
 
 ```bash
-python scripts/bump-version.py              # Print current version
-python scripts/bump-version.py 2.1.20       # Set version in pyproject.toml + web/package.json
-python scripts/bump-version.py --check 2.1.20  # Verify all files match (CI uses this)
+python scripts/bump-version.py                     # Print current version + reacher pin
+python scripts/bump-version.py 3.1.0-beta.1        # Set app version (pyproject.toml + web/package.json + README badge)
+python scripts/bump-version.py --stage alpha        # Advance to next alpha/beta/rc/stable automatically
+python scripts/bump-version.py --check 3.1.0-beta.1         # Verify all files match (CI uses this)
+python scripts/bump-version.py --reacher-pin 3.1.0          # Set the reacher dependency pin (semver in, PEP 440 out)
+python scripts/bump-version.py --validate-stable             # Exit 1 if current version has a prerelease suffix
+python scripts/bump-version.py --print-reacher-ref           # Print the reacher git ref from the stored pin
 ```
 
-Firmware version is pinned by the `reacher` dependency in `pyproject.toml` (`reacher>=2.4.0`); bump that pin to ship a newer firmware. CI (`build-installers.yml`) gates tag builds on version consistency only — the firmware-submodule divergence gate was removed with the submodule.
+The app version and the `reacher` pin are **independent axes**. `--reacher-pin`
+takes the backend's semver and writes the PEP 440 form pip resolves
+(`3.0.0-alpha.1` → `reacher>=3.0.0a1`) so the prerelease pin is never
+hand-derived; bump it to ship a newer reacher backend + firmware. Never
+hand-edit either — the README badge is stamped by the version bump, and CI
+gates tag builds on `--check` consistency.
+
+**`--stage`** advances through the prerelease ladder automatically:
+`alpha.N` → `alpha.N+1`, `alpha.N` → `beta.1` (promotion resets the counter),
+`beta.N` → `rc.1`, `rc.N` → stable (strips suffix). Prevents manual counter math
+and enforces the forward-only ladder (regression exits 1).
+
+See `RELEASING.md` for the full release workflow and the two-workflow model
+(`build-installers.yml` for stable, `build-prerelease.yml` for alpha/beta/rc).
 
 ### Testing
 
@@ -110,7 +127,8 @@ The CLI mirrors browser-UI capabilities (sessions, hardware, program presets, li
 
 ### CI/CD (`.github/workflows/`)
 
-- **`build-installers.yml`** — on `v*.*.*` tags, builds Windows `.exe` (Inno Setup `installer/reacher.iss`), macOS `.dmg`, Linux `.deb` + `.tar.gz`.
+- **`build-installers.yml`** — stable releases only (`vX.Y.Z` tags, no prerelease suffix). Builds Windows `.exe`, macOS `.dmg`, Linux `.deb` + `.tar.gz` + `.AppImage`. `prerelease: false` hardcoded. Use `/release` skill to cut stable.
+- **`build-prerelease.yml`** — prerelease builds (`vX.Y.Z-alpha.*`, `vX.Y.Z-beta.*`, `vX.Y.Z-rc.*` tags). Same build matrix; `prerelease: true` hardcoded. Platform builds use `continue-on-error: true` (alpha may fail a platform). The reacher ref to bundle is derived automatically from the `reacher>=` pin in `pyproject.toml` via `--print-reacher-ref`. Do **not** use `/release` for prereleases — see `RELEASING.md`.
 - **`deploy-demo.yml`** — deploys `web/dist/` (built with `VITE_DEMO_SITE=true`) as a static demo site. Demo mode swaps the API client for `demoClient.ts` + `mock.ts` and disables real backend calls.
 
 ## Conventions
