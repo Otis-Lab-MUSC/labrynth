@@ -268,7 +268,10 @@ export function useSessionWebSockets() {
       } else {
         // Local machine or legacy remote with synchronous token
         const localOnGiveUp = () => {
-          useAppStore.getState().setServerSuspended(true);
+          const sessState = useSessionStore.getState().sessions.get(id)?.state;
+          if (sessState !== "running" && sessState !== "paused") {
+            useAppStore.getState().setServerSuspended(true);
+          }
           useSessionStore.getState().updateState(id, "disconnected");
           useLogStore.getState().pushLog("warn", "Server unreachable — session timed out", id);
         };

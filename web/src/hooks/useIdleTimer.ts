@@ -44,6 +44,7 @@ export function useIdleTimer(hasActiveSession: boolean) {
       clearTimers();
 
       suspendTimer.id = setTimeout(() => {
+        if (hasActiveSessionRef.current) return;
         useAppStore.getState().setServerSuspended(true);
       }, SUSPEND_MS);
 

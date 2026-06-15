@@ -1,9 +1,15 @@
 import { useAppStore } from "../../store/useAppStore";
+import { useSessionStore } from "../../store/useSessionStore";
 
 export function ServerSuspendedOverlay() {
   const serverSuspended = useAppStore((s) => s.serverSuspended);
   const hardKillIn = useAppStore((s) => s.hardKillIn);
   const appClosing = useAppStore((s) => s.appClosing);
+  const hasActiveSession = useSessionStore(
+    (s) => [...s.sessions.values()].some(
+      (sess) => sess.state === "connected" || sess.state === "running" || sess.state === "paused"
+    )
+  );
 
   if (!serverSuspended) return null;
 
@@ -23,12 +29,18 @@ export function ServerSuspendedOverlay() {
           </p>
         )}
         {!appClosing && (
-          <button
-            onClick={() => window.location.reload()}
-            className="rounded bg-accent px-4 py-2 text-sm font-semibold text-black hover:opacity-90 transition-opacity"
-          >
-            Reconnect
-          </button>
+          hasActiveSession ? (
+            <p className="text-xs text-yellow-400 mt-2">
+              An active session is running — reloading will discard session data.
+            </p>
+          ) : (
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded bg-accent px-4 py-2 text-sm font-semibold text-black hover:opacity-90 transition-opacity"
+            >
+              Reconnect
+            </button>
+          )
         )}
       </div>
     </div>
