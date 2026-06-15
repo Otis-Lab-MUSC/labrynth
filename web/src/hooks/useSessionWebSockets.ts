@@ -30,7 +30,7 @@ const DEVICE_TO_UI_KEY: Record<string, string> = {
   SLM: "slm",
 };
 
-async function triggerAutoExport(sessionId: string) {
+export async function triggerAutoExport(sessionId: string) {
   const sess = useSessionStore.getState().sessions.get(sessionId);
   if (!sess || !sess.behaviorData.length) return;
   const client = getClientForSession(sessionId);
@@ -167,12 +167,29 @@ function handleMessage(msg: WSMessage) {
     }
     case "server_suspended": {
       const { hard_kill_in } = msg.data as { reason: string; hard_kill_in: number };
-      useAppStore.getState().setServerSuspended(true, hard_kill_in);
+      const sessState = useSessionStore.getState().sessions.get(msg.session_id)?.state;
+      if (sessState !== "running" && sessState !== "paused") {
+        useAppStore.getState().setServerSuspended(true, hard_kill_in);
+      } else {
+        const sess = useSessionStore.getState().sessions.get(msg.session_id);
+        if (sess?.behaviorData.length && !sess.exportState?.result) {
+          triggerAutoExport(msg.session_id);
+        }
+      }
       pushLog("warn", `Server suspended (idle watchdog). Hard kill in ~${Math.round(hard_kill_in / 60)} min.`, msg.session_id);
       break;
     }
     case "server_resumed": {
       useAppStore.getState().setServerSuspended(false);
+      break;
+    }
+    case "session_orphaned": {
+      const { hard_kill_in } = msg.data as { reason: string; hard_kill_in: number };
+      pushLog("warn", `Session orphaned — server had no connected clients during active session. Hard kill in ~${Math.round(hard_kill_in / 60)} min.`, msg.session_id);
+      const sess = useSessionStore.getState().sessions.get(msg.session_id);
+      if (sess?.behaviorData.length && !sess.exportState?.result) {
+        triggerAutoExport(msg.session_id);
+      }
       break;
     }
     // Fix: F-014 — Log unhandled message types so future protocol changes are visible

@@ -1,5 +1,6 @@
 import { useAppStore } from "../../store/useAppStore";
 import { useSessionStore } from "../../store/useSessionStore";
+import { triggerAutoExport } from "../../hooks/useSessionWebSockets";
 
 export function ServerSuspendedOverlay() {
   const serverSuspended = useAppStore((s) => s.serverSuspended);
@@ -10,6 +11,12 @@ export function ServerSuspendedOverlay() {
       (sess) => sess.state === "connected" || sess.state === "running" || sess.state === "paused"
     )
   );
+  const sessionIdWithData = useSessionStore((s) => {
+    for (const [id, sess] of s.sessions) {
+      if ((sess.behaviorData?.length ?? 0) > 0 && !sess.exportState?.result) return id;
+    }
+    return null;
+  });
 
   if (!serverSuspended) return null;
 
@@ -34,12 +41,22 @@ export function ServerSuspendedOverlay() {
               An active session is running — reloading will discard session data.
             </p>
           ) : (
-            <button
-              onClick={() => window.location.reload()}
-              className="rounded bg-accent px-4 py-2 text-sm font-semibold text-black hover:opacity-90 transition-opacity"
-            >
-              Reconnect
-            </button>
+            <div className="flex flex-col items-center gap-3 mt-4">
+              {sessionIdWithData && (
+                <button
+                  onClick={() => triggerAutoExport(sessionIdWithData)}
+                  className="rounded bg-yellow-500 px-4 py-2 text-sm font-semibold text-black hover:opacity-90 transition-opacity"
+                >
+                  Export Session Data
+                </button>
+              )}
+              <button
+                onClick={() => window.location.reload()}
+                className="rounded bg-accent px-4 py-2 text-sm font-semibold text-black hover:opacity-90 transition-opacity"
+              >
+                Reconnect
+              </button>
+            </div>
           )
         )}
       </div>

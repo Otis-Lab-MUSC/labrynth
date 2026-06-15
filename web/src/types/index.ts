@@ -192,4 +192,5 @@ export type WSMessage =
   | { type: "split"; session_id: string; data: { segment_number: number; export_path: string } }
   | { type: "restart"; session_id: string; data: Record<string, never> }
   | { type: "server_suspended"; session_id: string; data: { reason: string; hard_kill_in: number } }
-  | { type: "server_resumed"; session_id: string; data: Record<string, never> };
+  | { type: "server_resumed"; session_id: string; data: Record<string, never> }
+  | { type: "session_orphaned"; session_id: string; data: { reason: string; hard_kill_in: number } };
