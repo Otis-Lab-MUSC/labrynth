@@ -288,6 +288,11 @@ export function useSessionWebSockets() {
           const sessState = useSessionStore.getState().sessions.get(id)?.state;
           if (sessState !== "running" && sessState !== "paused") {
             useAppStore.getState().setServerSuspended(true);
+          } else {
+            const sess = useSessionStore.getState().sessions.get(id);
+            if (sess?.behaviorData.length && !sess.exportState?.result) {
+              triggerAutoExport(id);
+            }
           }
           useSessionStore.getState().updateState(id, "disconnected");
           useLogStore.getState().pushLog("warn", "Server unreachable — session timed out", id);

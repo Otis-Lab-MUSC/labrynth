@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Play, Pause, Square, Scissors, RotateCcw } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { getClientForSession } from "../../api/sessionClient";
+import { triggerAutoExport } from "../../hooks/useSessionWebSockets";
 import { EventTimeline } from "./EventTimeline";
 import { LiveStats } from "./LiveStats";
 import { SessionProgress } from "./SessionProgress";
@@ -128,7 +129,16 @@ export function MonitorPanel() {
 
       {isHostOffline && (
         <div role="status" className="rounded border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-mono text-red-400">
-          Host offline — controls disabled. Session data is preserved.
+          <p>Host offline — controls disabled. Session data is preserved.</p>
+          {session.behaviorData.length > 0 && !session.exportState?.result && (
+            <button
+              onClick={() => triggerAutoExport(activeSessionId!)}
+              disabled={!!session.exportState?.exporting}
+              className="mt-2 rounded bg-red-500/20 px-3 py-1 text-xs font-semibold text-red-300 hover:bg-red-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {session.exportState?.exporting ? "Saving…" : "Export Session Data"}
+            </button>
+          )}
         </div>
       )}
 
