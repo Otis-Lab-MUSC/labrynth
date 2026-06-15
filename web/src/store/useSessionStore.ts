@@ -262,7 +262,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       if (!sess || sess.state !== "running") return s;
       const next = new Map(s.sessions);
       const infusionCount =
-        event.device === "PUMP" && event.event === "INFUSION"
+        (event.device === "PUMP" || event.device === "PUMP_1") && event.event === "INFUSION"
           ? sess.infusionCount + 1
           : sess.infusionCount;
       const pressCount =
