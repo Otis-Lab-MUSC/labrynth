@@ -14,6 +14,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.0-beta.5] - 2026-06-16
+
+### Fixed
+- `portBoards` map is now populated on initial machine load so the firmware uploader's board auto-detect works without a manual port refresh ([labrynth#47](https://github.com/Otis-Lab-MUSC/labrynth/issues/47))
+
+### Changed
+- Hardware device display names standardized to title-case (`Cue 1`, `Pump 1`, `RH Lever`, etc.) across the event timeline legend, session-start modal, preset cards, and hardware controls ([labrynth#48](https://github.com/Otis-Lab-MUSC/labrynth/issues/48))
+- Controller lifecycle events (`CONTROLLER START/END`) are now filtered from the event timeline display; they remain in session data for the backend auto-stop trigger ([labrynth#49](https://github.com/Otis-Lab-MUSC/labrynth/issues/49))
+- Stats panel stat cards receive improved visual contrast, spacing, and shadow; session progress bar is slightly taller with smoother fill transition ([labrynth#50](https://github.com/Otis-Lab-MUSC/labrynth/issues/50))
+
+---
+
 ## [3.0.0-beta.4] - 2026-06-15
 
 ### Fixed
