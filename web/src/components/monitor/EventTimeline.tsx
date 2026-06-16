@@ -203,8 +203,8 @@ export function EventTimeline({ events }: Props) {
   const accentRgb = useMemo(() => readAccentRgb(), [isDark]);
   const textPrimaryRgb = useMemo(() => readTextPrimaryRgb(), [isDark]);
 
-  // Filter out PAVLOV events from display (keep them in data for backend auto-stop)
-  const displayEvents = events.filter((e) => e.device !== "PAVLOV");
+  // Filter out PAVLOV and CONTROLLER events from display (keep them in data for backend auto-stop)
+  const displayEvents = events.filter((e) => e.device !== "PAVLOV" && e.device !== "CONTROLLER");
 
   if (displayEvents.length === 0) {
     return (
