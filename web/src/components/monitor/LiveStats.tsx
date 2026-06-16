@@ -78,7 +78,7 @@ export function LiveStats({ session }: Props) {
             {(["RH", "LH"] as const).map((lever) => {
               const counts = lever === "RH" ? session.rhLeverCounts : session.lhLeverCounts;
               return (
-                <tr key={lever} className="border-t border-theme-border/30">
+                <tr key={lever} className="border-t border-theme-border/50">
                   <td className="text-theme-text/60 text-xs uppercase tracking-wider py-1 pr-4">{lever}</td>
                   {config.pressTypes.map((type) => (
                     <td key={type} className="text-right text-accent font-bold tabular-nums py-1 px-3">
@@ -104,13 +104,13 @@ export function LiveStats({ session }: Props) {
           </span>
           <div className="flex-1 border-b border-dashed border-theme-border" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {sessionStats.map((stat) => (
             <div
               key={stat.label}
-              className="rounded-md border border-theme-border/40 bg-theme-bg/30 px-3 py-2 flex flex-col"
+              className="rounded-md border border-theme-border/60 bg-theme-bg/50 px-3 py-2.5 flex flex-col shadow-sm"
             >
-              <span className="text-theme-text/60 text-[10px] uppercase tracking-wider">
+              <span className="text-theme-text/50 text-[10px] uppercase tracking-widest">
                 {stat.label}
               </span>
               <span className="text-accent font-bold text-lg tabular-nums leading-tight mt-0.5">
@@ -128,7 +128,7 @@ export function LiveStats({ session }: Props) {
           <span className="text-accent text-xs uppercase tracking-wider font-bold">Cumulative</span>
           <div className="flex-1 border-b border-dashed border-theme-border" />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
             { label: "SEGMENTS", value: session.segmentNumber + 1 },
             { label: "TOTAL INF.", value: session.cumulativeInfusionCount + session.infusionCount },
@@ -147,9 +147,9 @@ export function LiveStats({ session }: Props) {
           ].map((stat) => (
             <div
               key={stat.label}
-              className="rounded-md border border-theme-border/40 bg-theme-bg/30 px-3 py-2 flex flex-col"
+              className="rounded-md border border-theme-border/60 bg-theme-bg/50 px-3 py-2.5 flex flex-col shadow-sm"
             >
-              <span className="text-theme-text/60 text-[10px] uppercase tracking-wider">
+              <span className="text-theme-text/50 text-[10px] uppercase tracking-widest">
                 {stat.label}
               </span>
               <span className="text-accent font-bold text-lg tabular-nums leading-tight mt-0.5">

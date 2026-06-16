@@ -19,9 +19,9 @@ function ProgressBar({ label, pct, display }: { label: string; pct: number; disp
         <span className="text-theme-text/60 uppercase text-xs tracking-wider">{label}</span>
         <span className="text-accent font-bold tabular-nums text-xs">{display}</span>
       </div>
-      <div className="h-2 w-full rounded-full bg-black border border-theme-border">
+      <div className="h-2.5 w-full rounded-full bg-black/60 border border-theme-border/60">
         <div
-          className="h-full rounded-full bg-accent transition-all duration-200"
+          className="h-full rounded-full bg-accent transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -46,7 +46,7 @@ export function SessionProgress({ session, elapsed }: Props) {
   const countLabel = isTrials ? "TRIALS" : "INFUSIONS";
 
   return (
-    <div className="rounded-lg border border-theme-border bg-panel p-4 font-mono text-sm">
+    <div className="rounded-lg border border-theme-border/70 bg-panel p-4 font-mono text-sm shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-accent text-xs uppercase tracking-wider font-bold">Session Progress</span>
         <div className="flex-1 border-b border-dashed border-theme-border" />
