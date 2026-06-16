@@ -16,7 +16,7 @@ Those are independent axes:
 
   - The plain ``<version>`` / ``--check`` forms manage Labrynth's own version.
     The README badge stores it shields.io-escaped (``-`` -> ``--``).
-  - ``--reacher-pin <semver>`` manages the ``reacher>=X.Y.Z`` dependency,
+  - ``--reacher-pin <semver>`` manages the ``reacher2p>=X.Y.Z`` dependency,
     normalizing the semver to its PEP 440 form (``3.0.0-alpha.1`` -> ``3.0.0a1``)
     so the pin pip actually resolves is never hand-derived. Bump this to ship a
     newer reacher backend + firmware.

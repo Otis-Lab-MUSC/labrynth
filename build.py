@@ -20,7 +20,7 @@ Usage:
   python build.py --avrdude /usr/bin/avrdude  # explicit avrdude path
 
 Requires: Python 3.10+, Node.js, npm, PyInstaller (pip install pyinstaller),
-and the reacher package installed (pip install reacher or -e ../reacher).
+and the reacher package installed (pip install reacher2p or -e ../reacher).
 """
 
 import argparse
@@ -88,7 +88,7 @@ def validate_environment():
         print(f"  [OK] reacher package (v{version})")
     except ImportError:
         print("ERROR: reacher package not installed.")
-        print("       Run: pip install -e ../reacher   (or: pip install reacher)")
+        print("       Run: pip install -e ../reacher   (or: pip install reacher2p)")
         sys.exit(1)
 
     # Check the reacher package actually carries firmware hex

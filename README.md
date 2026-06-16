@@ -64,7 +64,7 @@ labrynth/
 
 **Dependency flow:**
 ```
-labrynth ──pip install──→ reacher (Python library + firmware hex as package data)
+labrynth ──pip install──→ reacher2p (Python library + firmware hex as package data; imported as `reacher`)
 labrynth ──pip install──→ prompt_toolkit, httpx, websockets (CLI deps)
 ```
 
@@ -212,7 +212,7 @@ The Live Stream mode opens a WebSocket connection to the backend and displays ev
 ```bash
 git clone https://github.com/Otis-Lab-MUSC/labrynth.git
 cd labrynth
-pip install -e ../reacher   # or: pip install reacher  (ships firmware hex)
+pip install -e ../reacher   # or: pip install reacher2p  (ships firmware hex)
 ```
 
 ### Frontend development
@@ -263,7 +263,7 @@ Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS)
 
 ## Updating the Firmware
 
-Firmware ships inside the `reacher` package. To pick up a newer firmware build, bump the `reacher` dependency pin with `python scripts/bump-version.py --reacher-pin <reacher-semver>` (it writes the PEP 440 form, e.g. `reacher>=3.0.0a1`) and reinstall. Firmware source and hex live in the [reacher](https://github.com/otis-lab-musc/reacher) repo under `firmware/` and `src/reacher/hex/`.
+Firmware ships inside the `reacher` package. To pick up a newer firmware build, bump the `reacher2p` dependency pin with `python scripts/bump-version.py --reacher-pin <reacher-semver>` (it writes the PEP 440 form, e.g. `reacher2p>=3.0.0a1`) and reinstall. Firmware source and hex live in the [reacher](https://github.com/otis-lab-musc/reacher) repo under `firmware/` and `src/reacher/hex/`.
 
 ---
 
