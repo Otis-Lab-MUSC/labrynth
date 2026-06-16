@@ -140,7 +140,9 @@ JSON_FILES: list[Path] = [
 # -- cross-repo reacher pin (managed via --reacher-pin) ----------------------
 
 REACHER_PIN_FILE = ROOT / "pyproject.toml"
-REACHER_PIN_RE = r'(reacher>=)([^"]+)(")'
+# PyPI distribution name is "reacher2p" (the "reacher" name was already taken);
+# the import package the build resolves hex from is still "reacher".
+REACHER_PIN_RE = r'(reacher2p>=)([^"]+)(")'
 
 
 def read_versions() -> dict[str, str]:
@@ -210,7 +212,7 @@ def read_reacher_pin() -> str:
 
 
 def set_reacher_pin(semver: str) -> None:
-    """Write ``reacher>=<pep440(semver)>`` into pyproject.toml."""
+    """Write ``reacher2p>=<pep440(semver)>`` into pyproject.toml."""
     pinned = pep440(semver)
     text = REACHER_PIN_FILE.read_text()
     new_text, count = re.subn(REACHER_PIN_RE, rf"\g<1>{pinned}\3", text, count=1)
