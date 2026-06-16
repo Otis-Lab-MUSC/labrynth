@@ -37,7 +37,7 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
   return (
     <div className="card">
       <h3 className="font-medium text-theme-text">
-        PUMP {label}
+        Pump {label}
         <PinField sessionId={sessionId} component={prefix === "2" ? "pump2" : "pump"} />
       </h3>
       <div className="flex flex-wrap gap-2">

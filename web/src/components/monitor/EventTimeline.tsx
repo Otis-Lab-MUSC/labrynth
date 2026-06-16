@@ -65,21 +65,21 @@ const LEVER_EVENT_COLORS: Record<string, Record<string, { dark: string; light: s
 };
 
 const DEVICE_DISPLAY_NAMES: Record<string, string> = {
-  LEVER_RH: "RH LEVER",
-  LEVER_LH: "LH LEVER",
-  CUE_1: "CUE 1",
-  CUE_2: "CUE 2",
-  PUMP_1: "PUMP 1",
-  PUMP_2: "PUMP 2",
+  LEVER_RH: "RH Lever",
+  LEVER_LH: "LH Lever",
+  CUE_1: "Cue 1",
+  CUE_2: "Cue 2",
+  PUMP_1: "Pump 1",
+  PUMP_2: "Pump 2",
   LASER: "Laser",
   LICK: "Lick Circuit",
   MICROSCOPE: "Microscope",
   CONTROLLER: "Controller",
   // Legacy firmware labels
-  RH_LEVER: "RH LEVER",
-  LH_LEVER: "LH LEVER",
-  CUE: "CUE 1",
-  PUMP: "PUMP 1",
+  RH_LEVER: "RH Lever",
+  LH_LEVER: "LH Lever",
+  CUE: "Cue 1",
+  PUMP: "Pump 1",
 };
 
 const displayName = (raw: string): string => DEVICE_DISPLAY_NAMES[raw] ?? raw;

@@ -31,7 +31,7 @@ export function CueControl({ sessionId, label, prefix, paradigm }: Props) {
   return (
     <div className="card">
       <h3 className="font-medium text-theme-text">
-        CUE {label}
+        Cue {label}
         <PinField sessionId={sessionId} component={prefix === "2" ? "cue2" : "cue"} />
       </h3>
       <div className="flex flex-wrap gap-2">
