@@ -21,6 +21,7 @@ const DEVICE_TO_UI_KEY: Record<string, string> = {
   CUE: "primaryCue",
   CUE2: "secondaryCue",
   PUMP: "primaryPump",
+  PUMP_1: "primaryPump",
   PUMP2: "secondaryPump",
   LASER: "laser",
   LICK: "lickCircuit",

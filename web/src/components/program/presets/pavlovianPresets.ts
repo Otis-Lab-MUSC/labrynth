@@ -4,9 +4,9 @@ import type { HardwareUiState } from "../../../types";
 /* ── Shared device entries ─────────────────────────────────────────── */
 
 const CORE_DEVICES: PresetDeviceEntry[] = [
-  { key: "primaryCue",   label: "CUE 1",  role: "CS+ tone — predicts reward",      required: true },
-  { key: "secondaryCue", label: "CUE 2",  role: "CS- tone — no reward",            required: true },
-  { key: "primaryPump",  label: "PUMP 1", role: "Syringe pump — delivers reward",  required: true },
+  { key: "primaryCue",   label: "Cue 1",  role: "CS+ tone — predicts reward",      required: true },
+  { key: "secondaryCue", label: "Cue 2",  role: "CS- tone — no reward",            required: true },
+  { key: "primaryPump",  label: "Pump 1", role: "Syringe pump — delivers reward",  required: true },
 ];
 
 const OPTIONAL_DEVICES: PresetDeviceEntry[] = [

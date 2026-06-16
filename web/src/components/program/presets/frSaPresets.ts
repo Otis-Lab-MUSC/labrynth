@@ -6,11 +6,11 @@ import type { HardwareUiState } from "../../../types";
 const CORE_DEVICES: PresetDeviceEntry[] = [
   { key: "rhLever",    label: "RH Lever", role: "Active lever — triggers reward chain", required: true },
   { key: "lhLever",    label: "LH Lever", role: "Inactive lever — tracking only",       required: true },
-  { key: "primaryCue", label: "CUE 1",    role: "Tone cue — signals reward",            required: true },
+  { key: "primaryCue", label: "Cue 1",    role: "Tone cue — signals reward",            required: true },
 ];
 
 const PUMP_DEVICE: PresetDeviceEntry = {
-  key: "primaryPump", label: "PUMP 1", role: "Syringe pump — delivers infusion", required: true,
+  key: "primaryPump", label: "Pump 1", role: "Syringe pump — delivers infusion", required: true,
 };
 
 const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
@@ -92,8 +92,8 @@ export const SA_LOW_PRESET: SessionPreset = {
 const EXTINCTION_DEVICES: PresetDeviceEntry[] = [
   { key: "rhLever",     label: "RH Lever", role: "Active lever — tracked but no reward", required: true },
   { key: "lhLever",     label: "LH Lever", role: "Inactive lever — tracking only",       required: true },
-  { key: "primaryCue",  label: "CUE 1",    role: "Disabled during extinction",           required: false },
-  { key: "primaryPump", label: "PUMP 1",   role: "Disabled during extinction",           required: false },
+  { key: "primaryCue",  label: "Cue 1",    role: "Disabled during extinction",           required: false },
+  { key: "primaryPump", label: "Pump 1",   role: "Disabled during extinction",           required: false },
   ...OPTIONAL_DEVICES,
 ];
 
