@@ -52,17 +52,21 @@ export function SessionPanel() {
   useEffect(() => {
     if (!activeMachineId) {
       setPorts([]);
+      setPortBoards({});
+      setDetectedBoard(null);
       return;
     }
     const client = getClient(activeMachineId);
     if (!client) return;
+    setPortBoards({});
+    setDetectedBoard(null);
     // Immediately check if the machine is reachable (don't wait for 30s poll)
     client.probeHealth().then((h) => {
       const online = h?.service === "reacher";
       useMachineStore.getState().setMachineOnline(activeMachineId, online);
       if (online) {
         client.listPorts()
-          .then((r) => setPorts(r.ports))
+          .then((r) => { setPorts(r.ports); setPortBoards(r.portBoards ?? {}); })
           .catch((e: unknown) => {
             useLogStore.getState().pushLog(
               "error",
@@ -72,6 +76,8 @@ export function SessionPanel() {
           });
       } else {
         setPorts([]);
+        setPortBoards({});
+        setDetectedBoard(null);
       }
     });
   }, [activeMachineId]);

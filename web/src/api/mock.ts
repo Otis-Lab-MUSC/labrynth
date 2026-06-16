@@ -132,7 +132,7 @@ export const destroySession = async (_id: string) => {};
 
 export const resetSession = async (_id: string) => {};
 
-export const listPorts = async () => ({ ports: ["DEMO-PORT"] });
+export const listPorts = async () => ({ ports: ["DEMO-PORT"], portBoards: { "DEMO-PORT": "mega" } as Record<string, string | null> });
 
 export const connectSerial = async (id: string) => {
   const session = useSessionStore.getState().sessions.get(id);
