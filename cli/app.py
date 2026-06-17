@@ -156,7 +156,18 @@ PAVLOVIAN_PARAMS: list[dict] = [
     {"code": 216, "label": "ITI Mean (ms)", "default": "30000"},
     {"code": 217, "label": "ITI Min (ms)", "default": "10000"},
     {"code": 218, "label": "ITI Max (ms)", "default": "90000"},
+    # Pulse configuration (mirrors PULSE_PARAMS in PavlovianSettings.tsx).
+    # Set pulse ON to 0 for a continuous tone.
+    {"code": 374, "label": "CS+ Pulse On (ms)", "default": "0"},
+    {"code": 375, "label": "CS+ Pulse Off (ms)", "default": "0"},
+    {"code": 384, "label": "CS- Pulse On (ms)", "default": "200"},
+    {"code": 385, "label": "CS- Pulse Off (ms)", "default": "200"},
 ]
+
+# ITI parameter codes and the validity rule they must satisfy
+# (mirrors `itiValid` in PavlovianSettings.tsx).
+ITI_CODES = (216, 217, 218)
+ITI_DEFAULTS = {216: 30000, 217: 10000, 218: 90000}
 
 PRESET_COMMAND_MAP: dict[str, dict] = {
     "rh-lever": {"arm": 1001, "disarm": 1000, "params": {"timeout": 1074, "ratio": 1075}},
@@ -280,6 +291,7 @@ class SessionState:
     paradigm_settings: dict = field(
         default_factory=lambda: {"ratio": 1, "step": 1, "interval": 30000, "trace_interval": 0}
     )
+    pavlovian_params: dict = field(default_factory=dict)  # {code: value}, last-set Pavlovian params
     limit_settings: dict = field(
         default_factory=lambda: {"type": "Time", "time_limit": 3600, "infusion_limit": 30, "delay": 60}
     )
@@ -652,36 +664,62 @@ class ReacherCLI:
         return MenuState(title="Program > Apply Preset", items=items)
 
     def _paradigm_settings_menu(self) -> MenuState:
-        items = [
-            MenuItem("Set Ratio", action=lambda: self._prompt_int_input(
+        # Mirror web/src/components/program/ParadigmSettings.tsx: show only the
+        # fields relevant to the active paradigm, with live value suffixes.
+        s = self.session
+        paradigm = s.paradigm if s else None
+        ps = s.paradigm_settings if s else {}
+        show_trace = paradigm in ("fr", "pr", "vi")
+
+        items: list[MenuItem] = []
+        if paradigm in ("fr", "pr"):
+            items.append(MenuItem("Set Ratio", action=lambda: self._prompt_int_input(
                 "Enter ratio:", lambda v: self._send_paradigm_setting("ratio", v)
-            )),
-            MenuItem("Set Step", action=lambda: self._prompt_int_input(
-                "Enter step:", lambda v: self._send_paradigm_setting("step", v)
-            )),
-            MenuItem("Set VI Interval (ms)", action=lambda: self._prompt_int_input(
+            ), suffix=f"({ps.get('ratio', 1)})"))
+        if paradigm == "pr":
+            items.append(MenuItem("Set PR Step", action=lambda: self._prompt_int_input(
+                "Enter PR step:", lambda v: self._send_paradigm_setting("step", v)
+            ), suffix=f"({ps.get('step', 1)})"))
+        if paradigm == "vi":
+            items.append(MenuItem("Set VI Interval (ms)", action=lambda: self._prompt_int_input(
                 "Enter VI interval (ms):", lambda v: self._send_paradigm_setting("vi_interval", v)
-            )),
-            MenuItem("Set OM Interval (ms)", action=lambda: self._prompt_int_input(
-                "Enter OM interval (ms):", lambda v: self._send_paradigm_setting("om_interval", v)
-            )),
-            MenuItem("Set Trace Interval (ms)", action=lambda: self._prompt_int_input(
+            ), suffix=f"({ps.get('interval', 30000)})"))
+        if paradigm == "omission":
+            items.append(MenuItem("Set Omission Interval (ms)", action=lambda: self._prompt_int_input(
+                "Enter omission interval (ms):", lambda v: self._send_paradigm_setting("om_interval", v)
+            ), suffix=f"({ps.get('interval', 30000)})"))
+        if show_trace:
+            items.append(MenuItem("Set Trace Interval (ms)", action=lambda: self._prompt_int_input(
                 "Enter trace interval (ms):", lambda v: self._send_paradigm_setting("trace_interval", v)
-            )),
-            MenuItem("Back", action=self._pop_menu),
-        ]
+            ), suffix=f"({ps.get('trace_interval', 0)})"))
+
+        if not items:
+            hint = "Pavlovian: use Pavlovian Settings" if paradigm == "pavlovian" else "No paradigm selected"
+            items.append(MenuItem(f"──── {hint} ────", is_separator=True))
+
+        items.append(MenuItem("Back", action=self._pop_menu))
         return MenuState(title="Program > Paradigm Settings", items=items)
 
     def _pavlovian_menu(self) -> MenuState:
+        s = self.session
+        tracked = s.pavlovian_params if s else {}
         items = []
         for pp in PAVLOVIAN_PARAMS:
-            items.append(MenuItem(
-                f"Set {pp['label']}",
-                action=lambda code=pp["code"], lbl=pp["label"]: self._prompt_int_input(
-                    f"Enter {lbl}:", lambda v, c=code: self._send_hw_command(c, v)
-                ),
-                suffix=f"({pp['default']})",
-            ))
+            code = pp["code"]
+            label = pp["label"]
+            # ITI fields are cross-validated (min <= mean <= max); everything
+            # else is sent directly.  Both paths record the value so the suffix
+            # reflects the last value set this session.
+            if code in ITI_CODES:
+                action = lambda lbl=label, c=code: self._prompt_int_input(
+                    f"Enter {lbl}:", lambda v, cc=c: self._send_pavlovian_iti(cc, v)
+                )
+            else:
+                action = lambda lbl=label, c=code: self._prompt_int_input(
+                    f"Enter {lbl}:", lambda v, cc=c: self._set_pavlovian_param(cc, v)
+                )
+            cur = tracked.get(code, pp["default"])
+            items.append(MenuItem(f"Set {label}", action=action, suffix=f"({cur})"))
         items.append(MenuItem("Back", action=self._pop_menu))
         return MenuState(title="Program > Pavlovian Settings", items=items)
 
@@ -1115,7 +1153,43 @@ class ReacherCLI:
             self._set_status(f"Unknown setting: {key}", error=True)
             return
         await self._send_hw_command(code, value)
-        self.session.paradigm_settings[key] = value
+        # VI and OM share the single "interval" storage slot (mirrors the GUI,
+        # which keeps one `interval` field but sends 204 for VI / 203 for OM).
+        store_key = "interval" if key in ("vi_interval", "om_interval") else key
+        self.session.paradigm_settings[store_key] = value
+
+    async def _set_pavlovian_param(self, code: int, value: int) -> None:
+        """Send a (non-ITI) Pavlovian parameter and record it for display."""
+        if not self.session:
+            self._set_status("No session", error=True)
+            return
+        await self._send_hw_command(code, value)
+        self.session.pavlovian_params[code] = value
+        self._rebuild_current_menu()
+
+    async def _send_pavlovian_iti(self, code: int, value: int) -> None:
+        """Send an ITI parameter (216/217/218) only if Min <= Mean <= Max.
+
+        Mirrors `itiValid` in PavlovianSettings.tsx: the candidate value is
+        checked against the other two tracked values (falling back to defaults).
+        """
+        if not self.session:
+            self._set_status("No session", error=True)
+            return
+        pp = self.session.pavlovian_params
+        cur = {c: pp.get(c, ITI_DEFAULTS[c]) for c in ITI_CODES}
+        cur[code] = value
+        mean, iti_min, iti_max = cur[216], cur[217], cur[218]
+        if not (iti_min <= mean <= iti_max and iti_min >= 0 and iti_max > 0):
+            self._set_status(
+                f"Invalid ITI: need Min <= Mean <= Max "
+                f"(Min={iti_min}, Mean={mean}, Max={iti_max})",
+                error=True,
+            )
+            return
+        await self._send_hw_command(code, value)
+        self.session.pavlovian_params[code] = value
+        self._rebuild_current_menu()
 
     async def _start_program(self) -> None:
         if not self.session:
@@ -1364,19 +1438,28 @@ class ReacherCLI:
                 f"[{ts}]  {device:<16} {event}"
             ))
 
-            # Update counts
+            # Update counts. The backend emits UPPERCASE device/event strings
+            # (see reacher kernel `_emit("event", ...)`); match them the same way
+            # pushEvent does in web/src/store/useSessionStore.ts. (.upper() keeps
+            # this robust to casing.)
             if self.session:
                 self.session.backend_event_count += 1
-                if event == "infusion":
+                dev = device.upper()
+                evt = event.upper()
+                if dev in ("PUMP", "PUMP_1") and evt == "INFUSION":
                     self.session.infusion_count += 1
-                elif event in ("active_press", "timeout_press", "inactive_press"):
+                elif dev in ("RH_LEVER", "LEVER_RH", "LH_LEVER", "LEVER_LH") and "PRESS" in evt:
                     self.session.press_count += 1
-                    lever = "rh" if "rh" in device.lower() or "right" in device.lower() else "lh"
-                    kind = event.replace("_press", "")
-                    if lever == "rh":
-                        self.session.rh_counts[kind] = self.session.rh_counts.get(kind, 0) + 1
-                    else:
-                        self.session.lh_counts[kind] = self.session.lh_counts.get(kind, 0) + 1
+                    counts = (self.session.rh_counts if dev in ("RH_LEVER", "LEVER_RH")
+                              else self.session.lh_counts)
+                    if evt == "ACTIVE_PRESS":
+                        counts["active"] = counts.get("active", 0) + 1
+                    elif evt == "TIMEOUT_PRESS":
+                        counts["timeout"] = counts.get("timeout", 0) + 1
+                    elif evt == "INACTIVE_PRESS":
+                        counts["inactive"] = counts.get("inactive", 0) + 1
+                elif dev == "PAVLOV" and evt == "TRIAL_START":
+                    self.session.trial_count += 1
 
         elif msg_type == "session_state":
             state = data.get("state", "")
@@ -1409,6 +1492,7 @@ class ReacherCLI:
                 self.session.pause_start = None
                 self.session.infusion_count = 0
                 self.session.press_count = 0
+                self.session.trial_count = 0
                 self.session.backend_event_count = 0
                 self.session.rh_counts = {}
                 self.session.lh_counts = {}
@@ -1464,9 +1548,17 @@ class ReacherCLI:
             self._set_status("No session", error=True)
             return
         try:
+            # Mirror triggerAutoExport in web/src/hooks/useSessionWebSockets.ts.
+            # Microscope frame rate/averaging are omitted: the CLI has no UI to
+            # configure them, matching the GUI's conditional spread when the
+            # microscope is disarmed.
             export_payload = {
                 "session_name": self.session.name or "",
                 "notes": self.session.file_config.get("notes", ""),
+                "infusion_count": self.session.infusion_count,
+                "press_count": self.session.press_count,
+                "trial_count": self.session.trial_count,
+                "program_start_time": self.session.program_start,
             }
             resp = await self.api.export_zip(self.session.id, **export_payload)
             path = resp.get("path", resp.get("file", "exported"))
