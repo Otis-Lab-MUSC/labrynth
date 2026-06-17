@@ -61,7 +61,7 @@ git push origin v3.1.0-beta.1
 ```
 
 The prerelease workflow automatically derives which reacher ref to clone from the
-`reacher>=` pin stored in `pyproject.toml` (via `--print-reacher-ref`). To override
+`reacher2p>=` pin stored in `pyproject.toml` (via `--print-reacher-ref`). To override
 this (e.g., bundle a different reacher branch), trigger the workflow manually from
 the GitHub Actions UI with an explicit `reacher_ref` input.
 

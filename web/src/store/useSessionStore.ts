@@ -259,7 +259,11 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   pushEvent: (id, event) =>
     set((s) => {
       const sess = s.sessions.get(id);
-      if (!sess || sess.state !== "running") return s;
+      // Fix #15: accept events while running OR paused — a paused session can
+      // still receive in-flight events, and they should count. The gate still
+      // blocks pre-start states (idle/uploading/connected) so events before a
+      // program starts are not accumulated.
+      if (!sess || (sess.state !== "running" && sess.state !== "paused")) return s;
       const next = new Map(s.sessions);
       const infusionCount =
         (event.device === "PUMP" || event.device === "PUMP_1") && event.event === "INFUSION"

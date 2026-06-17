@@ -70,7 +70,7 @@ python scripts/bump-version.py --print-reacher-ref           # Print the reacher
 
 The app version and the `reacher` pin are **independent axes**. `--reacher-pin`
 takes the backend's semver and writes the PEP 440 form pip resolves
-(`3.0.0-alpha.1` → `reacher>=3.0.0a1`) so the prerelease pin is never
+(`3.0.0-alpha.1` → `reacher2p>=3.0.0a1`) so the prerelease pin is never
 hand-derived; bump it to ship a newer reacher backend + firmware. Never
 hand-edit either — the README badge is stamped by the version bump, and CI
 gates tag builds on `--check` consistency.
@@ -136,7 +136,7 @@ The CLI mirrors browser-UI capabilities (sessions, hardware, program presets, li
 ### CI/CD (`.github/workflows/`)
 
 - **`build-installers.yml`** — stable releases only (`vX.Y.Z` tags, no prerelease suffix). Builds Windows `.exe`, macOS `.dmg`, Linux `.deb` + `.tar.gz` + `.AppImage`. `prerelease: false` hardcoded. Use `/release` skill to cut stable.
-- **`build-prerelease.yml`** — prerelease builds (`vX.Y.Z-alpha.*`, `vX.Y.Z-beta.*`, `vX.Y.Z-rc.*` tags). Same build matrix; `prerelease: true` hardcoded. Platform builds use `continue-on-error: true` (alpha may fail a platform). The reacher ref to bundle is derived automatically from the `reacher>=` pin in `pyproject.toml` via `--print-reacher-ref`. Do **not** use `/release` for prereleases — see `RELEASING.md`.
+- **`build-prerelease.yml`** — prerelease builds (`vX.Y.Z-alpha.*`, `vX.Y.Z-beta.*`, `vX.Y.Z-rc.*` tags). Same build matrix; `prerelease: true` hardcoded. Platform builds use `continue-on-error: true` (alpha may fail a platform). The reacher ref to bundle is derived automatically from the `reacher2p>=` pin in `pyproject.toml` via `--print-reacher-ref`. Do **not** use `/release` for prereleases — see `RELEASING.md`.
 - **`deploy-demo.yml`** — deploys `web/dist/` (built with `VITE_DEMO_SITE=true`) as a static demo site. Demo mode swaps the API client for `demoClient.ts` + `mock.ts` and disables real backend calls.
 
 ## Conventions
