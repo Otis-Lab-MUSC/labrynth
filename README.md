@@ -96,6 +96,10 @@ reacher-cli
 
 The CLI auto-detects whether the backend is running. If not, it starts the backend as a subprocess and waits up to 15 seconds for it to become ready.
 
+### Standalone binary (no Python required)
+
+A self-contained `LabrynthCLI` bundle ships with each release (`labrynth-cli-*-<os>.tar.gz`) for headless hosts (e.g. a display-less Raspberry Pi). Extract and run the `LabrynthCLI` executable — it bundles the reacher backend and firmware hex, and starts the backend itself (no separate install). Build it locally with `python build.py --cli` (adds the CLI bundle to the GUI build) or `python build.py --cli-only`.
+
 ### Modes
 
 The CLI operates in four modes:
@@ -141,9 +145,9 @@ Main Menu
 │   │   ├── SA Low
 │   │   ├── SA Extinction
 │   │   └── Back
-│   ├── Paradigm Settings           # Ratio, Step, VI/OM interval, Trace interval
+│   ├── Paradigm Settings           # paradigm-aware: FR/PR Ratio, PR Step, VI/OM interval, Trace
 │   ├── Pavlovian Settings          # (only when paradigm = pavlovian)
-│   │   └── CS+/CS- counts, frequencies, reward probs, cue duration, trace, ITI
+│   │   └── CS+/CS- counts, freqs, reward probs, cue duration, trace, ITI (validated), pulse on/off
 │   ├── Limits                      # Limit type, time, infusion, delay
 │   ├── Start / Stop / Pause        # (context-dependent)
 │   └── Back

@@ -104,10 +104,10 @@ jobs:
           python -c "import reacher; print('reacher OK')"
 
       - name: Install Python build tools
-        run: python -m pip install pyinstaller
+        run: python -m pip install pyinstaller prompt_toolkit httpx websockets
 
       - name: Build application
-        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --cli --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -122,6 +122,18 @@ jobs:
         with:
           name: windows-installer
           path: dist/labrynth-${{ needs.version-check.outputs.version }}-windows-x64.exe
+
+      - name: Package CLI bundle
+        shell: bash
+        env:
+          VERSION: ${{ needs.version-check.outputs.version }}
+        run: tar -czf "dist/labrynth-cli-${VERSION}-windows-x64.tar.gz" -C dist LabrynthCLI
+
+      - name: Upload CLI bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-cli
+          path: dist/labrynth-cli-${{ needs.version-check.outputs.version }}-windows-x64.tar.gz
 
   # -------------------------------------------------------------------
   # macOS — DMG disk image (.dmg) — Apple Silicon (arm64)
@@ -163,10 +175,10 @@ jobs:
           python -c "import reacher; print('reacher OK')"
 
       - name: Install Python build tools
-        run: python -m pip install pyinstaller Pillow
+        run: python -m pip install pyinstaller Pillow prompt_toolkit httpx websockets
 
       - name: Build application
-        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --cli --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Create DMG
         env:
@@ -183,6 +195,17 @@ jobs:
         with:
           name: macos-arm64-dmg
           path: dist/labrynth-${{ needs.version-check.outputs.version }}-macos-arm64.dmg
+
+      - name: Package CLI bundle
+        env:
+          VERSION: ${{ needs.version-check.outputs.version }}
+        run: tar -czf "dist/labrynth-cli-${VERSION}-macos-arm64.tar.gz" -C dist LabrynthCLI
+
+      - name: Upload CLI bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm64-cli
+          path: dist/labrynth-cli-${{ needs.version-check.outputs.version }}-macos-arm64.tar.gz
 
   # -------------------------------------------------------------------
   # Linux — DEB package (.deb), tarball (.tar.gz), AppImage
@@ -224,10 +247,10 @@ jobs:
           python -c "import reacher; print('reacher OK')"
 
       - name: Install Python build tools
-        run: python -m pip install pyinstaller
+        run: python -m pip install pyinstaller prompt_toolkit httpx websockets
 
       - name: Build application
-        run: python build.py --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --cli --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Build DEB package
         env:
@@ -259,6 +282,11 @@ jobs:
         env:
           VERSION: ${{ needs.version-check.outputs.version }}
         run: tar -czf "labrynth-${VERSION}-linux-x64.tar.gz" -C dist Labrynth
+
+      - name: Build CLI tarball
+        env:
+          VERSION: ${{ needs.version-check.outputs.version }}
+        run: tar -czf "labrynth-cli-${VERSION}-linux-x64.tar.gz" -C dist LabrynthCLI
 
       - name: Build AppImage
         env:
@@ -320,6 +348,7 @@ jobs:
           path: |
             labrynth_${{ needs.version-check.outputs.version }}_amd64.deb
             labrynth-${{ needs.version-check.outputs.version }}-linux-x64.tar.gz
+            labrynth-cli-${{ needs.version-check.outputs.version }}-linux-x64.tar.gz
             labrynth-${{ needs.version-check.outputs.version }}-linux-x64.AppImage
 
   # -------------------------------------------------------------------
@@ -354,6 +383,7 @@ jobs:
             | Linux (Debian/Ubuntu) | `labrynth_*_amd64.deb` | `sudo dpkg -i *.deb` |
             | Linux (portable) | `labrynth-*-linux-x64.AppImage` | Any distro |
             | Linux (tarball) | `labrynth-*-linux-x64.tar.gz` | Extract and run |
+            | Terminal CLI (all platforms) | `labrynth-cli-*-<os>.tar.gz` | Headless TUI — extract and run `LabrynthCLI` |
 
             <details>
             <summary>Platform-specific notes</summary>
