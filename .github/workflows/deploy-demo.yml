@@ -35,11 +35,21 @@ jobs:
         run: npm run build:demo
         working-directory: web
         env:
-          VITE_BASE: /labrynth/
+          # Relative base => path-agnostic build. Works for this Pages site
+          # (served at /labrynth/) AND when embedded under any mount path by a
+          # downstream consumer (see web/README.md "Embeddable demo artifact").
+          VITE_BASE: ./
 
       - uses: actions/upload-pages-artifact@v3
         with:
           path: web/dist
+
+      - name: Upload embeddable demo artifact (path-agnostic, base=./)
+        uses: actions/upload-artifact@v4
+        with:
+          name: labrynth-demo
+          path: web/dist
+          retention-days: 7
 
   deploy:
     needs: build
