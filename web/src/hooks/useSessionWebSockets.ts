@@ -73,7 +73,14 @@ function handleMessage(msg: WSMessage) {
   switch (msg.type) {
     case "event": {
       const eventData = msg.data as BehaviorEvent;
-      if (useSessionStore.getState().sessions.get(msg.session_id)?.state === "connected") {
+      // Fix #15: a behavioral event only exists while the kernel is running, so
+      // its arrival is proof the program started. In proxy mode the session can
+      // still read "idle"/"uploading" here because the Pi's earlier state
+      // transitions were broadcast before the WS relay connected and were lost.
+      // Upgrade from any pre-running, non-terminal state so the pushEvent gate
+      // below doesn't silently drop every event.
+      const curState = useSessionStore.getState().sessions.get(msg.session_id)?.state;
+      if (curState === "idle" || curState === "uploading" || curState === "connected") {
         updateState(msg.session_id, "running");
       }
       pushEvent(msg.session_id, eventData);
@@ -202,11 +209,31 @@ function handleMessage(msg: WSMessage) {
 
 async function recoverMissedEvents(sessionId: string) {
   const { sessions, replaceEvents } = useSessionStore.getState();
-  const sess = sessions.get(sessionId);
-  if (!sess || sess.state === "idle" || sess.state === "stopped") return;
+  let sess = sessions.get(sessionId);
+  if (!sess) return;
 
   const client = useMachineStore.getState().getClient(sess.machineId);
   if (!client) return;
+
+  // Fix #15: pull the authoritative session state from the backend on every
+  // (re)connect. In proxy mode the WS relay connects after the Pi has already
+  // emitted its idle->connected->running transitions, so the local session can
+  // be stranded at "idle" — which the early-return below would treat as "nothing
+  // to recover", permanently dropping events. Syncing first un-stalls it. (Belt
+  // and suspenders with reacher's snapshot-on-connect; also covers older backends.)
+  try {
+    const remote = await client.getSession(sessionId);
+    const remoteState = (remote as { state?: SessionState }).state;
+    if (remoteState && remoteState !== sess.state) {
+      console.debug(`[ReacherWS] #15 state sync ${sessionId}: ${sess.state} -> ${remoteState}`);
+      useSessionStore.getState().updateState(sessionId, remoteState);
+      sess = useSessionStore.getState().sessions.get(sessionId) ?? sess;
+    }
+  } catch (err) {
+    console.warn("[ReacherWS] Failed to sync session state on reconnect:", err);
+  }
+
+  if (sess.state === "idle" || sess.state === "stopped") return;
 
   try {
     const { data, total } = await client.getBehavior(sessionId);
