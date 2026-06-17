@@ -19,7 +19,7 @@ independent axes:
     The README badges store it shields.io-escaped (``-`` -> ``--``); the demo
     mock (``web/src/api/{demoClient,mock}.ts``) stores it as a plain string so
     the hosted demo never reports a stale build.
-  - ``--reacher-pin <semver>`` manages the ``reacher>=X.Y.Z`` dependency,
+  - ``--reacher-pin <semver>`` manages the ``reacher2p>=X.Y.Z`` dependency,
     normalizing the semver to its PEP 440 form (``3.0.0-alpha.1`` -> ``3.0.0a1``)
     so the pin pip actually resolves is never hand-derived. Bump this to ship a
     newer reacher backend + firmware.
@@ -167,7 +167,9 @@ JSON_FILES: list[Path] = [
 # -- cross-repo reacher pin (managed via --reacher-pin) ----------------------
 
 REACHER_PIN_FILE = ROOT / "pyproject.toml"
-REACHER_PIN_RE = r'(reacher>=)([^"]+)(")'
+# PyPI distribution name is "reacher2p" (the "reacher" name was already taken);
+# the import package the build resolves hex from is still "reacher".
+REACHER_PIN_RE = r'(reacher2p>=)([^"]+)(")'
 
 
 def read_versions() -> dict[str, str]:
@@ -237,7 +239,7 @@ def read_reacher_pin() -> str:
 
 
 def set_reacher_pin(semver: str) -> None:
-    """Write ``reacher>=<pep440(semver)>`` into pyproject.toml."""
+    """Write ``reacher2p>=<pep440(semver)>`` into pyproject.toml."""
     pinned = pep440(semver)
     text = REACHER_PIN_FILE.read_text()
     new_text, count = re.subn(REACHER_PIN_RE, rf"\g<1>{pinned}\3", text, count=1)

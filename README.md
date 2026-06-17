@@ -6,7 +6,7 @@
 [![Python](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-orange)](CHANGELOG.md)
-[![REACHER Suite](https://img.shields.io/badge/REACHER_Suite-member-orange)](https://github.com/Otis-Lab-MUSC)
+[![Phoxel Workbench](https://img.shields.io/badge/Phoxel_Workbench-member-orange)](https://github.com/Otis-Lab-MUSC)
 
 *Written by*: Joshua Boquiren
 
@@ -64,7 +64,7 @@ labrynth/
 
 **Dependency flow:**
 ```
-labrynth ──pip install──→ reacher (Python library + firmware hex as package data)
+labrynth ──pip install──→ reacher2p (Python library + firmware hex as package data; imported as `reacher`)
 labrynth ──pip install──→ prompt_toolkit, httpx, websockets (CLI deps)
 ```
 
@@ -95,6 +95,10 @@ reacher-cli
 ```
 
 The CLI auto-detects whether the backend is running. If not, it starts the backend as a subprocess and waits up to 15 seconds for it to become ready.
+
+### Standalone binary (no Python required)
+
+A self-contained `LabrynthCLI` bundle ships with each release (`labrynth-cli-*-<os>.tar.gz`) for headless hosts (e.g. a display-less Raspberry Pi). Extract and run the `LabrynthCLI` executable — it bundles the reacher backend and firmware hex, and starts the backend itself (no separate install). Build it locally with `python build.py --cli` (adds the CLI bundle to the GUI build) or `python build.py --cli-only`.
 
 ### Modes
 
@@ -141,9 +145,9 @@ Main Menu
 │   │   ├── SA Low
 │   │   ├── SA Extinction
 │   │   └── Back
-│   ├── Paradigm Settings           # Ratio, Step, VI/OM interval, Trace interval
+│   ├── Paradigm Settings           # paradigm-aware: FR/PR Ratio, PR Step, VI/OM interval, Trace
 │   ├── Pavlovian Settings          # (only when paradigm = pavlovian)
-│   │   └── CS+/CS- counts, frequencies, reward probs, cue duration, trace, ITI
+│   │   └── CS+/CS- counts, freqs, reward probs, cue duration, trace, ITI (validated), pulse on/off
 │   ├── Limits                      # Limit type, time, infusion, delay
 │   ├── Start / Stop / Pause        # (context-dependent)
 │   └── Back
@@ -212,7 +216,7 @@ The Live Stream mode opens a WebSocket connection to the backend and displays ev
 ```bash
 git clone https://github.com/Otis-Lab-MUSC/labrynth.git
 cd labrynth
-pip install -e ../reacher   # or: pip install reacher  (ships firmware hex)
+pip install -e ../reacher   # or: pip install reacher2p  (ships firmware hex)
 ```
 
 ### Frontend development
@@ -263,7 +267,7 @@ Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS)
 
 ## Updating the Firmware
 
-Firmware ships inside the `reacher` package. To pick up a newer firmware build, bump the `reacher` dependency pin with `python scripts/bump-version.py --reacher-pin <reacher-semver>` (it writes the PEP 440 form, e.g. `reacher>=3.0.0a1`) and reinstall. Firmware source and hex live in the [reacher](https://github.com/otis-lab-musc/reacher) repo under `firmware/` and `src/reacher/hex/`.
+Firmware ships inside the `reacher` package. To pick up a newer firmware build, bump the `reacher2p` dependency pin with `python scripts/bump-version.py --reacher-pin <reacher-semver>` (it writes the PEP 440 form, e.g. `reacher2p>=3.0.0a1`) and reinstall. Firmware source and hex live in the [reacher](https://github.com/otis-lab-musc/reacher) repo under `firmware/` and `src/reacher/hex/`.
 
 ---
 

@@ -8,7 +8,9 @@ version = "3.0.0-beta.5"
 description = "Labrynth application shell — build orchestrator and frontend"
 requires-python = ">=3.10"
 dependencies = [
-    "reacher>=3.0.0b3",
+    # PyPI distribution is "reacher2p" (the "reacher" name was taken); the import
+    # package is still "reacher" (python -m reacher, importlib hex resolution).
+    "reacher2p>=3.0.0b4",
     "pyinstaller>=6.0",
 ]
 
