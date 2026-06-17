@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     # PyPI distribution is "reacher2p" (the "reacher" name was taken); the import
     # package is still "reacher" (python -m reacher, importlib hex resolution).
-    "reacher2p>=3.0.0b4",
+    "reacher2p>=3.0.0b5",
     "pyinstaller>=6.0",
 ]
 
