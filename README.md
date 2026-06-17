@@ -2,7 +2,7 @@
 
 **Build orchestrator, React frontend, and terminal CLI for the REACHER ecosystem**
 
-[![Version](https://img.shields.io/badge/version-3.0.0--beta.5-blue)](https://github.com/Otis-Lab-MUSC/labrynth/releases)
+[![Version](https://img.shields.io/badge/version-3.0.0--beta.6-blue)](https://github.com/Otis-Lab-MUSC/labrynth/releases)
 [![Python](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-orange)](CHANGELOG.md)

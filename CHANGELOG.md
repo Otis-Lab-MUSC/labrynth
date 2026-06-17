@@ -14,6 +14,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.0-beta.6] - 2026-06-17
+
+### Added
+- Terminal CLI brought to full GUI feature parity and shipped as a standalone `LabrynthCLI` bundle — sessions, hardware, program presets, limits, data export, and a live monitor; new `console=True` PyInstaller build via `build.py --cli` / `--cli-only` ([labrynth#31](https://github.com/Otis-Lab-MUSC/labrynth/issues/31))
+- Multi-host validation checklist documentation ([labrynth#16](https://github.com/Otis-Lab-MUSC/labrynth/issues/16))
+
+### Changed
+- Pavlovian command list is now sourced dynamically from the reacher registry, so re-enabled params (counterbalance, consumption window, pulse config) surface automatically in the Pavlovian panel without a frontend change ([labrynth#59](https://github.com/Otis-Lab-MUSC/labrynth/issues/59))
+- Refreshed the tutorial tour, in-app help, and demo copy to match the current UI ([labrynth#38](https://github.com/Otis-Lab-MUSC/labrynth/issues/38))
+- Rebranded the umbrella project from "REACHER Suite" to "Phoxel Workbench" across documentation; app name, bundle id, and package are unchanged ([labrynth#57](https://github.com/Otis-Lab-MUSC/labrynth/issues/57))
+- Bumped the reacher backend pin to `reacher2p>=3.0.0b5`, picking up the re-enabled Pavlovian command params
+
+### Fixed
+- Proxy-mode remote sessions no longer drop behavioral events — the frontend now syncs session state on WebSocket (re)connect, so a late-connecting proxy relay catches up to a running session instead of staying stuck at `idle` ([labrynth#15](https://github.com/Otis-Lab-MUSC/labrynth/issues/15))
+
+---
+
 ## [3.0.0-beta.5] - 2026-06-16
 
 ### Fixed
