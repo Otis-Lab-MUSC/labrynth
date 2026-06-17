@@ -206,6 +206,40 @@ npm run preview
 
 ---
 
+## Embeddable demo artifact
+
+The **Deploy Labrynth Demo** workflow (`.github/workflows/deploy-demo.yml`) builds the
+demo with a **relative base** and publishes it two ways: as the GitHub Pages site
+(`/labrynth/`) and as a downloadable CI artifact for embedding elsewhere.
+
+| Contract | Value |
+|---|---|
+| Artifact name | `labrynth-demo` |
+| Producing workflow | **Deploy Labrynth Demo** (on push to `main` touching `web/**`, or manual dispatch) |
+| Build command | `VITE_BASE=./ npm run build:demo` |
+| Contents | the built `web/dist/` tree |
+| Retention | 7 days |
+
+Because it is built with `VITE_BASE=./`, every asset reference (JS/CSS, fingerprinted
+fonts in `assets/`, favicons at the root) is **relative** — the bundle is
+**path-agnostic** and loads correctly under any mount path, e.g. embedded in an iframe
+at `/phoxel-workbench/labrynth-demo/`.
+
+**Consumer assumptions** (relied on by phoxel-workbench#18, which pulls this artifact on
+deploy):
+- Served at a **directory URL ending in `/`** (the demo is a router-less SPA; there is no
+  client-side deep-link routing, so relative base is safe).
+- Renaming the artifact or changing the `web/dist` layout is a **breaking change** for the
+  consumer — coordinate before doing so.
+
+To reproduce the embeddable build locally:
+
+```bash
+VITE_BASE=./ npm run build:demo   # output in dist/, mountable at any sub-path
+```
+
+---
+
 ## How It Connects to the Backend
 
 | Channel | URL | Purpose |
