@@ -144,30 +144,39 @@ PARADIGM_SETTING_CODES = {
     "trace_interval": 220,
 }
 
-PAVLOVIAN_PARAMS: list[dict] = [
-    {"code": 206, "label": "CS+ Reward Prob (%)", "default": "100"},
-    {"code": 207, "label": "CS- Reward Prob (%)", "default": "0"},
-    {"code": 208, "label": "CS+ Count", "default": "50"},
-    {"code": 209, "label": "CS- Count", "default": "50"},
-    {"code": 210, "label": "CS+ Frequency (Hz)", "default": "12000"},
-    {"code": 211, "label": "CS- Frequency (Hz)", "default": "3000"},
-    {"code": 213, "label": "Cue Duration (ms)", "default": "2000"},
-    {"code": 214, "label": "Trace Interval (ms)", "default": "1000"},
-    {"code": 216, "label": "ITI Mean (ms)", "default": "30000"},
-    {"code": 217, "label": "ITI Min (ms)", "default": "10000"},
-    {"code": 218, "label": "ITI Max (ms)", "default": "90000"},
-    # Pulse configuration (mirrors PULSE_PARAMS in PavlovianSettings.tsx).
-    # Set pulse ON to 0 for a continuous tone.
-    {"code": 374, "label": "CS+ Pulse On (ms)", "default": "0"},
-    {"code": 375, "label": "CS+ Pulse Off (ms)", "default": "0"},
-    {"code": 384, "label": "CS- Pulse On (ms)", "default": "200"},
-    {"code": 385, "label": "CS- Pulse Off (ms)", "default": "200"},
-]
+# Curated short labels for Pavlovian params. The param *list* is sourced
+# dynamically from reacher's registry (see _pavlovian_menu); this map only
+# supplies nicer labels than the registry's verbose `description`. A code missing
+# here falls back to the spec's description, so new registry params still render.
+PAV_LABEL_OVERRIDES: dict[int, str] = {
+    206: "CS+ Reward Prob (%)",
+    207: "CS- Reward Prob (%)",
+    208: "CS+ Count",
+    209: "CS- Count",
+    210: "CS+ Frequency (Hz)",
+    211: "CS- Frequency (Hz)",
+    212: "Counterbalance",
+    213: "Cue Duration (ms)",
+    214: "Trace Interval (ms)",
+    215: "Consumption Window (ms)",
+    216: "ITI Mean (ms)",
+    217: "ITI Min (ms)",
+    218: "ITI Max (ms)",
+    219: "Pulse Config",
+    374: "CS+ Pulse On (ms)",
+    375: "CS+ Pulse Off (ms)",
+    384: "CS- Pulse On (ms)",
+    385: "CS- Pulse Off (ms)",
+}
 
 # ITI parameter codes and the validity rule they must satisfy
 # (mirrors `itiValid` in PavlovianSettings.tsx).
 ITI_CODES = (216, 217, 218)
 ITI_DEFAULTS = {216: 30000, 217: 10000, 218: 90000}
+
+# Pulse-configuration codes — rendered as a dedicated block (0 = continuous tone).
+# Mirrors PULSE_CODES in web/src/components/program/pavLabels.ts.
+PULSE_CODES = (374, 375, 384, 385)
 
 PRESET_COMMAND_MAP: dict[str, dict] = {
     "rh-lever": {"arm": 1001, "disarm": 1000, "params": {"timeout": 1074, "ratio": 1075}},
@@ -297,6 +306,8 @@ class SessionState:
     )
     file_config: dict = field(default_factory=lambda: {"filename": "", "destination": "", "notes": ""})
     backend_event_count: int = 0
+    # Pavlovian command specs sourced from reacher's registry (get_commands_for_paradigm)
+    pav_commands: list[dict] = field(default_factory=list)
 
     @property
     def elapsed(self) -> float:
@@ -704,22 +715,62 @@ class ReacherCLI:
         s = self.session
         tracked = s.pavlovian_params if s else {}
         items = []
-        for pp in PAVLOVIAN_PARAMS:
-            code = pp["code"]
-            label = pp["label"]
-            # ITI fields are cross-validated (min <= mean <= max); everything
-            # else is sent directly.  Both paths record the value so the suffix
-            # reflects the last value set this session.
+        # The param *list* is sourced dynamically from reacher's registry
+        # (paradigm-filtered + deprecation-stripped server-side), so re-enabled
+        # params surface automatically. Rendered in three blocks mirroring
+        # PavlovianSettings.tsx: scalar (206-219 sans ITI), ITI (cross-validated),
+        # and pulse config. Each path records the value so the suffix reflects the
+        # last value set this session.
+        specs = s.pav_commands if s else []
+
+        def _label(code: int, spec: dict) -> str:
+            return PAV_LABEL_OVERRIDES.get(code) or spec.get("description") or f"Code {code}"
+
+        def _suffix(code: int) -> str:
+            return f"({tracked[code]})" if code in tracked else ""
+
+        scalar = sorted(
+            (sp for sp in specs if sp.get("payload_key") and 206 <= sp.get("code", 0) <= 219),
+            key=lambda sp: sp["code"],
+        )
+        for sp in scalar:
+            code = sp["code"]
+            label = _label(code, sp)
             if code in ITI_CODES:
-                action = lambda lbl=label, c=code: self._prompt_int_input(
-                    f"Enter {lbl}:", lambda v, cc=c: self._send_pavlovian_iti(cc, v)
+                # Cross-validated against the other ITI values (Min <= Mean <= Max).
+                action = lambda c=code, lbl=label: self._prompt_int_input(
+                    f"Enter {lbl}:", lambda v, c2=c: self._send_pavlovian_iti(c2, v)
+                )
+            elif sp.get("payload_type") == "bool":
+                action = lambda c=code, lbl=label: self._prompt_select(
+                    f"{lbl}:",
+                    [("Off", "0"), ("On", "1")],
+                    lambda v, c2=c: self._set_pavlovian_param(c2, int(v)),
                 )
             else:
-                action = lambda lbl=label, c=code: self._prompt_int_input(
-                    f"Enter {lbl}:", lambda v, cc=c: self._set_pavlovian_param(cc, v)
+                action = lambda c=code, lbl=label: self._prompt_int_input(
+                    f"Enter {lbl}:", lambda v, c2=c: self._set_pavlovian_param(c2, v)
                 )
-            cur = tracked.get(code, pp["default"])
-            items.append(MenuItem(f"Set {label}", action=action, suffix=f"({cur})"))
+            items.append(MenuItem(f"Set {label}", action=action, suffix=_suffix(code)))
+
+        # Pulse-configuration block (0 = continuous tone), also registry-sourced.
+        pulse = sorted(
+            (sp for sp in specs if sp.get("code") in PULSE_CODES),
+            key=lambda sp: sp["code"],
+        )
+        for sp in pulse:
+            code = sp["code"]
+            label = _label(code, sp)
+            items.append(MenuItem(
+                f"Set {label}",
+                action=lambda c=code, lbl=label: self._prompt_int_input(
+                    f"Enter {lbl}:", lambda v, c2=c: self._set_pavlovian_param(c2, v)
+                ),
+                suffix=_suffix(code),
+            ))
+
+        if not scalar and not pulse:
+            items.append(MenuItem("Reload commands", action=self._load_pav_commands))
         items.append(MenuItem("Back", action=self._pop_menu))
         return MenuState(title="Program > Pavlovian Settings", items=items)
 
@@ -928,6 +979,8 @@ class ReacherCLI:
             sid = resp.get("session_id") or resp.get("id", "")
             self.session = SessionState(id=sid, port=port, paradigm=paradigm)
             self._set_status(f"Session created: {sid[:8]}...")
+            if paradigm and paradigm.lower() == "pavlovian":
+                await self._load_pav_commands()
             self._rebuild_current_menu()
         except Exception as exc:
             self._set_status(f"Create session failed: {exc}", error=True)
@@ -1007,10 +1060,23 @@ class ReacherCLI:
             self._set_status(f"Firmware uploaded: {paradigm} ({board})")
             if not self.session.name:
                 self.session.name = f"{paradigm.upper()} {self.session.port}"
+            if paradigm.lower() == "pavlovian":
+                await self._load_pav_commands()
             self._rebuild_current_menu()
         except Exception as exc:
             self.session.state = "idle"
             self._set_status(f"Upload failed: {exc}", error=True)
+
+    async def _load_pav_commands(self) -> None:
+        """Fetch the registry-driven Pavlovian command set for the session's paradigm."""
+        if not self.session:
+            return
+        try:
+            resp = await self.api.get_commands(self.session.id)
+            self.session.pav_commands = resp.get("commands", [])
+            self._rebuild_current_menu()
+        except Exception as exc:
+            self._set_status(f"Failed to load Pavlovian commands: {exc}", error=True)
 
     async def _reset_session(self) -> None:
         if not self.session:

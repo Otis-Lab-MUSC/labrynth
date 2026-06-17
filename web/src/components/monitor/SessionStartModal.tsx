@@ -9,23 +9,9 @@ import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
 import { ValidationWarningPanel } from "./ValidationWarningPanel";
 import type { ValidationResult } from "../../api/client";
 
-const PAV_CODE_LABELS: Record<number, string> = {
-  206: "CS+ Reward Prob (%)",
-  207: "CS- Reward Prob (%)",
-  208: "CS+ Count",
-  209: "CS- Count",
-  210: "CS+ Frequency (Hz)",
-  211: "CS- Frequency (Hz)",
-  213: "Cue Duration (ms)",
-  214: "Trace Interval (ms)",
-  216: "ITI Mean (ms)",
-  217: "ITI Min (ms)",
-  218: "ITI Max (ms)",
-  374: "CS+ Pulse On (ms)",
-  375: "CS+ Pulse Off (ms)",
-  384: "CS- Pulse On (ms)",
-  385: "CS- Pulse Off (ms)",
-};
+// Shared with PavlovianSettings so the start-summary labels every param the
+// registry can surface (incl. re-enabled 212/215/219), with no separate drift.
+import { LABEL_OVERRIDES as PAV_CODE_LABELS } from "../program/pavLabels";
 
 const DEVICE_LABELS: Record<string, string> = {
   rhLever: "RH Lever",
