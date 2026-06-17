@@ -11,11 +11,14 @@ Usage:
     python scripts/bump-version.py --print-reacher-ref   # print the reacher git ref from the stored pin
 
 Labrynth carries its own version (``pyproject.toml`` + ``web/package.json`` +
-the README badge) *and* a cross-repo pin on the ``reacher`` backend it ships.
-Those are independent axes:
+the root and ``web/`` README badges + the demo mock's reported backend version)
+*and* a cross-repo pin on the ``reacher`` backend it ships. Those are
+independent axes:
 
   - The plain ``<version>`` / ``--check`` forms manage Labrynth's own version.
-    The README badge stores it shields.io-escaped (``-`` -> ``--``).
+    The README badges store it shields.io-escaped (``-`` -> ``--``); the demo
+    mock (``web/src/api/{demoClient,mock}.ts``) stores it as a plain string so
+    the hosted demo never reports a stale build.
   - ``--reacher-pin <semver>`` manages the ``reacher>=X.Y.Z`` dependency,
     normalizing the semver to its PEP 440 form (``3.0.0-alpha.1`` -> ``3.0.0a1``)
     so the pin pip actually resolves is never hand-derived. Bump this to ship a
@@ -128,6 +131,30 @@ REGEX_FILES: list[tuple[Path, str, str, "callable", str]] = [
         r"\g<1>{version}\3",
         shields,
         "README.md (badge)",
+    ),
+    (
+        ROOT / "web" / "README.md",
+        r"(shields\.io/badge/version-)(.+?)(-blue)",
+        r"\g<1>{version}\3",
+        shields,
+        "web/README.md (badge)",
+    ),
+    # Demo mode's mock health check reports a backend version string; stamp it
+    # in lockstep with the app version so the hosted demo never reports a stale
+    # build. Each file has exactly one `version:` literal.
+    (
+        ROOT / "web" / "src" / "api" / "demoClient.ts",
+        r'(version:\s*")([^"]+)(")',
+        r"\g<1>{version}\3",
+        identity,
+        "web/src/api/demoClient.ts (demo version)",
+    ),
+    (
+        ROOT / "web" / "src" / "api" / "mock.ts",
+        r'(version:\s*")([^"]+)(")',
+        r"\g<1>{version}\3",
+        identity,
+        "web/src/api/mock.ts (demo version)",
     ),
 ]
 
