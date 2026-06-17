@@ -39,7 +39,13 @@ export const HELP_CONTENT: HelpSection[] = [
         id: "session.machines",
         title: "Device Management",
         content:
-          "The Manage Devices section lets you pair and manage remote devices. Use a 6-digit pairing code displayed on the remote device, scan for devices on your local network, or add a machine manually by URL and API key.",
+          "The Manage Devices section lets you pair and manage remote REACHER machines. Use a 6-digit pairing code displayed on the remote device, pick a device discovered automatically via mDNS on your local network, or add a machine manually by URL and API key. Paired machines run in proxy mode: every call routes through your local server, which holds the remote API key — the browser never sees it. This lets you drive several hosts from one window.",
+      },
+      {
+        id: "session.suspend",
+        title: "Idle Suspend & Recovery",
+        content:
+          "To conserve resources, the REACHER server suspends itself when no client has been connected for an extended period. A full-screen \"Session Timed Out\" overlay then appears with Reconnect and Export Session Data buttons. Session data is preserved on suspend, and the server process only fully shuts down after a longer idle window with no reconnection. Click Reconnect to reload and resume. If a session was actively running, reloading discards its in-memory data — export first when prompted.",
       },
     ],
   },
@@ -53,6 +59,12 @@ export const HELP_CONTENT: HelpSection[] = [
         title: "Session Presets",
         content:
           "Session presets pre-configure all settings in one click: hardware arm states, paradigm parameters, and limits. Presets are filtered by the detected paradigm. After selecting a preset, you can still adjust individual settings before starting.",
+      },
+      {
+        id: "configuration.pavlovian",
+        title: "Pavlovian Presets & Cards",
+        content:
+          "Pavlovian paradigms use their own presets (e.g., Pavlovian Acquisition and Reversal). Their preset cards surface Pavlovian-specific values — CS+/CS− counts, CS+ reward probability, and trace interval — in place of lever ratios and contingencies, since Pavlovian sessions have no lever-based reward routing. Apply the preset, then fine-tune in the dedicated Pavlovian settings panel before starting.",
       },
       {
         id: "configuration.paradigm",
@@ -158,13 +170,13 @@ export const HELP_CONTENT: HelpSection[] = [
         id: "data.fileconfig",
         title: "File Configuration",
         content:
-          "Set the output filename and destination directory on the Session Configuration page before starting. Click Save Config to persist these to the backend. If left blank, the system defaults to a timestamp-based filename saved to ~/Downloads.",
+          "Set the output filename and destination directory on the Session Configuration page before starting. Click Save Config to persist these to the backend. For a local session, use Browse to pick a folder; for a paired remote machine there's no Browse — type a path on the remote host, where the data lives. If left blank, data defaults to a timestamp-based filename in the session host's ~/Downloads. The engine also streams every event to an append-only on-disk log under ~/REACHER/LOG/ on the host, so raw data survives even if export fails.",
       },
       {
         id: "data.export",
         title: "Auto-Export",
         content:
-          "When a session ends (manually or by reaching its limit), data is automatically saved. The ZIP contains:\n\n- Behavior events (CSV with device, event, timestamps)\n- Frame timestamps (for microscope sync)\n- Session metadata (paradigm, settings, limits, counts)\n\nThe save path is shown on the Session page after the session stops.",
+          "When a session ends (manually or by reaching its limit), data is automatically saved. The ZIP contains:\n\n- Behavior events (CSV with device, event, timestamps)\n- Frame timestamps (for microscope sync)\n- Session metadata (paradigm, settings, limits, counts)\n\nThe save path is shown on the Session page after the session stops. For a remote machine the ZIP is written on the remote host, not your local computer.",
       },
     ],
   },

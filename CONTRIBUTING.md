@@ -40,7 +40,7 @@ The old `-dev` suffix is **retired** as of v3.0.0.
 
 Labrynth ships the firmware and backend by depending on `reacher`. To move to a
 newer firmware/backend, bump the pin in `pyproject.toml`
-(`reacher>=X.Y.Z`) — do not vendor or submodule firmware here.
+(`reacher2p>=X.Y.Z`) — do not vendor or submodule firmware here.
 
 ## Commit messages
 

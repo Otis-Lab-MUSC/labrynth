@@ -15,12 +15,15 @@ straight from the installed reacher package, so the version is pinned by the
 ``reacher`` dependency in pyproject.toml.
 
 Usage:
-  python build.py                          # full build
+  python build.py                          # full GUI build
   python build.py --skip-frontend          # skip npm build
   python build.py --avrdude /usr/bin/avrdude  # explicit avrdude path
+  python build.py --cli                    # build GUI + LabrynthCLI console app
+  python build.py --cli-only               # build only LabrynthCLI (no frontend)
 
 Requires: Python 3.10+, Node.js, npm, PyInstaller (pip install pyinstaller),
-and the reacher package installed (pip install reacher or -e ../reacher).
+and the reacher package installed (pip install reacher2p or -e ../reacher).
+Building the CLI also requires the ``[cli]`` extras: pip install -e ".[cli]".
 """
 
 import argparse
@@ -41,6 +44,7 @@ PROJECT_ROOT = SCRIPT_DIR
 FRONTEND_DIR = os.path.join(PROJECT_ROOT, "web")
 FRONTEND_DIST = os.path.join(FRONTEND_DIR, "dist")
 SPEC_FILE = os.path.join(SCRIPT_DIR, "labrynth.spec")
+SPEC_FILE_CLI = os.path.join(SCRIPT_DIR, "labrynth-cli.spec")
 
 PARADIGMS = ("fr", "pr", "vi", "omission", "pavlovian")
 BOARDS = ("uno", "mega")
@@ -88,7 +92,7 @@ def validate_environment():
         print(f"  [OK] reacher package (v{version})")
     except ImportError:
         print("ERROR: reacher package not installed.")
-        print("       Run: pip install -e ../reacher   (or: pip install reacher)")
+        print("       Run: pip install -e ../reacher   (or: pip install reacher2p)")
         sys.exit(1)
 
     # Check the reacher package actually carries firmware hex
@@ -98,6 +102,22 @@ def validate_environment():
     else:
         print("ERROR: reacher package ships no firmware hex (reacher/hex/).")
         print("       Reinstall reacher: pip install -e ../reacher")
+        sys.exit(1)
+
+
+def validate_cli_deps():
+    """Verify the [cli] extras are importable so PyInstaller can bundle them."""
+    print("\n=== Stage 0b: Validate CLI dependencies ===")
+    missing = []
+    for mod in ("prompt_toolkit", "httpx", "websockets"):
+        try:
+            __import__(mod)
+            print(f"  [OK] {mod}")
+        except ImportError:
+            missing.append(mod)
+    if missing:
+        print(f"ERROR: CLI dependencies not importable: {', '.join(missing)}")
+        print('       Run: pip install -e ".[cli]"')
         sys.exit(1)
 
 
@@ -178,18 +198,19 @@ def _ensure_real_avrdude(avrdude_path):
     return avrdude_path
 
 
-def validate_assets(avrdude_path):
+def validate_assets(avrdude_path, require_frontend=True):
     """Validate that all required assets exist before packaging."""
     print("\n=== Stage 2: Validate assets ===")
     ok = True
 
-    # Frontend dist
-    index_html = os.path.join(FRONTEND_DIST, "index.html")
-    if os.path.isfile(index_html):
-        print(f"  [OK] Frontend dist: {FRONTEND_DIST}")
-    else:
-        print(f"  [MISSING] Frontend dist: {index_html}")
-        ok = False
+    # Frontend dist (not needed for the CLI-only build, which ships no static/)
+    if require_frontend:
+        index_html = os.path.join(FRONTEND_DIST, "index.html")
+        if os.path.isfile(index_html):
+            print(f"  [OK] Frontend dist: {FRONTEND_DIST}")
+        else:
+            print(f"  [MISSING] Frontend dist: {index_html}")
+            ok = False
 
     # Hex files come from the installed reacher package (board-aware layout).
     hex_dir = resolve_reacher_hex_dir()
@@ -230,9 +251,9 @@ def validate_assets(avrdude_path):
     return avrdude_path
 
 
-def run_pyinstaller(avrdude_path):
-    """Run PyInstaller with the spec file."""
-    print("\n=== Stage 3: Run PyInstaller ===")
+def run_pyinstaller(avrdude_path, spec_file=SPEC_FILE):
+    """Run PyInstaller with the given spec file."""
+    print(f"\n=== Stage 3: Run PyInstaller ({os.path.basename(spec_file)}) ===")
     if not shutil.which("pyinstaller"):
         print("ERROR: pyinstaller not found. Install with: pip install pyinstaller")
         sys.exit(1)
@@ -242,31 +263,31 @@ def run_pyinstaller(avrdude_path):
         env["REACHER_AVRDUDE_PATH"] = avrdude_path
 
     _run(
-        ["pyinstaller", "--noconfirm", "--clean", SPEC_FILE],
+        ["pyinstaller", "--noconfirm", "--clean", spec_file],
         cwd=PROJECT_ROOT,
         env=env,
     )
 
 
-def report_output():
-    """Report the location of the built artifact."""
-    print("\n=== Stage 4: Build complete ===")
+def report_output(name="Labrynth"):
+    """Report the location of a built artifact (GUI ``Labrynth`` or ``LabrynthCLI``)."""
+    print(f"\n=== Stage 4: Build complete ({name}) ===")
     system = platform.system()
 
     if system == "Darwin":
-        app_path = os.path.join(SCRIPT_DIR, "dist", "Labrynth.app")
+        app_path = os.path.join(SCRIPT_DIR, "dist", f"{name}.app")
         if os.path.isdir(app_path):
             print(f"  Output: {app_path}")
             print(f"  Run:    open {app_path}")
             return
     elif system == "Windows":
-        exe_path = os.path.join(SCRIPT_DIR, "dist", "Labrynth", "Labrynth.exe")
+        exe_path = os.path.join(SCRIPT_DIR, "dist", name, f"{name}.exe")
         if os.path.isfile(exe_path):
             print(f"  Output: {os.path.dirname(exe_path)}")
             print(f"  Run:    {exe_path}")
             return
     else:
-        exe_path = os.path.join(SCRIPT_DIR, "dist", "Labrynth", "Labrynth")
+        exe_path = os.path.join(SCRIPT_DIR, "dist", name, name)
         if os.path.isfile(exe_path):
             print(f"  Output: {os.path.dirname(exe_path)}")
             print(f"  Run:    {exe_path}")
@@ -299,6 +320,16 @@ def main():
         default="",
         help="Explicit path to avrdude binary to bundle",
     )
+    parser.add_argument(
+        "--cli",
+        action="store_true",
+        help="Also build the standalone LabrynthCLI console app",
+    )
+    parser.add_argument(
+        "--cli-only",
+        action="store_true",
+        help="Build only LabrynthCLI (no frontend, no GUI bundle)",
+    )
     args = parser.parse_args()
 
     print("Labrynth Build Orchestrator")
@@ -308,6 +339,15 @@ def main():
 
     # Stage 0: Validate (reacher package + its bundled firmware hex)
     validate_environment()
+    if args.cli or args.cli_only:
+        validate_cli_deps()
+
+    # CLI-only: skip frontend entirely; the CLI bundle ships no static/.
+    if args.cli_only:
+        avrdude_path = validate_assets(args.avrdude, require_frontend=False)
+        run_pyinstaller(avrdude_path, SPEC_FILE_CLI)
+        report_output("LabrynthCLI")
+        return
 
     # Stage 1: Frontend
     if args.skip_frontend:
@@ -318,11 +358,16 @@ def main():
     # Stage 2: Validate
     avrdude_path = validate_assets(args.avrdude)
 
-    # Stage 3: PyInstaller
+    # Stage 3: PyInstaller (GUI)
     run_pyinstaller(avrdude_path)
 
-    # Stage 4: Report
+    # Stage 4: Report (GUI)
     report_output()
+
+    # Optional: also build the standalone CLI bundle
+    if args.cli:
+        run_pyinstaller(avrdude_path, SPEC_FILE_CLI)
+        report_output("LabrynthCLI")
 
 
 if __name__ == "__main__":

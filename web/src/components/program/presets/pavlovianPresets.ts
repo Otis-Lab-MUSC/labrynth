@@ -63,10 +63,13 @@ export const PAV_ACQUISITION_PRESET: SessionPreset = {
     207: 0,     // CS- Reward Prob (%)
     208: 50,    // CS+ Count
     209: 50,    // CS- Count
+    212: 0,     // Counterbalance (off)
     214: 1000,  // Trace Interval (ms)
+    215: 5000,  // Consumption Window (ms)
     216: 30000, // ITI Mean (ms)
     217: 20000, // ITI Min (ms)
     218: 50000, // ITI Max (ms)
+    219: 0,     // Pulse Config
     374: 0,     // CS+ Pulse On (ms) — continuous
     375: 0,     // CS+ Pulse Off (ms)
     384: 200,   // CS- Pulse On (ms)
@@ -93,10 +96,13 @@ export const PAV_REVERSAL_PRESET: SessionPreset = {
     207: 100,   // CS- Reward Prob (%) — reversed
     208: 50,    // CS+ Count
     209: 50,    // CS- Count
+    212: 0,     // Counterbalance (off)
     214: 1000,  // Trace Interval (ms)
+    215: 5000,  // Consumption Window (ms)
     216: 30000, // ITI Mean (ms)
     217: 20000, // ITI Min (ms)
     218: 50000, // ITI Max (ms)
+    219: 0,     // Pulse Config
     374: 0,     // CS+ Pulse On (ms) — continuous
     375: 0,     // CS+ Pulse Off (ms)
     384: 200,   // CS- Pulse On (ms)

@@ -98,7 +98,7 @@ export function firstSessionTour(): TutorialStep[] {
       target: "machine-management",
       title: "Device Management",
       content:
-        "Expand this section to pair remote devices on your network. You can enter a 6-digit pairing code, scan for discovered devices, or add a machine manually by URL.",
+        "Expand this section to pair remote REACHER machines on your network. Enter a 6-digit pairing code, pick a device discovered automatically via mDNS, or add one manually by URL. Paired machines run in proxy mode — their API keys stay on your local server and never reach the browser, so you can drive several hosts from one window.",
       placement: "bottom",
       section: "Getting Started",
     },
@@ -156,7 +156,7 @@ export function firstSessionTour(): TutorialStep[] {
       target: "preset-card",
       title: "Preset Details",
       content:
-        "The preset card shows session limits, the device table with arm/disarm toggles for each piece of hardware, and the configured parameters. Review and adjust, then click Apply Preset to push all settings to the session at once.",
+        "The preset card shows session limits, the device table with arm/disarm toggles for each piece of hardware, and the configured parameters. Review and adjust, then click Apply Preset to push all settings to the session at once. A Pavlovian preset card surfaces its CS+/CS− counts, CS+ reward probability, and trace interval in place of lever contingencies.",
       placement: "bottom",
       interactive: true,
       section: "Configuration",
@@ -167,7 +167,7 @@ export function firstSessionTour(): TutorialStep[] {
       target: "paradigm-settings",
       title: "Paradigm Settings",
       content:
-        "Configure paradigm-specific parameters here. Try adjusting the values — they'll be sent to the Arduino when you start.",
+        "Configure paradigm-specific parameters here. Try adjusting the values — they'll be sent to the Arduino when you start. Pavlovian sessions get a dedicated panel for CS+/CS− reward probabilities and counts, trace interval, tone-pulse timing, and the ITI distribution.",
       placement: "bottom",
       interactive: true,
       section: "Configuration",
@@ -268,8 +268,8 @@ export function firstSessionTour(): TutorialStep[] {
       target: "file-config",
       title: "File Configuration",
       content:
-        "Set a filename and destination folder for your exported data before starting the session. If left blank, the system defaults to a timestamp-based filename saved to your machine's Downloads folder. " +
-        "The Python engine also appends every behavioral event to an on-disk log (~/REACHER/LOG/) in real time, so your data is safe even if the export step fails.",
+        "Set a filename and destination folder for your exported data before starting the session. For a local session, use Browse to pick a folder; for a paired remote machine there's no Browse — type a path on the remote host, where the data actually lives. " +
+        "If left blank, data exports to a timestamp-based file in the session host's Downloads folder. Either way, the engine also appends every behavioral event to an on-disk log (~/REACHER/LOG/) on the session host in real time, so your data is safe even if the export step fails.",
       placement: "bottom",
       interactive: true,
       section: "Data",
@@ -281,7 +281,7 @@ export function firstSessionTour(): TutorialStep[] {
       target: "monitor-heading",
       title: "Auto-Export",
       content:
-        "When the session ends — whether manually stopped or by reaching its limit — data is automatically saved to the configured destination (or ~/Downloads by default). The save path appears on the Session page.",
+        "When the session ends — whether manually stopped or by reaching its limit — data is automatically saved to the configured destination (or the session host's Downloads folder by default). The save path appears on the Session page. For a remote machine the files are written on the remote host, not your local computer.",
       placement: "bottom",
       section: "Data",
     },
@@ -295,6 +295,16 @@ export function firstSessionTour(): TutorialStep[] {
       content:
         "The terminal shows log messages: connection events, errors, upload progress, and session state changes. Click to expand.",
       placement: "top",
+      section: "Complete",
+    },
+    {
+      id: "first-session-19b",
+      panel: null,
+      target: "",
+      title: "Idle Suspend & Recovery",
+      content:
+        "To save resources, the REACHER server suspends itself when no client stays connected for a while. A full-screen \"Session Timed Out\" overlay then appears with Reconnect and Export Session Data buttons — your data is preserved, and the server only fully shuts down if you don't reconnect in time. Reconnecting picks the session back up where you left off.",
+      placement: "center",
       section: "Complete",
     },
     {
