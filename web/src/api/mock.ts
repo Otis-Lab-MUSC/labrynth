@@ -176,11 +176,33 @@ export const sendCommand = async (_id: string, _code: number, _value?: number) =
   status: "ok",
 });
 
+// Minimal Pavlovian command set mirroring reacher's registry, so demo mode can
+// render the dynamically-sourced Pavlovian panel (real backend returns these via
+// get_commands_for_paradigm). Only the settable scalar/pulse params are needed.
+const PAVLOVIAN_MOCK_COMMANDS = [
+  { code: 206, name: "PAV_CS_PLUS_PROB", description: "CS+ probability (0-100)", payload_key: "probability", payload_type: "int" },
+  { code: 207, name: "PAV_CS_MINUS_PROB", description: "CS- probability (0-100)", payload_key: "probability", payload_type: "int" },
+  { code: 208, name: "PAV_CS_PLUS_COUNT", description: "Number of CS+ trials", payload_key: "count", payload_type: "int" },
+  { code: 209, name: "PAV_CS_MINUS_COUNT", description: "Number of CS- trials", payload_key: "count", payload_type: "int" },
+  { code: 212, name: "PAV_COUNTERBALANCE", description: "Enable/disable counterbalancing", payload_key: "enabled", payload_type: "bool" },
+  { code: 214, name: "PAV_TRACE_INTERVAL", description: "Trace interval between CS and US (ms)", payload_key: "interval", payload_type: "int" },
+  { code: 215, name: "PAV_CONSUMPTION", description: "Consumption window duration (ms)", payload_key: "duration", payload_type: "int" },
+  { code: 216, name: "PAV_ITI_MEAN", description: "Mean inter-trial interval (ms)", payload_key: "iti_mean", payload_type: "int" },
+  { code: 217, name: "PAV_ITI_MIN", description: "Minimum inter-trial interval (ms)", payload_key: "iti_min", payload_type: "int" },
+  { code: 218, name: "PAV_ITI_MAX", description: "Maximum inter-trial interval (ms)", payload_key: "iti_max", payload_type: "int" },
+  { code: 219, name: "PAV_PULSE_CONFIG", description: "Pulse configuration for Pavlovian paradigm", payload_key: "config", payload_type: "int" },
+  { code: 374, name: "CUE_SET_PULSE_ON", description: "CS+ pulse on (ms)", payload_key: "pulse_on", payload_type: "int" },
+  { code: 375, name: "CUE_SET_PULSE_OFF", description: "CS+ pulse off (ms)", payload_key: "pulse_off", payload_type: "int" },
+  { code: 384, name: "CUE2_SET_PULSE_ON", description: "CS- pulse on (ms)", payload_key: "pulse_on", payload_type: "int" },
+  { code: 385, name: "CUE2_SET_PULSE_OFF", description: "CS- pulse off (ms)", payload_key: "pulse_off", payload_type: "int" },
+];
+
 export const getCommands = async (id: string) => {
   const session = useSessionStore.getState().sessions.get(id);
+  const paradigm = session?.paradigm ?? "fr";
   return {
-    paradigm: session?.paradigm ?? "fr",
-    commands: [],
+    paradigm,
+    commands: paradigm.toLowerCase() === "pavlovian" ? PAVLOVIAN_MOCK_COMMANDS : [],
   };
 };
 
