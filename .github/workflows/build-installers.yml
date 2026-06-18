@@ -368,6 +368,18 @@ jobs:
       - name: List artifacts
         run: ls -lhR artifacts/
 
+      # Stable-named copies so phoxel-workbench can link directly to
+      # releases/latest/download/labrynth-<os>.<ext> (versioned names embed the
+      # release version and would 404 as a "latest" link). The existing *.exe /
+      # *.dmg / *.deb / *.AppImage globs below attach these automatically.
+      - name: Create stable-named aliases for latest downloads
+        run: |
+          cd artifacts
+          cp labrynth-*-windows-x64.exe    labrynth-windows-x64.exe
+          cp labrynth-*-macos-arm64.dmg    labrynth-macos-arm64.dmg
+          cp labrynth-*-linux-x64.AppImage labrynth-linux-x64.AppImage
+          cp labrynth_*_amd64.deb          labrynth-linux-x64.deb
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
