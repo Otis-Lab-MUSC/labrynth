@@ -14,6 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.0-beta.8] - 2026-06-18
+
+### Fixed
+- Pavlovian Acquisition and Reversal presets now populate the cue-duration (`213`) and CS+/CS− frequency (`210`/`211`) Pavlovian params, so selecting a preset and pressing START is no longer blocked by "cue duration must be greater than 0"; the firmware-unrecognized pulse codes (`374`/`375`/`384`/`385`) that emitted "command not found" mid-session were removed ([#70](https://github.com/Otis-Lab-MUSC/labrynth/issues/70))
+
+---
+
 ## [3.0.0-beta.7] - 2026-06-18
 
 ### Changed
