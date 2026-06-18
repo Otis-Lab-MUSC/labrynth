@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "labrynth"
-version = "3.0.0-beta.6"
+version = "3.0.0-beta.7"
 description = "Labrynth application shell — build orchestrator and frontend"
 requires-python = ">=3.10"
 dependencies = [
     # PyPI distribution is "reacher2p" (the "reacher" name was taken); the import
     # package is still "reacher" (python -m reacher, importlib hex resolution).
-    "reacher2p>=3.0.0b5",
+    "reacher2p>=3.0.0b6",
     "pyinstaller>=6.0",
 ]
 

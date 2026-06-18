@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [3.0.0-beta.7] - 2026-06-18
+
 ### Changed
 - Hardware Controls: the laser now exposes the shared Any/RH/LH/Independent "Contingent on" menu and an onset-delay field, matching cue/pump ([#67](https://github.com/Otis-Lab-MUSC/labrynth/issues/67), [#69](https://github.com/Otis-Lab-MUSC/labrynth/issues/69))
 - Firmware upload controls top-align so the "Auto-detected" caption no longer shifts the board/paradigm dropdowns and UPLOAD button ([#65](https://github.com/Otis-Lab-MUSC/labrynth/issues/65))
