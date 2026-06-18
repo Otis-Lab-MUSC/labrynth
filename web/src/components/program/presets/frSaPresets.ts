@@ -35,7 +35,7 @@ const PUMP_HARDWARE: Partial<HardwareUiState> = {
 };
 
 const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
-  laser:        { armed: false, frequency: 40, duration: 5000, mode: "contingent" as const },
+  laser:        { armed: false, frequency: 40, duration: 5000, mode: "contingent" as const, contingency: "any" as const, onsetDelay: 0 },
   lickCircuit:  { armed: false },
   microscope:   { armed: false, frameRate: null, frameAveraging: null },
   slm:          { armed: false, pin: 11 },

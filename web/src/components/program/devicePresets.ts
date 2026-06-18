@@ -23,9 +23,9 @@ export const DEVICE_PRESETS: DevicePreset[] = [
   // },
 ];
 
-/** Command code for laser mode: contingent = 681, independent = 682, rh_lever = 684, Pavlovian trial types = 691-693 */
+/** Command code for laser mode: contingent(Any) = 681, independent = 682, rh_lever = 684, lh_lever = 685, Pavlovian trial types = 691-693 */
 export const LASER_MODE_COMMANDS = {
-  contingent: 681, independent: 682, rh_lever: 684,
+  contingent: 681, independent: 682, rh_lever: 684, lh_lever: 685,
   cs_plus: 691, cs_minus: 692, cs_both: 693,
 } as const;
 
@@ -39,7 +39,7 @@ export const PRESET_COMMAND_MAP: Record<string, { arm: number; disarm: number; p
   secondaryCue:  { arm: 311,  disarm: 310,  params: { frequency: 381, duration: 382, leverFilter: 388, delay: 387 } },
   primaryPump:   { arm: 401,  disarm: 400,  params: { duration: 472,  leverFilter: 478, delay: 477 } },
   secondaryPump: { arm: 411,  disarm: 410,  params: { duration: 482,  leverFilter: 488, delay: 487 } },
-  laser:         { arm: 601,  disarm: 600,  params: { frequency: 671, duration: 672 } },
+  laser:         { arm: 601,  disarm: 600,  params: { frequency: 671, duration: 672, delay: 673 } },
   lickCircuit:   { arm: 501,  disarm: 500 },
   microscope:    { arm: 901,  disarm: 900 },
   slm:           { arm: 1101, disarm: 1100 },
