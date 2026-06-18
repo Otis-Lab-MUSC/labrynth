@@ -14,6 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.0-beta.9] - 2026-06-18
+
+### Changed
+- Bumped the reacher backend pin to `reacher2p>=3.0.0b7` (reacher v3.0.0-beta.7), picking up: the armed cue/secondaryCue frequency-0 pre-flight validation **error**, so a 0-Hz armed cue is now blocked before session start instead of surfacing a raw HTTP 400 ("frequency must be between 1 and 65535") mid-start ([reacher#25](https://github.com/Otis-Lab-MUSC/reacher/issues/25)); and the firmware CS+/CS− cue pulse handlers for codes `374`/`375`/`384`/`385` that beta.8 ([#70](https://github.com/Otis-Lab-MUSC/labrynth/issues/70)) had stubbed out pending firmware support ([reacher#24](https://github.com/Otis-Lab-MUSC/reacher/issues/24)). Reflash firmware after upgrading.
+
+---
+
 ## [3.0.0-beta.8] - 2026-06-18
 
 ### Fixed
