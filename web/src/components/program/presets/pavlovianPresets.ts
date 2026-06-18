@@ -28,7 +28,7 @@ const CORE_HARDWARE: Partial<HardwareUiState> = {
 };
 
 const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
-  laser:       { armed: false, frequency: 40, duration: 5000, mode: "cs_plus" as const, phase: "reward" as const },
+  laser:       { armed: false, frequency: 40, duration: 5000, mode: "cs_plus" as const, phase: "reward" as const, contingency: "any" as const, onsetDelay: 0 },
   lickCircuit: { armed: true },
   microscope:  { armed: false, frameRate: null, frameAveraging: null },
   slm:         { armed: false, pin: 11 },
@@ -54,7 +54,7 @@ export const PAV_ACQUISITION_PRESET: SessionPreset = {
   hardware: {
     ...CORE_HARDWARE,
     ...OPTIONAL_HARDWARE,
-    laser: { armed: true, frequency: 40, duration: 5000, mode: "cs_plus" as const, phase: "reward" as const },
+    laser: { armed: true, frequency: 40, duration: 5000, mode: "cs_plus" as const, phase: "reward" as const, contingency: "any" as const, onsetDelay: 0 },
     lickCircuit: { armed: true },
   },
   paradigmSettings: PARADIGM_SETTINGS,
@@ -87,7 +87,7 @@ export const PAV_REVERSAL_PRESET: SessionPreset = {
   hardware: {
     ...CORE_HARDWARE,
     ...OPTIONAL_HARDWARE,
-    laser: { armed: true, frequency: 40, duration: 5000, mode: "cs_plus" as const, phase: "reward" as const },
+    laser: { armed: true, frequency: 40, duration: 5000, mode: "cs_plus" as const, phase: "reward" as const, contingency: "any" as const, onsetDelay: 0 },
     lickCircuit: { armed: true },
   },
   paradigmSettings: PARADIGM_SETTINGS,

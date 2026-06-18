@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 
@@ -26,6 +27,27 @@ const DELAY_CMD: Record<Props["deviceKey"], number> = {
 export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
   const device    = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[deviceKey]);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
+
+  // Press-contingency is invalid for omission (rewards the *absence* of a press) and
+  // pavlovian (stimulus-driven, not operant), so the lever-routing controls are hidden.
+  const showLevers = paradigm !== "pavlovian" && paradigm !== "omission";
+
+  // Clear any previously-set lever routing when switching into a non-press-contingent
+  // paradigm, so no stale RH/LH filter stays active on the device firmware (#66).
+  useEffect(() => {
+    const current = device?.contingency.leverFilter;
+    if (showLevers || !current || current === "none") return;
+    getClientForSession(sessionId)?.sendCommand(sessionId, FILTER_CMD[deviceKey], 0);
+    updateHardwareUi(sessionId, (prev) => ({
+      [deviceKey]: {
+        ...(prev[deviceKey] as NonNullable<typeof device>),
+        contingency: {
+          ...(prev[deviceKey] as NonNullable<typeof device>).contingency,
+          leverFilter: "none" as const,
+        },
+      },
+    }));
+  }, [showLevers, device, sessionId, deviceKey, updateHardwareUi]);
 
   if (!device) return null;
 
@@ -62,14 +84,13 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
     }));
   };
 
-  const showLevers = paradigm !== "pavlovian";
-
   return (
     <div className="border-t border-theme-text/10 pt-2 mt-1 space-y-2">
-      <div className="text-xs font-medium uppercase tracking-wide text-theme-text/60">Contingent on</div>
       {showLevers && (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-theme-text/60">Trigger on:</span>
+        <>
+          <div className="text-xs font-medium uppercase tracking-wide text-theme-text/60">Contingent on</div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-theme-text/60">Trigger on:</span>
           {(["none", "rh", "lh"] as const).map((opt) => (
             <button
               key={opt}
@@ -83,7 +104,8 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
               {opt === "none" ? "Any" : opt.toUpperCase()}
             </button>
           ))}
-        </div>
+          </div>
+        </>
       )}
       <div className="flex items-center gap-2">
         <label className="text-xs text-theme-text/60">Delay (ms):</label>

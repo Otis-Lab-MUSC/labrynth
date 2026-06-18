@@ -12,6 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Hardware Controls: the laser now exposes the shared Any/RH/LH/Independent "Contingent on" menu and an onset-delay field, matching cue/pump ([#67](https://github.com/Otis-Lab-MUSC/labrynth/issues/67), [#69](https://github.com/Otis-Lab-MUSC/labrynth/issues/69))
+- Firmware upload controls top-align so the "Auto-detected" caption no longer shifts the board/paradigm dropdowns and UPLOAD button ([#65](https://github.com/Otis-Lab-MUSC/labrynth/issues/65))
+
+### Fixed
+- Omission and Pavlovian no longer expose invalid press-contingent "Contingent on" options for output devices, nor render a dangling empty "Contingent on" header; a stale RH/LH lever filter is cleared when entering those paradigms ([#66](https://github.com/Otis-Lab-MUSC/labrynth/issues/66), [#68](https://github.com/Otis-Lab-MUSC/labrynth/issues/68))
+
 ---
 
 ## [3.0.0-beta.6] - 2026-06-17

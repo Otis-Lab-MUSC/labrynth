@@ -52,7 +52,7 @@ export const defaultHardwareUiState = (): HardwareUiState => ({
   secondaryCue: { armed: false, frequency: 2900, duration: 1000, contingency: DEFAULT_CONTINGENCY() },
   primaryPump:  { armed: false, duration: 3000, contingency: DEFAULT_CONTINGENCY() },
   secondaryPump: { armed: false, duration: 3000, contingency: DEFAULT_CONTINGENCY() },
-  laser: { armed: false, frequency: 40, duration: 5000, mode: "contingent", phase: "reward" },
+  laser: { armed: false, frequency: 40, duration: 5000, mode: "contingent", phase: "reward", contingency: "any", onsetDelay: 0 },
   lickCircuit: { armed: false },
   microscope: { armed: false, frameRate: null, frameAveraging: null },
   slm: { armed: false, pin: 11 },

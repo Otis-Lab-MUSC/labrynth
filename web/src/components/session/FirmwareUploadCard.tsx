@@ -34,7 +34,7 @@ export function FirmwareUploadCard({ sessionId, detectedBoard }: Props) {
   return (
     <div className="card">
       <h3 className="font-medium text-theme-text">Firmware Upload</h3>
-      <div className="flex items-center gap-2">
+      <div className="flex items-start gap-2">
         <div className="flex flex-col gap-0.5">
           <select
             value={selectedBoard}

@@ -51,6 +51,8 @@ export interface LaserUiState extends DeviceArmState {
   duration: number;
   mode: "contingent" | "independent" | "rh_lever" | "cs_plus" | "cs_minus" | "cs_both";
   phase?: "reward" | "cue";  // Pavlovian only — which trial phase triggers laser
+  contingency: "any" | "rh" | "lh" | "independent";  // operant lever routing (#67)
+  onsetDelay: number;  // ms from trigger to laser onset (#67/#69)
 }
 
 export interface MicroscopeUiState extends DeviceArmState {
