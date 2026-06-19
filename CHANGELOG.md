@@ -14,6 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.0-beta.10] - 2026-06-19
+
+### Changed
+- CI: bumped all stock GitHub Actions to their Node 24 runtime majors (`checkout` v7, `setup-node` v6, `setup-python` v6, `upload-artifact` v7, `download-artifact` v8, `upload-pages-artifact` v5, `deploy-pages` v5), clearing the "Node.js 20 is deprecated" runner warnings. Build/CI tooling only — no change to the shipped application ([#63](https://github.com/Otis-Lab-MUSC/labrynth/issues/63)).
+
+---
+
 ## [3.0.0-beta.9] - 2026-06-18
 
 ### Changed
