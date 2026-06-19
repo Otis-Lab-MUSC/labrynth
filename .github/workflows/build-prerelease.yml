@@ -29,10 +29,10 @@ jobs:
       reacher_ref_source: ${{ steps.reacher_ref.outputs.source }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -88,15 +88,15 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -150,7 +150,7 @@ jobs:
         run: iscc installer\reacher.iss
 
       - name: Upload installer
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-installer
           path: dist/labrynth-${{ needs.version-check.outputs.version }}-windows-x64.exe
@@ -162,7 +162,7 @@ jobs:
         run: tar -czf "dist/labrynth-cli-${VERSION}-windows-x64.tar.gz" -C dist LabrynthCLI
 
       - name: Upload CLI bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-cli
           path: dist/labrynth-cli-${{ needs.version-check.outputs.version }}-windows-x64.tar.gz
@@ -176,15 +176,15 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -225,7 +225,7 @@ jobs:
             "dist/labrynth-${VERSION}-macos-arm64.dmg"
 
       - name: Upload DMG
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-arm64-dmg
           path: dist/labrynth-${{ needs.version-check.outputs.version }}-macos-arm64.dmg
@@ -236,7 +236,7 @@ jobs:
         run: tar -czf "dist/labrynth-cli-${VERSION}-macos-arm64.tar.gz" -C dist LabrynthCLI
 
       - name: Upload CLI bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos-arm64-cli
           path: dist/labrynth-cli-${{ needs.version-check.outputs.version }}-macos-arm64.tar.gz
@@ -250,15 +250,15 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -378,7 +378,7 @@ jobs:
           ARCH=x86_64 ./appimagetool --no-appstream "${APPDIR}" "labrynth-${VERSION}-linux-x64.AppImage"
 
       - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-installers
           path: |
@@ -398,7 +398,7 @@ jobs:
     if: always() && github.ref_type == 'tag' && needs.version-check.result == 'success'
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
