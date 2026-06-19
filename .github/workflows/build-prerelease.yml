@@ -407,7 +407,7 @@ jobs:
         run: ls -lhR artifacts/
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         env:
           VERSION: ${{ needs.version-check.outputs.version }}
           REACHER_REF: ${{ needs.version-check.outputs.reacher_ref }}
