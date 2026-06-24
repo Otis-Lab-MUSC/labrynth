@@ -7,51 +7,12 @@ import { getClientForSession } from "../../api/sessionClient";
 import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "../program/devicePresets";
 import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
 import { ValidationWarningPanel } from "./ValidationWarningPanel";
+import { DEVICE_LABELS, formatDeviceParams } from "./hardwareSummary";
 import type { ValidationResult } from "../../api/client";
 
 // Shared with PavlovianSettings so the start-summary labels every param the
 // registry can surface (incl. re-enabled 212/215/219), with no separate drift.
 import { LABEL_OVERRIDES as PAV_CODE_LABELS } from "../program/pavLabels";
-
-const DEVICE_LABELS: Record<string, string> = {
-  rhLever: "RH Lever",
-  lhLever: "LH Lever",
-  primaryCue: "Cue 1",
-  secondaryCue: "Cue 2",
-  primaryPump: "Pump 1",
-  secondaryPump: "Pump 2",
-  laser: "Laser",
-  lickCircuit: "Lick Circuit",
-  microscope: "Microscope",
-};
-
-function formatDeviceParams(key: string, device: Record<string, unknown>, isPav: boolean): string {
-  const parts: string[] = [];
-  if ("timeout" in device && device.timeout !== undefined) parts.push(`T:${Number(device.timeout) / 1000}s`);
-  if ("ratio" in device && device.ratio !== undefined) parts.push(`R:${device.ratio}`);
-  if ("frequency" in device && device.frequency !== undefined) parts.push(`${device.frequency}Hz`);
-  if ("duration" in device && device.duration !== undefined) {
-    const durStr = `${device.duration}ms`;
-    parts.push(durStr);
-  }
-  // Laser-specific: mode and phase
-  if (key === "laser") {
-    const mode = device.mode as string | undefined;
-    if (mode === "independent") {
-      parts.push("Independent");
-    } else if (mode) {
-      const filterLabel: Record<string, string> = {
-        contingent: "Contingent", cs_plus: "CS+", cs_minus: "CS\u2212", cs_both: "CS\u00B1",
-      };
-      parts.push(`Trial-Paired (${filterLabel[mode] ?? mode})`);
-    }
-    if (isPav && mode !== "independent" && device.phase) {
-      const phaseLabel: Record<string, string> = { reward: "Reward", cue: "Cue" };
-      parts.push(`Phase: ${phaseLabel[device.phase as string] ?? device.phase}`);
-    }
-  }
-  return parts.join("  ");
-}
 
 export function SessionStartModal() {
   const startModalOpen = useSessionStore((s) => s.startModalOpen);
@@ -78,6 +39,9 @@ export function SessionStartModal() {
 
   const paradigm = session?.paradigm?.toLowerCase();
   const isPavlovian = paradigm === "pavlovian";
+  // Press-contingent (operant, non-omission) gates lever-routing display, mirroring
+  // ContingencySection's `showLevers` so the summary matches where it's configurable.
+  const pressContingent = !isPavlovian && paradigm !== "omission";
 
   // Sync local state when modal opens or session changes
   useEffect(() => {
@@ -365,7 +329,7 @@ export function SessionStartModal() {
                         )}
                       </td>
                       <td className="px-3 py-1.5 font-mono text-xs text-theme-text/60">
-                        {state.armed ? formatDeviceParams(key, state as Record<string, unknown>, isPavlovian) : ""}
+                        {state.armed ? formatDeviceParams(key, state as Record<string, unknown>, { isPav: isPavlovian, pressContingent }) : ""}
                       </td>
                     </tr>
                   ))}
