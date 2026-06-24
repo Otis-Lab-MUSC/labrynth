@@ -7,7 +7,7 @@ import { getClientForSession } from "../../api/sessionClient";
 import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "../program/devicePresets";
 import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
 import { ValidationWarningPanel } from "./ValidationWarningPanel";
-import { DEVICE_LABELS, formatDeviceParams } from "./hardwareSummary";
+import { DEVICE_LABELS, formatDeviceParams, leverFilterActive, laserPhaseActive } from "./hardwareSummary";
 import type { ValidationResult } from "../../api/client";
 
 // Shared with PavlovianSettings so the start-summary labels every param the
@@ -154,9 +154,9 @@ export function SessionStartModal() {
             }
           }
           // leverFilter and delay are nested at state.contingency.* — flat lookup above skips them.
-          const contingency = (state as { contingency?: { leverFilter?: string; delay?: number } }).contingency;
-          if (contingency?.leverFilter && contingency.leverFilter !== "none" && mapping.params.leverFilter !== undefined) {
-            const numVal = contingency.leverFilter === "rh" ? 1 : contingency.leverFilter === "lh" ? 2 : 0;
+          const contingency = (state as { contingency?: { leverFilter?: "none" | "rh" | "lh"; delay?: number } }).contingency;
+          if (leverFilterActive(contingency?.leverFilter, pressContingent) && mapping.params.leverFilter !== undefined) {
+            const numVal = contingency.leverFilter === "rh" ? 1 : 2;
             await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, mapping.params.leverFilter, numVal);
           }
           if (contingency?.delay && contingency.delay > 0 && mapping.params.delay !== undefined) {
@@ -174,7 +174,7 @@ export function SessionStartModal() {
         }
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode as keyof typeof LASER_MODE_COMMANDS]);
       }
-      if (isPavlovian && laserState?.phase) {
+      if (laserPhaseActive(isPavlovian, laserState?.mode, laserState?.phase)) {
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase as keyof typeof PAV_LASER_PHASE_COMMANDS]);
       }
 

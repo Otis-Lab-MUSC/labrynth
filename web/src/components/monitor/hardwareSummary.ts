@@ -38,9 +38,36 @@ type SummaryDeviceKey = Exclude<keyof HardwareUiState, "testMode">;
 
 const leverFilterLabel: Record<"rh" | "lh", string> = { rh: "RH", lh: "LH" };
 
+// Single source of truth for the two gates that the start-summary and the
+// handleStart send-path must agree on (#80). Both the display formatters here and
+// SessionStartModal's command emission derive from these, so what is sent to the
+// firmware can never diverge from what the confirmation modal shows.
+
+/** Lever-routing filter (378/388/478/488) — sent/shown only for press-contingent paradigms. */
+export function leverFilterActive(
+  leverFilter: "none" | "rh" | "lh" | undefined,
+  pressContingent: boolean,
+): leverFilter is "rh" | "lh" {
+  return pressContingent && leverFilter !== undefined && leverFilter !== "none";
+}
+
+/**
+ * Pavlovian laser phase (694/695) — sent/shown only for a Pavlovian, trial-paired
+ * (non-independent) laser with a phase set. `isPav` is encoded in the predicate (not
+ * just asserted at the call site) so the gate is indivisible — mirroring how
+ * `leverFilterActive` carries `pressContingent`.
+ */
+export function laserPhaseActive(
+  isPav: boolean,
+  mode: LaserUiState["mode"] | undefined,
+  phase: "reward" | "cue" | undefined,
+): phase is "reward" | "cue" {
+  return isPav && mode !== "independent" && phase !== undefined;
+}
+
 function contingencyParts(c: { leverFilter: "none" | "rh" | "lh"; delay: number }, ctx: SummaryContext): string[] {
   const parts: string[] = [];
-  if (ctx.pressContingent && c.leverFilter !== "none") parts.push(leverFilterLabel[c.leverFilter]);
+  if (leverFilterActive(c.leverFilter, ctx.pressContingent)) parts.push(leverFilterLabel[c.leverFilter]);
   if (c.delay > 0) parts.push(`Delay:${c.delay}ms`);
   return parts;
 }
@@ -79,7 +106,7 @@ function laserParts(s: LaserUiState, ctx: SummaryContext): string[] {
     } else {
       parts.push("Trial-Paired");
     }
-    if (s.mode !== "independent" && s.phase) {
+    if (laserPhaseActive(ctx.isPav, s.mode, s.phase)) {
       const phaseLabel: Record<"reward" | "cue", string> = { reward: "Reward", cue: "Cue" };
       parts.push(`Phase: ${phaseLabel[s.phase]}`);
     }
