@@ -14,6 +14,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.0] - 2026-06-24
+
+_Labrynth v3.0.0 stable — first stable release of the v3 line. See each beta section
+below for the full incremental change history._
+
+### Added
+- Terminal CLI brought to full GUI feature parity, shipped as a standalone `LabrynthCLI`
+  bundle — sessions, hardware, program presets, limits, data export, and a live monitor
+  ([#31](https://github.com/Otis-Lab-MUSC/labrynth/issues/31))
+- In-app updater: update banner and About modal; one-click download streams the
+  platform-specific installer from GitHub releases, shows progress, and launches it
+  ([#10](https://github.com/Otis-Lab-MUSC/labrynth/issues/10))
+- Pre-start config review panel: backend `/api/validate/config` called before session
+  start; structured warnings with severity badges surfaced in the Start Modal
+- SLM (Spatial Light Modulator) promoted from plugin to first-class native hardware
+  control alongside Cue, Pump, Lick Circuit, and Microscope
+
+### Changed
+- Firmware now ships inside the `reacher` pip dependency as package data — no git
+  submodule; `reacher-firmware` repo archived
+- Hardware Controls: per-device RH/LH/Any lever routing with onset-delay fields for
+  Cue and Pump; Laser now exposes Contingent-on and onset-delay matching Cue/Pump
+  ([#65](https://github.com/Otis-Lab-MUSC/labrynth/issues/65)–[#69](https://github.com/Otis-Lab-MUSC/labrynth/issues/69))
+- Proxy-mode remote sessions no longer drop behavioral events — frontend syncs session
+  state on WebSocket reconnect ([#15](https://github.com/Otis-Lab-MUSC/labrynth/issues/15))
+- Rebranded umbrella project from "REACHER Suite" to "Phoxel Workbench" across
+  documentation ([#57](https://github.com/Otis-Lab-MUSC/labrynth/issues/57))
+- Bumped reacher backend pin to `reacher2p>=3.0.0` (stable), picking up stable backend
+  + firmware; reflash devices after upgrading
+
+### Fixed
+- Infusion counter now recognises `PUMP_1` from operant firmware alongside legacy `PUMP`
+  ([#45](https://github.com/Otis-Lab-MUSC/labrynth/issues/45))
+- Pavlovian presets populate cue-duration and CS+/CS− frequency params; invalid pulse
+  codes removed ([#70](https://github.com/Otis-Lab-MUSC/labrynth/issues/70))
+- `portBoards` map populated on initial machine load; firmware board auto-detect works
+  without a manual port refresh ([#47](https://github.com/Otis-Lab-MUSC/labrynth/issues/47))
+- Armed cue/secondaryCue with frequency 0 blocked at pre-flight validation; proxy
+  event loss fixed for remote sessions
+
+---
+
 ## [3.0.0-beta.10] - 2026-06-19
 
 ### Changed
