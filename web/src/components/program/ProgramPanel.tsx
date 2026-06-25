@@ -10,6 +10,8 @@ import type { SessionPreset } from "./presets";
 import { ConfirmDialog } from "../layout/ConfirmDialog";
 import { useUserPresetStore } from "../../store/useUserPresetStore";
 import { getClientForSession } from "../../api/sessionClient";
+import { leverFilterActive, laserPhaseActive } from "../monitor/hardwareSummary";
+import type { LaserUiState } from "../../types";
 
 export function ProgramPanel() {
   const activeSessionId = useSessionStore((s) => s.activeSessionId);
@@ -36,6 +38,8 @@ export function ProgramPanel() {
   const [updateConfirm, setUpdateConfirm] = useState<string | null>(null);
 
   const paradigm = session?.paradigm?.toLowerCase();
+  const isPav = paradigm === "pavlovian";
+  const pressContingent = !isPav && paradigm !== "omission";
 
   // Session presets filtered by paradigm
   const filteredSessionPresets = useMemo(() => {
@@ -131,6 +135,7 @@ export function ProgramPanel() {
             if (state[paramKey] !== undefined) {
               let value = state[paramKey];
               if (paramKey === "leverFilter") {
+                if (!leverFilterActive(state[paramKey] as "none" | "rh" | "lh" | undefined, pressContingent)) continue;
                 value = value === "rh" ? 1 : value === "lh" ? 2 : 0;
               }
               await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, value as number);
@@ -147,7 +152,7 @@ export function ProgramPanel() {
       }
 
       // 2b. Send laser mode command if preset specifies a mode
-      const laserState = preset.hardware.laser as { mode?: keyof typeof LASER_MODE_COMMANDS; phase?: "reward" | "cue" } | undefined;
+      const laserState = preset.hardware.laser as LaserUiState | undefined;
       if (laserState?.mode) {
         // Pavlovian trial-paired modes require contingent (681) before filter command
         if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever") {
@@ -157,7 +162,7 @@ export function ProgramPanel() {
       }
 
       // 2c. Send laser phase command if Pavlovian preset specifies a phase
-      if (laserState?.phase) {
+      if (laserPhaseActive(isPav, laserState?.mode, laserState?.phase)) {
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase]);
       }
 
@@ -221,6 +226,7 @@ export function ProgramPanel() {
             if (state[paramKey] !== undefined) {
               let value = state[paramKey];
               if (paramKey === "leverFilter") {
+                if (!leverFilterActive(state[paramKey] as "none" | "rh" | "lh" | undefined, pressContingent)) continue;
                 value = value === "rh" ? 1 : value === "lh" ? 2 : 0;
               }
               await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, value as number);
@@ -230,7 +236,7 @@ export function ProgramPanel() {
       }
 
       // Send laser mode command if preset specifies a mode
-      const laserState = preset.hardware.laser as { mode?: keyof typeof LASER_MODE_COMMANDS; phase?: "reward" | "cue" } | undefined;
+      const laserState = preset.hardware.laser as LaserUiState | undefined;
       if (laserState?.mode) {
         // Pavlovian trial-paired modes require contingent (681) before filter command
         if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever") {
@@ -240,7 +246,7 @@ export function ProgramPanel() {
       }
 
       // Send laser phase command if preset specifies a phase
-      if (laserState?.phase) {
+      if (laserPhaseActive(isPav, laserState?.mode, laserState?.phase)) {
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase]);
       }
     }

@@ -21,7 +21,8 @@ import { MicroscopeControl } from "../hardware/MicroscopeControl";
 import { SLMControl } from "../hardware/SLMControl";
 import { usePinOverridesHydration } from "../hardware/usePinOverridesHydration";
 import { useTutorialStore } from "../../store/useTutorialStore";
-import type { CommandSpec } from "../../types";
+import { laserPhaseActive } from "../monitor/hardwareSummary";
+import type { CommandSpec, LaserUiState } from "../../types";
 
 /* ── Default baselines for dirty-state detection ─────────────────── */
 
@@ -90,6 +91,7 @@ export function ConfigurationPanel() {
   const baselineRef = useRef<Baseline>(defaultBaseline());
 
   const paradigm = session?.paradigm?.toLowerCase();
+  const isPav = paradigm === "pavlovian";
 
   // Fetch commands for hardware section
   useEffect(() => {
@@ -229,7 +231,7 @@ export function ConfigurationPanel() {
       }
 
       // 2b. Send laser mode command if preset specifies a mode
-      const laserState = preset.hardware.laser as { mode?: keyof typeof LASER_MODE_COMMANDS; phase?: "reward" | "cue" } | undefined;
+      const laserState = preset.hardware.laser as LaserUiState | undefined;
       if (laserState?.mode) {
         // Pavlovian trial-paired modes require contingent (681) before filter command
         if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever") {
@@ -239,7 +241,7 @@ export function ConfigurationPanel() {
       }
 
       // 2c. Send laser phase command if Pavlovian preset specifies a phase
-      if (laserState?.phase) {
+      if (laserPhaseActive(isPav, laserState?.mode, laserState?.phase)) {
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase]);
       }
 
@@ -315,7 +317,7 @@ export function ConfigurationPanel() {
       }
 
       // Send laser mode command if preset specifies a mode
-      const laserState = preset.hardware.laser as { mode?: keyof typeof LASER_MODE_COMMANDS; phase?: "reward" | "cue" } | undefined;
+      const laserState = preset.hardware.laser as LaserUiState | undefined;
       if (laserState?.mode) {
         // Pavlovian trial-paired modes require contingent (681) before filter command
         if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever") {
@@ -325,7 +327,7 @@ export function ConfigurationPanel() {
       }
 
       // Send laser phase command if preset specifies a phase
-      if (laserState?.phase) {
+      if (laserPhaseActive(isPav, laserState?.mode, laserState?.phase)) {
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase]);
       }
     }
