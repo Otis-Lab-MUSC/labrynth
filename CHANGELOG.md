@@ -14,6 +14,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.1-alpha.2] - 2026-06-25
+
+_Re-release of v3.0.1-alpha.1 (CI builds failed on that tag due to misaligned version stamps). All three fixes below were present in alpha.1 code but were never delivered to users._
+
+### Fixed
+- Build: avrdude binary integrity is now verified (SHA-256) and zip extraction is guarded before the firmware uploader proceeds, preventing silent corruption on partial downloads ([#84](https://github.com/Otis-Lab-MUSC/labrynth/issues/84))
+- Frontend: preset-apply no longer sends laser-phase (694/695) or lever-routing (378/388/478/488) commands unless the corresponding device is actually armed/configured in the current preset — gates now align with session-start sends ([#82](https://github.com/Otis-Lab-MUSC/labrynth/issues/82))
+- Frontend: `lh_lever` mode excluded from the `LASER_MODE_CONTINGENT` (681) pre-send guard — selecting LH lever as the laser trigger previously sent both 681 and 685, where only 685 should fire; `LaserUiState.mode` union updated to include `"lh_lever"` ([#87](https://github.com/Otis-Lab-MUSC/labrynth/issues/87))
+
+---
+
 ## [3.0.0-beta.11] - 2026-06-25
 
 _Bugfix beta on top of the 3.0.0 line — session-start summary/send reconciliation.
