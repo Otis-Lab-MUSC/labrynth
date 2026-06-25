@@ -27,6 +27,7 @@ Building the CLI also requires the ``[cli]`` extras: pip install -e ".[cli]".
 """
 
 import argparse
+import hashlib
 import os
 import platform
 import shutil
@@ -136,6 +137,58 @@ def build_frontend():
 _AVRDUDE_VERSION = "8.1"
 _AVRDUDE_MIN_SIZE = 100_000  # bytes — Chocolatey shims are ~24 KB, real binary is ~7 MB
 
+# SHA-256 of avrdude-v<ver>-windows-x64.zip from the official GitHub release.
+# Pinned in-repo because upstream publishes no per-asset checksum for this zip.
+# Update together with _AVRDUDE_VERSION (and the matching CI pins in
+# .github/workflows/build-installers.yml + build-prerelease.yml).
+# Compute: sha256sum avrdude-v<ver>-windows-x64.zip
+_AVRDUDE_SHA256 = {
+    "8.1": "e4d571d81fee3387d51bfdedd0b6565e4c201e974101cac2caec7adfd6201da3",
+}
+
+# SHA-256 of the avrdude.exe extracted from that zip. Verified before the binary
+# is returned — covers both a fresh download and reuse of the .avrdude-dist cache
+# (which a prior run populated). Update alongside _AVRDUDE_SHA256.
+# Compute: unzip -p avrdude-v<ver>-windows-x64.zip avrdude.exe | sha256sum
+_AVRDUDE_EXE_SHA256 = {
+    "8.1": "b08186071b0877ceed6ec3e86dd42ee6d2b7556859659b34d4e326069cafbf45",
+}
+
+
+def _sha256_file(path):
+    """Return the lowercase hex SHA-256 of a file, read in chunks."""
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _safe_extract(zf, dest):
+    """Extract a ZipFile to dest, rejecting members that escape dest (zip-slip).
+
+    Validates every member path first; any single unsafe member (``..`` or an
+    absolute path) aborts the whole extraction with RuntimeError.
+    """
+    dest_abs = os.path.abspath(dest)
+    for member in zf.namelist():
+        target = os.path.abspath(os.path.join(dest_abs, member))
+        if target != dest_abs and not target.startswith(dest_abs + os.sep):
+            raise RuntimeError(f"unsafe path in archive: {member!r}")
+    zf.extractall(dest)
+
+
+def _avrdude_exe_verified(path):
+    """True if path is a real avrdude.exe matching the pinned SHA-256.
+
+    Used for both a freshly extracted binary and a cached one from a prior
+    run, so nothing is bundled without an integrity check.
+    """
+    if os.path.getsize(path) < _AVRDUDE_MIN_SIZE:
+        return False
+    expected = _AVRDUDE_EXE_SHA256.get(_AVRDUDE_VERSION)
+    return bool(expected) and _sha256_file(path) == expected
+
 
 def _ensure_real_avrdude(avrdude_path):
     """Return a path to a real avrdude binary, downloading one if necessary.
@@ -156,14 +209,15 @@ def _ensure_real_avrdude(avrdude_path):
     if platform.system() != "Windows":
         return avrdude_path
 
-    # Check cache from a previous download
+    # Check cache from a previous download — re-verify against the pinned hash so a
+    # stale or tampered .avrdude-dist is never trusted on size alone.
     dist_dir = os.path.join(PROJECT_ROOT, ".avrdude-dist")
     if os.path.isdir(dist_dir):
         for root, _dirs, files in os.walk(dist_dir):
             for f in files:
                 if f.lower() == "avrdude.exe":
                     cached = os.path.join(root, f)
-                    if os.path.getsize(cached) >= _AVRDUDE_MIN_SIZE:
+                    if _avrdude_exe_verified(cached):
                         print(f"  [OK] Using cached avrdude: {cached}")
                         return cached
 
@@ -180,21 +234,40 @@ def _ensure_real_avrdude(avrdude_path):
         print(f"  [ERROR] Failed to download avrdude: {exc}")
         return avrdude_path
 
+    # Verify integrity against the pinned checksum before trusting the archive.
+    expected = _AVRDUDE_SHA256.get(_AVRDUDE_VERSION)
+    if not expected:
+        print(f"  [ERROR] No pinned SHA-256 for avrdude v{_AVRDUDE_VERSION} — "
+              f"add it to _AVRDUDE_SHA256. Refusing to bundle.")
+        os.remove(zip_path)
+        return avrdude_path
+    actual = _sha256_file(zip_path)
+    if actual != expected:
+        print(f"  [ERROR] avrdude checksum mismatch — refusing to bundle. "
+              f"expected={expected} actual={actual}")
+        os.remove(zip_path)
+        return avrdude_path
+    print(f"  [OK] Verified avrdude SHA-256: {actual}")
+
     os.makedirs(dist_dir, exist_ok=True)
-    with zipfile.ZipFile(zip_path) as zf:
-        zf.extractall(dist_dir)
-    os.remove(zip_path)
+    try:
+        with zipfile.ZipFile(zip_path) as zf:
+            _safe_extract(zf, dist_dir)
+    finally:
+        # Always drop the archive, even if extraction rejected an unsafe member.
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
 
     for root, _dirs, files in os.walk(dist_dir):
         for f in files:
             if f.lower() == "avrdude.exe":
                 real = os.path.join(root, f)
-                if os.path.getsize(real) >= _AVRDUDE_MIN_SIZE:
+                if _avrdude_exe_verified(real):
                     print(f"  [OK] Downloaded avrdude: {real} "
                           f"({os.path.getsize(real):,} bytes)")
                     return real
 
-    print("  [ERROR] avrdude.exe not found in downloaded archive")
+    print("  [ERROR] verified avrdude.exe not found in downloaded archive")
     return avrdude_path
 
 
