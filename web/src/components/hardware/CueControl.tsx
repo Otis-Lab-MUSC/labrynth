@@ -27,6 +27,8 @@ export function CueControl({ sessionId, label, prefix, paradigm }: Props) {
   const { armed, frequency, duration } = cue;
   const codes = CODES[prefix];
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
+  // Pavlovian freq/duration are owned by PavlovianSettings (commands 210/211/213); hide here to avoid duplicates.
+  const showFreqDur = paradigm !== "pavlovian";
 
   return (
     <div className="card">
@@ -45,24 +47,28 @@ export function CueControl({ sessionId, label, prefix, paradigm }: Props) {
         >Disarm</button>
         <button onClick={() => send(codes.test)} className="btn-sm bg-yellow-600 text-white">Test</button>
       </div>
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-theme-text/60">Freq (Hz):</label>
-        <input type="number" value={frequency} min={1} max={65535}
-          onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], frequency: +e.target.value } }))}
-          className="w-24 input-base" />
-        <button onClick={() => send(codes.freq, frequency)}
-          disabled={frequency < 1 || frequency > 65535}
-          className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
-      </div>
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-theme-text/60">Dur (ms):</label>
-        <input type="number" value={duration} min={1} max={600000}
-          onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], duration: +e.target.value } }))}
-          className="w-24 input-base" />
-        <button onClick={() => send(codes.dur, duration)}
-          disabled={duration < 1 || duration > 600000}
-          className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
-      </div>
+      {showFreqDur && (
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-theme-text/60">Freq (Hz):</label>
+          <input type="number" value={frequency} min={1} max={65535}
+            onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], frequency: +e.target.value } }))}
+            className="w-24 input-base" />
+          <button onClick={() => send(codes.freq, frequency)}
+            disabled={frequency < 1 || frequency > 65535}
+            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+        </div>
+      )}
+      {showFreqDur && (
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-theme-text/60">Dur (ms):</label>
+          <input type="number" value={duration} min={1} max={600000}
+            onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], duration: +e.target.value } }))}
+            className="w-24 input-base" />
+          <button onClick={() => send(codes.dur, duration)}
+            disabled={duration < 1 || duration > 600000}
+            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+        </div>
+      )}
       <ContingencySection sessionId={sessionId} deviceKey={storeKey} paradigm={paradigm} />
     </div>
   );
