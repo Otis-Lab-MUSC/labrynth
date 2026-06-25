@@ -14,6 +14,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.0-beta.11] - 2026-06-25
+
+_Bugfix beta on top of the 3.0.0 line — session-start summary/send reconciliation.
+Folds into a re-cut 3.0.0 stable after verification._
+
+### Fixed
+- Session start summary now lists every configured/armed device instead of silently
+  dropping some — summary renderer made exhaustive against the hardware schema
+  ([#78](https://github.com/Otis-Lab-MUSC/labrynth/issues/78))
+- Session-start firmware commands (Pavlovian laser phase 694/695; cue/pump lever-routing
+  378/388/478/488) are now gated on the same predicates the confirmation summary uses, so
+  what is transmitted can no longer diverge from what the operator confirmed
+  ([#80](https://github.com/Otis-Lab-MUSC/labrynth/issues/80))
+
+---
+
 ## [3.0.0] - 2026-06-24
 
 _Labrynth v3.0.0 stable — first stable release of the v3 line. See each beta section
