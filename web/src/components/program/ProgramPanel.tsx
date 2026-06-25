@@ -150,7 +150,7 @@ export function ProgramPanel() {
       const laserState = preset.hardware.laser as { mode?: keyof typeof LASER_MODE_COMMANDS; phase?: "reward" | "cue" } | undefined;
       if (laserState?.mode) {
         // Pavlovian trial-paired modes require contingent (681) before filter command
-        if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever") {
+        if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever" && laserState.mode !== "lh_lever") {
           await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
         }
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode]);
@@ -233,7 +233,7 @@ export function ProgramPanel() {
       const laserState = preset.hardware.laser as { mode?: keyof typeof LASER_MODE_COMMANDS; phase?: "reward" | "cue" } | undefined;
       if (laserState?.mode) {
         // Pavlovian trial-paired modes require contingent (681) before filter command
-        if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever") {
+        if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever" && laserState.mode !== "lh_lever") {
           await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
         }
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode]);
