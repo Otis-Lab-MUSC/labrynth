@@ -36,7 +36,7 @@ export const PRESET_COMMAND_MAP: Record<string, { arm: number; disarm: number; p
   rhLever:       { arm: 1001, disarm: 1000, params: { timeout: 1074 } },
   lhLever:       { arm: 1301, disarm: 1300, params: { timeout: 1374 } },
   primaryCue:    { arm: 301,  disarm: 300,  params: { frequency: 371, duration: 372, leverFilter: 378, delay: 377 } },
-  secondaryCue:  { arm: 311,  disarm: 310,  params: { frequency: 381, duration: 382, leverFilter: 388, delay: 387 } },
+  secondaryCue:  { arm: 311,  disarm: 310,  params: { frequency: 381, duration: 382, leverFilter: 388 } },
   primaryPump:   { arm: 401,  disarm: 400,  params: { duration: 472,  leverFilter: 478, delay: 477 } },
   secondaryPump: { arm: 411,  disarm: 410,  params: { duration: 482,  leverFilter: 488, delay: 487 } },
   laser:         { arm: 601,  disarm: 600,  params: { frequency: 671, duration: 672, delay: 673 } },

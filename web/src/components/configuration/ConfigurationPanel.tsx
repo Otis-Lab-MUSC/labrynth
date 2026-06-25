@@ -230,6 +230,19 @@ export function ConfigurationPanel() {
         }
       }
 
+      // Send SET_ACTIVE_PUMP (cmd 221) so firmware reward chain uses the correct pump.
+      // Operant paradigms only (cmd 221 is not registered for Pavlovian).
+      if (!isPav) {
+        let pump2Active = false;
+        if ("secondaryPump" in preset.hardware) {
+          const spState = preset.hardware.secondaryPump as { armed: boolean } | undefined;
+          pump2Active = "secondaryPump" in armOverrides
+            ? armOverrides["secondaryPump"]
+            : (spState?.armed ?? false);
+        }
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, 221, pump2Active ? 1 : 0);
+      }
+
       // 2b. Send laser mode command if preset specifies a mode
       const laserState = preset.hardware.laser as LaserUiState | undefined;
       if (laserState?.mode) {
@@ -314,6 +327,13 @@ export function ConfigurationPanel() {
             }
           }
         }
+      }
+
+      // Send SET_ACTIVE_PUMP (cmd 221) if preset addresses secondaryPump.
+      // Partial-takeover: if secondaryPump is absent from the preset, leave active-pump state alone.
+      if (!isPav && "secondaryPump" in preset.hardware) {
+        const spState = preset.hardware.secondaryPump as { armed: boolean } | undefined;
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, 221, (spState?.armed ?? false) ? 1 : 0);
       }
 
       // Send laser mode command if preset specifies a mode
