@@ -97,7 +97,7 @@ function laserParts(s: LaserUiState, ctx: SummaryContext): string[] {
   if (ctx.isPav) {
     // Pavlovian: `mode` is authoritative (independent vs. trial-paired CS filter) + phase.
     // Any non-independent mode is trial-paired; only cs_* carry a specific filter label.
-    // The default/leftover modes ("contingent", "rh_lever") must still read as Trial-Paired
+    // The default/leftover modes ("contingent", "rh_lever", "lh_lever") must still read as Trial-Paired
     // rather than silently dropping the routing token (#78).
     if (s.mode === "independent") {
       parts.push("Independent");

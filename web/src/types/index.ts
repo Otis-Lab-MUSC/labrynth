@@ -49,7 +49,7 @@ export interface PumpUiState extends DeviceArmState {
 export interface LaserUiState extends DeviceArmState {
   frequency: number;
   duration: number;
-  mode: "contingent" | "independent" | "rh_lever" | "cs_plus" | "cs_minus" | "cs_both";
+  mode: "contingent" | "independent" | "rh_lever" | "lh_lever" | "cs_plus" | "cs_minus" | "cs_both";
   phase?: "reward" | "cue";  // Pavlovian only — which trial phase triggers laser
   contingency: "any" | "rh" | "lh" | "independent";  // operant lever routing (#67)
   onsetDelay: number;  // ms from trigger to laser onset (#67/#69)

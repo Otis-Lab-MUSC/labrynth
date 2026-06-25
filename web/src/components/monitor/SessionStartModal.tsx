@@ -169,7 +169,7 @@ export function SessionStartModal() {
       const laserState = hw.laser;
       if (laserState?.mode) {
         // For trial-paired modes, send contingent (681) first, then filter command
-        if (laserState.mode !== "independent" && laserState.mode !== "contingent") {
+        if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever" && laserState.mode !== "lh_lever") {
           await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
         }
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode as keyof typeof LASER_MODE_COMMANDS]);
