@@ -7,7 +7,7 @@ import { getClientForSession } from "../../api/sessionClient";
 import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "../program/devicePresets";
 import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
 import { ValidationWarningPanel } from "./ValidationWarningPanel";
-import { DEVICE_LABELS, formatDeviceParams, leverFilterActive, laserPhaseActive } from "./hardwareSummary";
+import { DEVICE_LABELS, formatDeviceParams, laserPhaseActive } from "./hardwareSummary";
 import type { ValidationResult } from "../../api/client";
 
 // Shared with PavlovianSettings so the start-summary labels every param the
@@ -155,8 +155,10 @@ export function SessionStartModal() {
           }
           // leverFilter and delay are nested at state.contingency.* — flat lookup above skips them.
           const contingency = (state as { contingency?: { leverFilter?: "none" | "rh" | "lh"; delay?: number } }).contingency;
-          if (leverFilterActive(contingency?.leverFilter, pressContingent) && mapping.params.leverFilter !== undefined) {
-            const numVal = contingency.leverFilter === "rh" ? 1 : 2;
+          // Always send filter (including 0=any) so firmware is explicitly reset at each session start,
+          // preventing stale RH/LH filters from a prior session from persisting (#91).
+          if (pressContingent && contingency?.leverFilter !== undefined && mapping.params.leverFilter !== undefined) {
+            const numVal = contingency.leverFilter === "rh" ? 1 : contingency.leverFilter === "lh" ? 2 : 0;
             await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, mapping.params.leverFilter, numVal);
           }
           if (contingency?.delay && contingency.delay > 0 && mapping.params.delay !== undefined) {

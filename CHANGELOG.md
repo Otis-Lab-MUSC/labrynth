@@ -14,6 +14,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.1-alpha.3] - 2026-06-25
+
+_Bug fixes: cue-control paradigm guards and contingency filter initialization._
+
+### Fixed
+- Frontend: cue frequency and duration fields in `CueControl` are now hidden for Pavlovian
+  sessions — paradigm-level controls (CS+ freq 210, CS- freq 211, cue duration 213) are
+  canonical in `PavlovianSettings`; device-level fields (371/381 freq, 372/382 dur) are
+  suppressed via `showFreqDur = paradigm !== "pavlovian"` guard
+  ([#90](https://github.com/Otis-Lab-MUSC/labrynth/issues/90))
+- Frontend: `SessionStartModal` now unconditionally sends the lever-filter command
+  (378 CUE1 / 388 CUE2) at every session start — previously only sent when
+  `leverFilterActive()` returned true (rh or lh), leaving firmware with stale
+  `DeviceType` from prior sessions; now explicitly sends 0=any, 1=rh, 2=lh to reset
+  firmware state on each start
+  ([#91](https://github.com/Otis-Lab-MUSC/labrynth/issues/91))
+
+---
+
 ## [3.0.1-alpha.2] - 2026-06-25
 
 _Re-release of v3.0.1-alpha.1 (CI builds failed on that tag due to misaligned version stamps). All three fixes below were present in alpha.1 code but were never delivered to users._
