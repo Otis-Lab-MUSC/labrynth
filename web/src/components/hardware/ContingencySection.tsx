@@ -19,7 +19,7 @@ const FILTER_CMD: Record<Props["deviceKey"], number> = {
 // Per-device onset delay commands (ms from trigger to device activation)
 const DELAY_CMD: Record<Props["deviceKey"], number> = {
   primaryCue:    377,
-  secondaryCue:  387,
+  secondaryCue:  387, // CUE2_SET_ONSET_DELAY — firmware handler unimplemented; UI suppresses input for secondaryCue
   primaryPump:   477,
   secondaryPump: 487,
 };
@@ -90,7 +90,7 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
         <>
           <div className="text-xs font-medium uppercase tracking-wide text-theme-text/60">Contingent on</div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-theme-text/60">Trigger on:</span>
+            <span className="text-xs text-theme-text/60">Lever filter:</span>
           {(["none", "rh", "lh"] as const).map((opt) => (
             <button
               key={opt}
@@ -101,24 +101,28 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
                   : "bg-theme-text/10 text-theme-text/70 hover:bg-theme-text/20"
               }`}
             >
-              {opt === "none" ? "Any" : opt.toUpperCase()}
+              {opt === "none" ? "Any lever" : opt === "rh" ? "RH lever" : "LH lever"}
             </button>
           ))}
           </div>
         </>
       )}
-      <div className="flex items-center gap-2">
-        <label className="text-xs text-theme-text/60">Delay (ms):</label>
-        <input
-          type="number"
-          min={0}
-          max={600000}
-          value={contingency.delay}
-          onChange={(e) => setDelay(+e.target.value)}
-          className="w-24 input-base"
-          title="Onset delay from trigger to device activation"
-        />
-      </div>
+      {deviceKey === "secondaryCue" ? (
+        <p className="text-xs text-theme-text/50 italic">Shares onset delay with Cue 1</p>
+      ) : (
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-theme-text/60">Delay (ms):</label>
+          <input
+            type="number"
+            min={0}
+            max={600000}
+            value={contingency.delay}
+            onChange={(e) => setDelay(+e.target.value)}
+            className="w-24 input-base"
+            title="Onset delay from trigger to device activation"
+          />
+        </div>
+      )}
     </div>
   );
 }
