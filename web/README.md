@@ -2,7 +2,7 @@
 
 **Browser-based experiment control interface for the REACHER ecosystem**
 
-[![Version](https://img.shields.io/badge/version-3.0.1--alpha.3-blue)](https://github.com/Otis-Lab-MUSC/labrynth)
+[![Version](https://img.shields.io/badge/version-3.0.1--alpha.4-blue)](https://github.com/Otis-Lab-MUSC/labrynth)
 [![React](https://img.shields.io/badge/React-19-blue)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)

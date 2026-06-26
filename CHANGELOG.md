@@ -14,6 +14,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.1-alpha.4] - 2026-06-26
+
+_FR paradigm device config: active pump selection, contingency label accuracy, and CUE 2 onset-delay suppression._
+
+### Fixed
+- Frontend: `PumpControl` now sends `SET_ACTIVE_PUMP` (cmd 221) when arming or
+  disarming pumps in operant paradigms, with mutual exclusion (arming one
+  auto-disarms the other) and an `Active` badge on the pump currently in the
+  reward chain ([#93](https://github.com/Otis-Lab-MUSC/labrynth/issues/93))
+- Frontend: `ContingencySection` label `Trigger on:` renamed to `Lever filter:`
+  and option buttons renamed to `Any lever / RH lever / LH lever` for
+  device-type-agnostic accuracy ([#93](https://github.com/Otis-Lab-MUSC/labrynth/issues/93))
+- Frontend: `ConfigurationPanel` now injects `SET_ACTIVE_PUMP` (cmd 221) after
+  preset apply in both `applySessionPreset` and `applyDevicePreset` so the
+  firmware reward chain tracks the correct pump regardless of which preset path
+  is used ([#93](https://github.com/Otis-Lab-MUSC/labrynth/issues/93))
+- Frontend: removed dead `delay: 387` from `secondaryCue` `PRESET_COMMAND_MAP`;
+  firmware has no `CUE2_SET_ONSET_DELAY` handler and the input is now suppressed
+  in the UI ([#93](https://github.com/Otis-Lab-MUSC/labrynth/issues/93))
+
+---
+
 ## [3.0.1-alpha.3] - 2026-06-25
 
 _Bug fixes: cue-control paradigm guards and contingency filter initialization._
