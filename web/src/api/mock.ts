@@ -165,7 +165,7 @@ export const uploadFirmware = async (id: string, paradigm: string, board: string
     board,
     firmware_info: {
       sketch: paradigm,
-      version: "3.0.1-alpha.4",
+      version: "3.0.1-alpha.5",
       baud_rate: 115200,
       desc: `Demo ${paradigm.toUpperCase()} firmware`,
     },

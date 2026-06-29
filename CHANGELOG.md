@@ -14,6 +14,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.1-alpha.5] - 2026-06-29
+
+_Session export reliability: clear stale export state on program restart/split and guard concurrent exports._
+
+### Fixed
+- Frontend: `handleRestart` and `handleSplit` now reset `exportState` so a prior
+  program's saved `file_path` can no longer suppress the next program's auto-export
+  on abnormal session termination (`server_suspended`, `session_orphaned`, WS
+  give-up) — root cause of successive-session data loss
+  ([#95](https://github.com/Otis-Lab-MUSC/labrynth/issues/95))
+- Frontend: `triggerAutoExport` now has a uniform idempotency guard (`!result &&
+  !exporting`) so duplicate END events or back-to-back program runs cannot fire
+  two concurrent exports for the same session
+  ([#95](https://github.com/Otis-Lab-MUSC/labrynth/issues/95))
+- Frontend: a generation guard (`programStartTime` token) prevents a slow
+  in-flight export for program 1 from clobbering program 2's clean `exportState`
+  after a restart ([#95](https://github.com/Otis-Lab-MUSC/labrynth/issues/95))
+- Frontend: `exportZip` API call now times out after 60 s (AbortController) so a
+  hung export rejects cleanly and resets `exporting: false` rather than leaving
+  the session permanently stuck
+  ([#95](https://github.com/Otis-Lab-MUSC/labrynth/issues/95))
+- Frontend: `ServerSuspendedOverlay` export button is now hidden while an export
+  is already in-flight, preventing a second concurrent trigger
+  ([#95](https://github.com/Otis-Lab-MUSC/labrynth/issues/95))
+
+---
+
 ## [3.0.1-alpha.4] - 2026-06-26
 
 _FR paradigm device config: active pump selection, contingency label accuracy, and CUE 2 onset-delay suppression._

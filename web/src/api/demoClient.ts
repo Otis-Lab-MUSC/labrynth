@@ -14,7 +14,7 @@ export class DemoMachineApiClient extends MachineApiClient {
 
   // --- Health ---
   probeHealth = async () =>
-    ({ service: "reacher", device_id: "__local__", hostname: "demo", version: "3.0.1-alpha.4", active_sessions: 0 });
+    ({ service: "reacher", device_id: "__local__", hostname: "demo", version: "3.0.1-alpha.5", active_sessions: 0 });
 
   // --- Sessions ---
   listSessions = () => mock.listSessions() as ReturnType<MachineApiClient["listSessions"]>;
