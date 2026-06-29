@@ -34,11 +34,15 @@ const DEVICE_TO_UI_KEY: Record<string, string> = {
 export async function triggerAutoExport(sessionId: string) {
   const sess = useSessionStore.getState().sessions.get(sessionId);
   if (!sess || !sess.behaviorData.length) return;
+  if (sess.exportState?.result || sess.exportState?.exporting) return;
   const client = getClientForSession(sessionId);
   if (!client) return;
 
   const { setExportState } = useSessionStore.getState();
   const { pushLog } = useLogStore.getState();
+  // Capture the current program's start time so that if a new program starts mid-export,
+  // the resolved Promise can't clobber the new program's clean exportState.
+  const startedAt = sess.programStartTime;
   setExportState(sessionId, { exporting: true, result: null, error: null });
   try {
     const micro = sess.hardwareUi.microscope;
@@ -55,12 +59,19 @@ export async function triggerAutoExport(sessionId: string) {
     if (result?.file_path && client.isRemote) {
       try { await client.downloadExportZip(sessionId, result.file_path); } catch { /* log already surfaces remote errors */ }
     }
+    if (useSessionStore.getState().sessions.get(sessionId)?.programStartTime !== startedAt) {
+      pushLog("warn", "Export completed but session was reset mid-export — result discarded", sessionId);
+      return;
+    }
     setExportState(sessionId, { exporting: false, result: result?.file_path ?? null });
     pushLog("info", `Session data saved: ${result?.file_path}`, sessionId);
   } catch (e) {
+    if (useSessionStore.getState().sessions.get(sessionId)?.programStartTime !== startedAt) return;
     setExportState(sessionId, {
       exporting: false,
-      error: e instanceof Error ? e.message : "Auto-export failed",
+      error: e instanceof DOMException && e.name === "AbortError"
+        ? "Auto-export timed out after 60 s — retry manually"
+        : e instanceof Error ? e.message : "Auto-export failed",
     });
   }
 }
@@ -180,7 +191,7 @@ function handleMessage(msg: WSMessage) {
         useAppStore.getState().setServerSuspended(true, hard_kill_in);
       } else {
         const sess = useSessionStore.getState().sessions.get(msg.session_id);
-        if (sess?.behaviorData.length && !sess.exportState?.result) {
+        if (sess?.behaviorData.length && !sess.exportState?.result && !sess.exportState?.exporting) {
           triggerAutoExport(msg.session_id);
         }
       }
@@ -195,7 +206,7 @@ function handleMessage(msg: WSMessage) {
       const { hard_kill_in } = msg.data as { reason: string; hard_kill_in: number };
       pushLog("warn", `Session orphaned — server had no connected clients during active session. Hard kill in ~${Math.round(hard_kill_in / 60)} min.`, msg.session_id);
       const sess = useSessionStore.getState().sessions.get(msg.session_id);
-      if (sess?.behaviorData.length && !sess.exportState?.result) {
+      if (sess?.behaviorData.length && !sess.exportState?.result && !sess.exportState?.exporting) {
         triggerAutoExport(msg.session_id);
       }
       break;
@@ -318,7 +329,7 @@ export function useSessionWebSockets() {
             useAppStore.getState().setServerSuspended(true);
           } else {
             const sess = useSessionStore.getState().sessions.get(id);
-            if (sess?.behaviorData.length && !sess.exportState?.result) {
+            if (sess?.behaviorData.length && !sess.exportState?.result && !sess.exportState?.exporting) {
               triggerAutoExport(id);
             }
           }

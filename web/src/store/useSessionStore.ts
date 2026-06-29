@@ -595,6 +595,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           inactive: sess.cumulativeLhLeverCounts.inactive + sess.lhLeverCounts.inactive,
         },
         cumulativeElapsedTime: sess.cumulativeElapsedTime + segmentElapsedMs,
+        exportState: { exporting: false, result: null, error: null },
         programStartTime: now,
         programEndTime: null,
         pausedTime: 0,
@@ -619,6 +620,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       next.set(id, {
         ...sess,
         state: "running",
+        exportState: { exporting: false, result: null, error: null },
         behaviorData: [],
         frameData: [],
         slmData: [],
