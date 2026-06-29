@@ -13,7 +13,7 @@ export function ServerSuspendedOverlay() {
   );
   const sessionIdWithData = useSessionStore((s) => {
     for (const [id, sess] of s.sessions) {
-      if ((sess.behaviorData?.length ?? 0) > 0 && !sess.exportState?.result) return id;
+      if ((sess.behaviorData?.length ?? 0) > 0 && !sess.exportState?.result && !sess.exportState?.exporting) return id;
     }
     return null;
   });

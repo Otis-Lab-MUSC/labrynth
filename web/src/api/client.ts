@@ -255,7 +255,7 @@ export class MachineApiClient {
     this.request<{ frames: unknown[]; count: number }>(`/data/${id}/frames`);
   getSlmEvents = (id: string) =>
     this.request<{ slm: number[]; count: number }>(`/data/${id}/slm`);
-  exportZip = (
+  exportZip = async (
     id: string,
     body: {
       session_name?: string;
@@ -267,11 +267,19 @@ export class MachineApiClient {
       microscope_frame_rate?: number | null;
       microscope_frame_averaging?: number | null;
     },
-  ) =>
-    this.request<{ file_path: string; folder_path: string }>(`/file/${id}/export/zip`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+  ) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60_000);
+    try {
+      return await this.request<{ file_path: string; folder_path: string }>(`/file/${id}/export/zip`, {
+        method: "POST",
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
 
   // --- Download ---
   downloadExportZip = async (id: string, filePath: string): Promise<void> => {

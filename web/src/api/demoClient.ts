@@ -66,6 +66,7 @@ export class DemoMachineApiClient extends MachineApiClient {
       microscope_frame_rate?: number | null;
       microscope_frame_averaging?: number | null;
     },
+  // not async: mock.exportZip already returns a Promise; cast satisfies the parent signature
   ) => mock.exportZip(id, body) as ReturnType<MachineApiClient["exportZip"]>;
 
   // --- Download ---
