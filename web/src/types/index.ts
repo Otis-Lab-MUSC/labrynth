@@ -62,6 +62,11 @@ export interface MicroscopeUiState extends DeviceArmState {
 
 export interface SlmUiState extends DeviceArmState {
   pin: number;
+  /** Bookkeeping only — records what the laser's frequency/duration should have
+   *  been, so a session record survives if the laser itself misbehaves. Not
+   *  tied to the LASER device's actual live state. */
+  laserFrequency: number | null;
+  laserDuration: number | null;
 }
 
 export interface HardwareUiState {

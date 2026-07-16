@@ -216,7 +216,7 @@ export function ConfigurationPanel() {
         }
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
-            if (state[paramKey] !== undefined) {
+            if (state[paramKey] !== undefined && state[paramKey] !== null) {
               await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
             }
           }
@@ -333,7 +333,7 @@ export function ConfigurationPanel() {
         }
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
-            if (state[paramKey] !== undefined) {
+            if (state[paramKey] !== undefined && state[paramKey] !== null) {
               await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
             }
           }

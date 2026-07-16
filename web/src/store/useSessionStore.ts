@@ -55,7 +55,7 @@ export const defaultHardwareUiState = (): HardwareUiState => ({
   laser: { armed: false, frequency: 40, duration: 5000, mode: "contingent", phase: "reward", contingency: "any", onsetDelay: 0 },
   lickCircuit: { armed: false },
   microscope: { armed: false, frameRate: null, frameAveraging: null },
-  slm: { armed: false, pin: 11 },
+  slm: { armed: false, pin: 11, laserFrequency: null, laserDuration: null },
   testMode: false,
 });
 

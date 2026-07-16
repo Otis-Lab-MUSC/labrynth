@@ -132,7 +132,7 @@ export function ProgramPanel() {
         }
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
-            if (state[paramKey] !== undefined) {
+            if (state[paramKey] !== undefined && state[paramKey] !== null) {
               let value = state[paramKey];
               if (paramKey === "leverFilter") {
                 if (!leverFilterActive(state[paramKey] as "none" | "rh" | "lh" | undefined, pressContingent)) continue;
@@ -234,7 +234,7 @@ export function ProgramPanel() {
         }
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
-            if (state[paramKey] !== undefined) {
+            if (state[paramKey] !== undefined && state[paramKey] !== null) {
               let value = state[paramKey];
               if (paramKey === "leverFilter") {
                 if (!leverFilterActive(state[paramKey] as "none" | "rh" | "lh" | undefined, pressContingent)) continue;
