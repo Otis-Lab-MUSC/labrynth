@@ -51,7 +51,6 @@ const PARADIGM_SETTINGS: SessionPreset["paradigmSettings"] = {
   ratio: 1,
   step: 1,
   interval: 30000,
-  traceInterval: 0,
 };
 
 /* ── Presets ───────────────────────────────────────────────────────── */

@@ -34,7 +34,6 @@ const DEFAULT_PARADIGM_SETTINGS: SessionPreset["paradigmSettings"] = {
   ratio: 1,
   step: 1,
   interval: 0,
-  traceInterval: 0,
 };
 
 const DEFAULT_LIMIT_SETTINGS: SessionPreset["limitDefaults"] = {

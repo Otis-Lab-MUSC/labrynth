@@ -26,7 +26,7 @@ import type { CommandSpec, LaserUiState } from "../../types";
 
 /* ── Default baselines for dirty-state detection ─────────────────── */
 
-const DEFAULT_PARADIGM_SETTINGS = { ratio: 1, step: 1, interval: 30000, traceInterval: 0 };
+const DEFAULT_PARADIGM_SETTINGS = { ratio: 1, step: 1, interval: 30000 };
 
 interface Baseline {
   hardwareUi: string;
@@ -265,7 +265,6 @@ export function ConfigurationPanel() {
         }
       } else {
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,201, preset.paradigmSettings.ratio);
-        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,220, preset.paradigmSettings.traceInterval);
       }
     }
 

@@ -173,7 +173,6 @@ export function ProgramPanel() {
         }
       } else {
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,201, preset.paradigmSettings.ratio);
-        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,220, preset.paradigmSettings.traceInterval);
       }
     }
 

@@ -130,9 +130,6 @@ export function SessionStartModal() {
         if (paradigm === "omission") {
           await client?.sendCommand(activeSessionId, 203, session.paradigmSettings.interval);
         }
-        if (paradigm === "fr" || paradigm === "pr" || paradigm === "vi") {
-          await client?.sendCommand(activeSessionId, 220, session.paradigmSettings.traceInterval);
-        }
       }
 
       // Send hardware state to firmware — only for armed devices.
@@ -242,12 +239,6 @@ export function SessionStartModal() {
                   <>
                     <span className="text-theme-text/60">Interval:</span>
                     <span className="font-mono">{session.paradigmSettings.interval} ms</span>
-                  </>
-                )}
-                {(paradigm === "fr" || paradigm === "pr" || paradigm === "vi") && (
-                  <>
-                    <span className="text-theme-text/60">Trace Interval:</span>
-                    <span className="font-mono">{session.paradigmSettings.traceInterval} ms</span>
                   </>
                 )}
               </div>

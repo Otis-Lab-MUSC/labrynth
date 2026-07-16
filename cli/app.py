@@ -141,7 +141,6 @@ PARADIGM_SETTING_CODES = {
     "step": 205,
     "vi_interval": 204,
     "om_interval": 203,
-    "trace_interval": 220,
 }
 
 # Curated short labels for Pavlovian params. The param *list* is sourced
@@ -205,7 +204,7 @@ PRESETS: dict[str, dict] = {
             "lick-circuit": {"armed": False},
             "microscope": {"armed": False},
         },
-        "paradigm_settings": {"ratio": 1, "step": 1, "interval": 30000, "trace_interval": 0},
+        "paradigm_settings": {"ratio": 1, "step": 1, "interval": 30000},
         "limits": {"type": "Both", "time_limit": 3600, "infusion_limit": 10, "delay": 60},
     },
     "sa-mid": {
@@ -222,7 +221,7 @@ PRESETS: dict[str, dict] = {
             "lick-circuit": {"armed": False},
             "microscope": {"armed": False},
         },
-        "paradigm_settings": {"ratio": 1, "step": 1, "interval": 30000, "trace_interval": 0},
+        "paradigm_settings": {"ratio": 1, "step": 1, "interval": 30000},
         "limits": {"type": "Both", "time_limit": 3600, "infusion_limit": 20, "delay": 60},
     },
     "sa-low": {
@@ -239,7 +238,7 @@ PRESETS: dict[str, dict] = {
             "lick-circuit": {"armed": False},
             "microscope": {"armed": False},
         },
-        "paradigm_settings": {"ratio": 1, "step": 1, "interval": 30000, "trace_interval": 0},
+        "paradigm_settings": {"ratio": 1, "step": 1, "interval": 30000},
         "limits": {"type": "Both", "time_limit": 3600, "infusion_limit": 40, "delay": 60},
     },
     "sa-extinction": {
@@ -256,7 +255,7 @@ PRESETS: dict[str, dict] = {
             "lick-circuit": {"armed": False},
             "microscope": {"armed": False},
         },
-        "paradigm_settings": {"ratio": 1, "step": 1, "interval": 30000, "trace_interval": 0},
+        "paradigm_settings": {"ratio": 1, "step": 1, "interval": 30000},
         "limits": {"type": "Time", "time_limit": 3600, "infusion_limit": 30, "delay": 60},
     },
 }
@@ -298,7 +297,7 @@ class SessionState:
     armed: dict = field(default_factory=dict)
     test_mode: bool = False
     paradigm_settings: dict = field(
-        default_factory=lambda: {"ratio": 1, "step": 1, "interval": 30000, "trace_interval": 0}
+        default_factory=lambda: {"ratio": 1, "step": 1, "interval": 30000}
     )
     pavlovian_params: dict = field(default_factory=dict)  # {code: value}, last-set Pavlovian params
     limit_settings: dict = field(
@@ -680,7 +679,6 @@ class ReacherCLI:
         s = self.session
         paradigm = s.paradigm if s else None
         ps = s.paradigm_settings if s else {}
-        show_trace = paradigm in ("fr", "pr", "vi")
 
         items: list[MenuItem] = []
         if paradigm in ("fr", "pr"):
@@ -699,11 +697,6 @@ class ReacherCLI:
             items.append(MenuItem("Set Omission Interval (ms)", action=lambda: self._prompt_int_input(
                 "Enter omission interval (ms):", lambda v: self._send_paradigm_setting("om_interval", v)
             ), suffix=f"({ps.get('interval', 30000)})"))
-        if show_trace:
-            items.append(MenuItem("Set Trace Interval (ms)", action=lambda: self._prompt_int_input(
-                "Enter trace interval (ms):", lambda v: self._send_paradigm_setting("trace_interval", v)
-            ), suffix=f"({ps.get('trace_interval', 0)})"))
-
         if not items:
             hint = "Pavlovian: use Pavlovian Settings" if paradigm == "pavlovian" else "No paradigm selected"
             items.append(MenuItem(f"──── {hint} ────", is_separator=True))
