@@ -152,8 +152,10 @@ function formatMs(ms: number): string {
 
 // ─── Laser Helpers ──────────────────────────────────────────────────
 
-function isLaserInChain(mode: LaserUiState["mode"]): boolean {
-  return mode !== "independent";
+// Operant paradigms: `contingency` is the authoritative chain-membership field
+// (mode is Pavlovian-only and can be stale here — see hardwareSummary.ts).
+function isLaserInChain(contingency: LaserUiState["contingency"]): boolean {
+  return contingency !== "independent";
 }
 
 function laserAppliesToTrial(mode: LaserUiState["mode"], trialType: "cs+" | "cs-"): boolean {
@@ -164,8 +166,11 @@ function laserAppliesToTrial(mode: LaserUiState["mode"], trialType: "cs+" | "cs-
   return false;
 }
 
-function addIndependentLaserAnnotation(bars: TimeBar[], hw: HardwareUiState): void {
-  if (hw.laser.armed && !isLaserInChain(hw.laser.mode)) {
+// isIndependent's source field differs by paradigm: Pavlovian's laser UI only ever
+// writes `mode` (never `contingency`), while operant's UI only ever writes
+// `contingency` — callers must pass the field appropriate to their paradigm.
+function addIndependentLaserAnnotation(bars: TimeBar[], hw: HardwareUiState, isIndependent: boolean): void {
+  if (hw.laser.armed && isIndependent) {
     const totalMs = Math.max(...bars.map((b) => b.endMs), 1);
     bars.push({
       lane: "laser",
@@ -178,13 +183,33 @@ function addIndependentLaserAnnotation(bars: TimeBar[], hw: HardwareUiState): vo
   }
 }
 
+// Groups trigger-driven devices that share the same onset time into one
+// "<verb> → X" arrow, and emits separate arrows for devices whose own
+// per-device delay puts them at a different onset time.
+function pushTriggerArrows(
+  arrows: CausalArrow[],
+  triggerEnd: number,
+  entries: { lane: LaneId; start: number }[],
+  verb = "press",
+): void {
+  const groups = new Map<number, LaneId[]>();
+  for (const { lane, start } of entries) {
+    const lanes = groups.get(start) ?? [];
+    lanes.push(lane);
+    groups.set(start, lanes);
+  }
+  for (const [start, lanes] of groups) {
+    const label = lanes.map((l) => LANE_LABELS[l].toLowerCase()).join(" + ");
+    arrows.push({ fromLane: "lever", fromEndMs: triggerEnd, toLanes: lanes, toStartMs: start, label: `${verb} → ${label}` });
+  }
+}
+
 // ─── Timeline Builders ───────────────────────────────────────────────
 
 interface ParadigmSettings {
   ratio: number;
   step: number;
   interval: number;
-  traceInterval: number;
 }
 
 function buildFRTimeline(hw: HardwareUiState, ps: ParadigmSettings): TrialTimeline {
@@ -195,55 +220,50 @@ function buildFRTimeline(hw: HardwareUiState, ps: ParadigmSettings): TrialTimeli
 
   // Press duration — notional 500ms for visualization
   const pressDur = 500;
-  let t = 0;
+  const t = 0;
 
   bars.push({ lane: "lever", startMs: t, endMs: t + pressDur, label: `PRESS x${ps.ratio}` });
   const pressEnd = t + pressDur;
-  t = pressEnd;
 
-  // Chain fires at press end — timeout starts here (concurrent with chain)
-  const chainFireMs = t;
+  // Every output device's onset originates from press onset + its own configured
+  // delay — no device's timing depends on another device's onset/duration.
+  const chainFireMs = pressEnd;
 
-  // CUE fires first in the chain (offsetMs=0 from chain fire)
   const cueDuration = hw.primaryCue.duration;
+  const cueStart = chainFireMs + hw.primaryCue.contingency.delay;
+  const cueEnd = cueStart + cueDuration;
   if (hw.primaryCue.armed) {
-    bars.push({ lane: "cue", startMs: t, endMs: t + cueDuration, label: "CUE", sublabel: `${cueDuration}ms` });
-  }
-  // Advance past cue duration (firmware uses cue duration offset even if disarmed)
-  t += cueDuration;
-
-  // Trace interval between CUE end and PUMP/LASER start
-  if (ps.traceInterval > 0) {
-    traces.push({ startMs: t, endMs: t + ps.traceInterval, label: `${ps.traceInterval}ms trace` });
-    t += ps.traceInterval;
+    bars.push({ lane: "cue", startMs: cueStart, endMs: cueEnd, label: "CUE", sublabel: `${cueDuration}ms` });
   }
 
-  // PUMP and LASER fire simultaneously after cue duration + trace
-  const rewardStart = t;
-  const rewardLanes: LaneId[] = [];
+  const pressArrowEntries: { lane: LaneId; start: number }[] = [];
+  if (hw.primaryCue.armed) pressArrowEntries.push({ lane: "cue", start: cueStart });
 
+  let pumpStart: number | null = null;
   if (hw.primaryPump.armed) {
-    bars.push({ lane: "pump", startMs: t, endMs: t + hw.primaryPump.duration, label: "INFUSION", sublabel: `${hw.primaryPump.duration}ms` });
-    rewardLanes.push("pump");
-  }
-  if (hw.laser.armed && isLaserInChain(hw.laser.mode)) {
-    bars.push({ lane: "laser", startMs: t, endMs: t + hw.laser.duration, label: "LASER", sublabel: `${hw.laser.duration}ms` });
-    rewardLanes.push("laser");
+    pumpStart = chainFireMs + hw.primaryPump.contingency.delay;
+    bars.push({ lane: "pump", startMs: pumpStart, endMs: pumpStart + hw.primaryPump.duration, label: "INFUSION", sublabel: `${hw.primaryPump.duration}ms` });
+    pressArrowEntries.push({ lane: "pump", start: pumpStart });
   }
 
-  // Causal arrows reflecting chain order
-  if (hw.primaryCue.armed && rewardLanes.length > 0) {
-    // Two arrows: press → cue, cue → pump/laser
-    arrows.push({ fromLane: "lever", fromEndMs: pressEnd, toLanes: ["cue"], toStartMs: chainFireMs, label: "press → cue" });
-    const rewardLabel = rewardLanes.map((l) => LANE_LABELS[l].toLowerCase()).join(" + ");
-    arrows.push({ fromLane: "cue", fromEndMs: chainFireMs + cueDuration, toLanes: rewardLanes, toStartMs: rewardStart, label: `cue → ${rewardLabel}` });
-  } else if (hw.primaryCue.armed) {
-    // Only cue, no pump/laser
-    arrows.push({ fromLane: "lever", fromEndMs: pressEnd, toLanes: ["cue"], toStartMs: chainFireMs, label: "press → cue" });
-  } else if (rewardLanes.length > 0) {
-    // CUE disarmed — press directly triggers pump/laser (offset still applies in firmware)
-    const rewardLabel = rewardLanes.map((l) => LANE_LABELS[l].toLowerCase()).join(" + ");
-    arrows.push({ fromLane: "lever", fromEndMs: pressEnd, toLanes: rewardLanes, toStartMs: rewardStart, label: `press → ${rewardLabel}` });
+  let laserStart: number | null = null;
+  if (hw.laser.armed && isLaserInChain(hw.laser.contingency)) {
+    laserStart = chainFireMs + hw.laser.onsetDelay;
+    bars.push({ lane: "laser", startMs: laserStart, endMs: laserStart + hw.laser.duration, label: "LASER", sublabel: `${hw.laser.duration}ms` });
+    pressArrowEntries.push({ lane: "laser", start: laserStart });
+  }
+
+  pushTriggerArrows(arrows, pressEnd, pressArrowEntries);
+
+  // Derived "trace interval" gap — only meaningful when the cue actually fires
+  // and a reward device's onset falls after the cue finishes (not a stored value).
+  if (hw.primaryCue.armed) {
+    if (pumpStart !== null && pumpStart > cueEnd) {
+      traces.push({ startMs: cueEnd, endMs: pumpStart, label: `${pumpStart - cueEnd}ms trace` });
+    }
+    if (laserStart !== null && laserStart > cueEnd && laserStart !== pumpStart) {
+      traces.push({ startMs: cueEnd, endMs: laserStart, label: `${laserStart - cueEnd}ms trace` });
+    }
   }
 
   // Timeout starts at chain fire time (concurrent with CUE), not after rewards
@@ -298,33 +318,53 @@ function buildVITimeline(hw: HardwareUiState, ps: ParadigmSettings): TrialTimeli
 function buildOmissionTimeline(hw: HardwareUiState, ps: ParadigmSettings): TrialTimeline {
   const bars: TimeBar[] = [];
   const arrows: CausalArrow[] = [];
+  const traces: TraceAnnotation[] = [];
   const holdDur = ps.interval || 5000;
-  let t = 0;
+  const t = 0;
 
   bars.push({ lane: "lever", startMs: t, endMs: t + holdDur, label: "NO PRESS", sublabel: `${holdDur}ms` });
   const holdEnd = t + holdDur;
-  t = holdEnd;
 
-  const rewardLanes: LaneId[] = [];
+  // Every output device's onset originates from the absence-timer trigger + its
+  // own configured delay — no device's timing depends on another device's onset.
+  const pressArrowEntries: { lane: LaneId; start: number }[] = [];
+
+  let cueEnd: number | null = null;
   if (hw.primaryCue.armed) {
-    bars.push({ lane: "cue", startMs: t, endMs: t + hw.primaryCue.duration, label: "CUE", sublabel: `${hw.primaryCue.duration}ms` });
-    rewardLanes.push("cue");
+    const cueStart = holdEnd + hw.primaryCue.contingency.delay;
+    cueEnd = cueStart + hw.primaryCue.duration;
+    bars.push({ lane: "cue", startMs: cueStart, endMs: cueEnd, label: "CUE", sublabel: `${hw.primaryCue.duration}ms` });
+    pressArrowEntries.push({ lane: "cue", start: cueStart });
   }
+
+  let pumpStart: number | null = null;
   if (hw.primaryPump.armed) {
-    bars.push({ lane: "pump", startMs: t, endMs: t + hw.primaryPump.duration, label: "INFUSION", sublabel: `${hw.primaryPump.duration}ms` });
-    rewardLanes.push("pump");
-  }
-  if (hw.laser.armed && isLaserInChain(hw.laser.mode)) {
-    bars.push({ lane: "laser", startMs: t, endMs: t + hw.laser.duration, label: "LASER", sublabel: `${hw.laser.duration}ms` });
-    rewardLanes.push("laser");
+    pumpStart = holdEnd + hw.primaryPump.contingency.delay;
+    bars.push({ lane: "pump", startMs: pumpStart, endMs: pumpStart + hw.primaryPump.duration, label: "INFUSION", sublabel: `${hw.primaryPump.duration}ms` });
+    pressArrowEntries.push({ lane: "pump", start: pumpStart });
   }
 
-  if (rewardLanes.length > 0) {
-    const rewardLabel = rewardLanes.map((l) => LANE_LABELS[l].toLowerCase()).join(" + ");
-    arrows.push({ fromLane: "lever", fromEndMs: holdEnd, toLanes: rewardLanes, toStartMs: t, label: `no press → ${rewardLabel}` });
+  let laserStart: number | null = null;
+  if (hw.laser.armed && isLaserInChain(hw.laser.contingency)) {
+    laserStart = holdEnd + hw.laser.onsetDelay;
+    bars.push({ lane: "laser", startMs: laserStart, endMs: laserStart + hw.laser.duration, label: "LASER", sublabel: `${hw.laser.duration}ms` });
+    pressArrowEntries.push({ lane: "laser", start: laserStart });
   }
 
-  return { title: "Omission Trial", bars, arrows, traces: [], timeouts: [], loopLabel: "press resets timer" };
+  pushTriggerArrows(arrows, holdEnd, pressArrowEntries, "no press");
+
+  // Derived "trace interval" gap — only meaningful when the cue actually fires
+  // and a reward device's onset falls after the cue finishes (not a stored value).
+  if (cueEnd !== null) {
+    if (pumpStart !== null && pumpStart > cueEnd) {
+      traces.push({ startMs: cueEnd, endMs: pumpStart, label: `${pumpStart - cueEnd}ms trace` });
+    }
+    if (laserStart !== null && laserStart > cueEnd && laserStart !== pumpStart) {
+      traces.push({ startMs: cueEnd, endMs: laserStart, label: `${laserStart - cueEnd}ms trace` });
+    }
+  }
+
+  return { title: "Omission Trial", bars, arrows, traces, timeouts: [], loopLabel: "press resets timer" };
 }
 
 function buildPavlovianTimeline(
@@ -672,7 +712,7 @@ function TimelineDiagram({ timeline, isDark, containerW }: { timeline: TrialTime
 interface ParadigmFlowDiagramProps {
   paradigm: string;
   hardwareUi: HardwareUiState;
-  paradigmSettings: { ratio: number; step: number; interval: number; traceInterval: number } | null;
+  paradigmSettings: { ratio: number; step: number; interval: number } | null;
   pavlovianParams: Record<number, number> | null;
 }
 
@@ -707,7 +747,7 @@ export function ParadigmFlowDiagram({
       buildPavlovianTimeline("cs+", hardwareUi, pavlovianParams),
       buildPavlovianTimeline("cs-", hardwareUi, pavlovianParams),
     ];
-    for (const tl of timelines) addIndependentLaserAnnotation(tl.bars, hardwareUi);
+    for (const tl of timelines) addIndependentLaserAnnotation(tl.bars, hardwareUi, hardwareUi.laser.mode === "independent");
     return (
       <div ref={containerRef} className="space-y-3">
         {timelines.map((tl, i) => (
@@ -717,7 +757,7 @@ export function ParadigmFlowDiagram({
     );
   }
 
-  const ps = paradigmSettings ?? { ratio: 1, step: 1, interval: 0, traceInterval: 0 };
+  const ps = paradigmSettings ?? { ratio: 1, step: 1, interval: 0 };
 
   let timeline: TrialTimeline;
   switch (p) {
@@ -737,7 +777,7 @@ export function ParadigmFlowDiagram({
       return null;
   }
 
-  addIndependentLaserAnnotation(timeline.bars, hardwareUi);
+  addIndependentLaserAnnotation(timeline.bars, hardwareUi, !isLaserInChain(hardwareUi.laser.contingency));
 
   return (
     <div ref={containerRef}>
