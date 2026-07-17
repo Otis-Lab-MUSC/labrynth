@@ -62,6 +62,11 @@ export interface MicroscopeUiState extends DeviceArmState {
 
 export interface SlmUiState extends DeviceArmState {
   pin: number;
+  /** Bookkeeping only — records what the laser's frequency/duration should have
+   *  been, so a session record survives if the laser itself misbehaves. Not
+   *  tied to the LASER device's actual live state. */
+  laserFrequency: number | null;
+  laserDuration: number | null;
 }
 
 export interface HardwareUiState {
@@ -131,7 +136,7 @@ export interface Session {
   pausedTime: number;
   pauseStartTime: number | null;
   pavlovianParams: Record<number, number> | null;
-  paradigmSettings: { ratio: number; step: number; interval: number; traceInterval: number } | null;
+  paradigmSettings: { ratio: number; step: number; interval: number } | null;
   limitSettings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number } | null;
   trialCount: number;
   csPlusCount: number;

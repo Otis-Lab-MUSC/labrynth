@@ -130,9 +130,6 @@ export function SessionStartModal() {
         if (paradigm === "omission") {
           await client?.sendCommand(activeSessionId, 203, session.paradigmSettings.interval);
         }
-        if (paradigm === "fr" || paradigm === "pr" || paradigm === "vi") {
-          await client?.sendCommand(activeSessionId, 220, session.paradigmSettings.traceInterval);
-        }
       }
 
       // Send hardware state to firmware — only for armed devices.
@@ -169,15 +166,28 @@ export function SessionStartModal() {
 
       // Send laser mode + Pavlovian-specific commands
       const laserState = hw.laser;
-      if (laserState?.mode) {
-        // For trial-paired modes, send contingent (681) first, then filter command
-        if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever" && laserState.mode !== "lh_lever") {
-          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
+      if (isPavlovian) {
+        // Pavlovian: `mode` (+ `phase`) is authoritative — its UI never touches `contingency`.
+        if (laserState?.mode) {
+          // For trial-paired modes, send contingent (681) first, then filter command
+          if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever" && laserState.mode !== "lh_lever") {
+            await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
+          }
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode as keyof typeof LASER_MODE_COMMANDS]);
         }
-        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode as keyof typeof LASER_MODE_COMMANDS]);
-      }
-      if (laserPhaseActive(isPavlovian, laserState?.mode, laserState?.phase)) {
-        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase as keyof typeof PAV_LASER_PHASE_COMMANDS]);
+        if (laserPhaseActive(isPavlovian, laserState?.mode, laserState?.phase)) {
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase as keyof typeof PAV_LASER_PHASE_COMMANDS]);
+        }
+      } else if (laserState?.contingency) {
+        // Operant: `contingency` is authoritative routing — `mode` is Pavlovian-only and can be
+        // stale here, so it must NOT drive this dispatch (mirrors hardwareSummary.ts's laserParts).
+        const contingencyCommand = {
+          any: LASER_MODE_COMMANDS.contingent,
+          rh: LASER_MODE_COMMANDS.rh_lever,
+          lh: LASER_MODE_COMMANDS.lh_lever,
+          independent: LASER_MODE_COMMANDS.independent,
+        }[laserState.contingency];
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, contingencyCommand);
       }
 
       await getClientForSession(activeSessionId)?.startProgram(activeSessionId);
@@ -242,12 +252,6 @@ export function SessionStartModal() {
                   <>
                     <span className="text-theme-text/60">Interval:</span>
                     <span className="font-mono">{session.paradigmSettings.interval} ms</span>
-                  </>
-                )}
-                {(paradigm === "fr" || paradigm === "pr" || paradigm === "vi") && (
-                  <>
-                    <span className="text-theme-text/60">Trace Interval:</span>
-                    <span className="font-mono">{session.paradigmSettings.traceInterval} ms</span>
                   </>
                 )}
               </div>

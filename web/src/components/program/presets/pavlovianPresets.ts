@@ -31,7 +31,7 @@ const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
   laser:       { armed: false, frequency: 40, duration: 5000, mode: "cs_plus" as const, phase: "reward" as const, contingency: "any" as const, onsetDelay: 0 },
   lickCircuit: { armed: true },
   microscope:  { armed: false, frameRate: null, frameAveraging: null },
-  slm:         { armed: false, pin: 11 },
+  slm:         { armed: false, pin: 11, laserFrequency: null, laserDuration: null },
 };
 
 /* ── Dummy paradigm settings (not used by Pavlovian, required by type) */
@@ -40,7 +40,6 @@ const PARADIGM_SETTINGS: SessionPreset["paradigmSettings"] = {
   ratio: 1,
   step: 1,
   interval: 0,
-  traceInterval: 0,
 };
 
 /* ── Presets ───────────────────────────────────────────────────────── */

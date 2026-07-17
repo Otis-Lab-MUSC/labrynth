@@ -22,7 +22,7 @@ interface SessionStore {
   setFirmwareInfo: (id: string, info: FirmwareConfig) => void;
   setUploadProgress: (id: string, percent: number, stage: string) => void;
   setPavlovianParams: (id: string, params: Record<number, number>) => void;
-  setParadigmSettings: (id: string, settings: { ratio: number; step: number; interval: number; traceInterval: number }) => void;
+  setParadigmSettings: (id: string, settings: { ratio: number; step: number; interval: number }) => void;
   setLimitSettings: (id: string, settings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number }) => void;
   setParadigm: (id: string, paradigm: string) => void;
   setBoard: (id: string, board: BoardType) => void;
@@ -55,7 +55,7 @@ export const defaultHardwareUiState = (): HardwareUiState => ({
   laser: { armed: false, frequency: 40, duration: 5000, mode: "contingent", phase: "reward", contingency: "any", onsetDelay: 0 },
   lickCircuit: { armed: false },
   microscope: { armed: false, frameRate: null, frameAveraging: null },
-  slm: { armed: false, pin: 11 },
+  slm: { armed: false, pin: 11, laserFrequency: null, laserDuration: null },
   testMode: false,
 });
 

@@ -126,7 +126,10 @@ function microscopeParts(s: MicroscopeUiState): string[] {
 }
 
 function slmParts(s: SlmUiState): string[] {
-  return [`Pin:${s.pin}`];
+  const parts: string[] = [`Pin:${s.pin}`];
+  if (s.laserFrequency != null) parts.push(`${s.laserFrequency}Hz`);
+  if (s.laserDuration != null) parts.push(`${s.laserDuration}ms`);
+  return parts;
 }
 
 // Exhaustive per-device formatters. The mapped-type key set is the drift guard (see above).

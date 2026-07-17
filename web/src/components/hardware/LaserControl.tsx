@@ -88,20 +88,41 @@ export function LaserControl({ sessionId, paradigm }: Props) {
           )}
         </>
       ) : (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-theme-text/60">Contingent on:</span>
-          {([
-            ["any", "Any", LASER_MODE_COMMANDS.contingent],
-            ["rh", "RH", LASER_MODE_COMMANDS.rh_lever],
-            ["lh", "LH", LASER_MODE_COMMANDS.lh_lever],
-            ["independent", "Independent", LASER_MODE_COMMANDS.independent],
-          ] as const).map(([val, label, cmd]) => (
-            <button
-              key={val}
-              onClick={() => { send(cmd); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, contingency: val } })); }}
-              className={`btn-sm ${contingency === val ? "bg-purple-600" : "bg-purple-600/40"} text-white`}
-            >{label}</button>
-          ))}
+        <div className="border-t border-theme-text/10 pt-2 mt-1 space-y-2">
+          <div className="text-xs font-medium uppercase tracking-wide text-theme-text/60">Contingent on</div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-theme-text/60">Lever filter:</span>
+            {([
+              ["any", "Any lever", LASER_MODE_COMMANDS.contingent],
+              ["rh", "RH lever", LASER_MODE_COMMANDS.rh_lever],
+              ["lh", "LH lever", LASER_MODE_COMMANDS.lh_lever],
+              ["independent", "Independent", LASER_MODE_COMMANDS.independent],
+            ] as const).map(([val, label, cmd]) => (
+              <button
+                key={val}
+                onClick={() => { send(cmd); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, contingency: val } })); }}
+                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                  contingency === val
+                    ? "bg-accent text-white"
+                    : "bg-theme-text/10 text-theme-text/70 hover:bg-theme-text/20"
+                }`}
+              >{label}</button>
+            ))}
+          </div>
+          {contingency === "independent" ? (
+            <p className="text-xs text-theme-text/50 italic">Independent mode free-runs continuously — no onset delay applies</p>
+          ) : (
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-theme-text/60">Delay (ms):</label>
+              <input type="number" value={onsetDelay} min={0} max={delayMax}
+                onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, onsetDelay: Math.min(Math.max(0, +e.target.value), delayMax) } }))}
+                className="w-24 input-base"
+                title="Onset delay from lever press onset to laser activation" />
+              <button onClick={() => send(673, onsetDelay)}
+                disabled={onsetDelay < 0 || onsetDelay > delayMax}
+                className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+            </div>
+          )}
         </div>
       )}
       <div className="flex items-center gap-2">
@@ -122,15 +143,17 @@ export function LaserControl({ sessionId, paradigm }: Props) {
           disabled={duration < 1 || duration > 600000}
           className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
       </div>
-      <div className="flex items-center gap-2">
-        <label className="text-sm text-theme-text/60" title="Onset delay from trigger to laser activation">Delay (ms):</label>
-        <input type="number" value={onsetDelay} min={0} max={delayMax}
-          onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, onsetDelay: Math.min(Math.max(0, +e.target.value), delayMax) } }))}
-          className="w-24 input-base" />
-        <button onClick={() => send(673, onsetDelay)}
-          disabled={onsetDelay < 0 || onsetDelay > delayMax}
-          className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
-      </div>
+      {isPavlovian && (
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-theme-text/60" title="Onset delay from trigger to laser activation">Delay (ms):</label>
+          <input type="number" value={onsetDelay} min={0} max={delayMax}
+            onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, onsetDelay: Math.min(Math.max(0, +e.target.value), delayMax) } }))}
+            className="w-24 input-base" />
+          <button onClick={() => send(673, onsetDelay)}
+            disabled={onsetDelay < 0 || onsetDelay > delayMax}
+            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+        </div>
+      )}
       <SquareWaveCanvas frequency={frequency} duration={duration} />
     </div>
   );

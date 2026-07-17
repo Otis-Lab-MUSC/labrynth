@@ -14,8 +14,6 @@ function formatParadigmSummary(session: Session): string | null {
     if (s.step > 0) parts.push(`Step: ${s.step}`);
   } else if (p.includes("vi") || p.includes("variable")) {
     if (s.interval > 0) parts.push(`Interval: ${s.interval}s`);
-  } else if (p.includes("omission") || p.includes("pavlov")) {
-    if (s.traceInterval > 0) parts.push(`Trace interval: ${s.traceInterval}s`);
   }
 
   if (parts.length === 0) return null;

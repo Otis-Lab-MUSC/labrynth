@@ -19,7 +19,6 @@ export interface SessionPreset {
     ratio: number;
     step: number;
     interval: number;
-    traceInterval: number;
   };
   pavlovianParams?: Record<number, number>;
   limitDefaults: {

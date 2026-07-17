@@ -38,7 +38,7 @@ const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
   laser:        { armed: false, frequency: 40, duration: 5000, mode: "contingent" as const, contingency: "any" as const, onsetDelay: 0 },
   lickCircuit:  { armed: false },
   microscope:   { armed: false, frameRate: null, frameAveraging: null },
-  slm:          { armed: false, pin: 11 },
+  slm:          { armed: false, pin: 11, laserFrequency: null, laserDuration: null },
   secondaryCue: { armed: false, frequency: 2900, duration: 1000,
     contingency: { leverFilter: "none", delay: 0 } },
   secondaryPump: { armed: false, duration: 3000,
@@ -51,7 +51,6 @@ const PARADIGM_SETTINGS: SessionPreset["paradigmSettings"] = {
   ratio: 1,
   step: 1,
   interval: 30000,
-  traceInterval: 0,
 };
 
 /* ── Presets ───────────────────────────────────────────────────────── */
