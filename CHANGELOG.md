@@ -12,6 +12,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Frontend: SLM SYNC laser record-keeping fields added to session bookkeeping
+  ([#98](https://github.com/Otis-Lab-MUSC/labrynth/pull/98))
+
+### Changed
+- Frontend: laser contingent-on UI reformatted to match the cue/pump layout;
+  paradigm-based laser dispatch adjusted accordingly; removed the
+  `traceInterval` paradigm setting
+  ([#98](https://github.com/Otis-Lab-MUSC/labrynth/pull/98))
+
+### Fixed
+- Frontend: pre-session timeline corrected; added a null-check on param-apply
+  for the new SLM laser fields
+  ([#98](https://github.com/Otis-Lab-MUSC/labrynth/pull/98))
+
 ---
 
 ## [3.0.1-alpha.5] - 2026-06-29
