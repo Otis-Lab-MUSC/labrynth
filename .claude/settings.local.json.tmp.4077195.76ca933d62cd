@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/bump-version.py)",
+      "Bash(git remote *)",
+      "Bash(git rev-list *)",
+      "Bash(gh pr *)",
+      "Bash(git checkout *)",
+      "Bash(git pull *)",
+      "Bash(git merge *)",
+      "Bash(git diff *)",
+      "Read(//tmp/**)",
+      "mcp__ollama-local__local_lint_review",
+      "Bash(python3 scripts/bump-version.py 3.0.1-alpha.7)",
+      "Bash(python3 scripts/bump-version.py --check 3.0.1-alpha.7)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}

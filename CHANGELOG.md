@@ -10,13 +10,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased]
+## [3.0.1-alpha.7] - 2026-07-20
 
 ### Added
+- Frontend: SLM FRAMES stat added to the Session-page live stats, derived from SLM TIMESTAMP events in session.behaviorData
+  ([#99](https://github.com/Otis-Lab-MUSC/labrynth/issues/99))
 - Frontend: SLM SYNC laser record-keeping fields added to session bookkeeping
   ([#98](https://github.com/Otis-Lab-MUSC/labrynth/pull/98))
 
 ### Changed
+- Frontend: the "FRAMES" Session-page stat renamed to "2P FRAMES" for clarity alongside the new SLM FRAMES stat
+  ([#99](https://github.com/Otis-Lab-MUSC/labrynth/issues/99))
 - Frontend: laser contingent-on UI reformatted to match the cue/pump layout;
   paradigm-based laser dispatch adjusted accordingly; removed the
   `traceInterval` paradigm setting
