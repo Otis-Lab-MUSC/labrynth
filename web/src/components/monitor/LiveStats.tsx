@@ -42,6 +42,10 @@ export function LiveStats({ session }: Props) {
     (e) => e.device === "LICK" && e.event === "LICK"
   ).length;
 
+  const slmFrameCount = session.behaviorData.filter(
+    (e) => e.device === "SLM" && e.event === "TIMESTAMP"
+  ).length;
+
   const sessionStats: { label: string; value: string | number }[] = [
     { label: "INFUSIONS", value: session.infusionCount },
     { label: "LICKS", value: lickCount },
@@ -52,7 +56,8 @@ export function LiveStats({ session }: Props) {
           { label: "CS-", value: session.csMinusCount },
         ]
       : []),
-    { label: "FRAMES", value: session.frameData.length },
+    { label: "2P FRAMES", value: session.frameData.length },
+    { label: "SLM FRAMES", value: slmFrameCount },
   ];
 
   return (
