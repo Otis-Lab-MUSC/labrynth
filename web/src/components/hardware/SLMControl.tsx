@@ -18,7 +18,6 @@ export function SLMControl({ sessionId }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">
         SLM Sync
-        <span className="ml-2 text-xs font-mono text-theme-text/40">PCINT0 pins 8–13</span>
         <PinField sessionId={sessionId} component="slm" />
       </h3>
       <div className="flex gap-2">

@@ -26,6 +26,7 @@ export function usePinOverridesHydration(sessionId: string | null | undefined) {
         PUMP: "pump", PUMP2: "pump2",
         LICK_CIRCUIT: "lick", LASER: "laser",
         LEVER_RH: "lever_rh", LEVER_LH: "lever_lh",
+        SLM: "slm",
       };
       for (const entry of (cfg.hardware_settings ?? []) as Array<Record<string, unknown>>) {
         const dev = entry.device as string | undefined;
