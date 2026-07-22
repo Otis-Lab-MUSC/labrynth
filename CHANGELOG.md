@@ -10,6 +10,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.1-alpha.9] - 2026-07-22
+
+_Ships the reacher v3.1.1 backend and firmware, which fixes SLM SYNC timestamp capture on the Mega 2560._
+
+### Changed
+- Bundled reacher backend/firmware pinned to **v3.1.1** (`reacher2p>=3.1.1`). That
+  release fixes SLM SYNC never capturing a timestamp on a Mega 2560 — the firmware
+  armed the pin-change interrupt on the wrong PORTB bit. **Reflash the board after
+  installing this build**; the corrected hex only ships from reacher v3.1.1 onward
+  ([reacher#47](https://github.com/Otis-Lab-MUSC/reacher/issues/47))
+
+### Fixed
+- Frontend: the SLM timestamp pin selector now mirrors the backend's board-split
+  PCINT0 set via `pcint0PinsFor()`. A Mega 2560 previously offered pins 8 and 9,
+  which are PORTH on that part and cannot raise `PCINT0_vect` at all — selecting one
+  produced a pin the firmware could never capture on. An unknown board now falls back
+  to the Mega set rather than the wider UNO set, matching backend `board_sets()`,
+  because board detection returns `None` for clone USB IDs on real Mega hardware
+  ([#102](https://github.com/Otis-Lab-MUSC/labrynth/issues/102))
+
+### Added
+- Frontend: SLM pin overrides wired into the pin-override hydration mapping, so a
+  saved SLM pin is restored on reconnect alongside the other components. (Shipped in
+  v3.0.1-alpha.8, which went out without a changelog entry; recorded here.)
+
+---
+
 ## [3.0.1-alpha.7] - 2026-07-20
 
 ### Added
