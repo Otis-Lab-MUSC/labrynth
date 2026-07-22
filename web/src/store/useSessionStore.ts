@@ -46,13 +46,13 @@ const DEFAULT_CONTINGENCY = (): ContingencyConfig => ({
 });
 
 export const defaultHardwareUiState = (): HardwareUiState => ({
-  rhLever: { armed: false, timeout: 20000, ratio: 1 },
-  lhLever: { armed: false, timeout: 20000, ratio: 1 },
-  primaryCue:   { armed: false, frequency: 2900, duration: 1000, contingency: DEFAULT_CONTINGENCY() },
-  secondaryCue: { armed: false, frequency: 2900, duration: 1000, contingency: DEFAULT_CONTINGENCY() },
-  primaryPump:  { armed: false, duration: 3000, contingency: DEFAULT_CONTINGENCY() },
-  secondaryPump: { armed: false, duration: 3000, contingency: DEFAULT_CONTINGENCY() },
-  laser: { armed: false, frequency: 40, duration: 5000, mode: "contingent", phase: "reward", contingency: "any", onsetDelay: 0 },
+  rhLever: { armed: false, timeout: 0, ratio: 1 },
+  lhLever: { armed: false, timeout: 0, ratio: 1 },
+  primaryCue:   { armed: false, frequency: 0, duration: 0, contingency: DEFAULT_CONTINGENCY() },
+  secondaryCue: { armed: false, frequency: 0, duration: 0, contingency: DEFAULT_CONTINGENCY() },
+  primaryPump:  { armed: false, duration: 0, contingency: DEFAULT_CONTINGENCY() },
+  secondaryPump: { armed: false, duration: 0, contingency: DEFAULT_CONTINGENCY() },
+  laser: { armed: false, frequency: 0, duration: 0, mode: "contingent", phase: "reward", contingency: "any", onsetDelay: 0 },
   lickCircuit: { armed: false },
   microscope: { armed: false, frameRate: null, frameAveraging: null },
   slm: { armed: false, pin: 11, laserFrequency: null, laserDuration: null },
