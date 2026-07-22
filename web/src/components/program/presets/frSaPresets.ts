@@ -31,7 +31,7 @@ const CORE_HARDWARE: Partial<HardwareUiState> = {
 
 const PUMP_HARDWARE: Partial<HardwareUiState> = {
   primaryPump: { armed: true, duration: 2000,
-    contingency: { leverFilter: "rh", delay: 0 } },
+    contingency: { leverFilter: "rh", delay: 1600 } },
 };
 
 const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
@@ -108,7 +108,7 @@ export const SA_EXTINCTION_PRESET: SessionPreset = {
     primaryCue:  { armed: false, frequency: 8000, duration: 1600,
       contingency: { leverFilter: "none", delay: 0 } },
     primaryPump: { armed: false, duration: 2000,
-      contingency: { leverFilter: "none", delay: 0 } },
+      contingency: { leverFilter: "none", delay: 1600 } },
     ...OPTIONAL_HARDWARE,
   },
   paradigmSettings: PARADIGM_SETTINGS,
