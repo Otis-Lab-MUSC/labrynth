@@ -77,7 +77,7 @@ export const COMPONENT_REQUIRES_PWM: Record<Component, boolean> = {
   slm: false,
 };
 
-/** Components restricted to the PCINT0 group (Arduino pins 8–13). */
+/** Components restricted to the PCINT0/PORTB group (pins 10–13 on the Mega). */
 export const COMPONENT_REQUIRES_PCINT: Record<Component, boolean> = {
   slm: true,
   lever_rh: false,
@@ -91,7 +91,7 @@ export const COMPONENT_REQUIRES_PCINT: Record<Component, boolean> = {
   microscope_trigger: false,
 };
 
-/** Firmware default pins (from reacher-firmware/.../Pins.h). */
+/** Firmware default pins (from reacher/firmware/.../Pins.h). */
 export const DEFAULT_PIN: Record<Component, number> = {
   lever_rh: 10,
   lever_lh: 13,
@@ -112,12 +112,19 @@ const range = (start: number, endInclusive: number): number[] =>
 
 export const UNO_DIGITAL: readonly number[] = range(2, 13);
 export const UNO_PWM = new Set([3, 5, 6, 9, 10, 11]);
-export const PCINT0_PINS: readonly number[] = range(8, 13);
 // UNO_INT = {2, 3} — only used by microscope timestamp (not remappable)
 
 export const MEGA_DIGITAL: readonly number[] = range(2, 53);
 export const MEGA_PWM = new Set([...range(2, 13), 44, 45, 46]);
 // MEGA_INT = {2, 3, 18, 19, 20, 21} — not exposed (timestamp pin fixed)
+
+// PCINT0 group (PORTB) — valid pins for the SLM timestamp ISR(PCINT0_vect).
+// The PORTB pin map differs by board (mirror backend pin_overrides.py):
+//   UNO  (ATmega328):  PB0–PB5 == pins 8–13
+//   Mega (ATmega2560): PB4–PB7 == pins 10–13 (8/9 are PORTH, not PCINT-capable;
+//                      50–53 are the SPI bus and not exposed)
+export const UNO_PCINT0: readonly number[] = range(8, 13);
+export const MEGA_PCINT0: readonly number[] = [10, 11, 12, 13];
 
 /** Return the digital pins available on a given board. Defaults to UNO. */
 export function digitalPinsFor(board: BoardType | null | undefined): readonly number[] {
@@ -127,6 +134,19 @@ export function digitalPinsFor(board: BoardType | null | undefined): readonly nu
 /** Return PWM-capable pins on a given board. Defaults to UNO. */
 export function pwmPinsFor(board: BoardType | null | undefined): Set<number> {
   return board === "mega" ? MEGA_PWM : UNO_PWM;
+}
+
+/**
+ * Return the PCINT0/PORTB pins valid for the SLM timestamp input.
+ *
+ * Unlike the other pin sets, an unknown board falls back to the *Mega* set
+ * rather than the UNO one (mirror backend `board_sets`). UNO_PCINT0 (8-13) is
+ * wider than MEGA_PCINT0 (10-13), so defaulting to it would offer pins 8/9 —
+ * PORTH on a Mega, which cannot raise PCINT0_vect. MEGA_PCINT0 is a subset of
+ * UNO_PCINT0 and so is valid on both boards.
+ */
+export function pcint0PinsFor(board: BoardType | null | undefined): readonly number[] {
+  return board === "uno" ? UNO_PCINT0 : MEGA_PCINT0;
 }
 
 /**
@@ -140,7 +160,7 @@ export function validPinsFor(
   excludePins?: ReadonlySet<number>,
 ): number[] {
   const requirePcint = COMPONENT_REQUIRES_PCINT[component];
-  const digital = requirePcint ? PCINT0_PINS : digitalPinsFor(board);
+  const digital = requirePcint ? pcint0PinsFor(board) : digitalPinsFor(board);
   const requirePwm = COMPONENT_REQUIRES_PWM[component];
   const pwm = pwmPinsFor(board);
   return [...digital].filter((p) => {
