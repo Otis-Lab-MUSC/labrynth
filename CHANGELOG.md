@@ -10,6 +10,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- Frontend: FR self-administration presets (SA High/Mid/Low, Extinction) encoded
+  `primaryPump.contingency.delay: 0`, which under the old cue-chained reward model
+  meant "right after the cue" but under the current per-device onset-delay firmware
+  model means "simultaneous with the cue." Delay is now 1600ms, matching the primary
+  cue's duration, so the pump fires as the tone ends
+  ([#104](https://github.com/Otis-Lab-MUSC/labrynth/issues/104))
+- Frontend: `defaultHardwareUiState()` — the shared "no preset selected" template
+  used by every paradigm — now zeroes all fields, so a freshly-opened session starts
+  fully inert (unarmed + zeroed) instead of showing non-zero placeholder values,
+  matching the companion firmware fix in reacher#49
+  ([#104](https://github.com/Otis-Lab-MUSC/labrynth/issues/104))
+
+---
+
 ## [3.0.1-alpha.9] - 2026-07-22
 
 _Ships the reacher v3.1.1 backend and firmware, which fixes SLM SYNC timestamp capture on the Mega 2560._
