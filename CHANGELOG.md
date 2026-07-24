@@ -12,6 +12,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [3.0.1-alpha.11] - 2026-07-24
+
+### Changed
+- Frontend: `ConfigurationPanel.tsx` now hides the "Two-Photon Devices" section when
+  `session.board === "uno"`, matching the new reacher `fr_lite` firmware, which drops
+  Microscope + SLM sync entirely to fit the UNO's flash/RAM budget
+  ([reacher#51](https://github.com/Otis-Lab-MUSC/reacher/issues/51))
+
 ### Fixed
 - Frontend: FR self-administration presets (SA High/Mid/Low, Extinction) encoded
   `primaryPump.contingency.delay: 0`, which under the old cue-chained reward model
