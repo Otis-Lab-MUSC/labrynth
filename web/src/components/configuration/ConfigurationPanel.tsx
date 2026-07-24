@@ -92,6 +92,7 @@ export function ConfigurationPanel() {
 
   const paradigm = session?.paradigm?.toLowerCase();
   const isPav = paradigm === "pavlovian";
+  const board = session?.board;
 
   // Fetch commands for hardware section
   useEffect(() => {
@@ -622,14 +623,16 @@ export function ConfigurationPanel() {
                 </div>
               </section>
 
-              {/* Two-Photon Devices */}
-              <section className="space-y-4 pt-6">
-                <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Two-Photon Devices</h4>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <MicroscopeControl sessionId={activeSessionId} />
-                  <SLMControl sessionId={activeSessionId} />
-                </div>
-              </section>
+              {/* Two-Photon Devices — not present on UNO-class boards (e.g. the fr_lite firmware) */}
+              {board !== "uno" && (
+                <section className="space-y-4 pt-6">
+                  <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Two-Photon Devices</h4>
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <MicroscopeControl sessionId={activeSessionId} />
+                    <SLMControl sessionId={activeSessionId} />
+                  </div>
+                </section>
+              )}
             </div>
           </div>
         )}
