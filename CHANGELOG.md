@@ -14,6 +14,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.1-alpha.12] - 2026-07-27
+
+_Adds fr_lite session presets; reacher backend pinned to v3.3.0 so fr_lite sessions
+are functional end-to-end._
+
+### Added
+- Frontend: Session Preset menu on the Session Configuration page now offers fr_lite
+  presets (High/Mid/Low/Extinction — mirrors the existing FR presets, minus
+  microscope/SLM, which don't exist on lite firmware). Previously only `fr` and
+  `pavlovian` had presets
+  ([#107](https://github.com/Otis-Lab-MUSC/labrynth/issues/107))
+- Frontend: `ParadigmFlowDiagram.tsx` — fr_lite now renders the same FR trial
+  timeline as fr, instead of silently rendering nothing
+
+### Changed
+- Bundled reacher backend/firmware pinned to **v3.3.0** (`reacher2p>=3.3.0`). That
+  release fixes fr_lite sessions being non-functional server-side (the
+  command-dispatch gate rejected fr_lite commands with a 400) — this build's new
+  fr_lite presets require it
+  ([reacher#53](https://github.com/Otis-Lab-MUSC/reacher/issues/53))
+- Frontend: `ParadigmSettings.tsx`, `LeverControl.tsx`, `SessionStartModal.tsx` —
+  ratio-visibility/send checks for `paradigm === "fr"` now also match `fr_lite`
+- Frontend: `mock.ts` demo-mode `listParadigms` now mirrors the real backend's
+  board-aware UNO-to-lite-only filtering instead of a static list
+
+---
+
 ## [3.0.1-alpha.11] - 2026-07-24
 
 ### Changed
