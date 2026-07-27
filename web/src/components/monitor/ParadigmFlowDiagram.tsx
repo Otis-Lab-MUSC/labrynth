@@ -762,6 +762,7 @@ export function ParadigmFlowDiagram({
   let timeline: TrialTimeline;
   switch (p) {
     case "fr":
+    case "fr_lite":
       timeline = buildFRTimeline(hardwareUi, ps);
       break;
     case "pr":

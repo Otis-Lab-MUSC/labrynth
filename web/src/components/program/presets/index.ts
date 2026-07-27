@@ -1,6 +1,7 @@
 export type { SessionPreset, PresetDeviceEntry } from "./types";
 export { FR1FlowDiagram } from "./FR1FlowDiagram";
 export { SA_HIGH_PRESET, SA_MID_PRESET, SA_LOW_PRESET, SA_EXTINCTION_PRESET } from "./frSaPresets";
+export { SA_HIGH_LITE_PRESET, SA_MID_LITE_PRESET, SA_LOW_LITE_PRESET, SA_EXTINCTION_LITE_PRESET } from "./frLitePresets";
 export { PAV_ACQUISITION_PRESET, PAV_REVERSAL_PRESET } from "./pavlovianPresets";
 export { SessionPresetCard } from "./SessionPresetCard";
 export { buildPresetFromSession } from "./deviceMetadata";
@@ -8,6 +9,7 @@ export { SavePresetDialog } from "./SavePresetDialog";
 export { PresetActionMenu } from "./PresetActionMenu";
 
 import { SA_HIGH_PRESET, SA_MID_PRESET, SA_LOW_PRESET, SA_EXTINCTION_PRESET } from "./frSaPresets";
+import { SA_HIGH_LITE_PRESET, SA_MID_LITE_PRESET, SA_LOW_LITE_PRESET, SA_EXTINCTION_LITE_PRESET } from "./frLitePresets";
 import { PAV_ACQUISITION_PRESET, PAV_REVERSAL_PRESET } from "./pavlovianPresets";
 import type { SessionPreset } from "./types";
 
@@ -16,6 +18,10 @@ export const SESSION_PRESETS: SessionPreset[] = [
   SA_MID_PRESET,
   SA_LOW_PRESET,
   SA_EXTINCTION_PRESET,
+  SA_HIGH_LITE_PRESET,
+  SA_MID_LITE_PRESET,
+  SA_LOW_LITE_PRESET,
+  SA_EXTINCTION_LITE_PRESET,
   PAV_ACQUISITION_PRESET,
   PAV_REVERSAL_PRESET,
 ];

@@ -3,17 +3,17 @@ import type { HardwareUiState } from "../../../types";
 
 /* ── Shared device entries ─────────────────────────────────────────── */
 
-const CORE_DEVICES: PresetDeviceEntry[] = [
+export const CORE_DEVICES: PresetDeviceEntry[] = [
   { key: "rhLever",    label: "RH Lever", role: "Active lever — triggers reward chain", required: true },
   { key: "lhLever",    label: "LH Lever", role: "Inactive lever — tracking only",       required: true },
   { key: "primaryCue", label: "Cue 1",    role: "Tone cue — signals reward",            required: true },
 ];
 
-const PUMP_DEVICE: PresetDeviceEntry = {
+export const PUMP_DEVICE: PresetDeviceEntry = {
   key: "primaryPump", label: "Pump 1", role: "Syringe pump — delivers infusion", required: true,
 };
 
-const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
+export const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
   { key: "laser",       label: "Laser",       role: "Optogenetic stimulus — paired with pump", required: false },
   { key: "lickCircuit", label: "Lick Circuit", role: "Lick detection — user-enabled",          required: false },
   { key: "microscope",  label: "Microscope",   role: "Imaging sync — user-enabled",            required: false },
@@ -22,19 +22,19 @@ const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
 
 /* ── Shared hardware settings ──────────────────────────────────────── */
 
-const CORE_HARDWARE: Partial<HardwareUiState> = {
+export const CORE_HARDWARE: Partial<HardwareUiState> = {
   rhLever:    { armed: true,  timeout: 20000, ratio: 1 },
   lhLever:    { armed: true,  timeout: 20000, ratio: 1 },
   primaryCue: { armed: true,  frequency: 8000, duration: 1600,
     contingency: { leverFilter: "rh", delay: 0 } },
 };
 
-const PUMP_HARDWARE: Partial<HardwareUiState> = {
+export const PUMP_HARDWARE: Partial<HardwareUiState> = {
   primaryPump: { armed: true, duration: 2000,
     contingency: { leverFilter: "rh", delay: 1600 } },
 };
 
-const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
+export const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
   laser:        { armed: false, frequency: 40, duration: 5000, mode: "contingent" as const, contingency: "any" as const, onsetDelay: 0 },
   lickCircuit:  { armed: false },
   microscope:   { armed: false, frameRate: null, frameAveraging: null },
@@ -47,7 +47,7 @@ const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
 
 /* ── Shared paradigm settings ──────────────────────────────────────── */
 
-const PARADIGM_SETTINGS: SessionPreset["paradigmSettings"] = {
+export const PARADIGM_SETTINGS: SessionPreset["paradigmSettings"] = {
   ratio: 1,
   step: 1,
   interval: 30000,
