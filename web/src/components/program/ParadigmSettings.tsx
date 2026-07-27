@@ -26,7 +26,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">Paradigm Settings — <span className="text-accent">{paradigm.toUpperCase()}</span></h3>
 
-      {(paradigm === "fr" || paradigm === "pr") && (
+      {(paradigm === "fr" || paradigm === "pr" || paradigm === "fr_lite") && (
         <div className="flex items-center gap-2">
           <label className="text-sm w-24 text-theme-text/60">Ratio:</label>
           <input type="number" value={ratio} onChange={(e) => setRatio(+e.target.value)}

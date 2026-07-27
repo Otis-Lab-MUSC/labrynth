@@ -152,8 +152,11 @@ export const listBoards = async () => ({
   ] as BoardInfo[],
 });
 
-export const listParadigms = async (_board?: string) => ({
-  paradigms: ["fr", "pr", "vi", "omission", "pavlovian"],
+export const listParadigms = async (board?: string) => ({
+  paradigms:
+    board?.toLowerCase() === "uno"
+      ? ["fr_lite"]
+      : ["fr", "pr", "vi", "omission", "pavlovian"],
 });
 
 export const uploadFirmware = async (id: string, paradigm: string, board: string = "mega") => {

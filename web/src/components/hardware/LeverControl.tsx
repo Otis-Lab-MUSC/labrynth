@@ -27,7 +27,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
   const showTimeout = paradigm !== "omission" && paradigm !== "pavlovian";
-  const showRatio = paradigm === "fr" || paradigm === "pr";
+  const showRatio = paradigm === "fr" || paradigm === "pr" || paradigm === "fr_lite";
 
   return (
     <div className="card">

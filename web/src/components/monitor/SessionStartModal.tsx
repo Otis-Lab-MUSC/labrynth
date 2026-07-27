@@ -118,7 +118,7 @@ export function SessionStartModal() {
       // on remote sessions).  Mirrors the codes used in ConfigurationPanel.tsx.
       if (session.paradigmSettings && paradigm !== "pavlovian") {
         const client = getClientForSession(activeSessionId);
-        if (paradigm === "fr" || paradigm === "pr") {
+        if (paradigm === "fr" || paradigm === "pr" || paradigm === "fr_lite") {
           await client?.sendCommand(activeSessionId, 201, session.paradigmSettings.ratio);
         }
         if (paradigm === "pr") {
@@ -236,7 +236,7 @@ export function SessionStartModal() {
             <h3 className="text-sm font-medium text-theme-text/60 uppercase tracking-wide mb-2">Program Settings</h3>
             {session.paradigmSettings ? (
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                {(paradigm === "fr" || paradigm === "pr") && (
+                {(paradigm === "fr" || paradigm === "pr" || paradigm === "fr_lite") && (
                   <>
                     <span className="text-theme-text/60">Ratio:</span>
                     <span className="font-mono">{session.paradigmSettings.ratio}</span>
