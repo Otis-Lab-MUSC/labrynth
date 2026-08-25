@@ -92,7 +92,12 @@ export function ConfigurationPanel() {
 
   const paradigm = session?.paradigm?.toLowerCase();
   const isPav = paradigm === "pavlovian";
-  const board = session?.board;
+
+  // Two-photon controls follow what the running firmware actually accepts, not
+  // the board name: a "_lite" build rejects 900/901/903 and 11xx with a
+  // level-006 error, and the backend already filters them out of this list.
+  // Keyed on MICROSCOPE_ARM, which every two-photon-capable paradigm exposes.
+  const hasTwoPhoton = useMemo(() => commands.some((c) => c.code === 901), [commands]);
 
   // Fetch commands for hardware section
   useEffect(() => {
@@ -623,8 +628,8 @@ export function ConfigurationPanel() {
                 </div>
               </section>
 
-              {/* Two-Photon Devices — not present on UNO-class boards (e.g. the fr_lite firmware) */}
-              {board !== "uno" && (
+              {/* Two-Photon Devices — absent on "_lite" firmware, which has no Microscope/SLM */}
+              {hasTwoPhoton && (
                 <section className="space-y-4 pt-6">
                   <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">Two-Photon Devices</h4>
                   <div className="grid gap-4 lg:grid-cols-2">

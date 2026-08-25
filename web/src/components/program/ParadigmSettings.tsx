@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
+import { isParadigm } from "../../lib/paradigm";
 
 interface Props {
   sessionId: string;
@@ -26,7 +27,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
     <div className="card">
       <h3 className="font-medium text-theme-text">Paradigm Settings — <span className="text-accent">{paradigm.toUpperCase()}</span></h3>
 
-      {(paradigm === "fr" || paradigm === "pr" || paradigm === "fr_lite") && (
+      {isParadigm(paradigm, "fr", "pr") && (
         <div className="flex items-center gap-2">
           <label className="text-sm w-24 text-theme-text/60">Ratio:</label>
           <input type="number" value={ratio} onChange={(e) => setRatio(+e.target.value)}
@@ -35,7 +36,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
         </div>
       )}
 
-      {paradigm === "pr" && (
+      {isParadigm(paradigm, "pr") && (
         <div className="flex items-center gap-2">
           <label className="text-sm w-24 text-theme-text/60">PR Step:</label>
           <input type="number" value={step} onChange={(e) => setStep(+e.target.value)}
@@ -44,7 +45,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
         </div>
       )}
 
-      {paradigm === "vi" && (
+      {isParadigm(paradigm, "vi") && (
         <div className="flex items-center gap-2">
           <label className="text-sm w-24 text-theme-text/60">VI Interval (ms):</label>
           <input type="number" value={interval} onChange={(e) => setInterval_(+e.target.value)}
@@ -53,7 +54,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
         </div>
       )}
 
-      {paradigm === "omission" && (
+      {isParadigm(paradigm, "omission") && (
         <div className="flex items-center gap-2">
           <label className="text-sm w-24 text-theme-text/60">Omission Interval (ms):</label>
           <input type="number" value={interval} onChange={(e) => setInterval_(+e.target.value)}

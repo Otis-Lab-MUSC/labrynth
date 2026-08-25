@@ -13,6 +13,7 @@ import type { ValidationResult } from "../../api/client";
 // Shared with PavlovianSettings so the start-summary labels every param the
 // registry can surface (incl. re-enabled 212/215/219), with no separate drift.
 import { LABEL_OVERRIDES as PAV_CODE_LABELS } from "../program/pavLabels";
+import { isParadigm } from "../../lib/paradigm";
 
 export function SessionStartModal() {
   const startModalOpen = useSessionStore((s) => s.startModalOpen);
@@ -118,16 +119,16 @@ export function SessionStartModal() {
       // on remote sessions).  Mirrors the codes used in ConfigurationPanel.tsx.
       if (session.paradigmSettings && paradigm !== "pavlovian") {
         const client = getClientForSession(activeSessionId);
-        if (paradigm === "fr" || paradigm === "pr" || paradigm === "fr_lite") {
+        if (isParadigm(paradigm, "fr", "pr")) {
           await client?.sendCommand(activeSessionId, 201, session.paradigmSettings.ratio);
         }
-        if (paradigm === "pr") {
+        if (isParadigm(paradigm, "pr")) {
           await client?.sendCommand(activeSessionId, 205, session.paradigmSettings.step);
         }
-        if (paradigm === "vi") {
+        if (isParadigm(paradigm, "vi")) {
           await client?.sendCommand(activeSessionId, 204, session.paradigmSettings.interval);
         }
-        if (paradigm === "omission") {
+        if (isParadigm(paradigm, "omission")) {
           await client?.sendCommand(activeSessionId, 203, session.paradigmSettings.interval);
         }
       }
@@ -236,19 +237,19 @@ export function SessionStartModal() {
             <h3 className="text-sm font-medium text-theme-text/60 uppercase tracking-wide mb-2">Program Settings</h3>
             {session.paradigmSettings ? (
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                {(paradigm === "fr" || paradigm === "pr" || paradigm === "fr_lite") && (
+                {isParadigm(paradigm, "fr", "pr") && (
                   <>
                     <span className="text-theme-text/60">Ratio:</span>
                     <span className="font-mono">{session.paradigmSettings.ratio}</span>
                   </>
                 )}
-                {paradigm === "pr" && (
+                {isParadigm(paradigm, "pr") && (
                   <>
                     <span className="text-theme-text/60">PR Step:</span>
                     <span className="font-mono">{session.paradigmSettings.step}</span>
                   </>
                 )}
-                {(paradigm === "vi" || paradigm === "omission") && (
+                {isParadigm(paradigm, "vi", "omission") && (
                   <>
                     <span className="text-theme-text/60">Interval:</span>
                     <span className="font-mono">{session.paradigmSettings.interval} ms</span>

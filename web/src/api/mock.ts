@@ -155,7 +155,7 @@ export const listBoards = async () => ({
 export const listParadigms = async (board?: string) => ({
   paradigms:
     board?.toLowerCase() === "uno"
-      ? ["fr_lite"]
+      ? ["fr_lite", "pr_lite", "vi_lite", "omission_lite"]
       : ["fr", "pr", "vi", "omission", "pavlovian"],
 });
 
@@ -168,7 +168,7 @@ export const uploadFirmware = async (id: string, paradigm: string, board: string
     board,
     firmware_info: {
       sketch: paradigm,
-      version: "3.0.1-alpha.13",
+      version: "3.0.1-alpha.14",
       baud_rate: 115200,
       desc: `Demo ${paradigm.toUpperCase()} firmware`,
     },
@@ -200,12 +200,26 @@ const PAVLOVIAN_MOCK_COMMANDS = [
   { code: 385, name: "CUE2_SET_PULSE_OFF", description: "CS- pulse off (ms)", payload_key: "pulse_off", payload_type: "int" },
 ];
 
+// Two-photon commands, which the backend withholds from "_lite" paradigms. The
+// UI gates its Two-Photon section on the presence of 901, so the mock has to
+// carry these or that section never renders in mock-backed dev.
+const TWO_PHOTON_MOCK_COMMANDS = [
+  { code: 900, name: "MICROSCOPE_DISARM", description: "Disarm microscope", payload_key: null, payload_type: null },
+  { code: 901, name: "MICROSCOPE_ARM", description: "Arm microscope", payload_key: null, payload_type: null },
+  { code: 903, name: "MICROSCOPE_TEST", description: "Fire a test trigger", payload_key: null, payload_type: null },
+  { code: 1100, name: "SLM_DISARM", description: "Disarm SLM", payload_key: null, payload_type: null },
+  { code: 1101, name: "SLM_ARM", description: "Arm SLM", payload_key: null, payload_type: null },
+];
+
 export const getCommands = async (id: string) => {
   const session = useSessionStore.getState().sessions.get(id);
   const paradigm = session?.paradigm ?? "fr";
+  const base = paradigm.toLowerCase().endsWith("_lite") ? [] : TWO_PHOTON_MOCK_COMMANDS;
   return {
     paradigm,
-    commands: paradigm.toLowerCase() === "pavlovian" ? PAVLOVIAN_MOCK_COMMANDS : [],
+    commands: paradigm.toLowerCase() === "pavlovian"
+      ? [...PAVLOVIAN_MOCK_COMMANDS, ...base]
+      : base,
   };
 };
 

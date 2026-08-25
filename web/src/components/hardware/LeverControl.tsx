@@ -1,6 +1,7 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
+import { isParadigm } from "../../lib/paradigm";
 
 interface Props {
   sessionId: string;
@@ -27,7 +28,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
   const showTimeout = paradigm !== "omission" && paradigm !== "pavlovian";
-  const showRatio = paradigm === "fr" || paradigm === "pr" || paradigm === "fr_lite";
+  const showRatio = isParadigm(paradigm, "fr", "pr");
 
   return (
     <div className="card">

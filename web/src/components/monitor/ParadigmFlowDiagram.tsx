@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useThemeStore } from "../../store/useThemeStore";
 import type { HardwareUiState, LaserUiState } from "../../types";
+import { baseParadigm } from "../../lib/paradigm";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -760,9 +761,9 @@ export function ParadigmFlowDiagram({
   const ps = paradigmSettings ?? { ratio: 1, step: 1, interval: 0 };
 
   let timeline: TrialTimeline;
-  switch (p) {
+  // Normalized so every "_lite" variant draws its base paradigm's timeline.
+  switch (baseParadigm(p)) {
     case "fr":
-    case "fr_lite":
       timeline = buildFRTimeline(hardwareUi, ps);
       break;
     case "pr":
