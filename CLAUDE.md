@@ -85,7 +85,7 @@ See `RELEASING.md` for the full release workflow and the two-workflow model
 
 ### Testing
 
-There is **no test framework configured** here (no pytest, no Vitest/Jest). ESLint is the only automated quality check. Verify changes by running the frontend dev server against a live backend.
+There is **no test framework configured** here (no pytest, no Vitest/Jest). `npm run lint` is currently **broken** — ESLint 9 requires a flat `eslint.config.js` and none exists in the repo. `npx tsc -b` (run by `npm run build`) is the working automated check. Verify changes by running the frontend dev server against a live backend.
 
 ## Architecture
 
@@ -112,6 +112,20 @@ Machine discovery uses mDNS (polled by `useMachineStore.startDiscoveryPolling`).
 - **`store/`** — Zustand stores: `useSessionStore` (sessions Map, events, counters, draft sessions), `useMachineStore` (machines + discovery + per-machine `MachineApiClient` cache outside Zustand state), `useThemeStore`, `useNavigationStore` (active panel: `session | configuration | monitor | data`), `useLogStore`, `useTutorialStore` (also owns `demoMode`), `useUserPresetStore`.
 - **`hooks/useSessionWebSockets.ts`** — central WS router: opens one `ReacherWebSocket` per non-draft session, dispatches all incoming message types (`event | frame | config | log | error | upload_progress | session_state | disconnect | export_failed | kernel_error | split | restart`) to the appropriate stores. Skips draft sessions and demo-prefixed IDs. Recovers missed events on reconnect via `client.getBehavior(sessionId)`.
 - **`hooks/useSingleTab.ts`** — enforces single-tab usage (other tabs see a blocked screen).
+- **`logging/`** — always-on diagnostic capture shipped to the backend's
+  `/api/logs/ingest`, where it joins the backend's own NDJSON run log. Installed
+  in `main.tsx` *before* React mounts so first-render crashes are caught.
+  Capture is via **capture-phase listeners on `document`** (`install.ts`), not
+  per-handler instrumentation — there are ~150 `onClick` and ~60 `onChange`
+  sites and no shared input primitives, so editing call sites would be
+  unmaintainable. Add `data-log-id` to a control for a stable identity; the DOM
+  fallback covers everything else. `MachineApiClient.request()` mints a
+  `corr_id` per call and sends it as `X-Reacher-Corr-Id`, which is what lets a
+  button press be traced to the serial bytes it caused. `useLogStore.pushLog`
+  tees into it, so the in-app terminal keeps working and also becomes durable.
+  Field values are logged **verbatim** (deliberate — it is what makes bugs
+  reproducible); only credential-shaped keys are redacted, and the server
+  re-redacts on ingest. See `docs/logging.md` in the reacher repo.
 - **`components/`** — feature-area folders: `session/`, `configuration/`, `monitor/`, `data/`, `hardware/`, `program/`, `machines/`, `terminal/`, `layout/`, `tutorial/`.
 - **`themes/`** — 5 named themes (`reacher`, `terminal`, `neural`, `midnight`, `ember`), each with a `dark` and `light` palette plus background, font, radius, glass tokens. Theme is applied by writing CSS variables on `:root` (no Tailwind dark-mode toggle alone — `apply()` in `useThemeStore` sets `--color-*`, `--font-*`, etc.). Default: `reacher`. Persistence: `localStorage["labrynth-mode"]`.
 - **`types/index.ts`** — shared TypeScript interfaces (`Session`, `Machine`, `BehaviorEvent`, `FirmwareConfig`, …).

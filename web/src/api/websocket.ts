@@ -1,4 +1,5 @@
 import type { WSMessage } from "../types";
+import { log } from "../logging";
 import { getToken } from "./client";
 
 type MessageHandler = (msg: WSMessage) => void;
@@ -96,6 +97,9 @@ export class ReacherWebSocket {
     if (this.closed || _pageUnloading) return;
     // Fix: FE-002 — Give up after MAX_RECONNECT_ATTEMPTS consecutive failures
     if (this.reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
+      log("ws.gave_up", { sessionId: this.sessionId, attempts: MAX_RECONNECT_ATTEMPTS }, "error",
+          { msg: `Gave up reconnecting after ${MAX_RECONNECT_ATTEMPTS} attempts`, src: "api/websocket",
+            sessionId: this.sessionId });
       console.warn(`[ReacherWS] Gave up reconnecting after ${MAX_RECONNECT_ATTEMPTS} attempts`);
       this.onGiveUp?.();
       return;
@@ -124,6 +128,8 @@ export class ReacherWebSocket {
 
       this.ws = new WebSocket(url);
     this.ws.onopen = () => {
+      log("ws.open", { sessionId: this.sessionId, attempt: this.reconnectAttempt }, "info",
+          { msg: `WebSocket open for ${this.sessionId}`, src: "api/websocket", sessionId: this.sessionId });
       this.onReconnect?.();
       this.startHeartbeat();
     };
@@ -137,11 +143,16 @@ export class ReacherWebSocket {
         // ignore malformed messages
       }
     };
-    this.ws.onclose = () => {
+    this.ws.onclose = (ev) => {
+      log("ws.close", { sessionId: this.sessionId, code: ev.code, reason: ev.reason, clean: ev.wasClean },
+          ev.wasClean ? "info" : "warn",
+          { msg: `WebSocket closed (${ev.code})`, src: "api/websocket", sessionId: this.sessionId });
       this.stopHeartbeat();
       this.scheduleReconnect();
     };
     this.ws.onerror = () => {
+      log("ws.error", { sessionId: this.sessionId }, "error",
+          { msg: "WebSocket error", src: "api/websocket", sessionId: this.sessionId });
       this.ws?.close();
     };
     });

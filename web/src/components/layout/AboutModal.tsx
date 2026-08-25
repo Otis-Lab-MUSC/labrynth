@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ExternalLink, X } from "lucide-react";
+import { Download, ExternalLink, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useUpdateCheck } from "../../hooks/useUpdateCheck";
 import { useUpdateStore } from "../../store/useUpdateStore";
 import { getLocalClient } from "../../api/client";
+import { downloadDiagnostics } from "../../logging";
 
 interface AboutModalProps {
   open: boolean;
@@ -12,6 +13,21 @@ interface AboutModalProps {
 }
 
 export function AboutModal({ open, onClose }: AboutModalProps) {
+  const [diagBusy, setDiagBusy] = useState(false);
+  const [diagError, setDiagError] = useState<string | null>(null);
+
+  async function handleDiagnostics() {
+    setDiagBusy(true);
+    setDiagError(null);
+    try {
+      await downloadDiagnostics();
+    } catch (err) {
+      setDiagError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setDiagBusy(false);
+    }
+  }
+
   const { update, dismiss } = useUpdateCheck();
   const { downloadStatus, startDownload } = useUpdateStore(
     useShallow((s) => ({
@@ -125,6 +141,17 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
         )}
 
         <div className="border-t border-theme-border pt-3">
+          <button
+            onClick={handleDiagnostics}
+            disabled={diagBusy}
+            className="mb-3 flex w-full items-center justify-center gap-1.5 rounded border border-theme-border px-3 py-2 text-xs text-theme-text/70 transition hover:border-accent hover:text-accent disabled:opacity-50"
+          >
+            <Download size={11} />
+            {diagBusy ? "Preparing…" : "Download diagnostics"}
+          </button>
+          {diagError && (
+            <p className="mb-3 text-xs text-red-500">{diagError}</p>
+          )}
           <a
             href="https://github.com/Otis-Lab-MUSC/labrynth"
             target="_blank"

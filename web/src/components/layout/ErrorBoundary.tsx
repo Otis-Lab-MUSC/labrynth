@@ -1,4 +1,5 @@
-import { Component, type ReactNode } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import { flush, log } from "../../logging";
 
 interface Props { children: ReactNode }
 interface State { error: Error | null }
@@ -8,6 +9,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error) {
     return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    // The component stack is only available here, and is usually the fastest
+    // route to the offending component.
+    log("ui.react_error", {
+      message: error.message,
+      stack: error.stack,
+      componentStack: info.componentStack,
+    }, "fatal", { msg: error.message, src: "ErrorBoundary" });
+    void flush();
   }
 
   render() {

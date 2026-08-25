@@ -1,4 +1,5 @@
 import type { BoardInfo, BoardType } from "../types";
+import { log, newCorrId } from "../logging";
 import * as mock from "./mock";
 import { useTutorialStore } from "../store/useTutorialStore";
 
@@ -151,16 +152,43 @@ export class MachineApiClient {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
+    // Correlation: the backend adopts this ID, so every record it emits while
+    // handling the call — down to the serial bytes — carries the same one.
+    const corrId = newCorrId();
+    headers["X-Reacher-Corr-Id"] = corrId;
+
     // Proxy mode: route through local server's /api/proxy/{deviceId}{path}
     const url = this.deviceId
       ? `/api/proxy/${this.deviceId}/api${path}`
       : `${this.baseUrl}/api${path}`;
 
-    const res = await fetch(url, { headers, ...init });
+    const method = init?.method ?? "GET";
+    const started = performance.now();
+    let res: Response;
+    try {
+      res = await fetch(url, { headers, ...init });
+    } catch (err) {
+      log("http.failed", {
+        method, path, deviceId: this.deviceId,
+        duration_ms: Math.round(performance.now() - started),
+        error: err instanceof Error ? err.message : String(err),
+      }, "error", { msg: `${method} ${path} failed`, src: "api/client", corrId });
+      throw err;
+    }
+
+    const duration = Math.round(performance.now() - started);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.detail || res.statusText);
+      const detail = body.detail || res.statusText;
+      log("http.error", {
+        method, path, status: res.status, duration_ms: duration,
+        deviceId: this.deviceId, detail,
+      }, "error", { msg: `${method} ${path} → ${res.status}`, src: "api/client", corrId });
+      throw new Error(detail);
     }
+    log("http.ok", {
+      method, path, status: res.status, duration_ms: duration, deviceId: this.deviceId,
+    }, "debug", { msg: `${method} ${path} → ${res.status}`, src: "api/client", corrId });
     return res.json();
   }
 
