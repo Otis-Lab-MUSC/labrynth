@@ -2,7 +2,7 @@
 
 **Cross-platform control application for REACHER operant behavior experiments, with a browser interface and a terminal interface over the same rigs.**
 
-[![Version](https://img.shields.io/badge/version-3.0.1--alpha.14-blue)](https://github.com/Otis-Lab-MUSC/labrynth/releases)
+[![Version](https://img.shields.io/badge/version-3.0.1--alpha.15-blue)](https://github.com/Otis-Lab-MUSC/labrynth/releases)
 [![Language](https://img.shields.io/badge/python-3.10+-blue)](https://www.python.org)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Changelog](https://img.shields.io/badge/changelog-CHANGELOG.md-orange)](CHANGELOG.md)
