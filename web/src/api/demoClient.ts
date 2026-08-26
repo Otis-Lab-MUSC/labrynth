@@ -80,4 +80,46 @@ export class DemoMachineApiClient extends MachineApiClient {
   // --- File ---
   setFileConfig = (id: string, body: { filename?: string; destination?: string }) =>
     mock.setFileConfig(id, body) as ReturnType<MachineApiClient["setFileConfig"]>;
+
+  // --- Issues (never talks to GitHub in demo mode) ---
+  getIssueStatus = async () => ({
+    llm: true,
+    github: false,
+    owner: "Otis-Lab-MUSC",
+    repos: ["labrynth", "reacher"],
+  });
+  reportIssue = async (body: {
+    description: string;
+    steps?: string;
+    severity?: string;
+    repo?: string;
+    app_version?: string;
+    file?: boolean;
+  }) => ({
+    title: body.description.trim().split("\n")[0]?.slice(0, 72) || "Demo issue",
+    body: [
+      "## Description",
+      body.description,
+      "",
+      "## Steps to Reproduce",
+      body.steps?.trim() || "Unknown — needs investigation",
+      "",
+      "## Expected Behavior",
+      "Unknown — needs investigation",
+      "",
+      "## Actual Behavior",
+      "See description.",
+      "",
+      "## Severity",
+      body.severity || "unspecified",
+      "",
+      "## Reporter Notes",
+      "Demo mode — this report was not filed on GitHub.",
+    ].join("\n"),
+    labels: ["bug"],
+    summarized: true,
+    filed: false,
+    html_url: null,
+    repo: body.repo || "labrynth",
+  });
 }

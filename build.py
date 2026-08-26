@@ -18,6 +18,7 @@ Usage:
   python build.py                          # full GUI build
   python build.py --skip-frontend          # skip npm build
   python build.py --avrdude /usr/bin/avrdude  # explicit avrdude path
+  python build.py --skip-llm               # skip llama.cpp + GGUF (faster local GUI builds)
   python build.py --cli                    # build GUI + LabrynthCLI console app
   python build.py --cli-only               # build only LabrynthCLI (no frontend)
 
@@ -33,7 +34,9 @@ import platform
 import shutil
 import subprocess
 import sys
+import tarfile
 import urllib.request
+import zipfile
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -271,6 +274,171 @@ def _ensure_real_avrdude(avrdude_path):
     return avrdude_path
 
 
+# ---------------------------------------------------------------------------
+# Bundled local LLM (llama.cpp + Qwen2.5-1.5B-Instruct Q4_K_M)
+# ---------------------------------------------------------------------------
+
+_LLAMA_CPP_TAG = "b10622"
+_GGUF_NAME = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
+_GGUF_URL = (
+    "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/"
+    + _GGUF_NAME
+)
+_GGUF_SHA256 = "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
+
+# SHA-256 of the official llama.cpp CPU archives for this tag.
+_LLAMA_ARCHIVE_SHA256 = {
+    "llama-b10622-bin-ubuntu-x64.tar.gz": "6cc895c67bfa868faccda8aca06ec136e489609fc20f068550214f149d94fb4c",
+    "llama-b10622-bin-ubuntu-arm64.tar.gz": "6730946e555d57cdd29ad28f9d445a9195fa3d72d5ed076fa6dcfe25a4f4c266",
+    "llama-b10622-bin-macos-arm64.tar.gz": "c0116ec9957477a9c77e68d3cf31e79f9aede1a9210861c7c09d74acc3e9c3cf",
+    "llama-b10622-bin-macos-x64.tar.gz": "b772320b22bc5cf845930088c985012b94e284242c2ad05fad174297eb5e373e",
+    "llama-b10622-bin-win-cpu-x64.zip": "0f016b001d00a0cc25b955a5ae5eb3ce57a0b16adaa9142f8a3c3269e83fce0a",
+    "llama-b10622-bin-win-cpu-arm64.zip": "fba77e5b089bf6ac669a06559c48863c84eda77c4f8678d39861b77407648850",
+}
+
+
+def _llm_platform_archive():
+    """Return (archive_name, is_zip) for the current OS/arch, or None."""
+    system = platform.system()
+    machine = platform.machine().lower()
+    arm = machine in ("arm64", "aarch64")
+    tag = _LLAMA_CPP_TAG
+    if system == "Windows":
+        name = f"llama-{tag}-bin-win-cpu-{'arm64' if arm else 'x64'}.zip"
+        return name, True
+    if system == "Darwin":
+        name = f"llama-{tag}-bin-macos-{'arm64' if arm else 'x64'}.tar.gz"
+        return name, False
+    # Linux (and other Unix) — official builds are Ubuntu glibc.
+    name = f"llama-{tag}-bin-ubuntu-{'arm64' if arm else 'x64'}.tar.gz"
+    return name, False
+
+
+def _download(url, dest):
+    """Download *url* to *dest* with a UA HuggingFace will accept."""
+    req = urllib.request.Request(url, headers={"User-Agent": "labrynth-build"})
+    with urllib.request.urlopen(req, timeout=600) as src, open(dest, "wb") as out:
+        shutil.copyfileobj(src, out)
+
+
+def _safe_extract_tar(tf, dest):
+    """Extract a TarFile to dest, rejecting members that escape dest."""
+    dest_abs = os.path.abspath(dest)
+    for member in tf.getmembers():
+        target = os.path.abspath(os.path.join(dest_abs, member.name))
+        if target != dest_abs and not target.startswith(dest_abs + os.sep):
+            raise RuntimeError(f"unsafe path in archive: {member.name!r}")
+    tf.extractall(dest)
+
+
+def _find_llama_cli(root):
+    """Return the path to llama-cli / llama-cli.exe under *root*, or None."""
+    wanted = {"llama-cli", "llama-cli.exe"}
+    for dirpath, _dirnames, filenames in os.walk(root):
+        for name in filenames:
+            if name in wanted or name.lower() in wanted:
+                path = os.path.join(dirpath, name)
+                if os.path.isfile(path) and os.path.getsize(path) >= 10_000:
+                    return path
+    return None
+
+
+def _copy_llama_runtime(cli_path, dest_dir):
+    """Copy llama-cli and sibling shared libraries into dest_dir."""
+    os.makedirs(dest_dir, exist_ok=True)
+    src_dir = os.path.dirname(cli_path)
+    dest_cli = os.path.join(dest_dir, os.path.basename(cli_path))
+    shutil.copy2(cli_path, dest_cli)
+    os.chmod(dest_cli, 0o755)
+    for name in os.listdir(src_dir):
+        if name.lower().endswith((".dll", ".so", ".dylib")):
+            shutil.copy2(os.path.join(src_dir, name), os.path.join(dest_dir, name))
+    return dest_cli
+
+
+def ensure_llm(skip=False):
+    """Return (llama-cli path, GGUF path), downloading pinned artifacts if needed.
+
+    Returns (None, None) when *skip* is True.  Exits the process if a required
+    download or checksum fails — the GUI bundle is supposed to ship the model.
+    """
+    if skip:
+        return None, None
+
+    dist_dir = os.path.join(PROJECT_ROOT, ".llm-dist")
+    os.makedirs(dist_dir, exist_ok=True)
+
+    gguf_path = os.path.join(dist_dir, _GGUF_NAME)
+    if os.path.isfile(gguf_path) and _sha256_file(gguf_path) == _GGUF_SHA256:
+        print(f"  [OK] Cached GGUF: {gguf_path}")
+    else:
+        print(f"  [INFO] Downloading {_GGUF_NAME} (~1.1 GB)")
+        tmp = gguf_path + ".part"
+        try:
+            _download(_GGUF_URL, tmp)
+        except Exception as exc:
+            print(f"  [ERROR] Failed to download GGUF: {exc}")
+            sys.exit(1)
+        actual = _sha256_file(tmp)
+        if actual != _GGUF_SHA256:
+            os.remove(tmp)
+            print(f"  [ERROR] GGUF checksum mismatch — refusing to bundle. expected={_GGUF_SHA256} actual={actual}")
+            sys.exit(1)
+        os.replace(tmp, gguf_path)
+        print(f"  [OK] Verified GGUF SHA-256: {actual}")
+
+    archive_name, is_zip = _llm_platform_archive()
+    expected = _LLAMA_ARCHIVE_SHA256.get(archive_name)
+    if not expected:
+        print(f"  [ERROR] No pinned SHA-256 for {archive_name}")
+        sys.exit(1)
+
+    plat_key = archive_name.replace(f"llama-{_LLAMA_CPP_TAG}-bin-", "").rsplit(".", 1)[0]
+    runtime_dir = os.path.join(dist_dir, plat_key)
+    cached_cli = _find_llama_cli(runtime_dir) if os.path.isdir(runtime_dir) else None
+    if cached_cli:
+        print(f"  [OK] Cached llama-cli: {cached_cli}")
+        return cached_cli, gguf_path
+
+    archive_path = os.path.join(dist_dir, archive_name)
+    url = f"https://github.com/ggml-org/llama.cpp/releases/download/{_LLAMA_CPP_TAG}/{archive_name}"
+    print(f"  [INFO] Downloading llama.cpp {_LLAMA_CPP_TAG}: {archive_name}")
+    try:
+        _download(url, archive_path)
+    except Exception as exc:
+        print(f"  [ERROR] Failed to download llama.cpp: {exc}")
+        sys.exit(1)
+    actual = _sha256_file(archive_path)
+    if actual != expected:
+        os.remove(archive_path)
+        print(f"  [ERROR] llama.cpp checksum mismatch — refusing to bundle. expected={expected} actual={actual}")
+        sys.exit(1)
+    print(f"  [OK] Verified llama.cpp SHA-256: {actual}")
+
+    extract_dir = os.path.join(dist_dir, f"_extract-{plat_key}")
+    if os.path.isdir(extract_dir):
+        shutil.rmtree(extract_dir)
+    os.makedirs(extract_dir)
+    try:
+        if is_zip:
+            with zipfile.ZipFile(archive_path) as zf:
+                _safe_extract(zf, extract_dir)
+        else:
+            with tarfile.open(archive_path, "r:gz") as tf:
+                _safe_extract_tar(tf, extract_dir)
+    except Exception as exc:
+        print(f"  [ERROR] Failed to extract llama.cpp archive: {exc}")
+        sys.exit(1)
+
+    found = _find_llama_cli(extract_dir)
+    if not found:
+        print("  [ERROR] llama-cli not found in downloaded archive")
+        sys.exit(1)
+    cli_path = _copy_llama_runtime(found, runtime_dir)
+    print(f"  [OK] llama-cli: {cli_path}")
+    return cli_path, gguf_path
+
+
 def validate_assets(avrdude_path, require_frontend=True):
     """Validate that all required assets exist before packaging."""
     print("\n=== Stage 2: Validate assets ===")
@@ -324,7 +492,7 @@ def validate_assets(avrdude_path, require_frontend=True):
     return avrdude_path
 
 
-def run_pyinstaller(avrdude_path, spec_file=SPEC_FILE):
+def run_pyinstaller(avrdude_path, spec_file=SPEC_FILE, llm_bin=None, llm_model=None):
     """Run PyInstaller with the given spec file."""
     print(f"\n=== Stage 3: Run PyInstaller ({os.path.basename(spec_file)}) ===")
     if not shutil.which("pyinstaller"):
@@ -334,6 +502,10 @@ def run_pyinstaller(avrdude_path, spec_file=SPEC_FILE):
     env = os.environ.copy()
     if avrdude_path:
         env["REACHER_AVRDUDE_PATH"] = avrdude_path
+    if llm_bin:
+        env["REACHER_LLM_BIN"] = llm_bin
+    if llm_model:
+        env["REACHER_LLM_MODEL"] = llm_model
 
     _run(
         ["pyinstaller", "--noconfirm", "--clean", spec_file],
@@ -403,6 +575,11 @@ def main():
         action="store_true",
         help="Build only LabrynthCLI (no frontend, no GUI bundle)",
     )
+    parser.add_argument(
+        "--skip-llm",
+        action="store_true",
+        help="Skip downloading/bundling llama.cpp + GGUF (GUI builds only; issue reporting will be unavailable)",
+    )
     args = parser.parse_args()
 
     print("Labrynth Build Orchestrator")
@@ -415,7 +592,7 @@ def main():
     if args.cli or args.cli_only:
         validate_cli_deps()
 
-    # CLI-only: skip frontend entirely; the CLI bundle ships no static/.
+    # CLI-only: skip frontend entirely; the CLI bundle ships no static/ and no LLM.
     if args.cli_only:
         avrdude_path = validate_assets(args.avrdude, require_frontend=False)
         run_pyinstaller(avrdude_path, SPEC_FILE_CLI)
@@ -431,13 +608,21 @@ def main():
     # Stage 2: Validate
     avrdude_path = validate_assets(args.avrdude)
 
+    print("\n=== Stage 2b: Local LLM (llama.cpp + GGUF) ===")
+    llm_bin, llm_model = ensure_llm(skip=args.skip_llm)
+    if args.skip_llm:
+        print("  [SKIP] llama.cpp / GGUF not bundled (--skip-llm)")
+    elif llm_bin:
+        print(f"  [OK] llama-cli: {llm_bin}")
+        print(f"  [OK] GGUF:      {llm_model}")
+
     # Stage 3: PyInstaller (GUI)
-    run_pyinstaller(avrdude_path)
+    run_pyinstaller(avrdude_path, llm_bin=llm_bin, llm_model=llm_model)
 
     # Stage 4: Report (GUI)
     report_output()
 
-    # Optional: also build the standalone CLI bundle
+    # Optional: also build the standalone CLI bundle (no LLM)
     if args.cli:
         run_pyinstaller(avrdude_path, SPEC_FILE_CLI)
         report_output("LabrynthCLI")

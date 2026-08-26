@@ -19,6 +19,30 @@ else:
 if os.path.isdir(_STATIC_DIR) and not os.environ.get("REACHER_STATIC_DIR"):
     os.environ["REACHER_STATIC_DIR"] = _STATIC_DIR
 
+# Frozen GUI builds ship llama-cli + GGUF under _MEIPASS/llm/.  Point the
+# reacher report endpoint at them unless the operator overrode the env.
+if hasattr(sys, "_MEIPASS"):
+    _llm_dir = os.path.join(sys._MEIPASS, "llm")
+    if os.path.isdir(_llm_dir):
+        os.environ["PATH"] = _llm_dir + os.pathsep + os.environ.get("PATH", "")
+        if sys.platform == "linux":
+            os.environ["LD_LIBRARY_PATH"] = (
+                _llm_dir + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
+            )
+        elif sys.platform == "darwin":
+            os.environ["DYLD_LIBRARY_PATH"] = (
+                _llm_dir + os.pathsep + os.environ.get("DYLD_LIBRARY_PATH", "")
+            )
+        _exe = "llama-cli.exe" if sys.platform == "win32" else "llama-cli"
+        _bin = os.path.join(_llm_dir, _exe)
+        if os.path.isfile(_bin) and not os.environ.get("REACHER_LLM_BIN"):
+            os.environ["REACHER_LLM_BIN"] = _bin
+        if not os.environ.get("REACHER_LLM_MODEL"):
+            for _name in os.listdir(_llm_dir):
+                if _name.endswith(".gguf"):
+                    os.environ["REACHER_LLM_MODEL"] = os.path.join(_llm_dir, _name)
+                    break
+
 # Propagate --incognito / -i flag so app.py opens the browser in private mode.
 if "--incognito" in sys.argv or "-i" in sys.argv:
     os.environ["REACHER_INCOGNITO"] = "1"

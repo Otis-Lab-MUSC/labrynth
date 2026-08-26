@@ -32,6 +32,7 @@ import { useIdleTimer } from "./hooks/useIdleTimer";
 import { useSingleTab } from "./hooks/useSingleTab";
 import { useScrollReveal } from "./hooks/useScrollReveal";
 import { ErrorBoundary } from "./components/layout/ErrorBoundary";
+import { ReportIssueModal } from "./components/layout/ReportIssueModal";
 import type { Panel } from "./store/useNavigationStore";
 
 function BackgroundLayer() {
@@ -121,6 +122,7 @@ function AppContent() {
       <TutorialOverlay />
       <HelpPanel />
       <WelcomeScreen />
+      <ReportIssueModal />
     </div>
   );
 }

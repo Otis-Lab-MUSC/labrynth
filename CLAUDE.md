@@ -47,6 +47,7 @@ python build.py --skip-frontend           # Reuse existing web/dist/
 python build.py --avrdude /usr/bin/avrdude  # Bundle a specific avrdude binary
 python build.py --cli                     # GUI + standalone LabrynthCLI console bundle
 python build.py --cli-only                # Only LabrynthCLI (skips frontend; ships no static/)
+python build.py --skip-llm                # GUI build without llama.cpp + GGUF (~1.1 GB)
 ```
 
 Building the CLI bundle needs the `[cli]` extras importable (`pip install -e ".[cli]"`).
@@ -54,7 +55,7 @@ The CLI bundle (`labrynth-cli.spec` → `dist/LabrynthCLI/`) is a `console=True`
 build for headless hosts; it omits the React frontend and, when frozen, re-spawns itself
 as the reacher backend via the `REACHER_RUN_BACKEND` trampoline in `cli/__main__.py`.
 
-Build pipeline: (0) validate env (reacher install + its bundled firmware hex) → (1) `npm ci && npm run build` → (2) verify assets → (3) PyInstaller. Firmware hex is sourced from the installed `reacher` package (`reacher/hex/<board>/`) — no compile or fetch step. **Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS).**
+Build pipeline: (0) validate env (reacher install + its bundled firmware hex) → (1) `npm ci && npm run build` → (2) verify assets → (2b) download pinned llama.cpp + GGUF (GUI only; `--skip-llm` skips) → (3) PyInstaller. Firmware hex is sourced from the installed `reacher` package (`reacher/hex/<board>/`) — no compile or fetch step. **Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS).** The GUI bundle also ships `_MEIPASS/llm/` (`llama-cli` + Qwen2.5-1.5B-Instruct Q4_K_M). The CLI bundle does not. See [docs/issue-reporting.md](docs/issue-reporting.md).
 
 ### Versioning
 
@@ -109,7 +110,7 @@ Machine discovery uses mDNS (polled by `useMachineStore.startDiscoveryPolling`).
 ### Frontend (`web/src/`)
 
 - **`api/`** — `client.ts` (`MachineApiClient`, all REST), `websocket.ts` (auto-reconnecting `ReacherWebSocket`), `sessionClient.ts` (session-scoped helpers), `demoClient.ts` + `mock.ts` (demo-mode fakes).
-- **`store/`** — Zustand stores: `useSessionStore` (sessions Map, events, counters, draft sessions), `useMachineStore` (machines + discovery + per-machine `MachineApiClient` cache outside Zustand state), `useThemeStore`, `useNavigationStore` (active panel: `session | configuration | monitor | data`), `useLogStore`, `useTutorialStore` (also owns `demoMode`), `useUserPresetStore`.
+- **`store/`** — Zustand stores: `useSessionStore` (sessions Map, events, counters, draft sessions), `useMachineStore` (machines + discovery + per-machine `MachineApiClient` cache outside Zustand state), `useThemeStore`, `useNavigationStore` (active panel: `session | configuration | monitor | data`), `useLogStore`, `useTutorialStore` (also owns `demoMode`), `useUserPresetStore`, `useReportStore` (About / error-boundary issue reporter).
 - **`hooks/useSessionWebSockets.ts`** — central WS router: opens one `ReacherWebSocket` per non-draft session, dispatches all incoming message types (`event | frame | config | log | error | upload_progress | session_state | disconnect | export_failed | kernel_error | split | restart`) to the appropriate stores. Skips draft sessions and demo-prefixed IDs. Recovers missed events on reconnect via `client.getBehavior(sessionId)`.
 - **`hooks/useSingleTab.ts`** — enforces single-tab usage (other tabs see a blocked screen).
 - **`logging/`** — always-on diagnostic capture shipped to the backend's
@@ -125,7 +126,11 @@ Machine discovery uses mDNS (polled by `useMachineStore.startDiscoveryPolling`).
   tees into it, so the in-app terminal keeps working and also becomes durable.
   Field values are logged **verbatim** (deliberate — it is what makes bugs
   reproducible); only credential-shaped keys are redacted, and the server
-  re-redacts on ingest. See `docs/logging.md` in the reacher repo.
+  re-redacts on ingest. See `docs/logging.md` in the reacher repo. About →
+  *Report an issue* flushes the buffer, POSTs `/api/issues/report` (reacher),
+  and a bundled local GGUF summarizes the description + a log excerpt into a
+  GitHub issue when `REACHER_GITHUB_TOKEN` is set. Operator setup:
+  [docs/issue-reporting.md](docs/issue-reporting.md).
 - **`components/`** — feature-area folders: `session/`, `configuration/`, `monitor/`, `data/`, `hardware/`, `program/`, `machines/`, `terminal/`, `layout/`, `tutorial/`.
 - **`themes/`** — 5 named themes (`reacher`, `terminal`, `neural`, `midnight`, `ember`), each with a `dark` and `light` palette plus background, font, radius, glass tokens. Theme is applied by writing CSS variables on `:root` (no Tailwind dark-mode toggle alone — `apply()` in `useThemeStore` sets `--color-*`, `--font-*`, etc.). Default: `reacher`. Persistence: `localStorage["labrynth-mode"]`.
 - **`types/index.ts`** — shared TypeScript interfaces (`Session`, `Machine`, `BehaviorEvent`, `FirmwareConfig`, …).

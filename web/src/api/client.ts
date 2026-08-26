@@ -364,6 +364,30 @@ export class MachineApiClient {
       method: "POST",
       body: JSON.stringify(payload),
     });
+
+  // --- Issues ---
+  getIssueStatus = () =>
+    this.request<{ llm: boolean; github: boolean; owner: string; repos: string[] }>("/issues/status");
+  reportIssue = (body: {
+    description: string;
+    steps?: string;
+    severity?: string;
+    repo?: string;
+    app_version?: string;
+    file?: boolean;
+  }) =>
+    this.request<{
+      title: string;
+      body: string;
+      labels: string[];
+      summarized: boolean;
+      filed: boolean;
+      html_url: string | null;
+      repo: string;
+    }>("/issues/report", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
 }
 
 // ---------------------------------------------------------------------------

@@ -6,6 +6,7 @@ Bundles:
   - Built React frontend  → _MEIPASS/static/
   - Pre-compiled firmware  → _MEIPASS/hex/
   - Platform avrdude       → _MEIPASS/avrdude/
+  - llama.cpp + GGUF       → _MEIPASS/llm/  (GUI only)
 
 Build:
   pyinstaller labrynth.spec
@@ -35,6 +36,10 @@ HEX_DIR = resolve_reacher_hex_dir()
 
 # avrdude — default platform location; override via build.py --avrdude
 AVRDUDE_PATH = os.environ.get("REACHER_AVRDUDE_PATH", "")
+
+# llama.cpp + GGUF — set by build.py (GUI spec only; CLI spec never reads these)
+LLM_BIN = os.environ.get("REACHER_LLM_BIN", "")
+LLM_MODEL = os.environ.get("REACHER_LLM_MODEL", "")
 
 # ---------------------------------------------------------------------------
 # Data files to bundle
@@ -84,6 +89,22 @@ if AVRDUDE_PATH and os.path.isfile(AVRDUDE_PATH):
 else:
     extra_binaries = []
     print("NOTE: No avrdude binary bundled (set REACHER_AVRDUDE_PATH or use build.py --avrdude)")
+
+# llama-cli + companion libs → llm/; GGUF as data in the same folder
+if LLM_BIN and os.path.isfile(LLM_BIN):
+    extra_binaries.append((LLM_BIN, "llm"))
+    _llm_dir = os.path.dirname(LLM_BIN)
+    for _f in os.listdir(_llm_dir):
+        _fpath = os.path.join(_llm_dir, _f)
+        if os.path.isfile(_fpath) and _f.lower().endswith((".dll", ".so", ".dylib")):
+            extra_binaries.append((_fpath, "llm"))
+else:
+    print("NOTE: No llama-cli bundled (set REACHER_LLM_BIN or omit --skip-llm)")
+
+if LLM_MODEL and os.path.isfile(LLM_MODEL):
+    datas.append((LLM_MODEL, "llm"))
+else:
+    print("NOTE: No GGUF bundled (set REACHER_LLM_MODEL or omit --skip-llm)")
 
 # ---------------------------------------------------------------------------
 # Hidden imports — uvicorn internals that PyInstaller cannot detect
