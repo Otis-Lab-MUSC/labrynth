@@ -32,10 +32,10 @@ function migrateKey(oldKey: string, newKey: string): void {
 }
 
 function getInitialMode(): Mode {
-  if (typeof window === "undefined") return "dark";
-  migrateKey("reacher-mode", "labrynth-mode");
-  const stored = localStorage.getItem("labrynth-mode");
-  if (stored === "light" || stored === "dark") return stored;
+  if (typeof window !== "undefined") {
+    migrateKey("reacher-mode", "labrynth-mode");
+    localStorage.setItem("labrynth-mode", "dark");
+  }
   return "dark";
 }
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Moon, Sun, RotateCcw, X, Info } from "lucide-react";
+import { Plus, RotateCcw, X, Info } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useLogStore } from "../../store/useLogStore";
@@ -75,7 +75,7 @@ function ReacherIcon() {
         {/* ── Layer 1: Left hemisphere outline ── */}
         <path
           d="M 47,10 C 43,8 38,8 33,10 C 28,12 23,16 19,22 C 15,28 13,36 12,44 C 11,52 12,58 15,64 C 18,70 22,76 27,81 C 32,86 37,89 42,91 C 44,92 46,92 47,92"
-          stroke="#00d4d8"
+          stroke="currentColor"
           strokeWidth="3"
           strokeLinejoin="round"
           strokeLinecap="round"
@@ -84,17 +84,17 @@ function ReacherIcon() {
         {/* ── Layer 1: Right hemisphere outline ── */}
         <path
           d="M 53,10 C 57,8 62,8 67,10 C 72,12 77,16 81,22 C 85,28 87,36 88,44 C 89,52 88,58 85,64 C 82,70 78,76 73,81 C 68,86 63,89 58,91 C 56,92 54,92 53,92"
-          stroke="#00d4d8"
+          stroke="currentColor"
           strokeWidth="3"
           strokeLinejoin="round"
           strokeLinecap="round"
         />
 
         {/* ── Layer 1: Center fissure ── */}
-        <line x1="50" y1="10" x2="50" y2="92" stroke="#00d4d8" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="50" y1="10" x2="50" y2="92" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
 
         {/* ── Layer 2: Left hemisphere maze corridors ── */}
-        <g clipPath="url(#clip-left-hemi)" stroke="#00d4d8" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" fill="none">
+        <g clipPath="url(#clip-left-hemi)" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" fill="none">
           <polyline points="16,30 16,22 24,22 24,30" />
           <polyline points="20,16 30,16 30,24" />
           <polyline points="36,12 36,20 44,20 44,14" />
@@ -110,7 +110,7 @@ function ReacherIcon() {
         </g>
 
         {/* ── Layer 2: Right hemisphere maze corridors ── */}
-        <g clipPath="url(#clip-right-hemi)" stroke="#00d4d8" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" fill="none">
+        <g clipPath="url(#clip-right-hemi)" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" fill="none">
           <polyline points="84,30 84,22 76,22 76,30" />
           <polyline points="80,16 70,16 70,24" />
           <polyline points="64,12 64,20 56,20 56,14" />
@@ -199,7 +199,7 @@ export function Header() {
     setSessionName,
   } = useSessionStore();
   const { machines } = useMachineStore();
-  const { mode, toggleMode, theme } = useThemeStore();
+  const { theme } = useThemeStore();
   const { setActivePanel } = useNavigationStore();
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
 
@@ -211,7 +211,7 @@ export function Header() {
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
-  const { branding, glass } = theme;
+  const { branding } = theme;
 
   const closingSession = closingId ? sessions.get(closingId) : null;
   const closeWarning = closingSession ? getCloseWarning(closingSession) : null;
@@ -287,15 +287,10 @@ export function Header() {
     }
   };
 
-  const glassClasses = glass.enabled
-    ? "bg-panel/80 backdrop-blur-sm"
-    : "bg-panel";
-
   return (
-    <header data-tour="header" className={`relative z-10 flex items-center gap-2 border-b border-theme-border ${glassClasses} px-4 py-2`}>
-      {/* Branding */}
-      <span
-        className={`mr-4 text-lg font-bold tracking-wide text-accent title-glow cursor-pointer select-none ${theme.id === "reacher" ? "glitch-hover" : ""}`}
+    <header data-tour="header" className="phoxel-header crt relative z-10">
+      <h1
+        className="phoxel-wordmark title-glow glitch-hover cursor-pointer select-none shrink-0"
         onClick={() => setActivePanel("session")}
         role="button"
         tabIndex={0}
@@ -307,7 +302,7 @@ export function Header() {
         {branding.icon === "reacher" && <ReacherIcon />}
         {branding.text}
         {branding.showCursor && <span className="animate-blink">|</span>}
-      </span>
+      </h1>
       {theme.id === "reacher" && (
         <span className="sys-online">
           <span className="pulse-dot" />
@@ -315,8 +310,8 @@ export function Header() {
         </span>
       )}
 
-      {/* Session tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto">
+      {/* Session tabs — product slot */}
+      <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
         {sessionOrder.map((id) => {
           const s = sessions.get(id);
           if (!s) return null;
@@ -407,8 +402,6 @@ export function Header() {
         </button>
       </div>
 
-      <div className="flex-1" />
-
       {/* Reset button */}
       {activeSession && (activeSession.state === "connected" || activeSession.state === "stopped" || activeSession.state === "running") && (
         <button
@@ -433,15 +426,6 @@ export function Header() {
         title="About Labrynth"
       >
         <Info size={18} />
-      </button>
-
-      {/* Mode toggle */}
-      <button
-        onClick={toggleMode}
-        className="rounded p-1.5 hover:bg-accent/10 text-theme-text"
-        title="Toggle dark/light"
-      >
-        {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       </button>
 
       {/* Close confirmation dialog */}

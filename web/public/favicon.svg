@@ -4,17 +4,17 @@
   <!-- Left hemisphere outline -->
   <path
     d="M 47,10 C 43,8 38,8 33,10 C 28,12 23,16 19,22 C 15,28 13,36 12,44 C 11,52 12,58 15,64 C 18,70 22,76 27,81 C 32,86 37,89 42,91 C 44,92 46,92 47,92"
-    stroke="#00d4d8" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"
+    stroke="#00E5FF" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"
   />
 
   <!-- Right hemisphere outline -->
   <path
     d="M 53,10 C 57,8 62,8 67,10 C 72,12 77,16 81,22 C 85,28 87,36 88,44 C 89,52 88,58 85,64 C 82,70 78,76 73,81 C 68,86 63,89 58,91 C 56,92 54,92 53,92"
-    stroke="#00d4d8" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"
+    stroke="#00E5FF" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"
   />
 
   <!-- Center fissure -->
-  <line x1="50" y1="10" x2="50" y2="92" stroke="#00d4d8" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="50" y1="10" x2="50" y2="92" stroke="#00E5FF" stroke-width="1.5" stroke-linecap="round"/>
 
   <!-- Left hemisphere clip path -->
   <defs>
@@ -27,7 +27,7 @@
   </defs>
 
   <!-- Left hemisphere maze corridors -->
-  <g clip-path="url(#clip-left)" stroke="#00d4d8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" fill="none">
+  <g clip-path="url(#clip-left)" stroke="#00E5FF" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" fill="none">
     <polyline points="16,30 16,22 24,22 24,30"/>
     <polyline points="20,16 30,16 30,24"/>
     <polyline points="36,12 36,20 44,20 44,14"/>
@@ -43,7 +43,7 @@
   </g>
 
   <!-- Right hemisphere maze corridors -->
-  <g clip-path="url(#clip-right)" stroke="#00d4d8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" fill="none">
+  <g clip-path="url(#clip-right)" stroke="#00E5FF" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" fill="none">
     <polyline points="84,30 84,22 76,22 76,30"/>
     <polyline points="80,16 70,16 70,24"/>
     <polyline points="64,12 64,20 56,20 56,14"/>

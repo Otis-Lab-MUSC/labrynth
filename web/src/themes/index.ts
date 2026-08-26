@@ -7,6 +7,7 @@ import type { ThemeDefinition } from "./types";
 
 export type { ThemeDefinition, ColorPalette } from "./types";
 
+// Unused palettes stay in the map but the shell is locked to Reacher / dark.
 export const themes: Record<string, ThemeDefinition> = {
   reacher: reacherTheme,
   terminal: terminalTheme,

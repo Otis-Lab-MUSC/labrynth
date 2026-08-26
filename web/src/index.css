@@ -1,3 +1,6 @@
+@import "@phoxel/tokens/css";
+@import "@phoxel/tokens/chrome";
+
 @font-face {
   font-family: "JetBrains Mono";
   src: url("./fonts/JetBrainsMono-Regular.woff2") format("woff2");
@@ -33,16 +36,16 @@
 
 @layer base {
   :root {
-    /* Color palette — defaults match Terminal theme (overridden at runtime by theme store) */
-    --color-surface: 255 255 255;
-    --color-panel: 243 244 246;
-    --color-text-primary: 17 24 39;
-    --color-text-secondary: 107 114 128;
-    --color-accent: 22 163 74;
-    --color-accent-hover: 21 128 61;
-    --color-accent-contrast: 0 0 0;
-    --color-border: 0 0 0;
-    --color-input: 249 250 251;
+    /* Color palette — Reacher dark; theme store may still override at runtime */
+    --color-surface: 4 9 10;
+    --color-panel: 11 20 20;
+    --color-text-primary: 200 232 232;
+    --color-text-secondary: 157 189 189;
+    --color-accent: 0 229 255;
+    --color-accent-hover: 51 236 255;
+    --color-accent-contrast: 4 9 10;
+    --color-border: 42 74 73;
+    --color-input: 2 6 7;
 
     /* Style variables */
     --font-body: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
@@ -54,7 +57,7 @@
     --glass-blur: 0px;
 
     /* Extended tokens */
-    --color-text-dim: 120 160 160;
+    --color-text-dim: 122 156 156;
     --color-cyan-glow: rgba(0, 229, 255, 0.15);
     --color-cyan-glow-strong: rgba(0, 229, 255, 0.35);
   }
@@ -91,7 +94,6 @@ body {
   color: rgb(var(--color-accent));
 }
 
-/* Keyframe animations using CSS variables */
 @keyframes btn-flash {
   0% { box-shadow: 0 0 0 0 rgb(var(--color-accent) / 0.4); }
   100% { box-shadow: 0 0 0 8px rgb(var(--color-accent) / 0); }
@@ -99,11 +101,6 @@ body {
 @keyframes pulse-glow {
   0%, 100% { box-shadow: 0 0 6px rgb(var(--color-accent) / 0.15); }
   50% { box-shadow: 0 0 16px rgb(var(--color-accent) / 0.35); }
-}
-
-/* Utility class for accent glow on titles */
-.title-glow {
-  filter: drop-shadow(0 0 8px rgb(var(--color-accent) / 0.4));
 }
 
 @layer components {
@@ -214,7 +211,7 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Typography ── */
-.theme-reacher h1,
+.theme-reacher h1:not(.phoxel-wordmark),
 .theme-reacher h2,
 .theme-reacher h3,
 .theme-reacher h4,
@@ -233,7 +230,7 @@ body {
 .theme-reacher .label {
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   color: rgb(var(--color-text-secondary));
 }
@@ -247,38 +244,14 @@ body {
   font-family: var(--font-mono);
 }
 
-/* ── Scanlines overlay ── */
-.theme-reacher body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.18) 0px,
-    rgba(0, 0, 0, 0.18) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-  z-index: 9999;
-  pointer-events: none;
-}
-
-/* ── Noise overlay ── */
-.theme-reacher body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-  z-index: 9998;
-  pointer-events: none;
-  opacity: 0.35;
-}
+/* CRT lives on .phoxel-header (tokens.css `.crt`). Do not restore a
+   document-wide scanline or noise layer on body. */
 
 /* ── Button styles ── */
 .theme-reacher .btn-sm {
   font-family: var(--font-body);
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   border-radius: 2px;
   position: relative;
@@ -304,7 +277,7 @@ body {
   color: rgb(var(--color-accent));
   font-family: var(--font-body);
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   border-radius: 2px;
 }
@@ -319,7 +292,7 @@ body {
   border: 1px solid rgb(var(--color-border));
   font-family: var(--font-body);
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   border-radius: 2px;
 }
@@ -386,7 +359,7 @@ body {
 .theme-reacher label {
   font-family: var(--font-mono);
   font-size: 0.72rem;
-  letter-spacing: 0.15em;
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   color: rgb(var(--color-accent-hover));
 }
@@ -403,7 +376,7 @@ body {
   content: "01 //";
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  letter-spacing: 0.15em;
+  letter-spacing: var(--tracking-caps);
   color: rgb(var(--color-text-secondary));
   flex-shrink: 0;
 }
@@ -415,19 +388,7 @@ body {
   background: linear-gradient(90deg, rgb(var(--color-accent) / 0.3), transparent);
 }
 
-/* ── Glitch hover ── */
-@keyframes glitch-effect {
-  0% { clip-path: inset(40% 0 61% 0); transform: skewX(0deg); }
-  20% { clip-path: inset(92% 0 1% 0); transform: skewX(-2deg); }
-  40% { clip-path: inset(43% 0 1% 0); transform: skewX(1deg); }
-  60% { clip-path: inset(25% 0 58% 0); transform: skewX(-1deg); }
-  80% { clip-path: inset(54% 0 7% 0); transform: skewX(2deg); }
-  100% { clip-path: inset(58% 0 43% 0); transform: skewX(0deg); }
-}
-
-.theme-reacher .glitch-hover:hover {
-  animation: glitch-effect 0.3s linear;
-}
+/* Glitch hover and SYS_ONLINE come from @phoxel/tokens/chrome. */
 
 /* ── Blinking cursor ── */
 .theme-reacher .blink-cursor::after {
@@ -472,33 +433,10 @@ body {
 .theme-reacher .terminal-header .terminal-label {
   font-family: var(--font-mono);
   font-size: 0.65rem;
-  letter-spacing: 0.15em;
+  letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   color: rgb(var(--color-text-secondary));
   margin-left: auto;
-}
-
-/* ── SYS_ONLINE indicator ── */
-.theme-reacher .sys-online {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-left: 0.75rem;
-}
-
-.theme-reacher .sys-online .pulse-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgb(var(--color-accent));
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.theme-reacher .sys-online .sys-label {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.15em;
-  color: rgb(var(--color-accent));
 }
 
 /* ── Boot sequence ── */
