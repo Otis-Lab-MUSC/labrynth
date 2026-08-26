@@ -44,7 +44,7 @@ cd labrynth
 pip install -e ".[cli]"
 ```
 
-Reference documentation lives in [`docs/`](docs/); [CONTRIBUTING.md](CONTRIBUTING.md) covers the branching and versioning workflow, and [RELEASING.md](RELEASING.md) covers release channels and tagging.
+Reference documentation lives in [`docs/`](docs/) ([issue reporting](docs/issue-reporting.md)); [CONTRIBUTING.md](CONTRIBUTING.md) covers the branching and versioning workflow, and [RELEASING.md](RELEASING.md) covers release channels and tagging.
 
 ---
 

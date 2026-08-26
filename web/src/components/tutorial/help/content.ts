@@ -173,6 +173,12 @@ export const HELP_CONTENT: HelpSection[] = [
           "Set the output filename and destination directory on the Session Configuration page before starting. Click Save Config to persist these to the backend. For a local session, use Browse to pick a folder; for a paired remote machine there's no Browse — type a path on the remote host, where the data lives. If left blank, data defaults to a timestamp-based filename in the session host's ~/Downloads. The engine also streams every event to an append-only on-disk log under ~/REACHER/LOG/ on the host, so raw data survives even if export fails.",
       },
       {
+        id: "data.report",
+        title: "Reporting an issue",
+        content:
+          "About → Report an issue lets you describe a problem in your own words. A local model that ships with Labrynth (no cloud AI key) turns that description plus a compact excerpt of this run's diagnostic log into a technical GitHub issue.\n\nThe excerpt can include experiment identifiers such as subject IDs, doses, and file paths — only submit if you are comfortable sending that to GitHub. When a lab operator has set REACHER_GITHUB_TOKEN on the machine, the issue is filed automatically; otherwise you can copy the generated markdown.\n\nAbout → Download diagnostics still exports the full run ZIP for attaching separately. Demo mode never files a real GitHub issue.",
+      },
+      {
         id: "data.export",
         title: "Auto-Export",
         content:

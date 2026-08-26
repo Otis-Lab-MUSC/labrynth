@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Download, ExternalLink, X } from "lucide-react";
+import { Bug, Download, ExternalLink, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useUpdateCheck } from "../../hooks/useUpdateCheck";
 import { useUpdateStore } from "../../store/useUpdateStore";
 import { getLocalClient } from "../../api/client";
 import { downloadDiagnostics } from "../../logging";
+import { useReportStore } from "../../store/useReportStore";
 
 interface AboutModalProps {
   open: boolean;
@@ -141,6 +142,16 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
         )}
 
         <div className="border-t border-theme-border pt-3">
+          <button
+            onClick={() => {
+              onClose();
+              useReportStore.getState().openReport();
+            }}
+            className="mb-2 flex w-full items-center justify-center gap-1.5 rounded border border-theme-border px-3 py-2 text-xs text-theme-text/70 transition hover:border-accent hover:text-accent"
+          >
+            <Bug size={11} />
+            Report an issue
+          </button>
           <button
             onClick={handleDiagnostics}
             disabled={diagBusy}

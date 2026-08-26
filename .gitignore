@@ -3,6 +3,7 @@ web/dist/
 build/
 dist/
 .avrdude-dist/
+.llm-dist/
 *.egg-info/
 __pycache__/
 .venv/
