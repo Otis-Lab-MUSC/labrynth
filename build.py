@@ -332,15 +332,35 @@ def _safe_extract_tar(tf, dest):
 
 
 def _find_llama_cli(root):
-    """Return the path to llama-cli / llama-cli.exe under *root*, or None."""
+    """Return the path to llama-cli / llama-cli.exe under *root*, or None.
+
+    Windows CPU archives ship ``llama-cli.exe`` as a ~9 KB loader stub; the
+    implementation is ``llama-cli-impl.dll`` beside it. A 10 KB size floor
+    rejects that stub and fails the Windows installer build.
+    """
     wanted = {"llama-cli", "llama-cli.exe"}
     for dirpath, _dirnames, filenames in os.walk(root):
         for name in filenames:
-            if name in wanted or name.lower() in wanted:
-                path = os.path.join(dirpath, name)
-                if os.path.isfile(path) and os.path.getsize(path) >= 10_000:
-                    return path
+            if name.lower() not in wanted:
+                continue
+            path = os.path.join(dirpath, name)
+            if os.path.isfile(path) and os.path.getsize(path) > 0:
+                return path
     return None
+
+
+def _list_llama_cli_candidates(root):
+    """Return ``[(size, path), ...]`` for names containing llama-cli (debug)."""
+    found = []
+    for dirpath, _dirnames, filenames in os.walk(root):
+        for name in filenames:
+            if "llama-cli" not in name.lower():
+                continue
+            path = os.path.join(dirpath, name)
+            if os.path.isfile(path):
+                found.append((os.path.getsize(path), path))
+    found.sort()
+    return found
 
 
 def _copy_llama_runtime(cli_path, dest_dir):
@@ -433,9 +453,11 @@ def ensure_llm(skip=False):
     found = _find_llama_cli(extract_dir)
     if not found:
         print("  [ERROR] llama-cli not found in downloaded archive")
+        for size, path in _list_llama_cli_candidates(extract_dir):
+            print(f"           {size:>10}  {path}")
         sys.exit(1)
     cli_path = _copy_llama_runtime(found, runtime_dir)
-    print(f"  [OK] llama-cli: {cli_path}")
+    print(f"  [OK] llama-cli: {cli_path} ({os.path.getsize(found)} bytes)")
     return cli_path, gguf_path
 
 
