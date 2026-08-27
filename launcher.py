@@ -25,14 +25,11 @@ if hasattr(sys, "_MEIPASS"):
     _llm_dir = os.path.join(sys._MEIPASS, "llm")
     if os.path.isdir(_llm_dir):
         os.environ["PATH"] = _llm_dir + os.pathsep + os.environ.get("PATH", "")
-        if sys.platform == "linux":
-            os.environ["LD_LIBRARY_PATH"] = (
-                _llm_dir + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
-            )
-        elif sys.platform == "darwin":
-            os.environ["DYLD_LIBRARY_PATH"] = (
-                _llm_dir + os.pathsep + os.environ.get("DYLD_LIBRARY_PATH", "")
-            )
+        # Deliberately *not* adding llm/ to LD_LIBRARY_PATH.  Every child of a
+        # frozen build inherits that variable, and pointing it at a directory of
+        # Ubuntu-built libraries breaks unrelated binaries on other distros
+        # (see reacher's child_env).  The llama.cpp binaries carry an $ORIGIN
+        # RPATH, and reacher passes their directory explicitly anyway.
         # reacher's summarizer sends a raw ChatML prompt with --no-conversation.
         # Since llama.cpp b10622 that is llama-completion; llama-cli is
         # chat-only and rejects the flag.  Fall back to llama-cli so an older
