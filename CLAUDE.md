@@ -55,7 +55,7 @@ The CLI bundle (`labrynth-cli.spec` → `dist/LabrynthCLI/`) is a `console=True`
 build for headless hosts; it omits the React frontend and, when frozen, re-spawns itself
 as the reacher backend via the `REACHER_RUN_BACKEND` trampoline in `cli/__main__.py`.
 
-Build pipeline: (0) validate env (reacher install + its bundled firmware hex) → (1) `npm ci && npm run build` → (2) verify assets → (2b) download pinned llama.cpp + GGUF (GUI only; `--skip-llm` skips) → (3) PyInstaller. Firmware hex is sourced from the installed `reacher` package (`reacher/hex/<board>/`) — no compile or fetch step. **Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS).** The GUI bundle also ships `_MEIPASS/llm/` (`llama-cli` + Qwen2.5-1.5B-Instruct Q4_K_M). The CLI bundle does not. See [docs/issue-reporting.md](docs/issue-reporting.md).
+Build pipeline: (0) validate env (reacher install + its bundled firmware hex) → (1) `npm ci && npm run build` → (2) verify assets → (2b) download pinned llama.cpp + GGUF (GUI only; `--skip-llm` skips) → (3) PyInstaller. Firmware hex is sourced from the installed `reacher` package (`reacher/hex/<board>/`) — no compile or fetch step. **Output: `dist/Labrynth/` (Linux/Windows) or `dist/Labrynth.app` (macOS).** The GUI bundle also ships `_MEIPASS/llm/` (`llama-cli` + `llama-completion` + Qwen2.5-1.5B-Instruct Q4_K_M; `launcher.py` points `REACHER_LLM_BIN` at `llama-completion`, since `llama-cli` is chat-only since b10622). The CLI bundle does not. See [docs/issue-reporting.md](docs/issue-reporting.md).
 
 ### Versioning
 

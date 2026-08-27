@@ -33,10 +33,17 @@ if hasattr(sys, "_MEIPASS"):
             os.environ["DYLD_LIBRARY_PATH"] = (
                 _llm_dir + os.pathsep + os.environ.get("DYLD_LIBRARY_PATH", "")
             )
-        _exe = "llama-cli.exe" if sys.platform == "win32" else "llama-cli"
-        _bin = os.path.join(_llm_dir, _exe)
-        if os.path.isfile(_bin) and not os.environ.get("REACHER_LLM_BIN"):
-            os.environ["REACHER_LLM_BIN"] = _bin
+        # reacher's summarizer sends a raw ChatML prompt with --no-conversation.
+        # Since llama.cpp b10622 that is llama-completion; llama-cli is
+        # chat-only and rejects the flag.  Fall back to llama-cli so an older
+        # bundle without llama-completion still resolves to something.
+        _suffix = ".exe" if sys.platform == "win32" else ""
+        if not os.environ.get("REACHER_LLM_BIN"):
+            for _name in ("llama-completion", "llama-cli"):
+                _bin = os.path.join(_llm_dir, _name + _suffix)
+                if os.path.isfile(_bin):
+                    os.environ["REACHER_LLM_BIN"] = _bin
+                    break
         if not os.environ.get("REACHER_LLM_MODEL"):
             for _name in os.listdir(_llm_dir):
                 if _name.endswith(".gguf"):
