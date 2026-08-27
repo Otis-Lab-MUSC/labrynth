@@ -31,6 +31,7 @@ import argparse
 import hashlib
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -331,12 +332,33 @@ def _safe_extract_tar(tf, dest):
     tf.extractall(dest)
 
 
+# llama.cpp b10622 split raw prompt completion out of ``llama-cli`` into
+# ``llama-completion``; ``llama-cli`` is chat-only and no longer accepts
+# ``--no-conversation``, which is the flag set reacher's summarizer sends.
+# Bundle both and let the launcher point REACHER_LLM_BIN at the right one.
+_LLAMA_BINARIES = ("llama-cli", "llama-completion")
+
+
+def llama_binaries(root):
+    """Return paths to the llama.cpp executables to bundle, found under *root*."""
+    wanted = {n for b in _LLAMA_BINARIES for n in (b, b + ".exe")}
+    found = []
+    for dirpath, _dirnames, filenames in os.walk(root):
+        for name in filenames:
+            if name.lower() in wanted:
+                path = os.path.join(dirpath, name)
+                if os.path.isfile(path) and os.path.getsize(path) > 0:
+                    found.append(path)
+    return sorted(found)
+
+
 def _find_llama_cli(root):
     """Return the path to llama-cli / llama-cli.exe under *root*, or None.
 
-    Windows CPU archives ship ``llama-cli.exe`` as a ~9 KB loader stub; the
-    implementation is ``llama-cli-impl.dll`` beside it. A 10 KB size floor
-    rejects that stub and fails the Windows installer build.
+    Any non-empty match is accepted: Windows CPU archives ship
+    ``llama-cli.exe`` as a ~9 KB loader stub whose implementation lives in
+    ``llama-cli-impl.dll`` beside it, so a size floor would reject the real
+    Windows binary.
     """
     wanted = {"llama-cli", "llama-cli.exe"}
     for dirpath, _dirnames, filenames in os.walk(root):
@@ -363,17 +385,59 @@ def _list_llama_cli_candidates(root):
     return found
 
 
+# ELF sonames carry the version *after* the extension (libllama.so.0), so an
+# ``endswith(".so")`` test silently drops exactly the files DT_NEEDED asks for.
+# Mach-O and PE put the version before it (libllama.0.dylib, ggml.dll).
+_SHARED_LIB_RE = re.compile(r"\.(?:dll|dylib)$|\.so(?:\.\d+)*$", re.IGNORECASE)
+
+
+def is_shared_lib(name):
+    """True when *name* is a shared library, including versioned ELF sonames."""
+    return bool(_SHARED_LIB_RE.search(name))
+
+
 def _copy_llama_runtime(cli_path, dest_dir):
-    """Copy llama-cli and sibling shared libraries into dest_dir."""
+    """Copy the llama.cpp executables and sibling shared libraries into dest_dir."""
     os.makedirs(dest_dir, exist_ok=True)
     src_dir = os.path.dirname(cli_path)
     dest_cli = os.path.join(dest_dir, os.path.basename(cli_path))
-    shutil.copy2(cli_path, dest_cli)
-    os.chmod(dest_cli, 0o755)
+    for src in llama_binaries(src_dir):
+        dest = os.path.join(dest_dir, os.path.basename(src))
+        shutil.copy2(src, dest)
+        os.chmod(dest, 0o755)
     for name in os.listdir(src_dir):
-        if name.lower().endswith((".dll", ".so", ".dylib")):
+        if is_shared_lib(name):
             shutil.copy2(os.path.join(src_dir, name), os.path.join(dest_dir, name))
     return dest_cli
+
+
+def _smoke_test_llama(cli_path):
+    """Return (ok, detail) for ``<binary> --version``.
+
+    ``--version`` does not touch the GGUF, so this stays fast and runs before
+    the model is required.  It catches a bundle whose companion libraries are
+    missing or unloadable, which otherwise ships fine and only fails at report
+    time inside reacher's summarizer.
+    """
+    runtime_dir = os.path.dirname(cli_path)
+    env = os.environ.copy()
+    for var in ("LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"):
+        env[var] = runtime_dir + os.pathsep + env.get(var, "")
+    try:
+        result = subprocess.run(
+            [cli_path, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env,
+            check=False,
+        )
+    except OSError as exc:
+        return False, str(exc)
+    if result.returncode != 0:
+        detail = ((result.stderr or "") + (result.stdout or "")).strip()
+        return False, f"exit {result.returncode}: {detail[-500:]}"
+    return True, ""
 
 
 def ensure_llm(skip=False):
@@ -417,8 +481,16 @@ def ensure_llm(skip=False):
     runtime_dir = os.path.join(dist_dir, plat_key)
     cached_cli = _find_llama_cli(runtime_dir) if os.path.isdir(runtime_dir) else None
     if cached_cli:
-        print(f"  [OK] Cached llama-cli: {cached_cli}")
-        return cached_cli, gguf_path
+        cached = llama_binaries(runtime_dir)
+        checks = [_smoke_test_llama(b) for b in cached]
+        complete = len(cached) == len(_LLAMA_BINARIES)
+        ok = complete and all(c[0] for c in checks)
+        detail = next((c[1] for c in checks if not c[0]), "incomplete binary set")
+        if ok:
+            print(f"  [OK] Cached llama-cli: {cached_cli}")
+            return cached_cli, gguf_path
+        print(f"  [WARN] Cached llama-cli is not runnable ({detail}); re-extracting")
+        shutil.rmtree(runtime_dir, ignore_errors=True)
 
     archive_path = os.path.join(dist_dir, archive_name)
     url = f"https://github.com/ggml-org/llama.cpp/releases/download/{_LLAMA_CPP_TAG}/{archive_name}"
@@ -457,6 +529,13 @@ def ensure_llm(skip=False):
             print(f"           {size:>10}  {path}")
         sys.exit(1)
     cli_path = _copy_llama_runtime(found, runtime_dir)
+    for _bin in llama_binaries(runtime_dir):
+        ok, detail = _smoke_test_llama(_bin)
+        if not ok:
+            print(f"  [ERROR] Bundled {os.path.basename(_bin)} is not runnable — "
+                  f"refusing to bundle. {detail}")
+            sys.exit(1)
+        print(f"  [OK] {os.path.basename(_bin)} smoke test passed")
     print(f"  [OK] llama-cli: {cli_path} ({os.path.getsize(found)} bytes)")
     return cli_path, gguf_path
 

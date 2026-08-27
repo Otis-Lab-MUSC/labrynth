@@ -29,7 +29,7 @@ lets the user copy the generated markdown. Submit-to-GitHub is disabled.
 
 The GUI installer sets `REACHER_LLM_BIN` and `REACHER_LLM_MODEL` automatically
 from the frozen `llm/` directory. Dev-from-source builds do not ship the GGUF;
-either point those two variables at a local `llama-cli` + GGUF, or the report
+either point those two variables at a local `llama-completion` + GGUF, or the report
 endpoint returns 503.
 
 ## What gets sent to GitHub

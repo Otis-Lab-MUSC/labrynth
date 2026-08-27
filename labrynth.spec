@@ -30,7 +30,7 @@ FRONTEND_DIST = os.path.join(PROJECT_ROOT, "web", "dist")
 # archived). Resolve it via build.py's shared helper so spec and orchestrator
 # agree on the source of truth.
 sys.path.insert(0, SPEC_DIR)
-from build import resolve_reacher_hex_dir  # noqa: E402
+from build import is_shared_lib, llama_binaries, resolve_reacher_hex_dir  # noqa: E402
 
 HEX_DIR = resolve_reacher_hex_dir()
 
@@ -75,7 +75,7 @@ if AVRDUDE_PATH and os.path.isfile(AVRDUDE_PATH):
     # Bundle companion DLLs that live alongside the avrdude binary
     for _f in os.listdir(_avrdude_dir):
         _fpath = os.path.join(_avrdude_dir, _f)
-        if os.path.isfile(_fpath) and _f.lower().endswith((".dll", ".so", ".dylib")):
+        if os.path.isfile(_fpath) and is_shared_lib(_f):
             extra_binaries.append((_fpath, "avrdude"))
 
     # Bundle avrdude.conf as data (not a binary)
@@ -90,16 +90,18 @@ else:
     extra_binaries = []
     print("NOTE: No avrdude binary bundled (set REACHER_AVRDUDE_PATH or use build.py --avrdude)")
 
-# llama-cli + companion libs → llm/; GGUF as data in the same folder
+# llama.cpp executables + companion libs → llm/; GGUF as data in the same folder
 if LLM_BIN and os.path.isfile(LLM_BIN):
-    extra_binaries.append((LLM_BIN, "llm"))
     _llm_dir = os.path.dirname(LLM_BIN)
+    # llama-cli *and* llama-completion — reacher's summarizer runs the latter.
+    for _exe in llama_binaries(_llm_dir):
+        extra_binaries.append((_exe, "llm"))
     for _f in os.listdir(_llm_dir):
         _fpath = os.path.join(_llm_dir, _f)
-        if os.path.isfile(_fpath) and _f.lower().endswith((".dll", ".so", ".dylib")):
+        if os.path.isfile(_fpath) and is_shared_lib(_f):
             extra_binaries.append((_fpath, "llm"))
 else:
-    print("NOTE: No llama-cli bundled (set REACHER_LLM_BIN or omit --skip-llm)")
+    print("NOTE: No llama.cpp binaries bundled (set REACHER_LLM_BIN or omit --skip-llm)")
 
 if LLM_MODEL and os.path.isfile(LLM_MODEL):
     datas.append((LLM_MODEL, "llm"))
