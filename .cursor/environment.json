@@ -1,0 +1,23 @@
+{
+  "name": "Labrynth",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "reacher-backend",
+      "command": "source .venv/bin/activate && export REACHER_STATIC_DIR=\"$(pwd)/web/dist\" && export REACHER_PORT=6229 && python -m reacher",
+      "description": "REACHER backend (FastAPI + WebSocket) on http://localhost:6229, serving the built frontend from web/dist."
+    },
+    {
+      "name": "vite-dev",
+      "command": "cd web && npm run dev",
+      "description": "Vite dev server on http://localhost:5173 with HMR; proxies /api and /ws to the backend on :6229."
+    }
+  ],
+  "ports": [
+    { "name": "reacher-backend", "port": 6229 },
+    { "name": "vite-dev", "port": 5173 }
+  ],
+  "repositoryDependencies": [
+    "github.com/otis-lab-musc/reacher"
+  ]
+}
