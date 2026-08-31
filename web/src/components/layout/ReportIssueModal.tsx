@@ -1,48 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Copy, ExternalLink, X } from "lucide-react";
-import { getLocalClient } from "../../api/client";
+import { getLocalClient, type IssuePrefill } from "../../api/client";
 import { DemoMachineApiClient } from "../../api/demoClient";
 import { flush, log } from "../../logging";
 import { useReportStore } from "../../store/useReportStore";
-import { useSessionStore } from "../../store/useSessionStore";
 import { LOCAL_PLACEHOLDER_ID, useMachineStore } from "../../store/useMachineStore";
 import { useTutorialStore } from "../../store/useTutorialStore";
 
 type Severity = "" | "minor" | "moderate" | "critical";
 type Repo = "labrynth" | "reacher";
 
-interface IssueStatus {
-  llm: boolean;
-  github: boolean;
-  owner: string;
-  repos: string[];
-}
-
-interface ReportResult {
-  title: string;
-  body: string;
-  labels: string[];
-  summarized: boolean;
-  filed: boolean;
-  html_url: string | null;
-  repo: string;
-}
-
 export function ReportIssueModal() {
   const open = useReportStore((s) => s.open);
-  const prefill = useReportStore((s) => s.prefill);
+  const prefillText = useReportStore((s) => s.prefill);
   const closeReport = useReportStore((s) => s.closeReport);
 
   const [description, setDescription] = useState("");
   const [steps, setSteps] = useState("");
   const [severity, setSeverity] = useState<Severity>("");
   const [repo, setRepo] = useState<Repo>("labrynth");
-  const [status, setStatus] = useState<IssueStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<ReportResult | null>(null);
+
+  // Single-step flow: form → pre-filled GitHub link the user opens and submits.
+  const [prefill, setPrefill] = useState<IssuePrefill | null>(null);
   const [copied, setCopied] = useState(false);
+
   const closeRef = useRef<HTMLButtonElement>(null);
   const demoMode = useTutorialStore((s) => s.demoMode);
 
@@ -53,32 +37,17 @@ export function ReportIssueModal() {
     return useMachineStore.getState().getClient(LOCAL_PLACEHOLDER_ID) ?? getLocalClient();
   }
 
-  const sessionRunning = useSessionStore((s) =>
-    [...s.sessions.values()].some((sess) => sess.state === "running"),
-  );
-
   useEffect(() => {
     if (!open) return;
-    setDescription(prefill);
+    setDescription(prefillText);
     setSteps("");
     setSeverity("");
     setRepo("labrynth");
     setError(null);
-    setResult(null);
+    setPrefill(null);
     setCopied(false);
     closeRef.current?.focus();
-  }, [open, prefill]);
-
-  useEffect(() => {
-    if (!open) return;
-    setStatus(null);
-    apiClient()
-      .getIssueStatus()
-      .then(setStatus)
-      .catch(() =>
-        setStatus({ llm: false, github: false, owner: "Otis-Lab-MUSC", repos: ["labrynth", "reacher"] }),
-      );
-  }, [open]);
+  }, [open, prefillText]);
 
   useEffect(() => {
     if (!open) return;
@@ -91,53 +60,44 @@ export function ReportIssueModal() {
 
   if (!open) return null;
 
-  const llmReady = Boolean(status?.llm);
-  const githubReady = Boolean(status?.github) && !demoMode;
-  const canSubmit = description.trim().length > 0 && llmReady && !busy;
+  const canSubmit = description.trim().length > 0 && !busy;
+  const markdown = prefill ? `# ${prefill.title}\n\n${prefill.body}` : "";
 
-  async function handleSubmit() {
+  async function handlePrepare() {
     setBusy(true);
     setError(null);
-    setResult(null);
     log("ui.issue_report", { repo, severity, demoMode }, "info", {
-      msg: "Issue report submitted",
+      msg: "Issue report prepared",
       src: "ReportIssueModal",
     });
     try {
+      // The backend attaches a slice of this run's log, so make sure the
+      // buffered client-side entries have landed before it reads them.
       await flush();
-      const data = await apiClient().reportIssue({
+      const data = await apiClient().getIssuePrefill({
         description: description.trim(),
         steps: steps.trim(),
         severity,
         repo,
         app_version: __APP_VERSION__,
-        file: githubReady,
       });
-      setResult(data);
+      setPrefill(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Report failed");
+      setError(err instanceof Error ? err.message : "Could not prepare the report");
     } finally {
       setBusy(false);
     }
   }
 
   async function handleCopy() {
-    if (!result) return;
-    const text = `# ${result.title}\n\n${result.body}`;
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(markdown);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
       setError("Could not copy to clipboard");
     }
   }
-
-  const submitLabel = busy
-    ? "Working…"
-    : githubReady
-      ? "Submit to GitHub"
-      : "Summarize";
 
   return createPortal(
     <div
@@ -155,7 +115,7 @@ export function ReportIssueModal() {
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 id="report-issue-title" className="text-base font-semibold text-theme-text">
-            Report an issue
+            {prefill ? "Review on GitHub" : "Report an issue"}
           </h3>
           <button
             ref={closeRef}
@@ -168,31 +128,38 @@ export function ReportIssueModal() {
           </button>
         </div>
 
-        {result ? (
+        {prefill ? (
           <div className="space-y-3">
-            {result.filed && result.html_url ? (
-              <p className="text-sm text-theme-text/80">
-                Filed{" "}
-                <a
-                  href={result.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-accent hover:underline"
-                >
-                  {result.title} <ExternalLink size={12} />
-                </a>
-              </p>
-            ) : (
-              <p className="text-sm text-theme-text/80">
-                {result.summarized
-                  ? "Summary ready. GitHub filing is not configured on this machine — copy the markdown below."
-                  : "The local model could not summarize this report. A fallback draft is below."}
-              </p>
-            )}
-            <pre className="max-h-64 overflow-auto rounded border border-theme-border bg-black/20 p-3 text-xs text-theme-text/80 whitespace-pre-wrap">
-              {`# ${result.title}\n\n${result.body}`}
-            </pre>
+            <p className="text-xs text-theme-text/60">
+              Your report is ready. Continuing opens a pre-filled new issue on the{" "}
+              <span className="font-medium">{prefill.repo}</span> repository in a new tab — review
+              it there and press <span className="font-medium">Create</span> to submit it under
+              your own GitHub account. Nothing is posted until you do.
+            </p>
+            <p className="text-xs text-amber-500/90">
+              Both repositories are public. Remove any subject IDs, doses, or file paths you
+              don&apos;t want public before submitting.
+            </p>
+
+            <div className="rounded border border-theme-border bg-black/20 p-3">
+              <p className="text-xs font-medium text-theme-text">{prefill.title}</p>
+              <pre className="mt-2 max-h-56 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-theme-text/70">
+                {prefill.body}
+              </pre>
+            </div>
+
+            {error && <p className="text-xs text-red-500">{error}</p>}
+
             <div className="flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setPrefill(null);
+                  setError(null);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-theme-text hover:bg-accent/10"
+              >
+                Back
+              </button>
               <button
                 onClick={handleCopy}
                 className="flex items-center gap-1.5 rounded border border-theme-border px-3 py-1.5 text-xs text-theme-text/70 transition hover:border-accent hover:text-accent"
@@ -200,24 +167,29 @@ export function ReportIssueModal() {
                 <Copy size={11} />
                 {copied ? "Copied" : "Copy markdown"}
               </button>
-              <button
-                onClick={closeReport}
-                className="rounded bg-accent px-3 py-1.5 text-xs text-white hover:opacity-90"
+              <a
+                href={prefill.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() =>
+                  log("ui.issue_continue", { repo: prefill.repo }, "info", {
+                    msg: "Opened pre-filled GitHub issue",
+                    src: "ReportIssueModal",
+                  })
+                }
+                className="inline-flex items-center gap-1.5 rounded bg-accent px-3 py-1.5 text-sm text-white hover:opacity-90"
               >
-                Done
-              </button>
+                Continue on GitHub <ExternalLink size={12} />
+              </a>
             </div>
           </div>
         ) : (
           <>
             <p className="mb-3 text-xs text-theme-text/60">
-              Describe what happened in your own words. A local model on this machine will turn
-              that description plus a compact slice of this run&apos;s diagnostic log into a
-              technical GitHub issue. No cloud AI key is required.
-            </p>
-            <p className="mb-4 text-xs text-amber-500/90">
-              The log excerpt can include experiment identifiers (subject IDs, doses, file paths).
-              Only submit if you are comfortable sending that excerpt to GitHub.
+              Describe what happened in your own words. That description, plus a compact slice of
+              this run&apos;s diagnostic log, is turned into a GitHub issue draft. The last step
+              opens it in your browser so you can review it and submit it yourself — nothing is
+              posted on your behalf.
             </p>
 
             <label className="mb-3 block text-xs font-medium text-theme-text/70">
@@ -226,6 +198,7 @@ export function ReportIssueModal() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={5}
+                maxLength={2000}
                 className="mt-1 w-full rounded border border-theme-border bg-transparent px-2 py-1.5 text-sm text-theme-text focus:border-accent focus:outline-none"
                 placeholder="e.g. The camera feed froze during the trial and I had to restart…"
               />
@@ -237,6 +210,7 @@ export function ReportIssueModal() {
                 value={steps}
                 onChange={(e) => setSteps(e.target.value)}
                 rows={3}
+                maxLength={1500}
                 className="mt-1 w-full rounded border border-theme-border bg-transparent px-2 py-1.5 text-sm text-theme-text focus:border-accent focus:outline-none"
                 placeholder="1. Started a new session  2. Ran 3 trials  3. …"
               />
@@ -269,30 +243,9 @@ export function ReportIssueModal() {
               </label>
             </div>
 
-            {sessionRunning && (
-              <p className="mb-3 text-xs text-amber-500/90">
-                A session is running. Summarization uses a small amount of CPU and may take up to
-                two minutes.
-              </p>
-            )}
-
             {demoMode && (
               <p className="mb-3 text-xs text-theme-text/50">
-                Demo mode: nothing will be filed on GitHub.
-              </p>
-            )}
-
-            {status && !status.llm && (
-              <p className="mb-3 text-xs text-red-500">
-                The local summarizer is not available on this build. Issue reporting needs the
-                bundled llama.cpp model.
-              </p>
-            )}
-
-            {status && status.llm && !githubReady && !demoMode && (
-              <p className="mb-3 text-xs text-theme-text/50">
-                GitHub filing is not configured (no REACHER_GITHUB_TOKEN). You can still summarize
-                and copy the markdown.
+                Demo mode: no diagnostic log is attached.
               </p>
             )}
 
@@ -307,11 +260,11 @@ export function ReportIssueModal() {
                 Cancel
               </button>
               <button
-                onClick={handleSubmit}
+                onClick={handlePrepare}
                 disabled={!canSubmit}
                 className="rounded bg-accent px-3 py-1.5 text-sm text-white hover:opacity-90 disabled:opacity-40"
               >
-                {submitLabel}
+                {busy ? "Preparing…" : "Continue"}
               </button>
             </div>
           </>

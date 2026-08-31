@@ -1,4 +1,4 @@
-import { MachineApiClient } from "./client";
+import { MachineApiClient, type IssuePrefill } from "./client";
 import * as mock from "./mock";
 import type { BoardInfo, BoardType } from "../types";
 
@@ -81,45 +81,50 @@ export class DemoMachineApiClient extends MachineApiClient {
   setFileConfig = (id: string, body: { filename?: string; destination?: string }) =>
     mock.setFileConfig(id, body) as ReturnType<MachineApiClient["setFileConfig"]>;
 
-  // --- Issues (never talks to GitHub in demo mode) ---
-  getIssueStatus = async () => ({
-    llm: true,
-    github: false,
-    owner: "Otis-Lab-MUSC",
-    repos: ["labrynth", "reacher"],
-  });
-  reportIssue = async (body: {
+  // --- Issues ---
+  // The real endpoint is purely local (it only builds a URL), so the demo
+  // build assembles the same pre-filled GitHub link client-side, minus the
+  // diagnostic log excerpt the backend would attach.
+  getIssuePrefill = async (body: {
     description: string;
     steps?: string;
     severity?: string;
     repo?: string;
     app_version?: string;
-    file?: boolean;
-  }) => ({
-    title: body.description.trim().split("\n")[0]?.slice(0, 72) || "Demo issue",
-    body: [
+    labels?: string[];
+  }): Promise<IssuePrefill> => {
+    const owner = "Otis-Lab-MUSC";
+    const repo = body.repo === "reacher" ? "reacher" : "labrynth";
+    const title = body.description.trim().split("\n")[0]?.slice(0, 72) || "Demo issue";
+    const issueBody = [
       "## Description",
-      body.description,
+      body.description.trim(),
       "",
       "## Steps to Reproduce",
-      body.steps?.trim() || "Unknown — needs investigation",
-      "",
-      "## Expected Behavior",
-      "Unknown — needs investigation",
-      "",
-      "## Actual Behavior",
-      "See description.",
+      body.steps?.trim() || "Unknown \u2014 needs investigation",
       "",
       "## Severity",
       body.severity || "unspecified",
       "",
+      "## Version",
+      body.app_version || "unknown",
+      "",
       "## Reporter Notes",
-      "Demo mode — this report was not filed on GitHub.",
-    ].join("\n"),
-    labels: ["bug"],
-    summarized: true,
-    filed: false,
-    html_url: null,
-    repo: body.repo || "labrynth",
-  });
+      "Filed from the demo site \u2014 no diagnostic log is available.",
+    ].join("\n");
+    const labels = [...(body.labels ?? []), "develop"];
+    const params = new URLSearchParams({
+      title,
+      body: issueBody,
+      labels: labels.join(","),
+    });
+    return {
+      title,
+      body: issueBody,
+      labels,
+      url: `https://github.com/${owner}/${repo}/issues/new?${params.toString()}`,
+      repo,
+      owner,
+    };
+  };
 }

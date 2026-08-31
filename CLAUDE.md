@@ -127,9 +127,15 @@ Machine discovery uses mDNS (polled by `useMachineStore.startDiscoveryPolling`).
   Field values are logged **verbatim** (deliberate — it is what makes bugs
   reproducible); only credential-shaped keys are redacted, and the server
   re-redacts on ingest. See `docs/logging.md` in the reacher repo. About →
-  *Report an issue* flushes the buffer, POSTs `/api/issues/report` (reacher),
-  and a bundled local GGUF summarizes the description + a log excerpt into a
-  GitHub issue when `REACHER_GITHUB_TOKEN` is set. Operator setup:
+  *Report an issue* flushes the buffer and POSTs `/api/issues/prefill`
+  (reacher), which composes a title, Markdown body (description + steps +
+  severity + version + a capped diagnostic excerpt), labels, and a
+  `github.com/<owner>/<repo>/issues/new?…` URL. `ReportIssueModal` shows that
+  composed issue and a *Continue on GitHub* anchor — the user submits it in
+  their own browser under their own GitHub account. The endpoint makes no
+  network or subprocess call, so there is no PAT, no relay, no LLM, and no
+  unavailable state. Note that both target repos are public and log excerpts
+  carry verbatim field values. Setup and rationale:
   [docs/issue-reporting.md](docs/issue-reporting.md).
 - **`components/`** — feature-area folders: `session/`, `configuration/`, `monitor/`, `data/`, `hardware/`, `program/`, `machines/`, `terminal/`, `layout/`, `tutorial/`.
 - **`themes/`** — 5 named themes (`reacher`, `terminal`, `neural`, `midnight`, `ember`), each with a `dark` and `light` palette plus background, font, radius, glass tokens. Theme is applied by writing CSS variables on `:root` (no Tailwind dark-mode toggle alone — `apply()` in `useThemeStore` sets `--color-*`, `--font-*`, etc.). Default: `reacher`. Persistence: `localStorage["labrynth-mode"]`.
