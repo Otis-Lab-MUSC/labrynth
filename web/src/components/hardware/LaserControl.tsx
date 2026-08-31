@@ -1,6 +1,7 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { LASER_MODE_COMMANDS } from "../program/devicePresets";
+import { FIRMWARE_GAPS, hasFirmwareGap } from "../../generated/firmwareGaps";
 import { PinField } from "./PinField";
 import { SquareWaveCanvas } from "./SquareWaveCanvas";
 
@@ -17,6 +18,13 @@ export function LaserControl({ sessionId, paradigm }: Props) {
   if (!laser) return null;
 
   const { armed, frequency, duration, mode, phase, contingency, onsetDelay } = laser;
+  // vi/omission firmware has no LASER_LEVER_FILTER, so command 685 falls through
+  // to `default:` and the *previous* contingency stays in force — selecting "LH"
+  // there silently keeps stimulating the other lever. Gate derived from reacher's
+  // KNOWN_FIRMWARE_GAPS (see src/generated/firmwareGaps.ts); never hand-write it,
+  // or it will outlive the firmware gap.
+  const LH_GAP = FIRMWARE_GAPS.LASER_TRIGGER_LH_ONLY;
+  const lhUnsupported = hasFirmwareGap(LH_GAP, paradigm);
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
   const isPavlovian = paradigm === "pavlovian";
 
@@ -101,13 +109,24 @@ export function LaserControl({ sessionId, paradigm }: Props) {
               <button
                 key={val}
                 onClick={() => { send(cmd); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, contingency: val } })); }}
+                disabled={val === "lh" && lhUnsupported}
+                title={val === "lh" && lhUnsupported ? LH_GAP.reason : undefined}
                 className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                  contingency === val
+                  val === "lh" && lhUnsupported
+                    ? "bg-theme-text/5 text-theme-text/30 cursor-not-allowed"
+                    : contingency === val
                     ? "bg-accent text-white"
                     : "bg-theme-text/10 text-theme-text/70 hover:bg-theme-text/20"
                 }`}
               >{label}</button>
             ))}
+            {lhUnsupported && (
+              <p className="w-full text-xs text-amber-500/90">
+                LH-only laser routing is unavailable on {paradigm}: the firmware ignores the
+                command and leaves the previous contingency active, so the laser would keep
+                following whichever lever was selected before.
+              </p>
+            )}
           </div>
           {contingency === "independent" ? (
             <p className="text-xs text-theme-text/50 italic">Independent mode free-runs continuously — no onset delay applies</p>
