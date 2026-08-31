@@ -1,6 +1,7 @@
 /* PRESERVED — theme switching disabled.
    This component is intentionally retained for potential future use.
    To re-enable, restore the ThemeSwitcher render in Header.tsx and theme state logic in useThemeStore.ts. */
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment -- see PRESERVED banner above
 // @ts-nocheck
 import { useState, useRef, useEffect } from "react";
 import { Palette } from "lucide-react";
