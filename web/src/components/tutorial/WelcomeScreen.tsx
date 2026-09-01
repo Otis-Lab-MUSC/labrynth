@@ -109,7 +109,7 @@ export function WelcomeScreen() {
     setDismissed(true);
     try {
       localStorage.setItem(DISMISSED_KEY, "true");
-    } catch {}
+    } catch { /* localStorage unavailable (private mode / blocked site data) */ }
   };
 
   const handleTour = () => {

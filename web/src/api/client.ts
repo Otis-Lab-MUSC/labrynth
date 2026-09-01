@@ -37,6 +37,7 @@ export type ValidateConfigPayload = {
 };
 
 // Fix: FE-001 — Filename validation to prevent path traversal
+// eslint-disable-next-line no-control-regex -- matching control chars is the intent
 const UNSAFE_FILENAME_RE = /[<>:"/\\|?*\x00-\x1f]/;
 const ARCHIVE_SUFFIX_RE = /\.(zip|tar\.gz|tgz|tar|gz)$/i;
 export function sanitizeFilename(name: string): string {
