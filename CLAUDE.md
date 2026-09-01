@@ -86,7 +86,7 @@ See `RELEASING.md` for the full release workflow and the two-workflow model
 
 ### Testing
 
-There is **no test framework configured** here (no pytest, no Vitest/Jest). `npm run lint` is currently **broken** — ESLint 9 requires a flat `eslint.config.js` and none exists in the repo. `npx tsc -b` (run by `npm run build`) is the working automated check. Verify changes by running the frontend dev server against a live backend.
+There is **no test framework configured** here (no pytest, no Vitest/Jest) — don't add one without coordinating. `npm run lint` (flat `eslint.config.js`, added in `75f33e676`) and `npx tsc -b` (run by `npm run build`) both work and are CI-gated on every pull request via `ci.yml`; the tree currently carries 34 pre-existing react-hooks warnings but 0 errors. Verify changes by running the frontend dev server against a live backend.
 
 ## Architecture
 
@@ -160,6 +160,7 @@ The CLI mirrors browser-UI capabilities (sessions, hardware, program presets, li
 
 ### CI/CD (`.github/workflows/`)
 
+- **`ci.yml`** — pull-request gate (also runs on push to `main`): `frontend` job runs ESLint and `tsc -b` in `web/`; `version` job checks `pyproject.toml`/`web/package.json`/README badge agree via `scripts/bump-version.py --check`. No test framework — see Testing above.
 - **`build-installers.yml`** — stable releases only (`vX.Y.Z` tags, no prerelease suffix). Builds Windows `.exe`, macOS `.dmg`, Linux `.deb` + `.tar.gz` + `.AppImage`. `prerelease: false` hardcoded. Use `/release` skill to cut stable.
 - **`build-prerelease.yml`** — prerelease builds (`vX.Y.Z-alpha.*`, `vX.Y.Z-beta.*`, `vX.Y.Z-rc.*` tags). Same build matrix; `prerelease: true` hardcoded. Platform builds use `continue-on-error: true` (alpha may fail a platform). The reacher ref to bundle is derived automatically from the `reacher2p>=` pin in `pyproject.toml` via `--print-reacher-ref`. Do **not** use `/release` for prereleases — see `RELEASING.md`.
 - **`deploy-demo.yml`** — deploys `web/dist/` (built with `VITE_DEMO_SITE=true`) as a static demo site. Demo mode swaps the API client for `demoClient.ts` + `mock.ts` and disables real backend calls.
