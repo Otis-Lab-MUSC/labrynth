@@ -72,6 +72,10 @@ export const PAV_ACQUISITION_PRESET: SessionPreset = {
     217: 20000, // ITI Min (ms)
     218: 50000, // ITI Max (ms)
     219: 0,     // Pulse Config
+    374: 0,     // CS+ Pulse On (ms) — continuous
+    375: 0,     // CS+ Pulse Off (ms)
+    384: 200,   // CS- Pulse On (ms)
+    385: 200,   // CS- Pulse Off (ms)
   },
   limitDefaults: { limitType: "Trials", timeLimit: 7200, infusionLimit: 100, delay: 10 },
 };
@@ -104,6 +108,10 @@ export const PAV_REVERSAL_PRESET: SessionPreset = {
     217: 20000, // ITI Min (ms)
     218: 50000, // ITI Max (ms)
     219: 0,     // Pulse Config
+    374: 0,     // CS+ Pulse On (ms) — continuous
+    375: 0,     // CS+ Pulse Off (ms)
+    384: 200,   // CS- Pulse On (ms)
+    385: 200,   // CS- Pulse Off (ms)
   },
   limitDefaults: { limitType: "Trials", timeLimit: 7200, infusionLimit: 100, delay: 10 },
 };
