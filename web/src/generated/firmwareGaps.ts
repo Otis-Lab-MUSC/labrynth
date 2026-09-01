@@ -1,5 +1,6 @@
 // GENERATED FILE — do not edit by hand.
-// Source: reacher 3.4.0-alpha.7, python.known_firmware_gaps
+// Source: reacher schema v1, python.known_firmware_gaps
+// (which reacher release: see the reacher2p pin in pyproject.toml)
 // Regenerate: npm run gen:gaps
 //
 // Commands the UI can send that some paradigms' firmware does not handle.

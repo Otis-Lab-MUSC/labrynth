@@ -41,7 +41,13 @@ if (!gaps || typeof gaps !== "object") {
   process.exit(1);
 }
 
-const version = dump.generated_from?.version ?? "unknown";
+// Stamp the *schema* version, not the reacher release version. The release
+// version churns this file on every reacher bump even when no gap changed,
+// which destroys "regenerating produces no diff" as a verification gate. The
+// reacher version is already recorded authoritatively by the reacher2p pin in
+// pyproject.toml, so nothing is lost. schema_version moves only when the shape
+// of the dump changes — exactly when this generator needs rechecking.
+const schemaVersion = dump.schema_version ?? "unknown";
 const body = Object.entries(gaps)
   .map(([cmd, g]) => {
     const paradigms = g.paradigms.map((p) => JSON.stringify(p)).join(", ");
@@ -56,7 +62,8 @@ const body = Object.entries(gaps)
 writeFileSync(
   OUT,
   `// GENERATED FILE — do not edit by hand.
-// Source: reacher ${version}, python.known_firmware_gaps
+// Source: reacher schema v${schemaVersion}, python.known_firmware_gaps
+// (which reacher release: see the reacher2p pin in pyproject.toml)
 // Regenerate: npm run gen:gaps
 //
 // Commands the UI can send that some paradigms' firmware does not handle.
@@ -85,4 +92,7 @@ export function hasFirmwareGap(
 `,
   "utf8",
 );
-console.log(`Wrote ${OUT} (${Object.keys(gaps).length} gap(s), reacher ${version})`);
+console.log(
+  `Wrote ${OUT} (${Object.keys(gaps).length} gap(s), ` +
+    `reacher ${dump.generated_from?.version ?? "unknown"}, schema v${schemaVersion})`,
+);
