@@ -24,7 +24,7 @@ const CORE_HARDWARE: Partial<HardwareUiState> = {
   secondaryCue: { armed: true,  frequency: 3000,  duration: 2000,
     contingency: { leverFilter: "none", delay: 0 } },
   primaryPump:  { armed: true,  duration: 2000,
-    contingency: { leverFilter: "none", delay: 0 } },
+    contingency: { leverFilter: "none", delay: 0 }, flowRateUlPerSec: null },
 };
 
 const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {

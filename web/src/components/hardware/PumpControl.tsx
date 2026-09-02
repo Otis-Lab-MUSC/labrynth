@@ -33,7 +33,8 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
 
   if (!pump) return null;
 
-  const { armed, duration } = pump;
+  const { armed, duration, flowRateUlPerSec } = pump;
+  const volumeEstimateUl = flowRateUlPerSec != null ? (duration * flowRateUlPerSec) / 1000 : null;
   const codes = CODES[prefix];
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
@@ -98,6 +99,22 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
           disabled={duration < MIN_DURATION || duration > MAX_DURATION}
           className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
       </div>
+      <div className="flex items-center gap-2">
+        <label className="text-sm text-theme-text/60">Pump rate (µL/s):</label>
+        <input type="number" value={flowRateUlPerSec ?? ""} min={0} step="any" placeholder="unset"
+          onChange={(e) => update({ flowRateUlPerSec: e.target.value === "" ? null : +e.target.value })}
+          className="w-24 input-base" />
+      </div>
+      {volumeEstimateUl != null ? (
+        <p className="text-xs text-theme-text/50">
+          Estimated volume: {volumeEstimateUl.toFixed(2)} µL — calculated as duration × your entered pump rate
+          ({flowRateUlPerSec} µL/s). Not measured; only as accurate as that rate.
+        </p>
+      ) : (
+        <p className="text-xs text-theme-text/50">
+          Enter this pump's flow rate (µL/s) to see an estimated infusion volume.
+        </p>
+      )}
       <ContingencySection sessionId={sessionId} deviceKey={storeKey} paradigm={paradigm} />
     </div>
   );
