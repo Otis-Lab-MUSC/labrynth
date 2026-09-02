@@ -246,18 +246,56 @@ async function recoverMissedEvents(sessionId: string) {
   if (sess.state === "idle" || sess.state === "stopped") return;
 
   try {
-    const { data, total } = await client.getBehavior(sessionId);
-    if (total > sess.behaviorData.length) {
-      if (useSessionStore.getState().sessions.get(sessionId)?.state === "connected") {
-        useSessionStore.getState().updateState(sessionId, "running");
-      }
-      replaceEvents(sessionId, data as unknown as BehaviorEvent[]);
-      useLogStore.getState().pushLog(
-        "info",
-        `Recovered ${total - sess.behaviorData.length} missed events after reconnect`,
-        sessionId,
-      );
+    // Issue #100: behavior, frames, and slm are independent backend streams —
+    // `self.behavior_data` never holds SLM ticks (see reacher's
+    // `update_slm_events`), yet a live "event" WS message for an SLM tick
+    // still lands in local `behaviorData` (same as any other event). Comparing
+    // a single `total` against `behaviorData.length` was comparing counts from
+    // two different streams: it could both silently drop real missed
+    // lever/pump/etc. events (when locally-accumulated SLM ticks inflated
+    // `behaviorData.length` past a lagging `total`) and permanently wipe every
+    // SLM tick of the session on a full replace (when enough non-SLM events
+    // were missed to push `total` past that inflated length) — not a
+    // transient race, a permanent loss, since the old `/behavior` endpoint
+    // has no way to give SLM ticks back. Each stream is now reconciled
+    // against its own prior count instead.
+    const { behavior, frames, slm } = await client.getRecovery(sessionId);
+    sess = useSessionStore.getState().sessions.get(sessionId) ?? sess;
+
+    const localNonSlmCount = sess.behaviorData.filter((e) => e.device !== "SLM").length;
+    const localSlmCount = sess.behaviorData.length - localNonSlmCount;
+    const missedFrames = Math.max(0, frames.count - sess.frameData.length);
+    const recovered =
+      Math.max(0, behavior.total - localNonSlmCount) + Math.max(0, slm.count - localSlmCount) + missedFrames;
+
+    if (recovered === 0) return;
+
+    if (useSessionStore.getState().sessions.get(sessionId)?.state === "connected") {
+      useSessionStore.getState().updateState(sessionId, "running");
     }
+
+    // Both `behavior.data` and `slm.slm` are complete, authoritative
+    // snapshots (same guarantee `/behavior`'s `total` already gave for
+    // non-SLM events) — reconstructing SLM ticks as synthetic events and
+    // merging keeps EventTimeline and the "SLM FRAMES" stat (LiveStats.tsx,
+    // still keyed on `device === "SLM"` within `behaviorData`) working
+    // unchanged, while never dropping one stream's data to recover the other.
+    const slmEvents: BehaviorEvent[] = slm.slm.map((ts) => ({
+      device: "SLM",
+      event: "TIMESTAMP",
+      start_timestamp: ts,
+      end_timestamp: ts,
+    }));
+    const merged = [...(behavior.data as unknown as BehaviorEvent[]), ...slmEvents].sort(
+      (a, b) => a.start_timestamp - b.start_timestamp,
+    );
+    replaceEvents(sessionId, merged);
+
+    if (missedFrames > 0) {
+      useSessionStore.getState().replaceFrameData(sessionId, frames.frames);
+    }
+
+    useLogStore.getState().pushLog("info", `Recovered ${recovered} missed events after reconnect`, sessionId);
   } catch (err) {
     console.warn("[ReacherWS] Failed to recover missed events:", err);
   }

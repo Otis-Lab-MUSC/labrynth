@@ -293,6 +293,13 @@ export class MachineApiClient {
     this.request<{ frames: unknown[]; count: number }>(`/data/${id}/frames`);
   getSlmEvents = (id: string) =>
     this.request<{ slm: number[]; count: number }>(`/data/${id}/slm`);
+  /** Issue #100: one consistent snapshot of all three streams, for WS-reconnect recovery. */
+  getRecovery = (id: string) =>
+    this.request<{
+      behavior: { data: Array<Record<string, unknown>>; total: number };
+      frames: { frames: number[]; count: number };
+      slm: { slm: number[]; count: number };
+    }>(`/data/${id}/recovery`);
   exportZip = async (
     id: string,
     body: {
