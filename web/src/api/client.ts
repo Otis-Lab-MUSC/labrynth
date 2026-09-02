@@ -293,12 +293,19 @@ export class MachineApiClient {
     this.request<{ frames: unknown[]; count: number }>(`/data/${id}/frames`);
   getSlmEvents = (id: string) =>
     this.request<{ slm: number[]; count: number }>(`/data/${id}/slm`);
-  /** Issue #100: one consistent snapshot of all three streams, for WS-reconnect recovery. */
+  /**
+   * Issue #100: a snapshot of all three streams, for WS-reconnect recovery.
+   * NOT symmetric — `behavior` is current-segment-only (split_segment()
+   * clears it every split), `frames`/`slm` are whole-session. `segment_number`
+   * (0 if no split has occurred) tells the caller which segment `behavior`
+   * belongs to, so a client that missed a live "split" message can tell.
+   */
   getRecovery = (id: string) =>
     this.request<{
       behavior: { data: Array<Record<string, unknown>>; total: number };
       frames: { frames: number[]; count: number };
       slm: { slm: number[]; count: number };
+      segment_number: number;
     }>(`/data/${id}/recovery`);
   exportZip = async (
     id: string,

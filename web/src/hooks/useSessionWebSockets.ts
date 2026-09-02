@@ -259,8 +259,31 @@ async function recoverMissedEvents(sessionId: string) {
     // transient race, a permanent loss, since the old `/behavior` endpoint
     // has no way to give SLM ticks back. Each stream is now reconciled
     // against its own prior count instead.
-    const { behavior, frames, slm } = await client.getRecovery(sessionId);
+    const { behavior, frames, slm, segment_number } = await client.getRecovery(sessionId);
     sess = useSessionStore.getState().sessions.get(sessionId) ?? sess;
+
+    // Cross-review finding on #70/#126: split_segment() exports and clears
+    // the backend's behavior_data on every split but leaves frame_data/
+    // slm_data alone, so `behavior.data` is current-segment-only while
+    // frames/slm are whole-session. If this client missed the live "split"
+    // WS message while disconnected, `sess.segmentNumber` is stale and local
+    // `behaviorData` still holds the now-closed segment's events — merging
+    // it against the new segment's snapshot below would silently destroy
+    // that data instead of retiring it the way a live split does. Catch up
+    // via the same handler a live "split" message uses, which rolls the
+    // stale segment's counters into cumulative* and resets `behaviorData`
+    // for the new segment, so nothing is lost — only correctly archived,
+    // same as any other split. (A disconnect spanning *multiple* splits
+    // still converges structurally — segmentNumber jumps straight to
+    // current, behaviorData resets clean — but only rolls the last-known
+    // local counters into cumulative once; any fully-missed intermediate
+    // segment's derived counts aren't separately re-added here, though
+    // they're safely on disk as that segment's own exported CSV and in the
+    // backend's own get_total_* accessors.)
+    if (segment_number > sess.segmentNumber) {
+      useSessionStore.getState().handleSplit(sessionId, segment_number);
+      sess = useSessionStore.getState().sessions.get(sessionId) ?? sess;
+    }
 
     const localNonSlmCount = sess.behaviorData.filter((e) => e.device !== "SLM").length;
     const localSlmCount = sess.behaviorData.length - localNonSlmCount;
