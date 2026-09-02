@@ -34,7 +34,9 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
   if (!pump) return null;
 
   const { armed, duration, flowRateUlPerSec } = pump;
-  const volumeEstimateUl = flowRateUlPerSec != null ? (duration * flowRateUlPerSec) / 1000 : null;
+  const hasFlowRate = flowRateUlPerSec != null && flowRateUlPerSec > 0;
+  const hasDuration = duration >= MIN_DURATION;
+  const volumeEstimateUl = hasFlowRate && hasDuration ? (duration * flowRateUlPerSec) / 1000 : null;
   const codes = CODES[prefix];
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
@@ -112,7 +114,9 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
         </p>
       ) : (
         <p className="text-xs text-theme-text/50">
-          Enter this pump's flow rate (µL/s) to see an estimated infusion volume.
+          {hasFlowRate
+            ? "Set a duration to see an estimated infusion volume."
+            : "Enter this pump's flow rate (µL/s) to see an estimated infusion volume."}
         </p>
       )}
       <ContingencySection sessionId={sessionId} deviceKey={storeKey} paradigm={paradigm} />
