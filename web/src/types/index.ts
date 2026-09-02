@@ -44,6 +44,10 @@ export interface CueUiState extends DeviceArmState {
 export interface PumpUiState extends DeviceArmState {
   duration: number;
   contingency: ContingencyConfig;
+  /** User-entered pump flow rate (µL/s), used only to compute the volume
+   *  estimate below — not sent to hardware. Software has no way to know the
+   *  physical pump/tubing's actual rate; null until the user supplies one. */
+  flowRateUlPerSec: number | null;
 }
 
 export interface LaserUiState extends DeviceArmState {

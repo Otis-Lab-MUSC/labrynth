@@ -31,7 +31,7 @@ export const CORE_HARDWARE: Partial<HardwareUiState> = {
 
 export const PUMP_HARDWARE: Partial<HardwareUiState> = {
   primaryPump: { armed: true, duration: 2000,
-    contingency: { leverFilter: "rh", delay: 1600 } },
+    contingency: { leverFilter: "rh", delay: 1600 }, flowRateUlPerSec: null },
 };
 
 export const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
@@ -42,7 +42,7 @@ export const OPTIONAL_HARDWARE: Partial<HardwareUiState> = {
   secondaryCue: { armed: false, frequency: 2900, duration: 1000,
     contingency: { leverFilter: "none", delay: 0 } },
   secondaryPump: { armed: false, duration: 3000,
-    contingency: { leverFilter: "none", delay: 0 } },
+    contingency: { leverFilter: "none", delay: 0 }, flowRateUlPerSec: null },
 };
 
 /* ── Shared paradigm settings ──────────────────────────────────────── */
@@ -108,7 +108,7 @@ export const SA_EXTINCTION_PRESET: SessionPreset = {
     primaryCue:  { armed: false, frequency: 8000, duration: 1600,
       contingency: { leverFilter: "none", delay: 0 } },
     primaryPump: { armed: false, duration: 2000,
-      contingency: { leverFilter: "none", delay: 1600 } },
+      contingency: { leverFilter: "none", delay: 1600 }, flowRateUlPerSec: null },
     ...OPTIONAL_HARDWARE,
   },
   paradigmSettings: PARADIGM_SETTINGS,
