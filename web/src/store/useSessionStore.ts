@@ -19,6 +19,7 @@ interface SessionStore {
   pushEvent: (id: string, event: BehaviorEvent) => void;
   replaceEvents: (id: string, events: BehaviorEvent[]) => void;
   pushFrame: (id: string, timestamp: number) => void;
+  replaceFrameData: (id: string, frames: number[]) => void;
   setFirmwareInfo: (id: string, info: FirmwareConfig) => void;
   setUploadProgress: (id: string, percent: number, stage: string) => void;
   setPavlovianParams: (id: string, params: Record<number, number>) => void;
@@ -375,6 +376,17 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       if (!sess) return s;
       const next = new Map(s.sessions);
       next.set(id, { ...sess, frameData: [...sess.frameData, timestamp] });
+      return { sessions: next };
+    }),
+
+  // Issue #100: 2P frame ticks missed during a WS disconnect were never
+  // backfilled — unlike behaviorData, nothing called this on reconnect.
+  replaceFrameData: (id, frames) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, { ...sess, frameData: frames });
       return { sessions: next };
     }),
 
