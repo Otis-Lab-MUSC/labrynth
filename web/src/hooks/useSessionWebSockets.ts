@@ -264,9 +264,10 @@ async function recoverMissedEvents(sessionId: string) {
 
     const localNonSlmCount = sess.behaviorData.filter((e) => e.device !== "SLM").length;
     const localSlmCount = sess.behaviorData.length - localNonSlmCount;
+    const missedBehavior = Math.max(0, behavior.total - localNonSlmCount);
+    const missedSlm = Math.max(0, slm.count - localSlmCount);
     const missedFrames = Math.max(0, frames.count - sess.frameData.length);
-    const recovered =
-      Math.max(0, behavior.total - localNonSlmCount) + Math.max(0, slm.count - localSlmCount) + missedFrames;
+    const recovered = missedBehavior + missedSlm + missedFrames;
 
     if (recovered === 0) return;
 
@@ -274,22 +275,31 @@ async function recoverMissedEvents(sessionId: string) {
       useSessionStore.getState().updateState(sessionId, "running");
     }
 
-    // Both `behavior.data` and `slm.slm` are complete, authoritative
-    // snapshots (same guarantee `/behavior`'s `total` already gave for
-    // non-SLM events) — reconstructing SLM ticks as synthetic events and
-    // merging keeps EventTimeline and the "SLM FRAMES" stat (LiveStats.tsx,
-    // still keyed on `device === "SLM"` within `behaviorData`) working
-    // unchanged, while never dropping one stream's data to recover the other.
-    const slmEvents: BehaviorEvent[] = slm.slm.map((ts) => ({
-      device: "SLM",
-      event: "TIMESTAMP",
-      start_timestamp: ts,
-      end_timestamp: ts,
-    }));
-    const merged = [...(behavior.data as unknown as BehaviorEvent[]), ...slmEvents].sort(
-      (a, b) => a.start_timestamp - b.start_timestamp,
-    );
-    replaceEvents(sessionId, merged);
+    // frameData can be gated independently of the event streams below purely
+    // because it's a plain array with no derived counters — a frames-only
+    // miss has no reason to touch behaviorData at all. behaviorData can't
+    // split that cleanly: it mixes two streams (behavior + synthetic SLM) and
+    // replaceEvents recomputes derived counters (press/infusion/trial/etc.)
+    // from the full array every time, so a behavior-or-SLM miss replaces both
+    // together in one call rather than each independently.
+    if (missedBehavior > 0 || missedSlm > 0) {
+      // Both `behavior.data` and `slm.slm` are complete, authoritative
+      // snapshots (same guarantee `/behavior`'s `total` already gave for
+      // non-SLM events) — reconstructing SLM ticks as synthetic events and
+      // merging keeps EventTimeline and the "SLM FRAMES" stat (LiveStats.tsx,
+      // still keyed on `device === "SLM"` within `behaviorData`) working
+      // unchanged, while never dropping one stream's data to recover the other.
+      const slmEvents: BehaviorEvent[] = slm.slm.map((ts) => ({
+        device: "SLM",
+        event: "TIMESTAMP",
+        start_timestamp: ts,
+        end_timestamp: ts,
+      }));
+      const merged = [...(behavior.data as unknown as BehaviorEvent[]), ...slmEvents].sort(
+        (a, b) => a.start_timestamp - b.start_timestamp,
+      );
+      replaceEvents(sessionId, merged);
+    }
 
     if (missedFrames > 0) {
       useSessionStore.getState().replaceFrameData(sessionId, frames.frames);
