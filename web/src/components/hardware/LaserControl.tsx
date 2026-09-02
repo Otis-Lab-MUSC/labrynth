@@ -17,7 +17,11 @@ export function LaserControl({ sessionId, paradigm }: Props) {
 
   if (!laser) return null;
 
-  const { armed, frequency, duration, mode, phase, contingency, onsetDelay } = laser;
+  const {
+    armed, frequency, duration, mode, phase, contingency, onsetDelay,
+    csPlusFrequency, csPlusDuration, csPlusDelay,
+    csMinusFrequency, csMinusDuration, csMinusDelay,
+  } = laser;
   // vi/omission firmware has no LASER_LEVER_FILTER, so command 685 falls through
   // to `default:` and the *previous* contingency stays in force — selecting "LH"
   // there silently keeps stimulating the other lever. Gate derived from reacher's
@@ -91,6 +95,57 @@ export function LaserControl({ sessionId, paradigm }: Props) {
                   onClick={() => { send(695); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, phase: "cue" } })); }}
                   className={`btn-sm ${phase === "cue" ? "bg-purple-600" : "bg-purple-600/40"} text-white`}
                 >Cue</button>
+              </div>
+              <div className="border-t border-theme-text/10 pt-2 mt-1 space-y-2">
+                <div className="text-xs font-medium uppercase tracking-wide text-theme-text/60"
+                  title="Optional — leave unset to keep using the shared Freq/Dur/Delay fields below for that trial type">
+                  Per-Trial Pulse Override
+                </div>
+                {(
+                  [
+                    { label: "CS+", freq: csPlusFrequency, dur: csPlusDuration, delay: csPlusDelay, freqCmd: 696, durCmd: 697, delayCmd: 698, clearCmd: 702, key: "csPlus" as const },
+                    { label: "CS-", freq: csMinusFrequency, dur: csMinusDuration, delay: csMinusDelay, freqCmd: 699, durCmd: 700, delayCmd: 701, clearCmd: 703, key: "csMinus" as const },
+                  ] as const
+                ).map(({ label, freq, dur, delay, freqCmd, durCmd, delayCmd, clearCmd, key }) => {
+                  const effFreq = freq ?? frequency;
+                  const effDur = dur ?? duration;
+                  const effDelay = delay ?? onsetDelay;
+                  return (
+                    <div key={key} className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs text-theme-text/60 w-8">{label}</span>
+                      <input type="number" value={effFreq} min={1} max={65535}
+                        onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, [`${key}Frequency`]: +e.target.value } }))}
+                        className="w-16 input-base" title={`${label} frequency (Hz)`} />
+                      <button onClick={() => send(freqCmd, effFreq)} disabled={effFreq < 1 || effFreq > 65535}
+                        className="btn-sm bg-accent text-accent-contrast text-xs disabled:opacity-50">Set</button>
+                      <input type="number" value={effDur} min={1} max={600000}
+                        onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, [`${key}Duration`]: +e.target.value } }))}
+                        className="w-20 input-base" title={`${label} duration (ms)`} />
+                      <button onClick={() => send(durCmd, effDur)} disabled={effDur < 1 || effDur > 600000}
+                        className="btn-sm bg-accent text-accent-contrast text-xs disabled:opacity-50">Set</button>
+                      <input type="number" value={effDelay} min={0} max={delayMax}
+                        onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, [`${key}Delay`]: Math.min(Math.max(0, +e.target.value), delayMax) } }))}
+                        className="w-20 input-base" title={`${label} onset delay (ms)`} />
+                      <button onClick={() => send(delayCmd, effDelay)} disabled={effDelay < 0 || effDelay > delayMax}
+                        className="btn-sm bg-accent text-accent-contrast text-xs disabled:opacity-50">Set</button>
+                      <button
+                        onClick={() => {
+                          send(clearCmd);
+                          updateHardwareUi(sessionId, (prev) => {
+                            const next = { ...prev.laser };
+                            delete (next as Record<string, unknown>)[`${key}Frequency`];
+                            delete (next as Record<string, unknown>)[`${key}Duration`];
+                            delete (next as Record<string, unknown>)[`${key}Delay`];
+                            return { laser: next };
+                          });
+                        }}
+                        disabled={freq === undefined && dur === undefined && delay === undefined}
+                        title={`Revert ${label} to the shared Freq/Dur/Delay fields below`}
+                        className="btn-sm bg-theme-text/10 text-theme-text/70 text-xs hover:bg-theme-text/20 disabled:opacity-50"
+                      >Clear</button>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
