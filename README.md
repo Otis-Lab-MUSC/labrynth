@@ -44,6 +44,14 @@ cd labrynth
 pip install -e ".[cli]"
 ```
 
+Installer builds bundle `avrdude` for firmware uploads — nothing else to install. Running from source needs it on `PATH`:
+
+| Platform | Install |
+|---|---|
+| Linux | `sudo apt-get install avrdude` (Debian/Ubuntu), or your distro's package manager |
+| macOS | `brew install avrdude` |
+| Windows | [avrdude releases](https://github.com/avrdudes/avrdude/releases), or `choco install avrdude` |
+
 Reference documentation lives in [`docs/`](docs/) ([issue reporting](docs/issue-reporting.md)); [CONTRIBUTING.md](CONTRIBUTING.md) covers the branching and versioning workflow, and [RELEASING.md](RELEASING.md) covers release channels and tagging.
 
 ---
