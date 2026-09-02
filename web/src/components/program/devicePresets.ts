@@ -39,7 +39,13 @@ export const PRESET_COMMAND_MAP: Record<string, { arm: number; disarm: number; p
   secondaryCue:  { arm: 311,  disarm: 310,  params: { frequency: 381, duration: 382, leverFilter: 388 } },
   primaryPump:   { arm: 401,  disarm: 400,  params: { duration: 472,  leverFilter: 478, delay: 477 } },
   secondaryPump: { arm: 411,  disarm: 410,  params: { duration: 482,  leverFilter: 488, delay: 487 } },
-  laser:         { arm: 601,  disarm: 600,  params: { frequency: 671, duration: 672, delay: 673 } },
+  laser:         { arm: 601,  disarm: 600,  params: {
+    frequency: 671, duration: 672, delay: 673,
+    // Pavlovian-only per-trial-type overrides (#34) — no-ops for other paradigms
+    // since their hardware.laser never sets these keys.
+    csPlusFrequency: 696, csPlusDuration: 697, csPlusDelay: 698,
+    csMinusFrequency: 699, csMinusDuration: 700, csMinusDelay: 701,
+  } },
   lickCircuit:   { arm: 501,  disarm: 500 },
   microscope:    { arm: 901,  disarm: 900 },
   slm:           { arm: 1101, disarm: 1100, params: { laserFrequency: 1102, laserDuration: 1103 } },

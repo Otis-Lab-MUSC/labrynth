@@ -53,6 +53,14 @@ export interface LaserUiState extends DeviceArmState {
   phase?: "reward" | "cue";  // Pavlovian only — which trial phase triggers laser
   contingency: "any" | "rh" | "lh" | "independent";  // operant lever routing (#67)
   onsetDelay: number;  // ms from trigger to laser onset (#67/#69)
+  // Pavlovian only — per-trial-type pulse overrides (commands 696-701, #34).
+  // Undefined/unset means that trial type falls back to frequency/duration/onsetDelay above.
+  csPlusFrequency?: number;
+  csPlusDuration?: number;
+  csPlusDelay?: number;
+  csMinusFrequency?: number;
+  csMinusDuration?: number;
+  csMinusDelay?: number;
 }
 
 export interface MicroscopeUiState extends DeviceArmState {
