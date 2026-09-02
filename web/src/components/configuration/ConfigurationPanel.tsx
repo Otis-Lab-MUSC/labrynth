@@ -189,13 +189,16 @@ export function ConfigurationPanel() {
         if (key === "testMode") {
           result.testMode = value as boolean;
         } else if (key in result) {
-          const merged = {
-            ...(prev as unknown as Record<string, unknown>)[key] as object,
-            ...(value as object),
-          };
-          if (key in armOverrides) {
-            (merged as Record<string, unknown>).armed = armOverrides[key];
-          }
+          const valueObj = value as unknown as Record<string, unknown>;
+          const armed = key in armOverrides ? armOverrides[key] : (valueObj.armed as boolean | undefined);
+          const prevDevice = (prev as unknown as Record<string, unknown>)[key] as object;
+          // A disarmed device keeps whatever settings it already had instead of
+          // inheriting the preset's frequency/duration — those preset values exist
+          // only to seed SessionPresetCard's display and the device's config if the
+          // user re-arms it via an arm override (handled by the branch below).
+          const merged = armed === false
+            ? { ...prevDevice, armed: false }
+            : { ...prevDevice, ...valueObj, armed };
           (result as unknown as Record<string, unknown>)[key] = merged;
         }
       }
