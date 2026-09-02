@@ -22,7 +22,7 @@ export const INTERFACE_CHANGELOG: InterfaceChangelogEntry[] = [
     version: "3.0.1-alpha.21",
     date: "2026-09-01",
     highlights: [
-      "On VI and Omission rigs, choosing \"LH lever\" for the laser now actually switches it — previously the display updated but the rig kept stimulating the old lever.",
+      "On VI and Omission rigs, the \"LH lever\" laser option is now disabled, with the reason shown, instead of silently doing nothing — that firmware ignores the command and keeps stimulating whichever lever was previously set. If you were selecting LH on a VI or Omission rig before this update, check your session data: the laser may have been stimulating on RH presses the whole time.",
       "Infusion counts no longer reset to zero if your session reconnects mid-run.",
       "Lick-circuit pin assignments now display correctly after a reconnect.",
     ],
@@ -31,7 +31,7 @@ export const INTERFACE_CHANGELOG: InterfaceChangelogEntry[] = [
     version: "3.0.1-alpha.12",
     date: "2026-07-27",
     highlights: [
-      "fr_lite sessions now have ready-made presets (High/Mid/Low/Extinction), matching what was already available for FR.",
+      "fr_lite sessions now actually work — every command used to be rejected by the backend. They also have ready-made presets (High/Mid/Low/Extinction), matching what was already available for FR.",
     ],
   },
   {
