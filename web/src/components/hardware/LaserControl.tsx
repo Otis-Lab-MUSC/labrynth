@@ -103,10 +103,10 @@ export function LaserControl({ sessionId, paradigm }: Props) {
                 </div>
                 {(
                   [
-                    { label: "CS+", freq: csPlusFrequency, dur: csPlusDuration, delay: csPlusDelay, freqCmd: 696, durCmd: 697, delayCmd: 698, key: "csPlus" as const },
-                    { label: "CS-", freq: csMinusFrequency, dur: csMinusDuration, delay: csMinusDelay, freqCmd: 699, durCmd: 700, delayCmd: 701, key: "csMinus" as const },
+                    { label: "CS+", freq: csPlusFrequency, dur: csPlusDuration, delay: csPlusDelay, freqCmd: 696, durCmd: 697, delayCmd: 698, clearCmd: 702, key: "csPlus" as const },
+                    { label: "CS-", freq: csMinusFrequency, dur: csMinusDuration, delay: csMinusDelay, freqCmd: 699, durCmd: 700, delayCmd: 701, clearCmd: 703, key: "csMinus" as const },
                   ] as const
-                ).map(({ label, freq, dur, delay, freqCmd, durCmd, delayCmd, key }) => {
+                ).map(({ label, freq, dur, delay, freqCmd, durCmd, delayCmd, clearCmd, key }) => {
                   const effFreq = freq ?? frequency;
                   const effDur = dur ?? duration;
                   const effDelay = delay ?? onsetDelay;
@@ -128,6 +128,21 @@ export function LaserControl({ sessionId, paradigm }: Props) {
                         className="w-20 input-base" title={`${label} onset delay (ms)`} />
                       <button onClick={() => send(delayCmd, effDelay)} disabled={effDelay < 0 || effDelay > delayMax}
                         className="btn-sm bg-accent text-accent-contrast text-xs disabled:opacity-50">Set</button>
+                      <button
+                        onClick={() => {
+                          send(clearCmd);
+                          updateHardwareUi(sessionId, (prev) => {
+                            const next = { ...prev.laser };
+                            delete (next as Record<string, unknown>)[`${key}Frequency`];
+                            delete (next as Record<string, unknown>)[`${key}Duration`];
+                            delete (next as Record<string, unknown>)[`${key}Delay`];
+                            return { laser: next };
+                          });
+                        }}
+                        disabled={freq === undefined && dur === undefined && delay === undefined}
+                        title={`Revert ${label} to the shared Freq/Dur/Delay fields below`}
+                        className="btn-sm bg-theme-text/10 text-theme-text/70 text-xs hover:bg-theme-text/20 disabled:opacity-50"
+                      >Clear</button>
                     </div>
                   );
                 })}
