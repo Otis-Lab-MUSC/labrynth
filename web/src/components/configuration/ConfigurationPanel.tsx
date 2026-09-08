@@ -19,10 +19,13 @@ import { LaserControl } from "../hardware/LaserControl";
 import { LickCircuitControl } from "../hardware/LickCircuitControl";
 import { MicroscopeControl } from "../hardware/MicroscopeControl";
 import { SLMControl } from "../hardware/SLMControl";
+import { ExternalTriggerControl } from "../hardware/ExternalTriggerControl";
+import { ConfigLock } from "../layout/ConfigLock";
 import { usePinOverridesHydration } from "../hardware/usePinOverridesHydration";
 import { useTutorialStore } from "../../store/useTutorialStore";
 import { laserPhaseActive } from "../monitor/hardwareSummary";
-import type { CommandSpec, LaserUiState } from "../../types";
+import { useFirmwareCommands } from "../../hooks/useFirmwareCommands";
+import type { LaserUiState } from "../../types";
 
 /* ── Default baselines for dirty-state detection ─────────────────── */
 
@@ -85,7 +88,6 @@ export function ConfigurationPanel() {
 
   // Hardware section collapse state
   const [hardwareExpanded, setHardwareExpanded] = useState(false);
-  const [commands, setCommands] = useState<CommandSpec[]>([]);
 
   // Dirty-state baseline: factory defaults until a preset is applied
   const baselineRef = useRef<Baseline>(defaultBaseline());
@@ -93,19 +95,10 @@ export function ConfigurationPanel() {
   const paradigm = session?.paradigm?.toLowerCase();
   const isPav = paradigm === "pavlovian";
 
-  // Two-photon controls follow what the running firmware actually accepts, not
-  // the board name: a "_lite" build rejects 900/901/903 and 11xx with a
-  // level-006 error, and the backend already filters them out of this list.
-  // Keyed on MICROSCOPE_ARM, which every two-photon-capable paradigm exposes.
-  const hasTwoPhoton = useMemo(() => commands.some((c) => c.code === 901), [commands]);
-
-  // Fetch commands for hardware section
-  useEffect(() => {
-    if (!activeSessionId) return;
-    getClientForSession(activeSessionId)?.getCommands(activeSessionId).then((r) => {
-      setCommands(r.commands as unknown as CommandSpec[]);
-    }).catch(() => {});
-  }, [activeSessionId, session?.paradigm]);
+  // Optional hardware follows what the running firmware actually accepts, not
+  // the board name — see useFirmwareCommands.
+  const { commands, hasTwoPhoton, hasExternalTrigger } = useFirmwareCommands(activeSessionId);
+  const isArmed = session?.state === "armed";
 
   // Auto-expand hardware section when tutorial navigates to a hardware step
   const tutorialActive = useTutorialStore((s) => s.active);
@@ -433,6 +426,7 @@ export function ConfigurationPanel() {
   const isRemoteSession = getClientForSession(activeSessionId)?.isRemote ?? false;
 
   return (
+    <ConfigLock locked={isArmed}>
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-theme-text">Session Configuration</h2>
 
@@ -638,6 +632,17 @@ export function ConfigurationPanel() {
                   </div>
                 </section>
               )}
+
+              {/* External start trigger — Mega-only, stripped from "_lite" firmware
+                  alongside the two-photon devices. */}
+              {hasExternalTrigger && (
+                <section className="space-y-4 pt-6">
+                  <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">External Trigger</h4>
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <ExternalTriggerControl sessionId={activeSessionId} />
+                  </div>
+                </section>
+              )}
             </div>
           </div>
         )}
@@ -660,5 +665,6 @@ export function ConfigurationPanel() {
         onCancel={() => setDeleteConfirm(null)}
       />
     </div>
+    </ConfigLock>
   );
 }

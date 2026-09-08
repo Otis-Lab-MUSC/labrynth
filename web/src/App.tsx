@@ -73,7 +73,11 @@ function AppContent() {
 
   const hasActiveSession = useSessionStore(
     (s) => [...s.sessions.values()].some(
-      (sess) => sess.state === "connected" || sess.state === "running" || sess.state === "paused"
+      (sess) =>
+        sess.state === "connected" ||
+        sess.state === "armed" ||
+        sess.state === "running" ||
+        sess.state === "paused"
     )
   );
 

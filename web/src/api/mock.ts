@@ -234,8 +234,42 @@ export const setPins = async (_id: string, assignments: Record<string, number>) 
 });
 
 export const startProgram = async (id: string) => {
+  cancelDemoTrigger(id);
   useSessionStore.getState().updateState(id, "running");
   startSimulator(id);
+  return { status: "ok" };
+};
+
+/** Demo-mode external trigger. There is no hardware to wait on, so the arm
+ *  fires itself after a short delay — enough for the "waiting" UI to be visible
+ *  before the run starts. Disarming (or a manual start) cancels the pending fire. */
+// Keyed per session: a single shared slot meant arming a second session
+// cancelled the first one's pending fire, stranding it in "armed" forever.
+const demoTriggerTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+const cancelDemoTrigger = (id: string) => {
+  const t = demoTriggerTimers.get(id);
+  if (t !== undefined) {
+    clearTimeout(t);
+    demoTriggerTimers.delete(id);
+  }
+};
+
+export const armExternalTrigger = async (id: string) => {
+  cancelDemoTrigger(id);
+  useSessionStore.getState().updateState(id, "armed");
+  demoTriggerTimers.set(id, setTimeout(() => {
+    demoTriggerTimers.delete(id);
+    if (useSessionStore.getState().sessions.get(id)?.state !== "armed") return;
+    useSessionStore.getState().updateState(id, "running");
+    startSimulator(id);
+  }, 4000));
+  return { status: "ok" };
+};
+
+export const disarmExternalTrigger = async (id: string) => {
+  cancelDemoTrigger(id);
+  useSessionStore.getState().updateState(id, "connected");
   return { status: "ok" };
 };
 

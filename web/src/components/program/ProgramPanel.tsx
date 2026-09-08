@@ -3,6 +3,7 @@ import { useSessionStore } from "../../store/useSessionStore";
 import { ParadigmSettings } from "./ParadigmSettings";
 import { PavlovianSettings } from "./PavlovianSettings";
 import { LimitConfig } from "./LimitConfig";
+import { ConfigLock } from "../layout/ConfigLock";
 import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "./devicePresets";
 import type { DevicePreset } from "./devicePresets";
 import { SESSION_PRESETS, SessionPresetCard, buildPresetFromSession, SavePresetDialog } from "./presets";
@@ -287,6 +288,7 @@ export function ProgramPanel() {
   }
 
   return (
+    <ConfigLock locked={session?.state === "armed"}>
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-theme-text">Program Configuration</h2>
 
@@ -424,5 +426,6 @@ export function ProgramPanel() {
         onCancel={() => setUpdateConfirm(null)}
       />
     </div>
+    </ConfigLock>
   );
 }

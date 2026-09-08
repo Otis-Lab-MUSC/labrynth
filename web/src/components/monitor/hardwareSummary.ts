@@ -30,11 +30,15 @@ export interface SummaryContext {
   pressContingent: boolean;
 }
 
-// Every device in HardwareUiState except the testMode flag. Keying FORMATTERS by
-// this union as a mapped type makes the summary renderer exhaustive: add a device
-// to HardwareUiState and the build fails here until it gets a formatter — the guard
-// against the summary silently drifting from the configured-hardware schema (#78).
-type SummaryDeviceKey = Exclude<keyof HardwareUiState, "testMode">;
+// Every device in HardwareUiState except the testMode flag and the external
+// trigger. Keying FORMATTERS by this union as a mapped type makes the summary
+// renderer exhaustive: add a device to HardwareUiState and the build fails here
+// until it gets a formatter — the guard against the summary silently drifting
+// from the configured-hardware schema (#78).
+// externalTrigger is excluded because it is a start *mode*, not an armable
+// device: it has no arm command of its own and is reported separately in the
+// start dialog's Start Mode section.
+type SummaryDeviceKey = Exclude<keyof HardwareUiState, "testMode" | "externalTrigger">;
 
 const leverFilterLabel: Record<"rh" | "lh", string> = { rh: "RH", lh: "LH" };
 

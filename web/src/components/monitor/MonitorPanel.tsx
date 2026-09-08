@@ -93,6 +93,7 @@ export function MonitorPanel() {
 
   const canControl = session.state === "running" || session.state === "paused";
   const isHostOffline = session.state === "disconnected";
+  const isArmed = session.state === "armed";
 
   return (
     <div className="space-y-6">
@@ -127,6 +128,39 @@ export function MonitorPanel() {
         </div>
       </div>
 
+      {isArmed && (
+        <div
+          role="status"
+          className="rounded border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-mono text-amber-400"
+        >
+          <p className="flex items-center gap-2">
+            <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-status-pulse" />
+            Armed — waiting for external trigger on pin{" "}
+            {session.hardwareUi.externalTrigger?.pin ?? 18}.
+          </p>
+          <p className="mt-1 text-xs text-amber-400/70">
+            The run starts on the next rising TTL edge. Settings are locked until
+            then — cancel to change them.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              onClick={() => getClientForSession(activeSessionId!)?.startProgram(activeSessionId!)}
+              className="rounded bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/30 transition-colors"
+              title="Start now without waiting for the trigger"
+            >
+              Start Now
+            </button>
+            <button
+              onClick={() => getClientForSession(activeSessionId!)?.disarmExternalTrigger(activeSessionId!)}
+              className="rounded border border-amber-500/30 px-3 py-1 text-xs font-semibold text-amber-300/80 hover:bg-amber-500/10 transition-colors"
+              title="Disarm and return to settings"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {isHostOffline && (
         <div role="status" className="rounded border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-mono text-red-400">
           <p>Host offline — controls disabled. Session data is preserved.</p>
@@ -148,9 +182,9 @@ export function MonitorPanel() {
         <div role="group" aria-label="Session transport controls" className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setStartModalOpen(true)}
-            disabled={session.state === "running"}
+            disabled={session.state === "running" || isArmed}
             aria-label="Start session"
-            title="Start a new session"
+            title={isArmed ? "Armed — cancel first to change settings" : "Start a new session"}
             className="inline-flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-white font-mono transition hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >
             <Play size={16} aria-hidden="true" />

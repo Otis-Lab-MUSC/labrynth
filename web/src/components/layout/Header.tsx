@@ -134,6 +134,15 @@ function SessionStatusDot({ state }: { state: SessionState }) {
     return null;
   }
 
+  if (state === "armed") {
+    return (
+      <span
+        className="mr-1.5 inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-status-pulse"
+        aria-label="Session armed, waiting for external trigger"
+      />
+    );
+  }
+
   if (state === "running" || state === "paused") {
     return (
       <span
@@ -159,6 +168,13 @@ function getCloseWarning(session: Session): { title: string; message: string; va
       title: "Close running session?",
       message: `"${name}" is currently ${session.state}. Closing will stop the program. Session logs are saved, but unexported data will need to be recovered from log files.`,
       variant: "danger",
+    };
+  }
+  if (session.state === "armed") {
+    return {
+      title: "Close armed session?",
+      message: `"${name}" is armed and waiting for an external trigger. Closing disarms the board and cancels the pending start — the trigger will not begin a run.`,
+      variant: "warning",
     };
   }
   if (session.behaviorData.length > 0) {
