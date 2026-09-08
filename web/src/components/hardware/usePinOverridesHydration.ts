@@ -24,7 +24,7 @@ export function usePinOverridesHydration(sessionId: string | null | undefined) {
       const componentByDevice: Record<string, string> = {
         CUE: "cue", CUE2: "cue2",
         PUMP: "pump", PUMP2: "pump2",
-        LICK_CIRCUIT: "lick", LASER: "laser",
+        LICK: "lick", LASER: "laser",
         LEVER_RH: "lever_rh", LEVER_LH: "lever_lh",
         SLM: "slm",
       };

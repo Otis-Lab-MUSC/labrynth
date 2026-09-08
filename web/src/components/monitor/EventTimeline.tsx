@@ -33,9 +33,10 @@ const DEVICE_COLORS: Record<string, { dark: string; light: string }> = {
   LASER:      { dark: "#ff4444", light: "#dc2626" },
   SLM:        { dark: "#ff00ff", light: "#9333ea" },
   CONTROLLER: { dark: "#888888", light: "#6b7280" },
-  // Legacy aliases (firmware < v2.4.x)
-  RH_LEVER: { dark: "#00ff41", light: "#16a34a" },
-  LH_LEVER: { dark: "#41ff00", light: "#65a30d" },
+  // Bare CUE/PUMP are current level-007 names, not legacy: PavlovianScheduler
+  // spells the *primaries* without the _1 suffix the operant Scheduler uses
+  // (it still emits CUE_2/PUMP_2), so both spellings are live and paradigm-
+  // dependent. See PavlovianScheduler.cpp / Scheduler.cpp LogDeviceActivation.
   CUE:      { dark: "#ffaa00", light: "#d97706" },
   PUMP:     { dark: "#00aaff", light: "#2563eb" },
 };
@@ -73,11 +74,9 @@ const DEVICE_DISPLAY_NAMES: Record<string, string> = {
   PUMP_2: "Pump 2",
   LASER: "Laser",
   LICK: "Lick Circuit",
-  MICROSCOPE: "Microscope",
+  SLM: "SLM",
   CONTROLLER: "Controller",
-  // Legacy firmware labels
-  RH_LEVER: "RH Lever",
-  LH_LEVER: "LH Lever",
+  // See DEVICE_COLORS: bare CUE/PUMP are current, not legacy.
   CUE: "Cue 1",
   PUMP: "Pump 1",
 };
@@ -216,7 +215,7 @@ export function EventTimeline({ events }: Props) {
 
   // Compute active lanes from unique device names, preserving a stable order
   const deviceOrder = ["LEVER_RH", "LEVER_LH", "CUE_1", "CUE_2", "PUMP_1", "PUMP_2", "LICK", "LASER", "SLM", "CONTROLLER",
-                       "RH_LEVER", "LH_LEVER", "CUE", "PUMP"];
+                       "CUE", "PUMP"];
   const activeDevices = new Set(displayEvents.map((e) => e.device));
   const activeLanes = deviceOrder.filter((d) => activeDevices.has(d));
   // Append any unknown devices

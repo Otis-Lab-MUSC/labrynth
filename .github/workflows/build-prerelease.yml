@@ -415,6 +415,19 @@ jobs:
       - name: List artifacts
         run: ls -lhR artifacts/
 
+      - name: Verify at least one artifact was produced
+        run: |
+          shopt -s nullglob
+          assets=(artifacts/*.exe artifacts/*.dmg artifacts/*.deb artifacts/*.tar.gz artifacts/*.AppImage)
+          if [ ${#assets[@]} -eq 0 ]; then
+            echo "ERROR: no installer artifacts were produced - refusing to publish an empty release." >&2
+            echo "       The release notes name a bundled reacher version, so an assetless release" >&2
+            echo "       is indistinguishable from a good one for anyone reading the release page." >&2
+            exit 1
+          fi
+          echo "Attaching ${#assets[@]} artifact(s):"
+          printf '  %s\n' "${assets[@]}"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         env:

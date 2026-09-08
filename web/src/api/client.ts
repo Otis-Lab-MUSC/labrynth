@@ -19,6 +19,15 @@ export interface ValidationResult {
   suggestions: string;
 }
 
+export interface IssuePrefill {
+  title: string;
+  body: string;
+  labels: string[];
+  url: string;
+  repo: string;
+  owner: string;
+}
+
 export type ValidateConfigPayload = {
   paradigm?: string;
   paradigmSettings?: Record<string, unknown>;
@@ -28,6 +37,7 @@ export type ValidateConfigPayload = {
 };
 
 // Fix: FE-001 — Filename validation to prevent path traversal
+// eslint-disable-next-line no-control-regex -- matching control chars is the intent
 const UNSAFE_FILENAME_RE = /[<>:"/\\|?*\x00-\x1f]/;
 const ARCHIVE_SUFFIX_RE = /\.(zip|tar\.gz|tgz|tar|gz)$/i;
 export function sanitizeFilename(name: string): string {
@@ -373,25 +383,17 @@ export class MachineApiClient {
     });
 
   // --- Issues ---
-  getIssueStatus = () =>
-    this.request<{ llm: boolean; github: boolean; owner: string; repos: string[] }>("/issues/status");
-  reportIssue = (body: {
+  // Purely local on the backend: builds a pre-filled GitHub "New Issue" URL the
+  // user reviews and submits themselves. Nothing is filed on their behalf.
+  getIssuePrefill = (body: {
     description: string;
     steps?: string;
     severity?: string;
     repo?: string;
     app_version?: string;
-    file?: boolean;
+    labels?: string[];
   }) =>
-    this.request<{
-      title: string;
-      body: string;
-      labels: string[];
-      summarized: boolean;
-      filed: boolean;
-      html_url: string | null;
-      repo: string;
-    }>("/issues/report", {
+    this.request<IssuePrefill>("/issues/prefill", {
       method: "POST",
       body: JSON.stringify(body),
     });

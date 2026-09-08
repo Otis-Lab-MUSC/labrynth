@@ -50,8 +50,8 @@ export const defaultHardwareUiState = (): HardwareUiState => ({
   lhLever: { armed: false, timeout: 0, ratio: 1 },
   primaryCue:   { armed: false, frequency: 0, duration: 0, contingency: DEFAULT_CONTINGENCY() },
   secondaryCue: { armed: false, frequency: 0, duration: 0, contingency: DEFAULT_CONTINGENCY() },
-  primaryPump:  { armed: false, duration: 0, contingency: DEFAULT_CONTINGENCY() },
-  secondaryPump: { armed: false, duration: 0, contingency: DEFAULT_CONTINGENCY() },
+  primaryPump:  { armed: false, duration: 0, contingency: DEFAULT_CONTINGENCY(), flowRateUlPerSec: null },
+  secondaryPump: { armed: false, duration: 0, contingency: DEFAULT_CONTINGENCY(), flowRateUlPerSec: null },
   laser: { armed: false, frequency: 0, duration: 0, mode: "contingent", phase: "reward", contingency: "any", onsetDelay: 0 },
   lickCircuit: { armed: false },
   microscope: { armed: false, frameRate: null, frameAveraging: null },
@@ -155,7 +155,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     const { session_id } = await client.createSession(port, paradigm);
     set((s) => {
       const next = new Map(s.sessions);
-      let nextOrder = [...s.sessionOrder];
+      const nextOrder = [...s.sessionOrder];
       if (activeDraft) {
         next.delete(activeDraft);
         const idx = nextOrder.indexOf(activeDraft);
@@ -344,7 +344,12 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const rhLeverCounts = { ...ZERO_LEVER };
       const lhLeverCounts = { ...ZERO_LEVER };
       for (const e of events) {
-        if (e.device === "PUMP" && e.event === "INFUSION") infusionCount++;
+        // Both spellings are live and paradigm-dependent: the operant Scheduler
+        // emits PUMP_1, PavlovianScheduler emits bare PUMP. Missing PUMP_1 here
+        // zeroed the infusion count on every operant paradigm whenever this
+        // recompute ran (reconnect recovery), and a split then folded the zero
+        // into cumulativeInfusionCount permanently. Keep in sync with addEvent.
+        if ((e.device === "PUMP" || e.device === "PUMP_1") && e.event === "INFUSION") infusionCount++;
         if ((e.device === "RH_LEVER" || e.device === "LH_LEVER" || e.device === "LEVER_RH" || e.device === "LEVER_LH") && e.event.includes("PRESS")) pressCount++;
         if (e.device === "PAVLOV" && e.event === "TRIAL_START") {
           trialCount++;

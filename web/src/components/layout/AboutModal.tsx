@@ -7,6 +7,7 @@ import { useUpdateStore } from "../../store/useUpdateStore";
 import { getLocalClient } from "../../api/client";
 import { downloadDiagnostics } from "../../logging";
 import { useReportStore } from "../../store/useReportStore";
+import { INTERFACE_CHANGELOG } from "../../lib/interfaceChangelog";
 
 interface AboutModalProps {
   open: boolean;
@@ -107,6 +108,26 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
             </tr>
           </tbody>
         </table>
+
+        {INTERFACE_CHANGELOG.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-2 text-sm font-medium text-theme-text">What's new</p>
+            <div className="max-h-40 space-y-3 overflow-y-auto rounded border border-theme-border px-3 py-2.5 text-xs text-theme-text/70">
+              {INTERFACE_CHANGELOG.map((entry) => (
+                <div key={entry.version}>
+                  <p className="mb-1 font-mono text-theme-text/50">
+                    v{entry.version} — {entry.date}
+                  </p>
+                  <ul className="list-disc space-y-0.5 pl-4">
+                    {entry.highlights.map((highlight) => (
+                      <li key={highlight}>{highlight}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {update ? (
           <div className="mb-4 rounded border border-accent/30 bg-accent/10 px-3 py-2.5">

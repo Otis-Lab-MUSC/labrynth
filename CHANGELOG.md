@@ -14,6 +14,66 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [3.0.1-alpha.21] - 2026-09-01
+
+_Corrects the frontend device-name tables against reacher's new machine-readable
+schema export, fixes an infusion miscount after WebSocket reconnects, and disables
+a laser control that firmware silently ignores on VI/Omission. Bundled reacher
+backend/firmware bumped to v3.4.0-alpha.8._
+
+> **Re-flash required.** a8 recompiles all nine firmware sketches so an unhandled
+> command is echoed back with its code. Existing boards keep the old firmware
+> until re-flashed from this build.
+
+### Fixed
+- Frontend: LH-only laser routing is now **disabled with the reason shown** on
+  `vi`, `omission` and their lite twins. Those sketches have no
+  `LASER_LEVER_FILTER` and ignore command 685, so selecting "LH lever" did not
+  switch the laser — it left the *previous* contingency in force. Choosing RH and
+  then LH gave a UI showing LH while the rig kept stimulating on RH presses, for a
+  whole session, in data that looks normal
+- Frontend: infusion counts no longer reset after a WebSocket reconnect on operant
+  paradigms. The reconnect recompute counted only the Pavlovian `PUMP` spelling and
+  missed the operant `PUMP_1`, so a single reconnect zeroed the count and a
+  subsequent segment split folded that zero into the cumulative total permanently.
+  Display-only: the kernel counts both spellings and enforces the infusion limit
+  from its own counter, so no session ever ran long, and `controller_log.json`
+  retains the raw events for recounting any affected export
+- Frontend: lick-circuit pin overrides now hydrate into the UI
+  (`LICK_CIRCUIT` → `LICK`, matching the level-000 config namespace)
+- Frontend: `EventTimeline` device tables reconciled against the namespaces reacher
+  actually emits — adds the missing `SLM` lane label, drops `MICROSCOPE` (level 008,
+  never a behavior event) and `RH_LEVER`/`LH_LEVER` (never serial names at any
+  firmware version)
+- CI: `build-prerelease.yml` no longer publishes a release with zero assets
+  attached. Platform builds run with `continue-on-error`, so a total build failure
+  previously still published a prerelease whose notes named a bundled reacher
+  version with nothing attached — indistinguishable from a good release
+
+### Added
+- Frontend: `npm run gen:gaps` generates `src/generated/firmwareGaps.ts` from
+  reacher's `KNOWN_FIRMWARE_GAPS`, so UI gates for unimplemented firmware commands
+  are derived rather than hand-written and lift automatically once the gap closes
+- Tooling: `web/eslint.config.js`. `npm run lint` has been broken since the ESLint 9
+  upgrade — no flat config existed, and it exited 0 through a pipe, so a broken lint
+  read as a passing one. Adds the missing `typescript-eslint` and
+  `eslint-plugin-react-hooks` deps; now reports 0 errors, 34 warnings (a triage
+  backlog of react-hooks v6 findings, deliberately non-blocking)
+
+### Changed
+- Bundled reacher backend/firmware pinned to **v3.4.0-alpha.8**
+  (`reacher2p>=3.4.0a8`). That release adds the machine-readable schema export this
+  build's gap generator consumes, corrects the kernel's lick-circuit device name,
+  and takes exported infusion/press/trial counts from the kernel rather than the
+  browser
+
+### Known issues
+- Saved presets still store `contingency: "lh"` and re-dispatch it on apply, so a
+  preset authored on an FR rig still sends command 685 on a VI rig even though the
+  control is now disabled there. Gating the control does not cover the preset path
+
+---
+
 ## [3.0.1-alpha.12] - 2026-07-27
 
 _Adds fr_lite session presets; reacher backend pinned to v3.3.0 so fr_lite sessions
