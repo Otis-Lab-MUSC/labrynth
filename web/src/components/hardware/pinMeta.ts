@@ -18,6 +18,15 @@
  * Adding a component means adding it to every record above — the parser
  * enforces a minimum entry count, so a partial addition fails there too.
  * `*_INT_ASSIGNABLE` and `COMPONENT_LABEL` are ours alone and unparsed.
+ *
+ * It reads this file **off disk, from the sibling checkout** — located by path
+ * (`mcp/workspace.py` uses this file as its marker for the labrynth root), with
+ * no git ref involved. So reacher's parity results reflect whatever is checked
+ * out here, not what is on `main`: switching branches in this repo can change
+ * that repo's test results with no commit, no push, and nothing to bisect.
+ * reacher reports the branch it read and warns on a dirty tree, but quietly —
+ * if its parity suite disagrees with what you expect, check which branch this
+ * working tree is on before believing the diff.
  */
 
 import type { BoardType } from "../../types";
