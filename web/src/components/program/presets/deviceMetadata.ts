@@ -13,8 +13,12 @@ import type { SessionPreset, PresetDeviceEntry } from "./types";
  * preset happened to be saved while the board was armed — and re-applying that
  * preset would overwrite the live trigger pin.
  *
- * Exported so the cross-repo device-parity check can distinguish an intentional
- * omission from drift.
+ * Exported so a cross-repo device-parity check could distinguish an intentional
+ * omission from drift. No such consumer exists today — the reacher-side check
+ * that read this lived in an MCP implementation that was discarded in favour of
+ * a different upstream design. It stays exported because it is still the source
+ * of `DeviceKey` below, so the exclusion is enforced by the compiler here even
+ * with nothing reading it from outside.
  */
 export const PRESET_EXCLUDED_DEVICE_KEYS = ["testMode", "externalTrigger"] as const;
 
