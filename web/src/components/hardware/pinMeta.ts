@@ -4,6 +4,29 @@
  * Mirrors backend `pin_overrides.py`: same component keys, same SET_PIN
  * command codes, same board pin sets and role constraints. The microscope
  * timestamp pin is intentionally NOT remappable (fixed at INT0 / pin 2).
+ *
+ * These identifiers are load-bearing BY NAME outside this repo. reacher's
+ * frontend-parity checks read this file as text (`mcp/sources/ts.py`
+ * `parse_pin_meta`) and compare it against `pin_overrides.py`, so renaming or
+ * restructuring any of them fails reacher's CI, not ours, with nothing here to
+ * hint at why:
+ *
+ *   Component (the union)   COMPONENT_KEYS          SET_PIN_CODE
+ *   DEFAULT_PIN             COMPONENT_REQUIRES_PWM  COMPONENT_REQUIRES_PCINT
+ *   COMPONENT_REQUIRES_INT  UNO_DIGITAL/PWM/PCINT0  MEGA_DIGITAL/PWM/MEGA_PCINT0
+ *
+ * Adding a component means adding it to every record above — the parser
+ * enforces a minimum entry count, so a partial addition fails there too.
+ * `*_INT_ASSIGNABLE` and `COMPONENT_LABEL` are ours alone and unparsed.
+ *
+ * It reads this file **off disk, from the sibling checkout** — located by path
+ * (`mcp/workspace.py` uses this file as its marker for the labrynth root), with
+ * no git ref involved. So reacher's parity results reflect whatever is checked
+ * out here, not what is on `main`: switching branches in this repo can change
+ * that repo's test results with no commit, no push, and nothing to bisect.
+ * reacher reports the branch it read and warns on a dirty tree, but quietly —
+ * if its parity suite disagrees with what you expect, check which branch this
+ * working tree is on before believing the diff.
  */
 
 import type { BoardType } from "../../types";
