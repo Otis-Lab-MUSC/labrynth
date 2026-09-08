@@ -25,10 +25,10 @@ export function useFirmwareCommands(sessionId: string | null) {
   const [commands, setCommands] = useState<CommandSpec[]>([]);
 
   useEffect(() => {
-    if (!sessionId) {
-      setCommands([]);
-      return;
-    }
+    // Early-return rather than clearing: a synchronous setState here would
+    // cascade a render, and there is nothing to clear for in practice — with no
+    // session the capability-gated UI is not mounted at all.
+    if (!sessionId) return;
     let cancelled = false;
     getClientForSession(sessionId)
       ?.getCommands(sessionId)
