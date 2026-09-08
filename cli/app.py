@@ -307,6 +307,10 @@ class SessionState:
     backend_event_count: int = 0
     # Pavlovian command specs sourced from reacher's registry (get_commands_for_paradigm)
     pav_commands: list[dict] = field(default_factory=list)
+    # True when the running firmware exposes EXT_TRIGGER_ARM (1201). Sniffed from
+    # the same command list rather than the board name, since a "_lite" build on
+    # any board omits it.
+    has_external_trigger: bool = False
 
     @property
     def elapsed(self) -> float:
@@ -589,7 +593,9 @@ class ReacherCLI:
             suffix="[ON]" if test_mode else "",
         ))
         items.append(MenuItem("Back", action=self._pop_menu))
-        return MenuState(title="Hardware", items=items)
+        armed_lock = bool(self.session and self.session.state == "armed")
+        title = "Hardware  [LOCKED — armed]" if armed_lock else "Hardware"
+        return MenuState(title=title, items=items)
 
     def _device_menu(self, device_id: str) -> MenuState:
         cfg = DEVICE_BY_ID[device_id]
@@ -634,18 +640,23 @@ class ReacherCLI:
 
         title = f"Hardware > {cfg['label']}"
         suffix = "[ARMED]" if armed else "[DISARMED]"
+        if self.session and self.session.state == "armed":
+            suffix += "  [LOCKED — session armed]"
         return MenuState(title=f"{title}  {suffix}", items=items)
 
     def _program_menu(self) -> MenuState:
         s = self.session
-        items = [
-            MenuItem("Apply Preset", action=lambda: self._push_menu(self._preset_menu())),
-            MenuItem("Paradigm Settings", action=lambda: self._push_menu(self._paradigm_settings_menu())),
-        ]
-        if s and s.paradigm == "pavlovian":
-            items.append(MenuItem("Pavlovian Settings",
-                                  action=lambda: self._push_menu(self._pavlovian_menu())))
-        items.append(MenuItem("Limits", action=lambda: self._push_menu(self._limits_menu())))
+        armed_lock = bool(s and s.state == "armed")
+        items: list[MenuItem] = []
+        if not armed_lock:
+            items.append(MenuItem("Apply Preset",
+                                  action=lambda: self._push_menu(self._preset_menu())))
+            items.append(MenuItem("Paradigm Settings",
+                                  action=lambda: self._push_menu(self._paradigm_settings_menu())))
+            if s and s.paradigm == "pavlovian":
+                items.append(MenuItem("Pavlovian Settings",
+                                      action=lambda: self._push_menu(self._pavlovian_menu())))
+            items.append(MenuItem("Limits", action=lambda: self._push_menu(self._limits_menu())))
 
         if s and s.state == "running":
             items.append(MenuItem("Stop Session", action=self._stop_program))
@@ -657,8 +668,14 @@ class ReacherCLI:
             items.append(MenuItem("Play (Resume)", action=self._pause_program))
             items.append(MenuItem("Split Segment", action=self._split_segment))
             items.append(MenuItem("Restart Program", action=self._restart_program))
+        elif s and s.state == "armed":
+            items.append(MenuItem("Start Now (skip trigger)", action=self._start_program))
+            items.append(MenuItem("Cancel Arm", action=self._disarm_external_trigger))
         else:
             items.append(MenuItem("Start Session", action=self._start_program))
+            if s and s.has_external_trigger:
+                items.append(MenuItem("Start on External Trigger",
+                                      action=self._arm_external_trigger))
 
         items.append(MenuItem("Back", action=self._pop_menu))
         return MenuState(title="Program", items=items)
@@ -763,7 +780,7 @@ class ReacherCLI:
             ))
 
         if not scalar and not pulse:
-            items.append(MenuItem("Reload commands", action=self._load_pav_commands))
+            items.append(MenuItem("Reload commands", action=self._load_commands))
         items.append(MenuItem("Back", action=self._pop_menu))
         return MenuState(title="Program > Pavlovian Settings", items=items)
 
@@ -972,8 +989,7 @@ class ReacherCLI:
             sid = resp.get("session_id") or resp.get("id", "")
             self.session = SessionState(id=sid, port=port, paradigm=paradigm)
             self._set_status(f"Session created: {sid[:8]}...")
-            if paradigm and paradigm.lower() == "pavlovian":
-                await self._load_pav_commands()
+            await self._load_commands()
             self._rebuild_current_menu()
         except Exception as exc:
             self._set_status(f"Create session failed: {exc}", error=True)
@@ -994,10 +1010,14 @@ class ReacherCLI:
         if not self.session:
             self._set_status("No session", error=True)
             return
+        was_armed = self.session.state == "armed"
         try:
             await self.api.disconnect_serial(self.session.id)
             self.session.state = "idle"
-            self._set_status("Serial disconnected")
+            self._set_status(
+                "Serial disconnected — the pending external start was cancelled"
+                if was_armed else "Serial disconnected"
+            )
             self._rebuild_current_menu()
         except Exception as exc:
             self._set_status(f"Disconnect failed: {exc}", error=True)
@@ -1053,28 +1073,38 @@ class ReacherCLI:
             self._set_status(f"Firmware uploaded: {paradigm} ({board})")
             if not self.session.name:
                 self.session.name = f"{paradigm.upper()} {self.session.port}"
-            if paradigm.lower() == "pavlovian":
-                await self._load_pav_commands()
+            # Unconditional: the upload just changed which commands the board
+            # accepts, so the capability flags must be re-sniffed.
+            await self._load_commands()
             self._rebuild_current_menu()
         except Exception as exc:
             self.session.state = "idle"
             self._set_status(f"Upload failed: {exc}", error=True)
 
-    async def _load_pav_commands(self) -> None:
-        """Fetch the registry-driven Pavlovian command set for the session's paradigm."""
+    async def _load_commands(self) -> None:
+        """Fetch the registry-driven command set the running firmware accepts.
+
+        Feeds both the Pavlovian settings menu and the optional-hardware
+        capability flags.
+        """
         if not self.session:
             return
         try:
             resp = await self.api.get_commands(self.session.id)
-            self.session.pav_commands = resp.get("commands", [])
+            commands = resp.get("commands", [])
+            self.session.pav_commands = commands
+            self.session.has_external_trigger = any(
+                c.get("code") == 1201 for c in commands
+            )
             self._rebuild_current_menu()
         except Exception as exc:
-            self._set_status(f"Failed to load Pavlovian commands: {exc}", error=True)
+            self._set_status(f"Failed to load commands: {exc}", error=True)
 
     async def _reset_session(self) -> None:
         if not self.session:
             self._set_status("No session", error=True)
             return
+        was_armed = self.session.state == "armed"
         try:
             await self.api.reset_session(self.session.id)
             self.session.state = "idle"
@@ -1084,7 +1114,10 @@ class ReacherCLI:
             self.session.trial_count = 0
             self.session.program_start = None
             self.session.program_end = None
-            self._set_status("Session reset")
+            self._set_status(
+                "Session reset — the pending external start was cancelled"
+                if was_armed else "Session reset"
+            )
             self._rebuild_current_menu()
         except Exception as exc:
             self._set_status(f"Reset failed: {exc}", error=True)
@@ -1093,8 +1126,12 @@ class ReacherCLI:
         if not self.session:
             self._set_status("No session", error=True)
             return
+        prompt = "Destroy session? This cannot be undone."
+        if self.session.state == "armed":
+            prompt = ("Session is armed and waiting for an external trigger. "
+                      "Destroying disarms the board and cancels the pending start. Continue?")
         self._prompt_select(
-            "Destroy session? This cannot be undone.",
+            prompt,
             [("Yes", "yes"), ("No", "no")],
             self._confirm_destroy,
         )
@@ -1127,6 +1164,17 @@ class ReacherCLI:
     async def _send_hw_command(self, code: int, value: int | None = None) -> None:
         if not self.session:
             self._set_status("No session", error=True)
+            return
+        # The backend 409s device commands while armed, because config is applied
+        # one command per request and a trigger edge landing mid-edit would start
+        # the run on a half-applied config. Refuse locally so the operator gets
+        # the reason rather than a raw request failure. Mirrors the web app's
+        # ConfigLock.
+        if self.session.state == "armed":
+            self._set_status(
+                "Armed and waiting for the external trigger — cancel the arm to change settings",
+                error=True,
+            )
             return
         try:
             await self.api.send_command(self.session.id, code, value)
@@ -1263,6 +1311,32 @@ class ReacherCLI:
             self._rebuild_current_menu()
         except Exception as exc:
             self._set_status(f"Start failed: {exc}", error=True)
+
+    async def _arm_external_trigger(self) -> None:
+        if not self.session:
+            self._set_status("No session", error=True)
+            return
+        try:
+            await self.api.arm_external_trigger(self.session.id)
+            # program_start is deliberately left unset — t0 is the trigger edge,
+            # which the backend reports via session_state, not this call.
+            self.session.state = "armed"
+            self._set_status("Armed — waiting for external trigger")
+            self._rebuild_current_menu()
+        except Exception as exc:
+            self._set_status(f"Arm failed: {exc}", error=True)
+
+    async def _disarm_external_trigger(self) -> None:
+        if not self.session:
+            self._set_status("No session", error=True)
+            return
+        try:
+            await self.api.disarm_external_trigger(self.session.id)
+            self.session.state = "connected"
+            self._set_status("Trigger disarmed")
+            self._rebuild_current_menu()
+        except Exception as exc:
+            self._set_status(f"Disarm failed: {exc}", error=True)
 
     async def _stop_program(self) -> None:
         if not self.session:
@@ -1653,9 +1727,16 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     async def _quit(self) -> None:
-        if self.session and self.session.state == "running":
+        # An armed session warns too: the board starts itself on the next trigger
+        # edge, and quitting leaves nothing listening to record it.
+        if self.session and self.session.state in ("running", "armed"):
+            prompt = (
+                "Session is armed and will start on an external trigger. Quit anyway?"
+                if self.session.state == "armed"
+                else "Session is running. Quit anyway?"
+            )
             self._prompt_select(
-                "Session is running. Quit anyway?",
+                prompt,
                 [("Yes", "yes"), ("No", "no")],
                 self._confirm_quit,
             )

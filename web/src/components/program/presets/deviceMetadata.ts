@@ -2,7 +2,23 @@ import type { HardwareUiState } from "../../../types";
 import type { Session } from "../../../types";
 import type { SessionPreset, PresetDeviceEntry } from "./types";
 
-type DeviceKey = keyof Omit<HardwareUiState, "testMode">;
+/**
+ * HardwareUiState keys that are deliberately NOT part of a session preset.
+ *
+ * `testMode` is transient session state. `externalTrigger` is a per-run start
+ * mode, not a device: it has no arm command of its own, its `armed` flag mirrors
+ * live firmware state rather than a configured choice, and its pin belongs to
+ * `session.pinOverrides` like every other pin. Including it would put a bogus
+ * "External Trigger" row on every preset card — marked *required* whenever the
+ * preset happened to be saved while the board was armed — and re-applying that
+ * preset would overwrite the live trigger pin.
+ *
+ * Exported so the cross-repo device-parity check can distinguish an intentional
+ * omission from drift.
+ */
+export const PRESET_EXCLUDED_DEVICE_KEYS = ["testMode", "externalTrigger"] as const;
+
+type DeviceKey = keyof Omit<HardwareUiState, (typeof PRESET_EXCLUDED_DEVICE_KEYS)[number]>;
 
 const DEVICE_METADATA: Record<DeviceKey, { label: string; role: string }> = {
   rhLever:       { label: "RH Lever",       role: "Right-hand lever" },
@@ -44,7 +60,11 @@ const DEFAULT_LIMIT_SETTINGS: SessionPreset["limitDefaults"] = {
 };
 
 export function buildPresetFromSession(name: string, session: Session): SessionPreset {
-  const { testMode: _, ...hardware } = session.hardwareUi;
+  // Both excluded keys are stripped from the persisted blob, not just testMode:
+  // applying a preset spreads `hardware` back over hardwareUi, so a retained
+  // externalTrigger would overwrite the session's live trigger pin.
+  const { testMode: _testMode, externalTrigger: _externalTrigger, ...hardware } =
+    session.hardwareUi;
 
   return {
     id: "user-" + crypto.randomUUID(),

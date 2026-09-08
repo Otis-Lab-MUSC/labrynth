@@ -14,6 +14,7 @@ import type { ValidationResult } from "../../api/client";
 // registry can surface (incl. re-enabled 212/215/219), with no separate drift.
 import { LABEL_OVERRIDES as PAV_CODE_LABELS } from "../program/pavLabels";
 import { isParadigm } from "../../lib/paradigm";
+import { useFirmwareCommands } from "../../hooks/useFirmwareCommands";
 
 export function SessionStartModal() {
   const startModalOpen = useSessionStore((s) => s.startModalOpen);
@@ -24,6 +25,11 @@ export function SessionStartModal() {
   );
   const setSessionName = useSessionStore((s) => s.setSessionName);
   const setLimitSettings = useSessionStore((s) => s.setLimitSettings);
+
+  const { hasExternalTrigger } = useFirmwareCommands(activeSessionId);
+  // "trigger" defers the run to an external TTL edge. Every config command below
+  // is sent identically either way — only the terminal call differs.
+  const [startMode, setStartMode] = useState<"now" | "trigger">("now");
 
   const [starting, setStarting] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -191,7 +197,12 @@ export function SessionStartModal() {
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, contingencyCommand);
       }
 
-      await getClientForSession(activeSessionId)?.startProgram(activeSessionId);
+      const client = getClientForSession(activeSessionId);
+      if (startMode === "trigger" && hasExternalTrigger) {
+        await client?.armExternalTrigger(activeSessionId);
+      } else {
+        await client?.startProgram(activeSessionId);
+      }
       useNavigationStore.getState().setActivePanel("monitor");
       setStartModalOpen(false);
     } catch (e) {
@@ -200,13 +211,21 @@ export function SessionStartModal() {
     } finally {
       setStarting(false);
     }
-  }, [activeSessionId, session, limitType, timeLimit, infusionLimit, delay, name, validationAcknowledged, setValidatorUnavailable]);
+  }, [activeSessionId, session, limitType, timeLimit, infusionLimit, delay, name, validationAcknowledged, setValidatorUnavailable, startMode, hasExternalTrigger]);
 
   if (!startModalOpen || !session) return null;
 
   const hw = session.hardwareUi;
+  const armingRun = hasExternalTrigger && startMode === "trigger";
+  // The modal portals to document.body, so ConfigLock's fieldset does not reach
+  // it. It is normally unreachable while armed (MonitorPanel disables Start),
+  // but this app is multi-client: another operator can arm the same session
+  // through the proxy while this modal sits open, and useSingleTab only guards
+  // a second *local* tab. Submitting then would fire the whole config batch at
+  // an armed board — the exact half-applied-config case ConfigLock prevents.
+  const lockedByArm = session.state === "armed";
   const devices = Object.entries(hw)
-    .filter(([key]) => key !== "testMode")
+    .filter(([key]) => key !== "testMode" && key !== "externalTrigger")
     .filter(([key]) => !isPavlovian || (key !== "rhLever" && key !== "lhLever")) as [string, { armed: boolean; [k: string]: unknown }][];
 
   return createPortal(
@@ -345,6 +364,50 @@ export function SessionStartModal() {
             </div>
           </section>
 
+          {/* Start mode — only offered when the running firmware exposes the trigger */}
+          {hasExternalTrigger && (
+            <section className="space-y-2">
+              <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">
+                Start Mode
+              </h4>
+              <div className="space-y-2">
+                {([
+                  {
+                    id: "now" as const,
+                    label: "Start immediately",
+                    hint: "The session begins as soon as you press Start.",
+                  },
+                  {
+                    id: "trigger" as const,
+                    label: "Wait for external trigger",
+                    hint: `Arms the board and holds. The run begins on the next rising TTL edge at pin ${hw.externalTrigger?.pin ?? 18}, which also fires the two-photon frame output.`,
+                  },
+                ]).map((opt) => (
+                  <label
+                    key={opt.id}
+                    className={`flex cursor-pointer gap-3 rounded border p-3 transition-colors ${
+                      startMode === opt.id
+                        ? "border-accent bg-accent/10"
+                        : "border-theme-border hover:bg-accent/5"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="start-mode"
+                      className="mt-0.5"
+                      checked={startMode === opt.id}
+                      onChange={() => setStartMode(opt.id)}
+                    />
+                    <span className="space-y-0.5">
+                      <span className="block text-sm text-theme-text">{opt.label}</span>
+                      <span className="block text-xs text-theme-text/50">{opt.hint}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* AI Validation Warnings */}
           {validationResult && validationResult.warnings.length > 0 && (
             <ValidationWarningPanel
@@ -361,6 +424,11 @@ export function SessionStartModal() {
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-2">
+            {lockedByArm && (
+              <span className="self-center text-xs font-mono text-amber-400">
+                session already armed — cancel it in the monitor to reconfigure
+              </span>
+            )}
             {validatorUnavailable && (
               <span className="self-center text-xs font-mono text-theme-text/30">
                 config validator unavailable
@@ -374,10 +442,14 @@ export function SessionStartModal() {
             </button>
             <button
               onClick={handleStart}
-              disabled={starting || validating || session.state === "running"}
+              disabled={starting || validating || session.state === "running" || lockedByArm}
               className="rounded bg-green-600 px-6 py-2 text-white font-mono hover:bg-green-700 disabled:opacity-50"
             >
-              {validating ? "Checking…" : starting ? "Starting…" : "Start Session"}
+              {validating
+                ? "Checking…"
+                : starting
+                  ? armingRun ? "Arming…" : "Starting…"
+                  : armingRun ? "Arm for Trigger" : "Start Session"}
             </button>
           </div>
         </div>

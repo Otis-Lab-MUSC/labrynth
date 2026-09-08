@@ -105,6 +105,14 @@ class ReacherClient:
     async def start_program(self, sid: str):
         return await self._req("POST", f"/api/program/{sid}/start")
 
+    async def arm_external_trigger(self, sid: str):
+        """Hold the session until an external TTL edge starts it."""
+        return await self._req("POST", f"/api/program/{sid}/arm-trigger")
+
+    async def disarm_external_trigger(self, sid: str):
+        """Cancel an arm, returning the session to "connected" without starting."""
+        return await self._req("POST", f"/api/program/{sid}/disarm-trigger")
+
     async def stop_program(self, sid: str):
         return await self._req("POST", f"/api/program/{sid}/stop")
 

@@ -8,7 +8,11 @@ export function ServerSuspendedOverlay() {
   const appClosing = useAppStore((s) => s.appClosing);
   const hasActiveSession = useSessionStore(
     (s) => [...s.sessions.values()].some(
-      (sess) => sess.state === "connected" || sess.state === "running" || sess.state === "paused"
+      (sess) =>
+        sess.state === "connected" ||
+        sess.state === "armed" ||
+        sess.state === "running" ||
+        sess.state === "paused"
     )
   );
   const sessionIdWithData = useSessionStore((s) => {

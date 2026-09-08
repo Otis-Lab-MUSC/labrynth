@@ -28,6 +28,7 @@ const DEVICE_TO_UI_KEY: Record<string, string> = {
   LEVER_RH: "rhLever",
   LEVER_LH: "lhLever",
   SLM: "slm",
+  EXT_TRIGGER: "externalTrigger",
 };
 
 export async function triggerAutoExport(sessionId: string) {
@@ -125,6 +126,7 @@ function handleMessage(msg: WSMessage) {
             if (typeof raw.timeout === "number") patch.timeout = raw.timeout;
             if (typeof raw.ratio === "number") patch.ratio = raw.ratio;
             if (typeof raw.mode === "string") patch.mode = raw.mode;
+            if (typeof raw.pin === "number") patch.pin = raw.pin;
             return { [uiKey]: { ...current, ...patch } } as Partial<typeof prev>;
           });
         }
@@ -157,6 +159,12 @@ function handleMessage(msg: WSMessage) {
     case "disconnect": {
       const { reason } = msg.data as { reason: string };
       updateState(msg.session_id, "disconnected");
+      // The firmware-armed mirror is only refreshed by a config dump, which
+      // cannot arrive over a dead port — clear it so the trigger card stops
+      // claiming the board is armed after the link is gone.
+      updateHardwareUi(msg.session_id, (prev) => ({
+        externalTrigger: { ...prev.externalTrigger, armed: false },
+      }));
       pushLog("error", `Serial disconnected: ${reason}`, msg.session_id);
       break;
     }

@@ -212,6 +212,9 @@ export function SessionPanel() {
           >
             Refresh
           </button>
+          {/* Disconnect stays hidden while armed: it would close the port without
+              disarming, stranding the board with its interrupt attached. The
+              monitor's Cancel is the way out. */}
           {activeSession && !activeSession.draft && (activeSession.state === "connected" || activeSession.state === "stopped" || activeSession.state === "disconnected") ? (
             <button
               onClick={handleDisconnect}
@@ -224,6 +227,11 @@ export function SessionPanel() {
             <button
               onClick={handleConnect}
               disabled={!selectedPort || loading || !activeMachine?.online || (activeSession != null && !activeSession.draft && activeSession.state !== "idle")}
+              title={
+                activeSession?.state === "armed"
+                  ? "Session is armed and waiting for the external trigger — cancel the arm in the monitor"
+                  : undefined
+              }
               className="btn-sm bg-accent text-accent-contrast hover:bg-accent-hover disabled:opacity-50"
             >
               Connect

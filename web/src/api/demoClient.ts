@@ -45,6 +45,10 @@ export class DemoMachineApiClient extends MachineApiClient {
   startProgram = (id: string) => mock.startProgram(id) as ReturnType<MachineApiClient["startProgram"]>;
   stopProgram = (id: string) => mock.stopProgram(id) as ReturnType<MachineApiClient["stopProgram"]>;
   pauseProgram = (id: string) => mock.pauseProgram(id) as ReturnType<MachineApiClient["pauseProgram"]>;
+  armExternalTrigger = (id: string) =>
+    mock.armExternalTrigger(id) as ReturnType<MachineApiClient["armExternalTrigger"]>;
+  disarmExternalTrigger = (id: string) =>
+    mock.disarmExternalTrigger(id) as ReturnType<MachineApiClient["disarmExternalTrigger"]>;
   splitSegment = (id: string) => mock.splitSegment(id) as ReturnType<MachineApiClient["splitSegment"]>;
   restartProgram = (id: string) => mock.restartProgram(id) as ReturnType<MachineApiClient["restartProgram"]>;
   setLimit = (id: string, body: { type: string; time_limit?: number; infusion_limit?: number; delay?: number }) =>
