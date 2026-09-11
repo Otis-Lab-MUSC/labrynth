@@ -91,7 +91,17 @@ function handleMessage(msg: WSMessage) {
       // Upgrade from any pre-running, non-terminal state so the pushEvent gate
       // below doesn't silently drop every event.
       const curState = useSessionStore.getState().sessions.get(msg.session_id)?.state;
-      if (curState === "idle" || curState === "uploading" || curState === "connected") {
+      if (
+        curState === "idle" ||
+        curState === "uploading" ||
+        curState === "connected" ||
+        // "armed" joined the union after this fallback was written. It is the
+        // pre-running state most in need of it: on a proxied machine the
+        // armed -> running transition is exactly what gets lost before the WS
+        // relay connects, leaving the UI on "Armed — waiting" with the panels
+        // locked while the run is already streaming.
+        curState === "armed"
+      ) {
         updateState(msg.session_id, "running");
       }
       pushEvent(msg.session_id, eventData);
