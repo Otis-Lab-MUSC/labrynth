@@ -4,7 +4,7 @@ import { useSessionStore } from "../../store/useSessionStore";
 import { useLogStore } from "../../store/useLogStore";
 import { useNavigationStore } from "../../store/useNavigationStore";
 import { getClientForSession } from "../../api/sessionClient";
-import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "../program/devicePresets";
+import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS, canDispatchParam } from "../program/devicePresets";
 import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
 import { ValidationWarningPanel } from "./ValidationWarningPanel";
 import { DEVICE_LABELS, formatDeviceParams, laserPhaseActive } from "./hardwareSummary";
@@ -153,6 +153,9 @@ export function SessionStartModal() {
         // Send device params (frequency, duration, timeout, ratio)
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
+            // A command the backend does not declare for this paradigm 400s, and that
+            // throw aborts this try before startProgram() — see PARAM_PARADIGMS.
+            if (!canDispatchParam(paramKey, paradigm)) continue;
             if (state[paramKey] !== undefined && state[paramKey] !== null) {
               await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, code, state[paramKey] as number);
             }
@@ -355,7 +358,7 @@ export function SessionStartModal() {
                         )}
                       </td>
                       <td className="px-3 py-1.5 font-mono text-xs text-theme-text/60">
-                        {state.armed ? formatDeviceParams(key, state as Record<string, unknown>, { isPav: isPavlovian, pressContingent }) : ""}
+                        {state.armed ? formatDeviceParams(key, state as Record<string, unknown>, { isPav: isPavlovian, pressContingent, timeoutModeApplies: canDispatchParam("timeoutMode", paradigm) }) : ""}
                       </td>
                     </tr>
                   ))}
