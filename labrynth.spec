@@ -30,7 +30,12 @@ FRONTEND_DIST = os.path.join(PROJECT_ROOT, "web", "dist")
 # archived). Resolve it via build.py's shared helper so spec and orchestrator
 # agree on the source of truth.
 sys.path.insert(0, SPEC_DIR)
-from build import is_shared_lib, llama_binaries, resolve_reacher_hex_dir  # noqa: E402
+from build import (  # noqa: E402
+    is_shared_lib,
+    llama_binaries,
+    resolve_avrdude_conf,
+    resolve_reacher_hex_dir,
+)
 
 HEX_DIR = resolve_reacher_hex_dir()
 
@@ -78,14 +83,17 @@ if AVRDUDE_PATH and os.path.isfile(AVRDUDE_PATH):
         if os.path.isfile(_fpath) and is_shared_lib(_f):
             extra_binaries.append((_fpath, "avrdude"))
 
-    # Bundle avrdude.conf as data (not a binary)
-    for _conf in [
-        os.path.join(_avrdude_dir, "..", "etc", "avrdude.conf"),
-        os.path.join(_avrdude_dir, "avrdude.conf"),
-    ]:
-        if os.path.isfile(_conf):
-            datas.append((os.path.abspath(_conf), "avrdude"))
-            break
+    # Bundle avrdude.conf as data (not a binary).  Destination stays "avrdude"
+    # so it lands at _MEIPASS/avrdude/avrdude.conf, where reacher's uploader
+    # looks for it and passes it as -C.
+    _conf = resolve_avrdude_conf(AVRDUDE_PATH)
+    if _conf:
+        datas.append((_conf, "avrdude"))
+        print(f"avrdude.conf: {_conf}")
+    else:
+        print(f"WARNING: avrdude binary bundled from {AVRDUDE_PATH} but no avrdude.conf "
+              "found — the bundle will fall back to the host's /etc/avrdude.conf, which "
+              "fails on any version mismatch")
 else:
     extra_binaries = []
     print("NOTE: No avrdude binary bundled (set REACHER_AVRDUDE_PATH or use build.py --avrdude)")
