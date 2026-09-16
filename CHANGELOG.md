@@ -12,6 +12,35 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- Frontend + CLI: **Timeout mode** control on the RH/LH lever cards (FR, PR, VI and
+  their lite twins) — choose whether the lever timeout window opens on *every active
+  press* or only on the *reward-triggering press*. Sent as command 1077 (RH) / 1377
+  (LH); requires the bundled reacher firmware that handles those codes.
+  **The default is 0 = every active press, which is exactly how every previous
+  version behaved** — existing sessions, built-in presets and saved user presets are
+  unchanged. Saved presets from older builds simply lack the key and fall back to 0.
+- The new mode matters most at ratio > 1. Under the legacy behavior a press inside an
+  open timeout window is classified `TIMEOUT` and does **not** count toward the ratio,
+  so FR2 with a 20 s timeout requires the animal to space *every* press by ≥ 20 s to
+  earn anything, and a VI availability window can be missed outright because the lever
+  is still locked out. Selecting "Reward-triggering press only" removes that coupling.
+  Explained in Help → Configuration → Hardware Controls → Levers.
+- The mode is carried in the session start summary and captured by newly saved user
+  presets, so what was run is recoverable from the session record.
+
+### Fixed
+- Frontend: the lever **Timeout** row is no longer rendered on `omission_lite`. Its
+  visibility gate compared the paradigm string exactly against `"omission"`, so the
+  lite twin fell through and showed a control the firmware has no timeout for.
+- Frontend: the preset-apply and session-start dispatch loops now consult a per-param
+  paradigm gate (`PARAM_PARADIGMS` / `canDispatchParam` in `devicePresets.ts`) before
+  sending a device parameter. The backend rejects a command it does not declare for
+  the session's paradigm with a 400, and that rejection throws out of the same block
+  that later calls `startProgram()` — so an undeclared code did not degrade a session,
+  it stopped it starting. Caught in review before release: as first written, the new
+  `timeoutMode` param would have blocked every **omission** session start.
+
 ---
 
 ## [3.0.1-alpha.21] - 2026-09-01

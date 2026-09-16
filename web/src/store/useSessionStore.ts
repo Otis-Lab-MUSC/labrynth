@@ -46,8 +46,8 @@ const DEFAULT_CONTINGENCY = (): ContingencyConfig => ({
 });
 
 export const defaultHardwareUiState = (): HardwareUiState => ({
-  rhLever: { armed: false, timeout: 0, ratio: 1 },
-  lhLever: { armed: false, timeout: 0, ratio: 1 },
+  rhLever: { armed: false, timeout: 0, ratio: 1, timeoutMode: 0 },
+  lhLever: { armed: false, timeout: 0, ratio: 1, timeoutMode: 0 },
   primaryCue:   { armed: false, frequency: 0, duration: 0, contingency: DEFAULT_CONTINGENCY() },
   secondaryCue: { armed: false, frequency: 0, duration: 0, contingency: DEFAULT_CONTINGENCY() },
   primaryPump:  { armed: false, duration: 0, contingency: DEFAULT_CONTINGENCY(), flowRateUlPerSec: null },

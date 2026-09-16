@@ -4,7 +4,7 @@ import { ParadigmSettings } from "./ParadigmSettings";
 import { PavlovianSettings } from "./PavlovianSettings";
 import { LimitConfig } from "./LimitConfig";
 import { ConfigLock } from "../layout/ConfigLock";
-import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS } from "./devicePresets";
+import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS, canDispatchParam } from "./devicePresets";
 import type { DevicePreset } from "./devicePresets";
 import { SESSION_PRESETS, SessionPresetCard, buildPresetFromSession, SavePresetDialog } from "./presets";
 import type { SessionPreset } from "./presets";
@@ -136,6 +136,8 @@ export function ProgramPanel() {
         }
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
+            // A command the backend does not declare for this paradigm 400s — see PARAM_PARADIGMS.
+            if (!canDispatchParam(paramKey, paradigm)) continue;
             if (state[paramKey] !== undefined && state[paramKey] !== null) {
               let value = state[paramKey];
               if (paramKey === "leverFilter") {
@@ -238,6 +240,8 @@ export function ProgramPanel() {
         }
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
+            // A command the backend does not declare for this paradigm 400s — see PARAM_PARADIGMS.
+            if (!canDispatchParam(paramKey, paradigm)) continue;
             if (state[paramKey] !== undefined && state[paramKey] !== null) {
               let value = state[paramKey];
               if (paramKey === "leverFilter") {

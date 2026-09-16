@@ -28,6 +28,10 @@ export interface SummaryContext {
   isPav: boolean;
   /** Paradigm is press-contingent (operant, non-omission) — gates lever-routing display. */
   pressContingent: boolean;
+  /** The lever timeout mode (1077/1377) is dispatched on this paradigm — FR/PR/VI only.
+   *  Callers pass `canDispatchParam("timeoutMode", paradigm)` so the summary cannot
+   *  claim a setting the dispatch loops skip. */
+  timeoutModeApplies: boolean;
 }
 
 // Every device in HardwareUiState except the testMode flag and the external
@@ -76,8 +80,15 @@ function contingencyParts(c: { leverFilter: "none" | "rh" | "lh"; delay: number 
   return parts;
 }
 
-function leverParts(s: LeverUiState): string[] {
-  return [`T:${s.timeout / 1000}s`, `R:${s.ratio}`];
+function leverParts(s: LeverUiState, ctx: SummaryContext): string[] {
+  // The summary has to match what is sent: timeoutMode (1077/1377) is FR/PR/VI-only,
+  // and the dispatch loops skip it elsewhere (devicePresets.PARAM_PARADIGMS).
+  const modeLabel = s.timeoutMode === 1 ? "Reward-only" : "Every press";
+  return [
+    `T:${s.timeout / 1000}s`,
+    ...(ctx.timeoutModeApplies ? [`TMode:${modeLabel}`] : []),
+    `R:${s.ratio}`,
+  ];
 }
 
 function cueParts(s: CueUiState, ctx: SummaryContext): string[] {

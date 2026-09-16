@@ -68,8 +68,8 @@ export const SA_EXTINCTION_LITE_PRESET: SessionPreset = {
   paradigm: "fr_lite",
   devices: EXTINCTION_LITE_DEVICES,
   hardware: {
-    rhLever: { armed: true, timeout: 20000, ratio: 1 },
-    lhLever: { armed: true, timeout: 20000, ratio: 1 },
+    rhLever: { armed: true, timeout: 20000, ratio: 1, timeoutMode: 0 },
+    lhLever: { armed: true, timeout: 20000, ratio: 1, timeoutMode: 0 },
     primaryCue:  { armed: false, frequency: 8000, duration: 1600,
       contingency: { leverFilter: "none", delay: 0 } },
     primaryPump: { armed: false, duration: 2000,

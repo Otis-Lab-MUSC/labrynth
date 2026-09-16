@@ -39,6 +39,15 @@ def _safe_int(val: str, label: str = "value") -> int | None:
 # Constants
 # ═══════════════════════════════════════════════════════════════════════════
 
+# Which presses start the lever timeout window (1077 RH / 1377 LH). Mirrors
+# TIMEOUT_MODE_OPTIONS in web/src/components/hardware/LeverControl.tsx. Both codes
+# write one scheduler-wide flag in firmware, exactly like the timeout interval —
+# setting it on one lever sets it for both.
+TIMEOUT_MODE_CHOICES: list[tuple[str, str]] = [
+    ("Every active press", "0"),
+    ("Reward-triggering press only", "1"),
+]
+
 DEVICE_CONFIGS: list[dict] = [
     {
         "id": "rh-lever",
@@ -48,6 +57,8 @@ DEVICE_CONFIGS: list[dict] = [
         "test": None,
         "params": [
             {"key": "timeout", "label": "Timeout (ms)", "code": 1074, "default": "20000"},
+            {"key": "timeout_mode", "label": "Timeout Mode", "code": 1077, "default": "Every press",
+             "choices": TIMEOUT_MODE_CHOICES},
             {"key": "ratio", "label": "Ratio", "code": 1075, "default": "1"},
         ],
         "role": {"active": 1081, "inactive": 1080},
@@ -60,6 +71,8 @@ DEVICE_CONFIGS: list[dict] = [
         "test": None,
         "params": [
             {"key": "timeout", "label": "Timeout (ms)", "code": 1374, "default": "20000"},
+            {"key": "timeout_mode", "label": "Timeout Mode", "code": 1377, "default": "Every press",
+             "choices": TIMEOUT_MODE_CHOICES},
             {"key": "ratio", "label": "Ratio", "code": 1375, "default": "1"},
         ],
         "role": {"active": 1381, "inactive": 1380},
@@ -178,8 +191,8 @@ ITI_DEFAULTS = {216: 30000, 217: 10000, 218: 90000}
 PULSE_CODES = (374, 375, 384, 385)
 
 PRESET_COMMAND_MAP: dict[str, dict] = {
-    "rh-lever": {"arm": 1001, "disarm": 1000, "params": {"timeout": 1074, "ratio": 1075}},
-    "lh-lever": {"arm": 1301, "disarm": 1300, "params": {"timeout": 1374, "ratio": 1375}},
+    "rh-lever": {"arm": 1001, "disarm": 1000, "params": {"timeout": 1074, "timeout_mode": 1077, "ratio": 1075}},
+    "lh-lever": {"arm": 1301, "disarm": 1300, "params": {"timeout": 1374, "timeout_mode": 1377, "ratio": 1375}},
     "primary-cue": {"arm": 301, "disarm": 300, "params": {"frequency": 371, "duration": 372}},
     "secondary-cue": {"arm": 311, "disarm": 310, "params": {"frequency": 381, "duration": 382}},
     "primary-pump": {"arm": 401, "disarm": 400, "params": {"duration": 472}},
@@ -194,8 +207,8 @@ PRESETS: dict[str, dict] = {
         "name": "SA High",
         "paradigm": "fr",
         "hardware": {
-            "rh-lever": {"armed": True, "timeout": 20000, "ratio": 1},
-            "lh-lever": {"armed": True, "timeout": 20000, "ratio": 1},
+            "rh-lever": {"armed": True, "timeout": 20000, "ratio": 1, "timeout_mode": 0},
+            "lh-lever": {"armed": True, "timeout": 20000, "ratio": 1, "timeout_mode": 0},
             "primary-cue": {"armed": True, "frequency": 8000, "duration": 1600},
             "secondary-cue": {"armed": False},
             "primary-pump": {"armed": True, "duration": 2000},
@@ -211,8 +224,8 @@ PRESETS: dict[str, dict] = {
         "name": "SA Mid",
         "paradigm": "fr",
         "hardware": {
-            "rh-lever": {"armed": True, "timeout": 20000, "ratio": 1},
-            "lh-lever": {"armed": True, "timeout": 20000, "ratio": 1},
+            "rh-lever": {"armed": True, "timeout": 20000, "ratio": 1, "timeout_mode": 0},
+            "lh-lever": {"armed": True, "timeout": 20000, "ratio": 1, "timeout_mode": 0},
             "primary-cue": {"armed": True, "frequency": 8000, "duration": 1600},
             "secondary-cue": {"armed": False},
             "primary-pump": {"armed": True, "duration": 2000},
@@ -228,8 +241,8 @@ PRESETS: dict[str, dict] = {
         "name": "SA Low",
         "paradigm": "fr",
         "hardware": {
-            "rh-lever": {"armed": True, "timeout": 20000, "ratio": 1},
-            "lh-lever": {"armed": True, "timeout": 20000, "ratio": 1},
+            "rh-lever": {"armed": True, "timeout": 20000, "ratio": 1, "timeout_mode": 0},
+            "lh-lever": {"armed": True, "timeout": 20000, "ratio": 1, "timeout_mode": 0},
             "primary-cue": {"armed": True, "frequency": 8000, "duration": 1600},
             "secondary-cue": {"armed": False},
             "primary-pump": {"armed": True, "duration": 2000},
@@ -245,8 +258,8 @@ PRESETS: dict[str, dict] = {
         "name": "SA Extinction",
         "paradigm": "fr",
         "hardware": {
-            "rh-lever": {"armed": True, "timeout": 20000, "ratio": 1},
-            "lh-lever": {"armed": True, "timeout": 20000, "ratio": 1},
+            "rh-lever": {"armed": True, "timeout": 20000, "ratio": 1, "timeout_mode": 0},
+            "lh-lever": {"armed": True, "timeout": 20000, "ratio": 1, "timeout_mode": 0},
             "primary-cue": {"armed": True, "frequency": 8000, "duration": 1600},
             "secondary-cue": {"armed": False},
             "primary-pump": {"armed": False},
@@ -614,13 +627,17 @@ class ReacherCLI:
 
         # Parameters
         for p in cfg.get("params", []):
-            items.append(MenuItem(
-                f"Set {p['label']}",
-                action=lambda code=p["code"], lbl=p["label"]: self._prompt_int_input(
+            if p.get("choices"):
+                # Enumerated parameter (e.g. timeout mode) — pick from a list rather
+                # than typing a bare integer the user has to know the meaning of.
+                action = lambda code=p["code"], lbl=p["label"], ch=p["choices"]: self._prompt_select(
+                    f"{lbl}:", ch, lambda val, c=code: self._send_hw_command(c, int(val))
+                )
+            else:
+                action = lambda code=p["code"], lbl=p["label"]: self._prompt_int_input(
                     f"Enter {lbl}:", lambda val, c=code: self._send_hw_command(c, val)
-                ),
-                suffix=f"({p['default']})",
-            ))
+                )
+            items.append(MenuItem(f"Set {p['label']}", action=action, suffix=f"({p['default']})"))
 
         # Role (levers)
         if "role" in cfg:
