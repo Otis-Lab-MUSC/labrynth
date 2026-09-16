@@ -102,6 +102,19 @@ jobs:
             exit 1
           }
           Write-Host "Found avrdude at: $($exe.FullName)  ($($exe.Length) bytes)"
+          # Log the version and the conf that ships with it. Pinned here, but
+          # logged in all three jobs so the three bundles stay comparable.
+          # The -? banner goes to stderr, and the version is its LAST line, not
+          # its first — hence Select-String rather than Select-Object -First 1,
+          # which would only ever print the "Usage:" header. This job runs under
+          # $ErrorActionPreference='stop', where merging a native command's
+          # stderr into the pipeline would abort the step.
+          $prevEAP = $ErrorActionPreference
+          $ErrorActionPreference = 'Continue'
+          & $exe.FullName "-?" 2>&1 | Select-String -Pattern "avrdude version" | Select-Object -First 1 | Write-Host
+          $ErrorActionPreference = $prevEAP
+          $env:AVRDUDE = $exe.FullName
+          python -c "import os, build; print('avrdude.conf:', build.resolve_avrdude_conf(os.environ['AVRDUDE']))"
           "path=$($exe.FullName)" >> $env:GITHUB_OUTPUT
 
       - name: Install reacher from source
@@ -175,6 +188,14 @@ jobs:
           AVRDUDE=$(which avrdude)
           echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
           echo "Found avrdude at: $AVRDUDE"
+          # brew's avrdude floats. Log the version and the conf that will be
+          # bundled with it, so a drift shows up here rather than in a lab.
+          # The -? banner goes to stderr (hence 2>&1) and the version is its
+          # LAST line, not its first: usage() prints "Usage: ..." first and
+          # "avrdude version <v> ..." last in every release 7.1 through 8.2.
+          # Grep for it — head -1 only ever yields the usage header.
+          "$AVRDUDE" -? 2>&1 | grep -i -m1 "avrdude version" || true
+          AVRDUDE="$AVRDUDE" python -c 'import os, build; print("avrdude.conf:", build.resolve_avrdude_conf(os.environ["AVRDUDE"]))'
 
       - name: Install reacher from source
         run: |
@@ -221,7 +242,11 @@ jobs:
   # -------------------------------------------------------------------
   build-linux:
     needs: [version-check]
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: the bundled avrdude is whatever this image's
+    # apt pocket carries (noble → 7.1+dfsg-3build2), and the avrdude.conf
+    # bundled beside it must come from that same package. Re-pointing
+    # ubuntu-latest would swap both under us without a code change.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -247,6 +272,14 @@ jobs:
           AVRDUDE=$(which avrdude)
           echo "path=$AVRDUDE" >> "$GITHUB_OUTPUT"
           echo "Found avrdude at: $AVRDUDE"
+          # The bundled version is whatever the pocket carries, and the conf
+          # bundled beside it must come from that same package (a conf from a
+          # different avrdude release is a hard parse failure at upload time).
+          # The -? banner goes to stderr (hence 2>&1) and the version is its
+          # LAST line, not its first — grep for it rather than taking head -1.
+          "$AVRDUDE" -? 2>&1 | grep -i -m1 "avrdude version" || true
+          dpkg -s avrdude | grep '^Version:' || true
+          AVRDUDE="$AVRDUDE" python -c 'import os, build; print("avrdude.conf:", build.resolve_avrdude_conf(os.environ["AVRDUDE"]))'
 
       - name: Install reacher from source
         run: |
