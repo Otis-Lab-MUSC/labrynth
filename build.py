@@ -159,6 +159,44 @@ _AVRDUDE_EXE_SHA256 = {
 }
 
 
+def resolve_avrdude_conf(avrdude_path):
+    """Return the avrdude.conf belonging to *avrdude_path*, or None.
+
+    The conf and the binary MUST come from the same avrdude install. ``-C``
+    replaces the system-wide config outright rather than adding to it, and
+    avrdude rejects a conf written for a different release outright:
+    avrdude 7.1 handed Arch's 8.2 conf prints "unable to process system wide
+    configuration file <path>" and exits 1 — a hard failure, not a warning.
+    That is the bug this helper exists to prevent shipping again.
+
+    Candidates, first hit wins:
+      1. ``<dir>/avrdude.conf``                  — Windows release zip
+      2. ``<dir>/../etc/avrdude.conf``           — Homebrew, ``--prefix`` builds
+      3. ``<dir>/../share/avrdude/avrdude.conf``
+      4. ``/etc/avrdude.conf``                   — distro packages, POSIX only
+
+    The three binary-relative candidates are tried first so Windows and macOS
+    resolve exactly the file they always have. Candidate 4 exists because the
+    Debian/Ubuntu package splits the conf to ``/etc`` while the binary lands in
+    ``/usr/bin`` — neither relative candidate can reach it — and it is safe
+    there precisely because the binary being bundled is that same package's.
+    """
+    if not avrdude_path:
+        return None
+    avrdude_dir = os.path.dirname(os.path.abspath(avrdude_path))
+    candidates = [
+        os.path.join(avrdude_dir, "avrdude.conf"),
+        os.path.join(avrdude_dir, "..", "etc", "avrdude.conf"),
+        os.path.join(avrdude_dir, "..", "share", "avrdude", "avrdude.conf"),
+    ]
+    if os.name == "posix":
+        candidates.append(os.path.join(os.sep, "etc", "avrdude.conf"))
+    for conf in candidates:
+        if os.path.isfile(conf):
+            return os.path.abspath(conf)
+    return None
+
+
 def _sha256_file(path):
     """Return the lowercase hex SHA-256 of a file, read in chunks."""
     h = hashlib.sha256()
@@ -584,6 +622,21 @@ def validate_assets(avrdude_path, require_frontend=True):
         else:
             print("  [MISSING] avrdude — firmware upload won't work without it.")
             print("            Install avrdude or run on Windows to auto-download.")
+            ok = False
+
+    # A bundled binary with no conf is the defect that shipped for several
+    # releases: the spec's miss was silent, so the bundle reached for the
+    # host's /etc/avrdude.conf and died on any version skew. Fail the build
+    # here instead — loud in CI beats broken in a lab.
+    if avrdude_path and os.path.isfile(avrdude_path):
+        avrdude_conf = resolve_avrdude_conf(avrdude_path)
+        if avrdude_conf:
+            print(f"  [OK] avrdude.conf: {avrdude_conf}")
+        else:
+            print(f"  [MISSING] avrdude.conf for {avrdude_path}")
+            print("            The conf must ship with the binary — avrdude rejects a conf")
+            print("            from a different release ('unable to process system wide")
+            print("            configuration file') and exits 1.")
             ok = False
 
     if not ok:

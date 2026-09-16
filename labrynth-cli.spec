@@ -34,7 +34,7 @@ PROJECT_ROOT = SPEC_DIR
 # Firmware hex ships as package data inside the installed reacher dependency.
 # Resolve it via build.py's shared helper so spec and orchestrator agree.
 sys.path.insert(0, SPEC_DIR)
-from build import resolve_reacher_hex_dir  # noqa: E402
+from build import resolve_avrdude_conf, resolve_reacher_hex_dir  # noqa: E402
 
 HEX_DIR = resolve_reacher_hex_dir()
 
@@ -66,13 +66,16 @@ if AVRDUDE_PATH and os.path.isfile(AVRDUDE_PATH):
         if os.path.isfile(_fpath) and _f.lower().endswith((".dll", ".so", ".dylib")):
             extra_binaries.append((_fpath, "avrdude"))
 
-    for _conf in [
-        os.path.join(_avrdude_dir, "..", "etc", "avrdude.conf"),
-        os.path.join(_avrdude_dir, "avrdude.conf"),
-    ]:
-        if os.path.isfile(_conf):
-            datas.append((os.path.abspath(_conf), "avrdude"))
-            break
+    # Destination stays "avrdude" so it lands at _MEIPASS/avrdude/avrdude.conf,
+    # where reacher's uploader looks for it and passes it as -C.
+    _conf = resolve_avrdude_conf(AVRDUDE_PATH)
+    if _conf:
+        datas.append((_conf, "avrdude"))
+        print(f"avrdude.conf: {_conf}")
+    else:
+        print(f"WARNING: avrdude binary bundled from {AVRDUDE_PATH} but no avrdude.conf "
+              "found — the bundle will fall back to the host's /etc/avrdude.conf, which "
+              "fails on any version mismatch")
 else:
     extra_binaries = []
     print("NOTE: No avrdude binary bundled (set REACHER_AVRDUDE_PATH or use build.py --avrdude)")
