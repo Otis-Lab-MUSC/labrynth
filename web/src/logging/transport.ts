@@ -15,7 +15,7 @@ let token: string | null = null;
 async function getToken(): Promise<string | null> {
   if (token) return token;
   if (tokenPromise) return tokenPromise;
-  tokenPromise = fetch("/api/auth/token")
+  tokenPromise = fetch("/api/auth/token", { headers: { "X-Reacher-App": "1" } })
     .then((r) => (r.ok ? r.json() : null))
     .then((d) => {
       token = d?.token ?? null;
