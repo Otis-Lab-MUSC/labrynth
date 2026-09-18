@@ -111,6 +111,16 @@ export class MachineApiClient {
   }
 
   /**
+   * Synchronous read of whatever auth token is already cached — no network,
+   * no Promise. Null if nothing has been fetched yet. Does not change
+   * getToken()'s existing async contract; for use where an await is
+   * impossible (e.g. a beforeunload handler).
+   */
+  getCachedToken(): string | null {
+    return this._apiKey !== undefined ? this._apiKey : this._token;
+  }
+
+  /**
    * Async WS token + URL for all client types.
    *
    * - Local machine: returns same-origin WS info using the auto-fetched token.
