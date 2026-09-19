@@ -64,7 +64,24 @@ def main() -> None:
         action="store_true",
         help="Don't auto-start the backend server",
     )
+    parser.add_argument(
+        "--selftest",
+        action="store_true",
+        help=(
+            "Import cli.app, construct the CLI, and render one frame, then exit. "
+            "Verifies the frozen bundle's entry point without a TTY or backend; "
+            "does not exercise the interactive event loop."
+        ),
+    )
     args = parser.parse_args()
+
+    if args.selftest:
+        from cli.app import ReacherCLI
+
+        app = ReacherCLI(port=args.port)
+        app._render()
+        print("selftest OK")
+        return
 
     server_proc = None
 
@@ -105,8 +122,8 @@ def main() -> None:
     elif not args.no_server:
         print(f"Backend already running on port {args.port}.")
 
-    from .app import ReacherCLI
-    from .client import ReacherClient
+    from cli.app import ReacherCLI
+    from cli.client import ReacherClient
 
     base = f"http://localhost:{args.port}"
     app = ReacherCLI(port=args.port)

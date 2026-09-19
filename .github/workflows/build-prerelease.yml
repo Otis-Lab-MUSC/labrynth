@@ -163,6 +163,10 @@ jobs:
       - name: Build application
         run: python build.py --cli --avrdude "${{ steps.avrdude.outputs.path }}"
 
+      - name: Smoke-test CLI bundle
+        shell: bash
+        run: ./dist/LabrynthCLI/LabrynthCLI.exe --selftest
+
       - name: Install Inno Setup
         run: choco install innosetup -y
 
@@ -243,6 +247,9 @@ jobs:
 
       - name: Build application
         run: python build.py --cli --avrdude "${{ steps.avrdude.outputs.path }}"
+
+      - name: Smoke-test CLI bundle
+        run: ./dist/LabrynthCLI/LabrynthCLI --selftest
 
       - name: Create DMG
         env:
@@ -329,6 +336,9 @@ jobs:
 
       - name: Build application
         run: python build.py --cli --avrdude "${{ steps.avrdude.outputs.path }}"
+
+      - name: Smoke-test CLI bundle
+        run: ./dist/LabrynthCLI/LabrynthCLI --selftest
 
       - name: Build DEB package
         env:
