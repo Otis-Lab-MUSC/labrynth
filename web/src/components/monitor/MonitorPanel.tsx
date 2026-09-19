@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, Pause, Square, Scissors, RotateCcw } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
+import { useLogStore } from "../../store/useLogStore";
 import { getClientForSession } from "../../api/sessionClient";
 import { triggerAutoExport } from "../../hooks/useSessionWebSockets";
 import { EventTimeline } from "./EventTimeline";
@@ -64,6 +65,26 @@ export function MonitorPanel() {
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  // Ref, not just state: a second click before the first render commits must
+  // still see the in-flight guard, or it reaches POST /program/{id}/start
+  // while "running" — that silently wipes buffered behavior data (F2, #2c).
+  const startingNowRef = useRef(false);
+  const [startingNow, setStartingNow] = useState(false);
+
+  const handleStartNow = async () => {
+    if (startingNowRef.current || !activeSessionId) return;
+    startingNowRef.current = true;
+    setStartingNow(true);
+    try {
+      await getClientForSession(activeSessionId)?.startProgram(activeSessionId);
+    } catch (e) {
+      useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Failed to start program");
+      useLogStore.getState().setOpen(true);
+    } finally {
+      startingNowRef.current = false;
+      setStartingNow(false);
+    }
+  };
 
   useEffect(() => {
     if (session?.state === "running") {
@@ -144,11 +165,12 @@ export function MonitorPanel() {
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
-              onClick={() => getClientForSession(activeSessionId!)?.startProgram(activeSessionId!)}
-              className="rounded bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/30 transition-colors"
+              onClick={handleStartNow}
+              disabled={startingNow}
+              className="rounded bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title="Start now without waiting for the trigger"
             >
-              Start Now
+              {startingNow ? "Starting…" : "Start Now"}
             </button>
             <button
               onClick={() => getClientForSession(activeSessionId!)?.disarmExternalTrigger(activeSessionId!)}

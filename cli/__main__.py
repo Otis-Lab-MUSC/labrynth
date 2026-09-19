@@ -90,6 +90,11 @@ def main() -> None:
 
         env = os.environ.copy()
         env["REACHER_PORT"] = str(args.port)
+        # Fix: F-browser — a terminal UI must never pop a GUI browser window,
+        # regardless of whether the backend it spawns happens to resolve a
+        # static dir (in dev, from the labrynth repo root, it resolves
+        # web/dist and would). Suppress explicitly rather than rely on cwd.
+        env["REACHER_NO_BROWSER"] = "1"
         if getattr(sys, "frozen", False):
             # Frozen bundle: sys.executable is the LabrynthCLI binary, which has
             # no `-m reacher` entry. Re-launch ourselves as the backend instead

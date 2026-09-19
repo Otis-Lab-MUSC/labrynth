@@ -9,7 +9,7 @@ import { flush, log } from "./logger";
 
 async function authHeader(): Promise<Record<string, string>> {
   try {
-    const res = await fetch("/api/auth/token");
+    const res = await fetch("/api/auth/token", { headers: { "X-Reacher-App": "1" } });
     if (!res.ok) return {};
     const data = await res.json();
     return data?.token ? { Authorization: `Bearer ${data.token}` } : {};

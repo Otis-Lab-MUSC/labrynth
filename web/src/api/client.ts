@@ -146,7 +146,7 @@ export class MachineApiClient {
     // Local machine (and proxy clients hitting the local server): auto-fetch token
     if (this._token) return this._token;
     if (this._tokenFetching) return this._tokenFetching;
-    this._tokenFetching = fetch(`${this.baseUrl}/api/auth/token`)
+    this._tokenFetching = fetch(`${this.baseUrl}/api/auth/token`, { headers: { "X-Reacher-App": "1" } })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         this._token = data?.token ?? null;
