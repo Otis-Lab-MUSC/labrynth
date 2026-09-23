@@ -10,8 +10,8 @@ interface Props {
 }
 
 const CODES = {
-  RH: { arm: 1001, disarm: 1000, timeout: 1074, ratio: 1075, timeoutMode: 1077, inactive: 1080, active: 1081 },
-  LH: { arm: 1301, disarm: 1300, timeout: 1374, ratio: 1375, timeoutMode: 1377, inactive: 1380, active: 1381 },
+  RH: { arm: 1001, disarm: 1000, timeout: 1074, timeoutMode: 1077, inactive: 1080, active: 1081 },
+  LH: { arm: 1301, disarm: 1300, timeout: 1374, timeoutMode: 1377, inactive: 1380, active: 1381 },
 };
 
 /** Timeout-mode values, mirroring the firmware scheduler's TIMEOUT_MODE_* constants. */
@@ -29,7 +29,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
 
   if (!lever) return null;
 
-  const { armed, timeout, ratio, timeoutMode } = lever;
+  const { armed, timeout, timeoutMode } = lever;
   const codes = CODES[side];
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
 
@@ -42,7 +42,6 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
   // than disabled. Must never outlive showTimeout: a mode for a hidden timeout
   // is meaningless.
   const showTimeoutMode = showTimeout && isParadigm(paradigm, "fr", "pr", "vi");
-  const showRatio = isParadigm(paradigm, "fr", "pr");
 
   return (
     <div className="card">
@@ -87,19 +86,6 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
             ))}
           </select>
           <button onClick={() => send(codes.timeoutMode, timeoutMode)}
-            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
-        </div>
-      )}
-      {showRatio && (
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-theme-text/60">Ratio:</label>
-          <input
-            type="number" value={ratio} min={1} max={255}
-            onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], ratio: +e.target.value } }))}
-            className="w-24 input-base"
-          />
-          <button onClick={() => send(codes.ratio, ratio)}
-            disabled={ratio < 1 || ratio > 255}
             className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
         </div>
       )}

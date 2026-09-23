@@ -150,7 +150,8 @@ export function SessionStartModal() {
         if ((deviceKey === "rhLever" || deviceKey === "lhLever") && isPavlovian) continue;
 
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, mapping.arm);
-        // Send device params (frequency, duration, timeout, ratio)
+        // Send device params (frequency, duration, timeout, timeout mode). The
+        // scheduler-wide ratio is not among them — it goes out as 201 above.
         if (mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
             // A command the backend does not declare for this paradigm 400s, and that

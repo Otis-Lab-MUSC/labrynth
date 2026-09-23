@@ -40,6 +40,23 @@ export type ValidateConfigPayload = {
 // eslint-disable-next-line no-control-regex -- matching control chars is the intent
 const UNSAFE_FILENAME_RE = /[<>:"/\\|?*\x00-\x1f]/;
 const ARCHIVE_SUFFIX_RE = /\.(zip|tar\.gz|tgz|tar|gz)$/i;
+/** FastAPI returns a string `detail` for HTTPException but an array of
+ *  `{loc, msg}` objects for a 422 request-validation failure. Passing the array
+ *  straight to `new Error()` renders as "[object Object]" in the terminal, which
+ *  tells the operator nothing about what the backend rejected. */
+function formatDetail(detail: unknown): string | null {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const parts = detail.map((d) => {
+      const { loc, msg } = (d ?? {}) as { loc?: unknown[]; msg?: string };
+      const field = Array.isArray(loc) ? loc.filter((p) => p !== "body").join(".") : "";
+      return field ? `${field}: ${msg ?? ""}` : (msg ?? "");
+    }).filter(Boolean);
+    if (parts.length) return parts.join("; ");
+  }
+  return null;
+}
+
 export function sanitizeFilename(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) return trimmed;
@@ -199,7 +216,7 @@ export class MachineApiClient {
     const duration = Math.round(performance.now() - started);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      const detail = body.detail || res.statusText;
+      const detail = formatDetail(body.detail) || res.statusText;
       log("http.error", {
         method, path, status: res.status, duration_ms: duration,
         deviceId: this.deviceId, detail,

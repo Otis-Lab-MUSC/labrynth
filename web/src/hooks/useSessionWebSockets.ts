@@ -117,7 +117,13 @@ function handleMessage(msg: WSMessage) {
     case "config": {
       const configData = msg.data as FirmwareConfig;
       const raw = configData as Record<string, unknown>;
-      if (raw.device === "CONTROLLER") {
+      // CONTROLLER scopes two unrelated records. Only SendIdentification's carries
+      // identity (sketch/version/baud_rate, the fields FirmwareConfig models); the
+      // rest are param changes — firmware logParamChange, the session-start
+      // paradigm/timeout dump, and the backend's optimistic echo of cmd 201 — and
+      // routing those here replaced firmwareInfo wholesale, blanking the identity
+      // until the next *IDN?.
+      if (raw.device === "CONTROLLER" && (typeof raw.sketch === "string" || typeof raw.version === "string")) {
         setFirmwareInfo(msg.session_id, configData);
       } else {
         pushHardwareSetting(msg.session_id, configData);
@@ -134,7 +140,6 @@ function handleMessage(msg: WSMessage) {
             if (typeof raw.duration === "number") patch.duration = raw.duration;
             if (typeof raw.reinforced === "boolean") patch.reinforced = raw.reinforced;
             if (typeof raw.timeout === "number") patch.timeout = raw.timeout;
-            if (typeof raw.ratio === "number") patch.ratio = raw.ratio;
             if (typeof raw.mode === "string") patch.mode = raw.mode;
             if (typeof raw.pin === "number") patch.pin = raw.pin;
             return { [uiKey]: { ...current, ...patch } } as Partial<typeof prev>;
