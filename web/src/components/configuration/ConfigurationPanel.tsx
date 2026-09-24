@@ -9,6 +9,7 @@ import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHAS
 import type { DevicePreset } from "../program/devicePresets";
 import { SESSION_PRESETS, SessionPresetCard, buildPresetFromSession, SavePresetDialog } from "../program/presets";
 import type { SessionPreset } from "../program/presets";
+import { PARADIGM_DEFAULTS } from "../program/presets/deviceMetadata";
 import { ConfirmDialog } from "../layout/ConfirmDialog";
 import { useUserPresetStore } from "../../store/useUserPresetStore";
 import { getClientForSession } from "../../api/sessionClient";
@@ -25,11 +26,11 @@ import { usePinOverridesHydration } from "../hardware/usePinOverridesHydration";
 import { useTutorialStore } from "../../store/useTutorialStore";
 import { laserPhaseActive } from "../monitor/hardwareSummary";
 import { useFirmwareCommands } from "../../hooks/useFirmwareCommands";
+import { useLogStore } from "../../store/useLogStore";
+import { isParadigm } from "../../lib/paradigm";
 import type { LaserUiState } from "../../types";
 
 /* ── Default baselines for dirty-state detection ─────────────────── */
-
-const DEFAULT_PARADIGM_SETTINGS = { ratio: 1, step: 1, interval: 30000 };
 
 interface Baseline {
   hardwareUi: string;
@@ -55,7 +56,7 @@ function snapshotBaseline(session: {
 function defaultBaseline(): Baseline {
   return {
     hardwareUi: JSON.stringify(defaultHardwareUiState()),
-    paradigmSettings: JSON.stringify(DEFAULT_PARADIGM_SETTINGS),
+    paradigmSettings: JSON.stringify(PARADIGM_DEFAULTS),
     pavlovianParams: JSON.stringify(null),
     limitSettings: JSON.stringify(null),
   };
@@ -279,8 +280,13 @@ export function ConfigurationPanel() {
         for (const [code, value] of Object.entries(preset.pavlovianParams)) {
           await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,Number(code), value);
         }
-      } else {
-        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,201, preset.paradigmSettings.ratio);
+      } else if (isParadigm(paradigm, "fr", "pr")) {
+        try {
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,201, preset.paradigmSettings.ratio);
+        } catch (e) {
+          useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Failed to send paradigm command");
+          useLogStore.getState().setOpen(true);
+        }
       }
     }
 

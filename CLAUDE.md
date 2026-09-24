@@ -86,7 +86,7 @@ See `RELEASING.md` for the full release workflow and the two-workflow model
 
 ### Testing
 
-There is **no test framework configured** here (no pytest, no Vitest/Jest) — don't add one without coordinating. `npm run lint` (flat `eslint.config.js`, added in `75f33e676`) and `npx tsc -b` (run by `npm run build`) both work and are CI-gated on every pull request via `ci.yml`; the tree currently carries 34 pre-existing react-hooks warnings but 0 errors. Verify changes by running the frontend dev server against a live backend.
+There is **no test framework configured** here (no pytest, no Vitest/Jest) — don't add one without coordinating. `npm run lint` (flat `eslint.config.js`, added in `75f33e676`) and `npx tsc -b` (run by `npm run build`) both work and are CI-gated on every pull request via `ci.yml`; the tree currently carries 35 lint warnings (0 errors); two `set-state-in-effect` warnings in `LimitConfig.tsx` and `ParadigmSettings.tsx` are the intentional Full Reset re-seed effects. Verify changes by running the frontend dev server against a live backend.
 
 ## Architecture
 

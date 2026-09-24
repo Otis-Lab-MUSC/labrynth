@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useSessionStore, defaultHardwareUiState } from "../store/useSessionStore";
 import { useMachineStore, LOCAL_PLACEHOLDER_ID } from "../store/useMachineStore";
-import type { SessionState } from "../types";
+import type { Session, SessionState } from "../types";
 
 const STORAGE_KEY = "reacher-sessions";
 
@@ -11,6 +11,10 @@ interface StoredSession {
   paradigm: string | null;
   /** deviceId of the owning Machine. Absent in legacy entries — defaults to local. */
   machineId?: string;
+  /** Last known paradigm ratio/step/interval, so a reload doesn't silently drop the
+   *  value the user configured (and possibly already sent) back to firmware. Absent
+   *  in legacy entries or when never configured. */
+  paradigmSettings?: Session["paradigmSettings"];
 }
 
 /** Persist live session IDs to localStorage and recover on reload. */
@@ -93,7 +97,7 @@ export function useSessionRecovery() {
                 pausedTime: 0,
                 pauseStartTime: null,
                 pavlovianParams: null,
-                paradigmSettings: null,
+                paradigmSettings: entry.paradigmSettings ?? null,
                 limitSettings: null,
                 trialCount: 0,
                 csPlusCount: 0,
@@ -138,7 +142,10 @@ export function useSessionRecovery() {
       const entries: StoredSession[] = [];
       for (const [id, sess] of state.sessions) {
         if (!sess.draft) {
-          entries.push({ sessionId: id, port: sess.port, paradigm: sess.paradigm, machineId: sess.machineId });
+          entries.push({
+            sessionId: id, port: sess.port, paradigm: sess.paradigm, machineId: sess.machineId,
+            paradigmSettings: sess.paradigmSettings,
+          });
         }
       }
       if (entries.length > 0) {
@@ -155,7 +162,10 @@ function syncToStorage() {
   const entries: StoredSession[] = [];
   for (const [id, sess] of sessions) {
     if (!sess.draft) {
-      entries.push({ sessionId: id, port: sess.port, paradigm: sess.paradigm, machineId: sess.machineId });
+      entries.push({
+        sessionId: id, port: sess.port, paradigm: sess.paradigm, machineId: sess.machineId,
+        paradigmSettings: sess.paradigmSettings,
+      });
     }
   }
   if (entries.length > 0) {

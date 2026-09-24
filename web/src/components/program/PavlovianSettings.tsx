@@ -71,6 +71,17 @@ export function PavlovianSettings({ sessionId }: Props) {
   // Seed scalar + pulse values once the spec list arrives (or the session
   // changes). Keyed on (sessionId, specs) so user edits within a session aren't
   // clobbered. Values prefer stored params, then preset/local default, then 0.
+  //
+  // `hasStoredParams` is in the dep list, not `pavlovianParams` itself: a "Full Reset"
+  // nulls the stored params underneath a panel that never unmounts
+  // (useSessionStore.resetSessionData), and keying only on (sessionId, specs) left these
+  // inputs showing the pre-reset configuration while the store held nothing — and
+  // SessionStartModal.tsx:117 guards the whole Pavlovian dispatch on that store value
+  // being truthy, so the board would have been left on its own defaults with the panel
+  // still displaying a full trial structure. Depending on the params object itself would
+  // instead loop, since the sync effect below rewrites it on every change; a boolean only
+  // flips on the null/non-null transition this needs to catch.
+  const hasStoredParams = !!session?.pavlovianParams;
   useEffect(() => {
     if (specs.length === 0) return;
     const stored = session?.pavlovianParams;
@@ -79,8 +90,16 @@ export function PavlovianSettings({ sessionId }: Props) {
       next[p.code] = stored?.[p.code] ?? CODE_DEFAULTS[p.code] ?? 0;
     }
     setValues(next);
+    // ITI lives outside `values`, so a reset has to return it to the fallbacks too —
+    // only when nothing is stored, or this would overwrite the user's ITI on every
+    // re-seed.
+    if (!stored) {
+      setItiMean(ITI_FALLBACK[216]);
+      setItiMin(ITI_FALLBACK[217]);
+      setItiMax(ITI_FALLBACK[218]);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, specs]);
+  }, [sessionId, specs, hasStoredParams]);
 
   const getItiValues = (): Record<number, number> => ({ [ITI_MEAN]: itiMean, [ITI_MIN]: itiMin, [ITI_MAX]: itiMax });
 

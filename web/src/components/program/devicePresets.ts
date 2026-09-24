@@ -17,7 +17,7 @@ export const DEVICE_PRESETS: DevicePreset[] = [
   //   description: "RH lever + primary cue + primary pump",
   //   paradigms: ["fr", "pr"],
   //   hardware: {
-  //     rhLever: { armed: true, timeout: 20000, ratio: 1 },
+  //     rhLever: { armed: true, timeout: 20000 },
   //     primaryCue: { armed: true, frequency: 2900, duration: 1000 },
   //     primaryPump: { armed: true, duration: 3000 },
   //   },

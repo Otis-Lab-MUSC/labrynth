@@ -87,7 +87,6 @@ function leverParts(s: LeverUiState, ctx: SummaryContext): string[] {
   return [
     `T:${s.timeout / 1000}s`,
     ...(ctx.timeoutModeApplies ? [`TMode:${modeLabel}`] : []),
-    `R:${s.ratio}`,
   ];
 }
 

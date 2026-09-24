@@ -28,11 +28,15 @@ function DeviceRow({
   const params: string[] = [];
 
   if (device) {
-    if ("timeout" in device && device.timeout != null && "ratio" in device && device.ratio != null) {
+    // `timeout` alone identifies a lever row — it's the only device shape here
+    // that carries it. Not gated on `ratio` too: that field is vestigial on
+    // LeverUiState (dead since the per-lever ratio control was removed) and
+    // would make this heuristic silently break if `ratio` is ever dropped.
+    if ("timeout" in device && device.timeout != null) {
       // Only the non-default timeout mode is called out — every built-in preset
       // ships mode 0, so labelling it would be noise on every card.
       const rewardOnly = "timeoutMode" in device && device.timeoutMode === 1;
-      params.push(`${device.timeout / 1000}s / r${device.ratio}${rewardOnly ? " / reward-only" : ""}`);
+      params.push(`${device.timeout / 1000}s${rewardOnly ? " / reward-only" : ""}`);
     } else {
       if ("frequency" in device && device.frequency != null) params.push(`${device.frequency >= 1000 ? `${device.frequency / 1000}kHz` : `${device.frequency}Hz`}`);
       if ("duration" in device && device.duration != null) params.push(`${device.duration / 1000}s`);

@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
+
+/** Seeds for a session with no stored limits. Shared by the initial state and
+ *  the reset resync below so the two cannot drift. */
+const LIMIT_DEFAULTS = { timeLimit: 3600, infusionLimit: 30, delay: 10 };
 
 interface Props {
   sessionId: string;
@@ -15,9 +19,25 @@ export function LimitConfig({ sessionId, paradigm }: Props) {
   const defaultLimitType = isPavlovian ? "Trials" : "Time";
 
   const [limitType, setLimitType] = useState(() => session?.limitSettings?.limitType ?? defaultLimitType);
-  const [timeLimit, setTimeLimit] = useState(() => session?.limitSettings?.timeLimit ?? 3600);
-  const [infusionLimit, setInfusionLimit] = useState(() => session?.limitSettings?.infusionLimit ?? 30);
-  const [delay, setDelay] = useState(() => session?.limitSettings?.delay ?? 10);
+  const [timeLimit, setTimeLimit] = useState(() => session?.limitSettings?.timeLimit ?? LIMIT_DEFAULTS.timeLimit);
+  const [infusionLimit, setInfusionLimit] = useState(() => session?.limitSettings?.infusionLimit ?? LIMIT_DEFAULTS.infusionLimit);
+  const [delay, setDelay] = useState(() => session?.limitSettings?.delay ?? LIMIT_DEFAULTS.delay);
+
+  // These inputs seed once, but a "Full Reset" nulls limitSettings underneath a panel
+  // that never unmounts (useSessionStore.resetSessionData), so without this they keep
+  // displaying the pre-reset limits while the store holds nothing. Nothing is skipped
+  // downstream — SessionStartModal re-seeds from the store every time it opens and its
+  // setLimit() call is unconditional — so the run simply uses the defaults while this
+  // panel still claims the old values. Resyncing here keeps the two in agreement.
+  // Deliberately does not write the store: this component records a limit only after
+  // the server has acknowledged it (see handleSet).
+  useEffect(() => {
+    if (session?.limitSettings) return;
+    setLimitType(defaultLimitType);
+    setTimeLimit(LIMIT_DEFAULTS.timeLimit);
+    setInfusionLimit(LIMIT_DEFAULTS.infusionLimit);
+    setDelay(LIMIT_DEFAULTS.delay);
+  }, [session?.limitSettings, defaultLimitType]);
 
   const handleSet = async () => {
     try {

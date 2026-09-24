@@ -35,7 +35,6 @@ export interface ContingencyConfig {
 
 export interface LeverUiState extends DeviceArmState {
   timeout: number;
-  ratio: number;
   /** Which presses start the timeout window: 0 = every active press (legacy
    *  default), 1 = only the press that triggers the reward chain. Sent as
    *  command 1077 (RH) / 1377 (LH). Both codes write one scheduler-wide flag in

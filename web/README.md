@@ -66,7 +66,7 @@ src/
 │   │   └── DataExport.tsx         # File config, CSV export, data preview table
 │   ├── hardware/
 │   │   ├── HardwarePanel.tsx      # Main hardware controls (test chain, test mode)
-│   │   ├── LeverControl.tsx       # RH/LH lever arm, ratio, timeout, active/inactive
+│   │   ├── LeverControl.tsx       # RH/LH lever arm, timeout, active/inactive
 │   │   ├── CueControl.tsx         # Primary/secondary cue arm, frequency, duration
 │   │   ├── PumpControl.tsx        # Primary/secondary pump arm, duration
 │   │   ├── LaserControl.tsx       # Laser arm, frequency, duration, contingent/independent
@@ -80,7 +80,6 @@ src/
 │   │   ├── LiveCounters.tsx       # Real-time counters (trials, infusions, presses, licks, frames)
 │   │   └── EventTimeline.tsx      # SVG timeline visualization with device lanes
 │   ├── program/
-│   │   ├── ProgramPanel.tsx       # Routes to paradigm-specific settings
 │   │   ├── ParadigmSettings.tsx   # FR/PR/VI/Omission parameter configuration
 │   │   ├── PavlovianSettings.tsx  # Pavlovian CS+/CS-/ITI parameter configuration
 │   │   └── LimitConfig.tsx        # Time, infusion, and trial limit settings
