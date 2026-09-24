@@ -23,8 +23,8 @@ export const OPTIONAL_DEVICES: PresetDeviceEntry[] = [
 /* ── Shared hardware settings ──────────────────────────────────────── */
 
 export const CORE_HARDWARE: Partial<HardwareUiState> = {
-  rhLever:    { armed: true,  timeout: 20000, ratio: 1, timeoutMode: 0 },
-  lhLever:    { armed: true,  timeout: 20000, ratio: 1, timeoutMode: 0 },
+  rhLever:    { armed: true,  timeout: 20000, timeoutMode: 0 },
+  lhLever:    { armed: true,  timeout: 20000, timeoutMode: 0 },
   primaryCue: { armed: true,  frequency: 8000, duration: 1600,
     contingency: { leverFilter: "rh", delay: 0 } },
 };
@@ -103,8 +103,8 @@ export const SA_EXTINCTION_PRESET: SessionPreset = {
   paradigm: "fr",
   devices: EXTINCTION_DEVICES,
   hardware: {
-    rhLever: { armed: true, timeout: 20000, ratio: 1, timeoutMode: 0 },
-    lhLever: { armed: true, timeout: 20000, ratio: 1, timeoutMode: 0 },
+    rhLever: { armed: true, timeout: 20000, timeoutMode: 0 },
+    lhLever: { armed: true, timeout: 20000, timeoutMode: 0 },
     primaryCue:  { armed: false, frequency: 8000, duration: 1600,
       contingency: { leverFilter: "none", delay: 0 } },
     primaryPump: { armed: false, duration: 2000,

@@ -50,10 +50,13 @@ function buildDeviceEntries(hw: HardwareUiState): PresetDeviceEntry[] {
   });
 }
 
-const DEFAULT_PARADIGM_SETTINGS: SessionPreset["paradigmSettings"] = {
+/** Single source for the paradigm defaults (ParadigmSettings seed, ConfigurationPanel dirty
+ *  baseline, preset fallback). `interval` is shared by VI and Omission, where 0 is rejected by
+ *  validateConfig, so the default must be non-zero. Callers that store it must spread it. */
+export const PARADIGM_DEFAULTS: SessionPreset["paradigmSettings"] = {
   ratio: 1,
   step: 1,
-  interval: 0,
+  interval: 30000,
 };
 
 const DEFAULT_LIMIT_SETTINGS: SessionPreset["limitDefaults"] = {
@@ -76,7 +79,7 @@ export function buildPresetFromSession(name: string, session: Session): SessionP
     paradigm: session.paradigm ?? "fr",
     devices: buildDeviceEntries(session.hardwareUi),
     hardware,
-    paradigmSettings: session.paradigmSettings ?? { ...DEFAULT_PARADIGM_SETTINGS },
+    paradigmSettings: session.paradigmSettings ?? { ...PARADIGM_DEFAULTS },
     ...(session.pavlovianParams ? { pavlovianParams: { ...session.pavlovianParams } } : {}),
     limitDefaults: session.limitSettings ?? { ...DEFAULT_LIMIT_SETTINGS },
   };

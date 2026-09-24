@@ -46,8 +46,8 @@ const DEFAULT_CONTINGENCY = (): ContingencyConfig => ({
 });
 
 export const defaultHardwareUiState = (): HardwareUiState => ({
-  rhLever: { armed: false, timeout: 0, ratio: 1, timeoutMode: 0 },
-  lhLever: { armed: false, timeout: 0, ratio: 1, timeoutMode: 0 },
+  rhLever: { armed: false, timeout: 0, timeoutMode: 0 },
+  lhLever: { armed: false, timeout: 0, timeoutMode: 0 },
   primaryCue:   { armed: false, frequency: 0, duration: 0, contingency: DEFAULT_CONTINGENCY() },
   secondaryCue: { armed: false, frequency: 0, duration: 0, contingency: DEFAULT_CONTINGENCY() },
   primaryPump:  { armed: false, duration: 0, contingency: DEFAULT_CONTINGENCY(), flowRateUlPerSec: null },
@@ -539,10 +539,19 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
             (h) => (h as Record<string, unknown>).device === device
           )
         : -1;
+      // Firmware logParamChange ACKs ({param, value}, no sketch) fold to {[param]: value}
+      // and merge into the row, so they don't wipe fields such as armed/ratio. Must match
+      // the reacher-side normalisation in kernel/reacher.py.
+      // Other records (backend echo, per-device dump) are whole rows and still replace.
+      let row: FirmwareConfig = config;
+      if ("param" in config && "value" in config && !("sketch" in config)) {
+        const { param, value, ...rest } = config as Record<string, unknown>;
+        row = { ...(idx >= 0 ? sess.hardwareSettings[idx] : {}), ...rest, [param as string]: value } as FirmwareConfig;
+      }
       const updated =
         idx >= 0
-          ? sess.hardwareSettings.map((h, i) => (i === idx ? config : h))
-          : [...sess.hardwareSettings, config];
+          ? sess.hardwareSettings.map((h, i) => (i === idx ? row : h))
+          : [...sess.hardwareSettings, row];
       next.set(id, { ...sess, hardwareSettings: updated });
       return { sessions: next };
     }),

@@ -3,15 +3,23 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useLogStore } from "../../store/useLogStore";
 import { isParadigm } from "../../lib/paradigm";
-
-/** Mirrors ConfigurationPanel's DEFAULT_PARADIGM_SETTINGS. */
-const DEFAULTS = { ratio: 1, step: 1, interval: 30000 };
+import { PARADIGM_DEFAULTS as DEFAULTS } from "./presets/deviceMetadata";
 
 /** Matches backend `_VALUE_RANGES["ratio"] = (1, 255)` (reacher hardware.py:29) — an
  *  integer, since the wire type is `uint8_t`. One predicate for both the Set button's
  *  disabled state and the store-write guard below, so the two cannot drift apart. */
 function isValidRatio(value: number): boolean {
   return Number.isInteger(value) && value >= 1 && value <= 255;
+}
+
+/** Matches backend `_VALUE_RANGES["step"] = (1, 255)` — step=0 would silently degrade PR to FR. */
+function isValidStep(value: number): boolean {
+  return Number.isInteger(value) && value >= 1 && value <= 255;
+}
+
+/** Matches backend `_VALUE_RANGES["interval"] = (0, 600000)` ms. */
+function isValidInterval(value: number): boolean {
+  return Number.isInteger(value) && value >= 0 && value <= 600000;
 }
 
 interface Props {
@@ -47,8 +55,12 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
     setRatio(DEFAULTS.ratio);
     setStep(DEFAULTS.step);
     setInterval_(DEFAULTS.interval);
-    setParadigmSettings(sessionId, DEFAULTS);
+    setParadigmSettings(sessionId, { ...DEFAULTS });
   }, [session?.paradigmSettings, sessionId, setParadigmSettings]);
+
+  // The other two fields come from the store rather than local state: local state may hold
+  // an out-of-range mid-edit value that must not ride into the store on this write.
+  const stored = session?.paradigmSettings ?? DEFAULTS;
 
   const updateRatio = (value: number) => {
     // Local state always takes the raw typed value — the field must show exactly
@@ -60,16 +72,20 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
     // store simply holds the last value that WAS valid until the user types another one.
     setRatio(value);
     if (isValidRatio(value)) {
-      setParadigmSettings(sessionId, { ratio: value, step, interval });
+      setParadigmSettings(sessionId, { ...stored, ratio: value });
     }
   };
   const updateStep = (value: number) => {
     setStep(value);
-    setParadigmSettings(sessionId, { ratio, step: value, interval });
+    if (isValidStep(value)) {
+      setParadigmSettings(sessionId, { ...stored, step: value });
+    }
   };
   const updateInterval = (value: number) => {
     setInterval_(value);
-    setParadigmSettings(sessionId, { ratio, step, interval: value });
+    if (isValidInterval(value)) {
+      setParadigmSettings(sessionId, { ...stored, interval: value });
+    }
   };
 
   const send = async (code: number, value: number) => {
@@ -105,27 +121,36 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
       {isParadigm(paradigm, "pr") && (
         <div className="flex items-center gap-2">
           <label className="text-sm w-40 text-theme-text/60">PR Step:</label>
-          <input type="number" value={step} onChange={(e) => updateStep(+e.target.value)}
+          <input type="number" value={step} min={1} max={255}
+            onChange={(e) => updateStep(+e.target.value)}
             className="w-24 input-base" />
-          <button onClick={() => send(205, step)} className="btn-sm bg-accent text-accent-contrast">Set</button>
+          <button onClick={() => send(205, step)}
+            disabled={!isValidStep(step)}
+            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
         </div>
       )}
 
       {isParadigm(paradigm, "vi") && (
         <div className="flex items-center gap-2">
           <label className="text-sm w-40 text-theme-text/60">VI Interval (ms):</label>
-          <input type="number" value={interval} onChange={(e) => updateInterval(+e.target.value)}
+          <input type="number" value={interval} min={0} max={600000}
+            onChange={(e) => updateInterval(+e.target.value)}
             className="w-24 input-base" />
-          <button onClick={() => send(204, interval)} className="btn-sm bg-accent text-accent-contrast">Set</button>
+          <button onClick={() => send(204, interval)}
+            disabled={!isValidInterval(interval)}
+            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
         </div>
       )}
 
       {isParadigm(paradigm, "omission") && (
         <div className="flex items-center gap-2">
           <label className="text-sm w-40 text-theme-text/60">Omission Interval (ms):</label>
-          <input type="number" value={interval} onChange={(e) => updateInterval(+e.target.value)}
+          <input type="number" value={interval} min={0} max={600000}
+            onChange={(e) => updateInterval(+e.target.value)}
             className="w-24 input-base" />
-          <button onClick={() => send(203, interval)} className="btn-sm bg-accent text-accent-contrast">Set</button>
+          <button onClick={() => send(203, interval)}
+            disabled={!isValidInterval(interval)}
+            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
         </div>
       )}
 

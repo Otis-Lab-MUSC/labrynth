@@ -53,6 +53,9 @@ function formatDetail(detail: unknown): string | null {
       return field ? `${field}: ${msg ?? ""}` : (msg ?? "");
     }).filter(Boolean);
     if (parts.length) return parts.join("; ");
+  } else if (detail && typeof detail === "object") {
+    // Structured errors such as reacher's `{error: "pin_violations", violations: [...]}`.
+    return JSON.stringify(detail);
   }
   return null;
 }
