@@ -76,6 +76,31 @@ export async function triggerAutoExport(sessionId: string) {
   }
 }
 
+/** Min gap between event-triggered resyncs, so a phantom-event stream can't storm the backend. */
+const EVENT_RESYNC_MIN_INTERVAL_MS = 2000;
+const resyncInFlight = new Set<string>();
+const lastResyncStart = new Map<string, number>();
+/** Ids whose in-flight resync may have returned a pre-start snapshot while a START arrived. */
+const resyncRerun = new Set<string>();
+
+// `force` (CONTROLLER/START) bypasses the throttle: a lost session_state means
+// START is the only signal the run began, and dropping it would strand the UI
+// at "connected" until some later event clears the window.
+function resyncOnEvent(sessionId: string, force = false) {
+  if (resyncInFlight.has(sessionId)) {
+    if (force) resyncRerun.add(sessionId);
+    return;
+  }
+  const now = Date.now();
+  if (!force && now - (lastResyncStart.get(sessionId) ?? 0) < EVENT_RESYNC_MIN_INTERVAL_MS) return;
+  resyncInFlight.add(sessionId);
+  lastResyncStart.set(sessionId, now);
+  void recoverMissedEvents(sessionId).finally(() => {
+    resyncInFlight.delete(sessionId);
+    if (resyncRerun.delete(sessionId)) resyncOnEvent(sessionId, true);
+  });
+}
+
 function handleMessage(msg: WSMessage) {
   const { updateState, pushEvent, pushFrame, setFirmwareInfo, pushHardwareSetting, setUploadProgress, updateHardwareUi } =
     useSessionStore.getState();
@@ -84,25 +109,20 @@ function handleMessage(msg: WSMessage) {
   switch (msg.type) {
     case "event": {
       const eventData = msg.data as BehaviorEvent;
-      // Fix #15: a behavioral event only exists while the kernel is running, so
-      // its arrival is proof the program started. In proxy mode the session can
-      // still read "idle"/"uploading" here because the Pi's earlier state
-      // transitions were broadcast before the WS relay connected and were lost.
-      // Upgrade from any pre-running, non-terminal state so the pushEvent gate
-      // below doesn't silently drop every event.
+      // Fix #15: in proxy mode the session can read a pre-running state here
+      // because the Pi's earlier transitions were broadcast before the WS relay
+      // connected and were lost. Events are emitted pre-run too (lick circuit,
+      // lever presses), so an event proves nothing about the run: ask the
+      // backend instead of inferring "running". If it really is running, the
+      // resync syncs state and backfills this event from behavior_data.
       const curState = useSessionStore.getState().sessions.get(msg.session_id)?.state;
       if (
         curState === "idle" ||
         curState === "uploading" ||
         curState === "connected" ||
-        // "armed" joined the union after this fallback was written. It is the
-        // pre-running state most in need of it: on a proxied machine the
-        // armed -> running transition is exactly what gets lost before the WS
-        // relay connects, leaving the UI on "Armed — waiting" with the panels
-        // locked while the run is already streaming.
         curState === "armed"
       ) {
-        updateState(msg.session_id, "running");
+        resyncOnEvent(msg.session_id, eventData.device === "CONTROLLER" && eventData.event === "START");
       }
       pushEvent(msg.session_id, eventData);
       if (eventData.device === "CONTROLLER" && eventData.event === "END") {
@@ -255,9 +275,15 @@ async function recoverMissedEvents(sessionId: string) {
   // to recover", permanently dropping events. Syncing first un-stalls it. (Belt
   // and suspenders with reacher's snapshot-on-connect; also covers older backends.)
   try {
+    const stateAtRequest = sess.state;
     const remote = await client.getSession(sessionId);
+    // Re-read after the await: the session may be gone, or a live session_state
+    // may have already moved it, which makes this reply stale.
+    const cur = useSessionStore.getState().sessions.get(sessionId);
+    if (!cur) return;
+    sess = cur;
     const remoteState = (remote as { state?: SessionState }).state;
-    if (remoteState && remoteState !== sess.state) {
+    if (remoteState && remoteState !== sess.state && sess.state === stateAtRequest) {
       console.debug(`[ReacherWS] #15 state sync ${sessionId}: ${sess.state} -> ${remoteState}`);
       useSessionStore.getState().updateState(sessionId, remoteState);
       sess = useSessionStore.getState().sessions.get(sessionId) ?? sess;
@@ -269,15 +295,17 @@ async function recoverMissedEvents(sessionId: string) {
   if (sess.state === "idle" || sess.state === "stopped") return;
 
   try {
+    const stateAtRequest = sess.state;
     const { data, total } = await client.getBehavior(sessionId);
-    if (total > sess.behaviorData.length) {
-      if (useSessionStore.getState().sessions.get(sessionId)?.state === "connected") {
-        useSessionStore.getState().updateState(sessionId, "running");
-      }
+    const cur = useSessionStore.getState().sessions.get(sessionId);
+    // A state change during the await means live events own the buffer now
+    // (a START wipes it); replacing it with this older snapshot would drop them.
+    if (!cur || cur.state !== stateAtRequest) return;
+    if (total > cur.behaviorData.length) {
       replaceEvents(sessionId, data as unknown as BehaviorEvent[]);
       useLogStore.getState().pushLog(
         "info",
-        `Recovered ${total - sess.behaviorData.length} missed events after reconnect`,
+        `Recovered ${total - cur.behaviorData.length} missed events after reconnect`,
         sessionId,
       );
     }
@@ -309,6 +337,8 @@ export function useSessionWebSockets() {
         ws.close();
         current.delete(id);
         pendingRef.current.delete(id);
+        // A recreated same-id session must not inherit the old throttle window.
+        lastResyncStart.delete(id);
       }
     }
 
