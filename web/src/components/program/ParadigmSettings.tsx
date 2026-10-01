@@ -4,6 +4,7 @@ import { useSessionStore } from "../../store/useSessionStore";
 import { useLogStore } from "../../store/useLogStore";
 import { isParadigm } from "../../lib/paradigm";
 import { PARADIGM_DEFAULTS as DEFAULTS } from "./presets/deviceMetadata";
+import { isOperantParadigm, activeLeverOf, leverSchedulerCommands } from "./devicePresets";
 
 /** Matches backend `_VALUE_RANGES["ratio"] = (1, 255)` (reacher hardware.py:29) — an
  *  integer, since the wire type is `uint8_t`. One predicate for both the Set button's
@@ -88,7 +89,10 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
     }
   };
 
-  const send = async (code: number, value: number) => {
+  const activeLever = activeLeverOf(stored);
+  const updateActiveLever = (value: "rh" | "lh") => setParadigmSettings(sessionId, { ...stored, activeLever: value });
+
+  const send = async (code: number, value?: number) => {
     try {
       await getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
     } catch (e) {
@@ -114,6 +118,30 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
           </div>
           <p className="text-xs text-theme-text/50">
             Active presses required per reward. Scheduler-wide: one value per board, counted across every reinforced lever.
+          </p>
+        </div>
+      )}
+
+      {isOperantParadigm(paradigm) && (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <label className="text-sm w-40 text-theme-text/60">Reinforced lever:</label>
+            <select value={activeLever}
+              onChange={(e) => updateActiveLever(e.target.value as "rh" | "lh")}
+              className="w-24 input-base">
+              <option value="rh">RH</option>
+              <option value="lh">LH</option>
+            </select>
+            <button
+              onClick={async () => {
+                for (const [code, value] of leverSchedulerCommands(paradigm, activeLever, session?.hardwareUi ?? {})) {
+                  if (value === undefined) await send(code); // reinforcement pair only; timeout goes out at Start
+                }
+              }}
+              className="btn-sm bg-accent text-accent-contrast">Set</button>
+          </div>
+          <p className="text-xs text-theme-text/50">
+            Which lever's presses count toward the ratio and earn rewards (the other logs inactive presses). Sent at session start.
           </p>
         </div>
       )}

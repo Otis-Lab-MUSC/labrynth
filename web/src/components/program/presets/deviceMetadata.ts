@@ -57,6 +57,7 @@ export const PARADIGM_DEFAULTS: SessionPreset["paradigmSettings"] = {
   ratio: 1,
   step: 1,
   interval: 30000,
+  activeLever: "rh",
 };
 
 const DEFAULT_LIMIT_SETTINGS: SessionPreset["limitDefaults"] = {

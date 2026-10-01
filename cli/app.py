@@ -149,6 +149,10 @@ DEVICE_CONFIGS: list[dict] = [
     },
 ]
 
+SET_ACTIVE_PUMP = 221
+# Paradigms whose firmware handles 221 (reacher commands.py SET_ACTIVE_PUMP).
+REWARD_PUMP_PARADIGMS = ("fr", "pr", "vi", "omission")
+
 PARADIGM_SETTING_CODES = {
     "ratio": 201,
     "step": 205,
@@ -1315,11 +1319,28 @@ class ReacherCLI:
         self.session.pavlovian_params[code] = value
         self._rebuild_current_menu()
 
+    async def _pin_reward_pump(self) -> None:
+        """Point the reward chain at the pump actually armed (221).
+
+        The backend replays a persisted 221 on every connect, so the firmware's
+        target can be left over from an earlier session. Skipped in the armed
+        state: config commands are rejected (409) there, which is why the
+        trigger path calls this before arming. Raises on failure so the caller
+        aborts rather than running on an unknown target.
+        """
+        paradigm = (self.session.paradigm or "").removesuffix("_lite")
+        if self.session.state == "armed" or paradigm not in REWARD_PUMP_PARADIGMS:
+            return
+        armed = self.session.armed
+        pump2 = bool(armed.get("secondary-pump")) and not armed.get("primary-pump")
+        await self.api.send_command(self.session.id, SET_ACTIVE_PUMP, int(pump2))
+
     async def _start_program(self) -> None:
         if not self.session:
             self._set_status("No session", error=True)
             return
         try:
+            await self._pin_reward_pump()
             await self.api.start_program(self.session.id)
             self.session.state = "running"
             self.session.program_start = time.time()
@@ -1334,6 +1355,7 @@ class ReacherCLI:
             self._set_status("No session", error=True)
             return
         try:
+            await self._pin_reward_pump()
             await self.api.arm_external_trigger(self.session.id)
             # program_start is deliberately left unset — t0 is the trigger edge,
             # which the backend reports via session_state, not this call.

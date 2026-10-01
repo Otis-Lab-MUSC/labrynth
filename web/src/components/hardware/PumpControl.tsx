@@ -2,6 +2,7 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
 import { ContingencySection } from "./ContingencySection";
+import { useRewardPump } from "../../hooks/useRewardPump";
 
 interface Props {
   sessionId: string;
@@ -27,6 +28,7 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
   const siblingKey = STORE_KEY[siblingPrefix];
 
   // All hooks unconditionally before any early return (Rules of Hooks)
+  const rewardPump = useRewardPump(sessionId);
   const pump = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[storeKey]);
   const siblingPump = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[siblingKey]);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
@@ -117,6 +119,12 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
           {hasFlowRate
             ? "Set a duration to see an estimated infusion volume."
             : "Enter this pump's flow rate (µL/s) to see an estimated infusion volume."}
+        </p>
+      )}
+      {isOperant && rewardPump && (
+        <p className="text-xs text-theme-text/50">
+          Reward pump (host): {rewardPump === "PUMP2" ? "Pump 2" : "Pump 1"}
+          {(rewardPump === "PUMP2") !== (prefix === "2") && armed ? " — this pump is armed but is not the reward target until Start" : ""}
         </p>
       )}
       <ContingencySection sessionId={sessionId} deviceKey={storeKey} paradigm={paradigm} />
