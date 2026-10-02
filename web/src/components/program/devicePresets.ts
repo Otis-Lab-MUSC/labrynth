@@ -64,6 +64,82 @@ export const PARAM_PARADIGMS: Record<string, string[]> = {
   timeoutMode: ["fr", "pr", "vi"],
 };
 
+/** Operant paradigms: the sketches that carry the reward-chain commands (221, 1080/1081, 1380/1381). */
+export function isOperantParadigm(paradigm?: string | null): boolean {
+  return isParadigm(paradigm, "fr", "pr", "vi", "omission");
+}
+
+export type ActiveLever = "rh" | "lh";
+
+/** Missing (presets / sessions saved before the field existed) means RH, the firmware boot default. */
+export function activeLeverOf(ps?: { activeLever?: string } | null): ActiveLever {
+  return ps?.activeLever === "lh" ? "lh" : "rh";
+}
+
+const LEVER_COMMANDS = {
+  rh: { active: 1081, inactive: 1080, timeout: 1074, timeoutMode: 1077, key: "rhLever" },
+  lh: { active: 1381, inactive: 1380, timeout: 1374, timeoutMode: 1377, key: "lhLever" },
+} as const;
+
+/** Timeout and timeout mode are scheduler-wide in firmware (1074/1374 write one register,
+ *  1077/1377 one flag), so the per-device param loops skip them and they go out once, via
+ *  `leverSchedulerCommands`. */
+export function isSharedLeverParam(deviceKey: string, paramKey: string): boolean {
+  return (deviceKey === "rhLever" || deviceKey === "lhLever") && (paramKey === "timeout" || paramKey === "timeoutMode");
+}
+
+interface LeverTimeoutState { armed?: boolean; timeout?: number | null; timeoutMode?: number | null }
+
+interface FilterDeviceState { armed?: boolean; contingency?: { leverFilter?: string } }
+type FilterDevices = { primaryCue?: FilterDeviceState; secondaryCue?: FilterDeviceState; primaryPump?: FilterDeviceState; secondaryPump?: FilterDeviceState };
+
+const FILTER_DEVICE_LABELS: Record<keyof FilterDevices, string> = {
+  primaryCue: "Cue 1", secondaryCue: "Cue 2", primaryPump: "Pump 1", secondaryPump: "Pump 2",
+};
+
+/** Armed cue/pump devices whose lever filter targets `lever`. A lever filter (378/478 = 1|2)
+ *  makes that lever reinforced in firmware, and today that is the only web route to reward LH. */
+function filterTargets(devices: FilterDevices, lever: ActiveLever): string[] {
+  return (Object.keys(FILTER_DEVICE_LABELS) as Array<keyof FilterDevices>)
+    .filter((k) => devices[k]?.armed && devices[k]?.contingency?.leverFilter === lever)
+    .map((k) => FILTER_DEVICE_LABELS[k]);
+}
+
+/** Armed devices that only fire on presses of the NON-active lever (for a UI heads-up). */
+export function filterContradictions(devices: FilterDevices, active: ActiveLever): { devices: string[]; lever: ActiveLever } {
+  const lever = active === "rh" ? "lh" : "rh";
+  return { devices: filterTargets(devices, lever), lever };
+}
+
+/** Commands that must follow every per-device command: the reinforcement pair for the active
+ *  lever (it wins over the lever-filter commands, which only ever set reinforced), then the one
+ *  scheduler-wide timeout and timeout mode taken from the active lever's stored values. The other
+ *  lever's inactive code is withheld when an armed device's filter targets it, so an existing
+ *  filter-based "reward LH" setup keeps its LH reinforced. */
+export function leverSchedulerCommands(
+  paradigm: string | null | undefined,
+  active: ActiveLever,
+  levers: { rhLever?: LeverTimeoutState; lhLever?: LeverTimeoutState } & FilterDevices,
+): Array<[number, number?]> {
+  if (!isOperantParadigm(paradigm)) return [];
+  const other = active === "rh" ? "lh" : "rh";
+  const codes = LEVER_COMMANDS[active];
+  const src = levers[codes.key];
+  const out: Array<[number, number?]> = [[codes.active]];
+  if (filterTargets(levers, other).length === 0) out.push([LEVER_COMMANDS[other].inactive]);
+  // Like the per-lever loop it replaces, write timeout only when a lever is armed — an untouched
+  // store default (0) must not overwrite the firmware's own default timeout.
+  if (!levers.rhLever?.armed && !levers.lhLever?.armed) return out;
+  if (src?.timeout != null) out.push([codes.timeout, src.timeout]);
+  if (src?.timeoutMode != null && canDispatchParam("timeoutMode", paradigm)) out.push([codes.timeoutMode, src.timeoutMode]);
+  return out;
+}
+
+/** 221 value for the reward chain: Pump 2 only when it is the sole armed pump. */
+export function rewardPump2(pumps: { primaryPump?: { armed?: boolean }; secondaryPump?: { armed?: boolean } }): boolean {
+  return !!pumps.secondaryPump?.armed && !pumps.primaryPump?.armed;
+}
+
 /** False when `paramKey` must not be dispatched on this session's paradigm. */
 export function canDispatchParam(paramKey: string, paradigm?: string | null): boolean {
   const allowed = PARAM_PARADIGMS[paramKey];

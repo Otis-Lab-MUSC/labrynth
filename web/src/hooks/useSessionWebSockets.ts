@@ -148,6 +148,20 @@ function handleMessage(msg: WSMessage) {
       } else {
         pushHardwareSetting(msg.session_id, configData);
 
+        // Timeout and timeout mode are scheduler-wide in firmware, so a record for either lever
+        // (fw ack) or the controller (backend echo / START dump) moves both lever cards together.
+        if (raw.device === "LEVER_RH" || raw.device === "LEVER_LH" || raw.device === "CONTROLLER") {
+          const shared: { timeout?: number; timeoutMode?: number } = {};
+          if (typeof raw.timeout === "number") shared.timeout = raw.timeout;
+          if (typeof raw.timeout_mode === "number") shared.timeoutMode = raw.timeout_mode;
+          if (Object.keys(shared).length > 0) {
+            updateHardwareUi(msg.session_id, (prev) => ({
+              rhLever: { ...prev.rhLever, ...shared },
+              lhLever: { ...prev.lhLever, ...shared },
+            }));
+          }
+        }
+
         // Sync arm state (and available params) from firmware config into hardwareUi
         const uiKey = DEVICE_TO_UI_KEY[raw.device as string];
         if (uiKey) {

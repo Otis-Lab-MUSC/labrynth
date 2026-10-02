@@ -4,8 +4,9 @@ import { useSessionStore } from "../../store/useSessionStore";
 import { useLogStore } from "../../store/useLogStore";
 import { useNavigationStore } from "../../store/useNavigationStore";
 import { getClientForSession } from "../../api/sessionClient";
-import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS, canDispatchParam } from "../program/devicePresets";
+import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS, canDispatchParam, isSharedLeverParam, isOperantParadigm, activeLeverOf, leverSchedulerCommands, rewardPump2, filterContradictions } from "../program/devicePresets";
 import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
+import { useRewardPump } from "../../hooks/useRewardPump";
 import { ValidationWarningPanel } from "./ValidationWarningPanel";
 import { DEVICE_LABELS, formatDeviceParams, laserPhaseActive } from "./hardwareSummary";
 import type { ValidationResult } from "../../api/client";
@@ -27,6 +28,7 @@ export function SessionStartModal() {
   const setLimitSettings = useSessionStore((s) => s.setLimitSettings);
 
   const { hasExternalTrigger } = useFirmwareCommands(activeSessionId);
+  const hostPump = useRewardPump(startModalOpen ? activeSessionId : null);
   // "trigger" defers the run to an external TTL edge. Every config command below
   // is sent identically either way — only the terminal call differs.
   const [startMode, setStartMode] = useState<"now" | "trigger">("now");
@@ -157,6 +159,8 @@ export function SessionStartModal() {
             // A command the backend does not declare for this paradigm 400s, and that
             // throw aborts this try before startProgram() — see PARAM_PARADIGMS.
             if (!canDispatchParam(paramKey, paradigm)) continue;
+            // Scheduler-wide in firmware: sent once after this loop, not per lever.
+            if (isSharedLeverParam(deviceKey, paramKey)) continue;
             if (state[paramKey] !== undefined && state[paramKey] !== null) {
               await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, code, state[paramKey] as number);
             }
@@ -199,6 +203,16 @@ export function SessionStartModal() {
           independent: LASER_MODE_COMMANDS.independent,
         }[laserState.contingency];
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, contingencyCommand);
+      }
+
+      // After every per-device command, so they win over the lever-filter commands that only
+      // ever set reinforced and over the other lever's stale timeout.
+      if (isOperantParadigm(paradigm)) {
+        for (const [code, value] of leverSchedulerCommands(paradigm, activeLeverOf(session.paradigmSettings), hw)) {
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, code, value);
+        }
+        // Always resolved from what is armed now, so a stale persisted/replayed target never survives a Start.
+        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, 221, rewardPump2(hw) ? 1 : 0);
       }
 
       const client = getClientForSession(activeSessionId);
@@ -249,6 +263,42 @@ export function SessionStartModal() {
               <span className="text-theme-text/60">Board:</span>
               <span className="font-mono">{session.board?.toUpperCase() ?? "—"}</span>
             </div>
+            {isOperantParadigm(paradigm) && (() => {
+              const active = activeLeverOf(session.paradigmSettings);
+              if (session.hardwareUi[active === "lh" ? "lhLever" : "rhLever"].armed) return null;
+              const L = active.toUpperCase();
+              return (
+                <p className="mt-2 text-xs text-amber-400">
+                  Reinforced lever ({L}) is not armed: no press can be rewarded.
+                </p>
+              );
+            })()}
+            {isOperantParadigm(paradigm) && (() => {
+              const clash = filterContradictions(session.hardwareUi, activeLeverOf(session.paradigmSettings));
+              if (clash.devices.length === 0) return null;
+              const L = clash.lever.toUpperCase();
+              return (
+                <p className="mt-2 text-xs text-amber-400">
+                  Reinforced lever is {L === "LH" ? "RH" : "LH"}, but {clash.devices.join(", ")} only fire{clash.devices.length === 1 ? "s" : ""} on {L} presses
+                  — {L} stays reinforced via that filter.
+                </p>
+              );
+            })()}
+            {isOperantParadigm(paradigm) && (() => {
+              const sending = rewardPump2(session.hardwareUi) ? "PUMP2" : "PUMP";
+              const label = (p: string) => (p === "PUMP2" ? "Pump 2" : "Pump 1");
+              return (
+                <div className="flex items-center gap-2 mt-2 text-sm">
+                  <span className="text-theme-text/60">Reward pump:</span>
+                  <span className="font-mono">{label(sending)}</span>
+                  {hostPump && hostPump !== sending && (
+                    <span className="text-amber-400 text-xs">
+                      (host currently targets {label(hostPump)} — corrected at start)
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
             <div className="flex items-center gap-2 mt-2">
               <span className="text-sm text-theme-text/60">Name:</span>
               <span className="flex-1 font-mono text-theme-text">{name || <span className="text-theme-text/40">—</span>}</span>

@@ -19,6 +19,8 @@ export interface SessionPreset {
     ratio: number;
     step: number;
     interval: number;
+    /** Reinforced lever. Absent in presets saved before this field existed ⇒ "rh". */
+    activeLever?: "rh" | "lh";
   };
   pavlovianParams?: Record<number, number>;
   limitDefaults: {

@@ -293,7 +293,7 @@ export class MachineApiClient {
   getCommands = (id: string) =>
     this.request<{ paradigm: string; commands: Array<Record<string, unknown>> }>(`/hardware/${id}/commands`);
   getConfig = (id: string) =>
-    this.request<{ firmware_info: Record<string, unknown>; hardware_settings: unknown[] }>(`/hardware/${id}/config`);
+    this.request<{ firmware_info: Record<string, unknown>; hardware_settings: unknown[]; pump_target?: "PUMP" | "PUMP2" | null }>(`/hardware/${id}/config`);
   setPins = (id: string, assignments: Record<string, number>) =>
     this.request<{ applied: Record<string, number>; errors: Array<{ component: string; error: string }> }>(
       `/hardware/${id}/pins`,

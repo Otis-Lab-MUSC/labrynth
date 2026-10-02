@@ -5,7 +5,7 @@ import { defaultHardwareUiState } from "../../store/useSessionStore";
 import { ParadigmSettings } from "../program/ParadigmSettings";
 import { PavlovianSettings } from "../program/PavlovianSettings";
 import { LimitConfig } from "../program/LimitConfig";
-import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS, canDispatchParam } from "../program/devicePresets";
+import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS, canDispatchParam, isSharedLeverParam, activeLeverOf, leverSchedulerCommands, rewardPump2 } from "../program/devicePresets";
 import type { DevicePreset } from "../program/devicePresets";
 import { SESSION_PRESETS, SessionPresetCard, buildPresetFromSession, SavePresetDialog } from "../program/presets";
 import type { SessionPreset } from "../program/presets";
@@ -202,6 +202,12 @@ export function ConfigurationPanel() {
           ((result as unknown as Record<string, Record<string, unknown>>)[deviceKey]).armed = false;
         }
       }
+      // Timeout / timeout mode are scheduler-wide: the active lever's values win on both cards,
+      // so an older preset carrying two different values cannot display two things the board
+      // can't hold.
+      const src = result[activeLeverOf(preset.paradigmSettings) === "lh" ? "lhLever" : "rhLever"];
+      result.rhLever = { ...result.rhLever, timeout: src.timeout, timeoutMode: src.timeoutMode };
+      result.lhLever = { ...result.lhLever, timeout: src.timeout, timeoutMode: src.timeoutMode };
       return result;
     });
 
@@ -221,6 +227,8 @@ export function ConfigurationPanel() {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
             // A command the backend does not declare for this paradigm 400s — see PARAM_PARADIGMS.
             if (!canDispatchParam(paramKey, paradigm)) continue;
+            // Scheduler-wide in firmware: sent once after the device loop (leverSchedulerCommands).
+            if (isSharedLeverParam(deviceKey, paramKey)) continue;
             if (state[paramKey] !== undefined && state[paramKey] !== null) {
               await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
             }
@@ -238,13 +246,9 @@ export function ConfigurationPanel() {
       // Send SET_ACTIVE_PUMP (cmd 221) so firmware reward chain uses the correct pump.
       // Operant paradigms only (cmd 221 is not registered for Pavlovian).
       if (!isPav) {
-        let pump2Active = false;
-        if ("secondaryPump" in preset.hardware) {
-          const spState = preset.hardware.secondaryPump as { armed: boolean } | undefined;
-          pump2Active = "secondaryPump" in armOverrides
-            ? armOverrides["secondaryPump"]
-            : (spState?.armed ?? false);
-        }
+        const armedIn = (key: "primaryPump" | "secondaryPump") =>
+          key in armOverrides ? armOverrides[key] : ((preset.hardware[key] as { armed?: boolean } | undefined)?.armed ?? false);
+        const pump2Active = rewardPump2({ primaryPump: { armed: armedIn("primaryPump") }, secondaryPump: { armed: armedIn("secondaryPump") } });
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, 221, pump2Active ? 1 : 0);
       }
 
@@ -273,6 +277,15 @@ export function ConfigurationPanel() {
           independent: LASER_MODE_COMMANDS.independent,
         }[laserState.contingency];
         await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, contingencyCommand);
+      }
+
+      // 2d. Active lever + the one scheduler-wide timeout / mode, after every per-device command.
+      // Read from the store so the merged (override-aware) values are what goes out.
+      const merged = useSessionStore.getState().sessions.get(activeSessionId)?.hardwareUi;
+      if (merged && ("rhLever" in preset.hardware || "lhLever" in preset.hardware)) {
+        for (const [code, value] of leverSchedulerCommands(paradigm, activeLeverOf(preset.paradigmSettings), merged)) {
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, code, value);
+        }
       }
 
       // 3. Send paradigm-specific commands
@@ -345,9 +358,20 @@ export function ConfigurationPanel() {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
             // A command the backend does not declare for this paradigm 400s — see PARAM_PARADIGMS.
             if (!canDispatchParam(paramKey, paradigm)) continue;
+            if (isSharedLeverParam(deviceKey, paramKey)) continue;
             if (state[paramKey] !== undefined && state[paramKey] !== null) {
               await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
             }
+          }
+        }
+      }
+
+      // Scheduler-wide lever timeout / mode, once, from the session's active lever.
+      if ("rhLever" in preset.hardware || "lhLever" in preset.hardware) {
+        const cur = useSessionStore.getState().sessions.get(activeSessionId);
+        if (cur) {
+          for (const [code, value] of leverSchedulerCommands(paradigm, activeLeverOf(cur.paradigmSettings), cur.hardwareUi)) {
+            await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, code, value);
           }
         }
       }

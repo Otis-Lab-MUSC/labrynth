@@ -36,6 +36,14 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
   // Fix: the raw string compares this gate used to do still matched "omission_lite"
   // as a timeout-capable paradigm, so the Timeout row rendered on lite omission
   // boards that have no lever timeout at all. isParadigm() strips the _lite suffix.
+  // Timeout and timeout mode are scheduler-wide in firmware (1074/1374 write one register,
+  // 1077/1377 one flag), so an edit on either card is mirrored into both levers' fields.
+  const setShared = (patch: { timeout?: number; timeoutMode?: number }) =>
+    updateHardwareUi(sessionId, (prev) => ({
+      rhLever: { ...prev.rhLever, ...patch },
+      lhLever: { ...prev.lhLever, ...patch },
+    }));
+
   const showTimeout = !isParadigm(paradigm, "omission", "pavlovian");
   // Timeout mode is only declared for fr/pr/vi (+ _lite twins) — omission and
   // pavlovian firmware have no lever timeout, so the control is absent rather
@@ -64,7 +72,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
           <label className="text-sm text-theme-text/60">Timeout (ms):</label>
           <input
             type="number" value={timeout} min={0} max={600000}
-            onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], timeout: +e.target.value } }))}
+            onChange={(e) => setShared({ timeout: +e.target.value })}
             className="w-24 input-base"
           />
           <button onClick={() => send(codes.timeout, timeout)}
@@ -78,7 +86,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
           <select
             value={timeoutMode}
             data-log-id={`lever-${side}-timeout-mode`}
-            onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], timeoutMode: +e.target.value } }))}
+            onChange={(e) => setShared({ timeoutMode: +e.target.value })}
             className="input-base"
           >
             {TIMEOUT_MODE_OPTIONS.map((o) => (
@@ -88,6 +96,11 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
           <button onClick={() => send(codes.timeoutMode, timeoutMode)}
             className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
         </div>
+      )}
+      {showTimeout && (
+        <p className="text-xs text-theme-text/50">
+          Scheduler-wide: timeout and timeout mode are shared by both levers.
+        </p>
       )}
     </div>
   );
