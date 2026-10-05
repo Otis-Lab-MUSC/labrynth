@@ -293,9 +293,16 @@ export function ConfigurationPanel() {
         for (const [code, value] of Object.entries(preset.pavlovianParams)) {
           await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,Number(code), value);
         }
-      } else if (isParadigm(paradigm, "fr", "pr")) {
+      } else if (isParadigm(paradigm, "fr", "pr", "vi", "omission")) {
         try {
-          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,201, preset.paradigmSettings.ratio);
+          const client = getClientForSession(activeSessionId);
+          if (isParadigm(paradigm, "fr", "pr")) {
+            await client?.sendCommand(activeSessionId, 201, preset.paradigmSettings.ratio);
+          } else if (isParadigm(paradigm, "vi")) {
+            await client?.sendCommand(activeSessionId, 204, preset.paradigmSettings.interval);
+          } else {
+            await client?.sendCommand(activeSessionId, 203, preset.paradigmSettings.interval);
+          }
         } catch (e) {
           useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Failed to send paradigm command");
           useLogStore.getState().setOpen(true);
@@ -501,7 +508,7 @@ export function ConfigurationPanel() {
       {/* ── Program Section ──────────────────────────────────── */}
 
       {/* Session Preset Selector */}
-      {(filteredSessionPresets.builtIn.length > 0 || filteredSessionPresets.custom.length > 0) && (
+      {session.paradigm && (
         <div data-tour="preset-select" className="card space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-theme-text">Session Preset</h3>
@@ -519,7 +526,11 @@ export function ConfigurationPanel() {
             onChange={(e) => setSelectedPresetId(e.target.value)}
             className="input-base"
           >
-            <option value="">Select a session preset...</option>
+            <option value="">
+              {filteredSessionPresets.builtIn.length + filteredSessionPresets.custom.length > 0
+                ? "Select a session preset..."
+                : "No saved presets for this paradigm"}
+            </option>
             {filteredSessionPresets.builtIn.length > 0 && (
               <optgroup label="Built-in">
                 {filteredSessionPresets.builtIn.map((p) => (
