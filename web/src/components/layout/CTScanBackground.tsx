@@ -19,12 +19,10 @@ function readAccentRgb(): [number, number, number] {
 
 export function CTScanBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const modeRef = useRef(useThemeStore.getState().mode);
   const accentRef = useRef<[number, number, number]>(readAccentRgb());
 
   useEffect(() => {
-    const unsub = useThemeStore.subscribe((s) => {
-      modeRef.current = s.mode;
+    const unsub = useThemeStore.subscribe(() => {
       requestAnimationFrame(() => {
         accentRef.current = readAccentRgb();
       });
@@ -61,9 +59,9 @@ export function CTScanBackground() {
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
-    function drawGrid(w: number, h: number, ar: number, ag: number, ab: number, isDark: boolean) {
+    function drawGrid(w: number, h: number, ar: number, ag: number, ab: number) {
       // Secondary grid (fine)
-      const secondaryAlpha = isDark ? 0.03 : 0.015;
+      const secondaryAlpha = 0.03;
       ctx!.strokeStyle = `rgba(${ar}, ${ag}, ${ab}, ${secondaryAlpha})`;
       ctx!.lineWidth = 1;
       ctx!.beginPath();
@@ -78,7 +76,7 @@ export function CTScanBackground() {
       ctx!.stroke();
 
       // Primary grid
-      const primaryAlpha = isDark ? 0.08 : 0.04;
+      const primaryAlpha = 0.08;
       ctx!.strokeStyle = `rgba(${ar}, ${ag}, ${ab}, ${primaryAlpha})`;
       ctx!.lineWidth = 1;
       ctx!.beginPath();
@@ -93,10 +91,10 @@ export function CTScanBackground() {
       ctx!.stroke();
     }
 
-    function drawCrosshair(w: number, h: number, ar: number, ag: number, ab: number, isDark: boolean) {
+    function drawCrosshair(w: number, h: number, ar: number, ag: number, ab: number) {
       const cx = w / 2;
       const cy = h / 2;
-      const alpha = isDark ? 0.12 : 0.06;
+      const alpha = 0.12;
       const radii = [60, 120, 180];
 
       ctx!.strokeStyle = `rgba(${ar}, ${ag}, ${ab}, ${alpha})`;
@@ -131,7 +129,7 @@ export function CTScanBackground() {
       ctx!.stroke();
     }
 
-    function drawScanLine(w: number, ar: number, ag: number, ab: number, isDark: boolean, now: number) {
+    function drawScanLine(w: number, ar: number, ag: number, ab: number, now: number) {
       const h = window.innerHeight;
       const totalCycle = SCAN_DURATION + SCAN_PAUSE;
       const cyclePos = now % totalCycle;
@@ -146,7 +144,7 @@ export function CTScanBackground() {
 
       if (scanPaused > 0) return;
 
-      const peakAlpha = isDark ? 0.3 : 0.15;
+      const peakAlpha = 0.3;
 
       // Trailing lines
       const trails = [
@@ -181,13 +179,13 @@ export function CTScanBackground() {
       }
     }
 
-    function drawPulses(ar: number, ag: number, ab: number, isDark: boolean) {
+    function drawPulses(ar: number, ag: number, ab: number) {
       pulses = pulses.filter((p) => {
         p.progress += 1 / 90; // ~1.5s at 60fps
         if (p.progress >= 1) return false;
 
         const r = p.progress * p.maxRadius;
-        const alpha = (1 - p.progress) * (isDark ? 0.4 : 0.2);
+        const alpha = (1 - p.progress) * 0.4;
 
         ctx!.strokeStyle = `rgba(${ar}, ${ag}, ${ab}, ${alpha})`;
         ctx!.lineWidth = 1;
@@ -199,8 +197,8 @@ export function CTScanBackground() {
       });
     }
 
-    function drawCornerBrackets(w: number, h: number, ar: number, ag: number, ab: number, isDark: boolean) {
-      const alpha = isDark ? 0.15 : 0.08;
+    function drawCornerBrackets(w: number, h: number, ar: number, ag: number, ab: number) {
+      const alpha = 0.15;
       const m = BRACKET_MARGIN;
       const s = BRACKET_SIZE;
 
@@ -244,17 +242,16 @@ export function CTScanBackground() {
 
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const isDark = modeRef.current === "dark";
       const [ar, ag, ab] = accentRef.current;
 
       ctx!.clearRect(0, 0, w, h);
 
-      drawGrid(w, h, ar, ag, ab, isDark);
-      drawCrosshair(w, h, ar, ag, ab, isDark);
-      drawScanLine(w, ar, ag, ab, isDark, now);
+      drawGrid(w, h, ar, ag, ab);
+      drawCrosshair(w, h, ar, ag, ab);
+      drawScanLine(w, ar, ag, ab, now);
       spawnPulses(w, h, now);
-      drawPulses(ar, ag, ab, isDark);
-      drawCornerBrackets(w, h, ar, ag, ab, isDark);
+      drawPulses(ar, ag, ab);
+      drawCornerBrackets(w, h, ar, ag, ab);
 
       animationId = requestAnimationFrame(draw);
     }

@@ -35,12 +35,10 @@ function readAccentRgb(): [number, number, number] {
 
 export function NeuralBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const modeRef = useRef(useThemeStore.getState().mode);
   const accentRef = useRef<[number, number, number]>(readAccentRgb());
 
   useEffect(() => {
-    const unsub = useThemeStore.subscribe((s) => {
-      modeRef.current = s.mode;
+    const unsub = useThemeStore.subscribe(() => {
       // Defer reading computed style to next frame so CSS vars have settled
       requestAnimationFrame(() => {
         accentRef.current = readAccentRgb();
@@ -98,7 +96,6 @@ export function NeuralBackground() {
 
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const isDark = modeRef.current === "dark";
       const [ar, ag, ab] = accentRef.current;
 
       ctx!.clearRect(0, 0, w, h);
@@ -132,7 +129,7 @@ export function NeuralBackground() {
             const connKey = `${i}-${j}`;
             currentConnections.add(connKey);
 
-            const alpha = (1 - dist / CONNECTION_DIST) * (isDark ? 0.15 : 0.08);
+            const alpha = (1 - dist / CONNECTION_DIST) * 0.15;
             const isHubEdge = nodes[i].isHub || nodes[j].isHub;
             const isClose = dist < 100;
 
@@ -186,7 +183,7 @@ export function NeuralBackground() {
         if (r.progress >= 1) return false;
 
         const radius = r.progress * r.maxRadius;
-        const alpha = (1 - r.progress) * (isDark ? 0.2 : 0.12);
+        const alpha = (1 - r.progress) * 0.2;
 
         ctx!.strokeStyle = `rgba(${ar}, ${ag}, ${ab}, ${alpha})`;
         ctx!.lineWidth = 1;
@@ -198,7 +195,7 @@ export function NeuralBackground() {
       });
 
       // Draw and update pulses
-      const bright = isDark ? 0.8 : 0.6;
+      const bright = 0.8;
       ctx!.save();
       pulses = pulses.filter((p) => {
         p.progress += p.speed;
@@ -222,12 +219,12 @@ export function NeuralBackground() {
 
       // Draw nodes with radial gradient and hub glow
       for (const node of nodes) {
-        const nodeAlpha = isDark ? 0.4 : 0.25;
+        const nodeAlpha = 0.4;
 
         // Hub outer glow
         if (node.isHub) {
           ctx!.save();
-          ctx!.shadowColor = `rgba(${ar}, ${ag}, ${ab}, ${isDark ? 0.5 : 0.3})`;
+          ctx!.shadowColor = `rgba(${ar}, ${ag}, ${ab}, 0.5)`;
           ctx!.shadowBlur = 12;
           ctx!.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${nodeAlpha * 0.3})`;
           ctx!.beginPath();

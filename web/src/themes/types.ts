@@ -14,7 +14,7 @@ export interface ColorPalette {
 export interface ThemeDefinition {
   id: string;
   name: string;
-  colors: { light: ColorPalette; dark: ColorPalette };
+  colors: { dark: ColorPalette };
   font: "mono" | "sans" | "cyberpunk";
   radius: { sm: string; md: string; lg: string };
   glass: { enabled: boolean; opacity: number; blur: string };

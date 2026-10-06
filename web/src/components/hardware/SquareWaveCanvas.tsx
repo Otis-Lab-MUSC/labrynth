@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useContainerWidth } from "../../hooks/useContainerWidth";
-import { useThemeStore } from "../../store/useThemeStore";
 
 interface SquareWaveCanvasProps {
   frequency: number;
@@ -62,7 +61,6 @@ function formatTimeLabel(t: number, windowSec: number): string {
 export function SquareWaveCanvas({ frequency, duration }: SquareWaveCanvasProps) {
   const [containerRef, containerWidth] = useContainerWidth();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const themeMode = useThemeStore((s) => s.mode);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -274,7 +272,7 @@ export function SquareWaveCanvas({ frequency, duration }: SquareWaveCanvasProps)
       ctx.fillText(durLabel, xBurst, PADDING_TOP - 2);
       ctx.restore();
     }
-  }, [frequency, duration, containerWidth, themeMode]);
+  }, [frequency, duration, containerWidth]);
 
   return (
     <div ref={containerRef}>

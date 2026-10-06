@@ -7,17 +7,6 @@ export const emberTheme: ThemeDefinition = {
   id: "ember",
   name: "Ember",
   colors: {
-    light: {
-      surface: "255 251 245",       // warm white
-      panel: "254 243 230",         // warm cream
-      textPrimary: "41 25 15",      // dark warm brown
-      textSecondary: "120 90 65",   // warm mid-brown
-      accent: "217 119 6",          // amber-600
-      accentHover: "180 83 9",      // amber-700
-      accentContrast: "0 0 0",      // black on amber
-      border: "120 90 65",          // warm brown
-      input: "255 247 237",         // warm off-white
-    },
     dark: {
       surface: "16 12 10",          // warm near-black
       panel: "26 20 16",            // warm dark panel

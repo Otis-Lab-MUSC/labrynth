@@ -409,7 +409,7 @@ export function SessionStartModal() {
                         )}
                       </td>
                       <td className="px-3 py-1.5 font-mono text-xs text-theme-text/60">
-                        {state.armed ? formatDeviceParams(key, state as Record<string, unknown>, { isPav: isPavlovian, pressContingent, timeoutModeApplies: canDispatchParam("timeoutMode", paradigm) }) : ""}
+                        {state.armed ? formatDeviceParams(key, state as Record<string, unknown>, { isPav: isPavlovian, pressContingent, timeoutModeApplies: canDispatchParam("timeoutMode", paradigm), timeoutApplies: !isParadigm(paradigm, "vi") }) : ""}
                       </td>
                     </tr>
                   ))}

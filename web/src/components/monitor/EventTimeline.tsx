@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import type { BehaviorEvent } from "../../types";
-import { useThemeStore } from "../../store/useThemeStore";
 import { useContainerWidth } from "../../hooks/useContainerWidth";
 
 function readAccentRgb(): string {
@@ -22,46 +21,46 @@ interface Props {
 }
 
 // Firmware v2.4.x+ names; legacy v2.3.x names kept as aliases so old sessions still render
-const DEVICE_COLORS: Record<string, { dark: string; light: string }> = {
-  LEVER_RH:   { dark: "#00ff41", light: "#16a34a" },
-  LEVER_LH:   { dark: "#41ff00", light: "#65a30d" },
-  CUE_1:      { dark: "#ffaa00", light: "#d97706" },
-  CUE_2:      { dark: "#ffcc44", light: "#b45309" },
-  PUMP_1:     { dark: "#00aaff", light: "#2563eb" },
-  PUMP_2:     { dark: "#44ccff", light: "#1d4ed8" },
-  LICK:       { dark: "#ff55ff", light: "#c026d3" },
-  LASER:      { dark: "#ff4444", light: "#dc2626" },
-  SLM:        { dark: "#ff00ff", light: "#9333ea" },
-  CONTROLLER: { dark: "#888888", light: "#6b7280" },
+const DEVICE_COLORS: Record<string, string> = {
+  LEVER_RH:   "#00ff41",
+  LEVER_LH:   "#41ff00",
+  CUE_1:      "#ffaa00",
+  CUE_2:      "#ffcc44",
+  PUMP_1:     "#00aaff",
+  PUMP_2:     "#44ccff",
+  LICK:       "#ff55ff",
+  LASER:      "#ff4444",
+  SLM:        "#ff00ff",
+  CONTROLLER: "#888888",
   // Bare CUE/PUMP are current level-007 names, not legacy: PavlovianScheduler
   // spells the *primaries* without the _1 suffix the operant Scheduler uses
   // (it still emits CUE_2/PUMP_2), so both spellings are live and paradigm-
   // dependent. See PavlovianScheduler.cpp / Scheduler.cpp LogDeviceActivation.
-  CUE:      { dark: "#ffaa00", light: "#d97706" },
-  PUMP:     { dark: "#00aaff", light: "#2563eb" },
+  CUE:      "#ffaa00",
+  PUMP:     "#00aaff",
 };
 
-const LEVER_EVENT_COLORS: Record<string, Record<string, { dark: string; light: string }>> = {
+const LEVER_EVENT_COLORS: Record<string, Record<string, string>> = {
   LEVER_RH: {
-    ACTIVE_PRESS:   { dark: "#00ff41", light: "#16a34a" },
-    TIMEOUT_PRESS:  { dark: "#00aa2e", light: "#4d7c0f" },
-    INACTIVE_PRESS: { dark: "#666666", light: "#9ca3af" },
+    ACTIVE_PRESS:   "#00ff41",
+    TIMEOUT_PRESS:  "#00aa2e",
+    INACTIVE_PRESS: "#666666",
   },
   LEVER_LH: {
-    ACTIVE_PRESS:   { dark: "#41ff00", light: "#65a30d" },
-    TIMEOUT_PRESS:  { dark: "#2eaa00", light: "#4d7c0f" },
-    INACTIVE_PRESS: { dark: "#666666", light: "#9ca3af" },
+    ACTIVE_PRESS:   "#41ff00",
+    TIMEOUT_PRESS:  "#2eaa00",
+    INACTIVE_PRESS: "#666666",
   },
   // Legacy aliases
   RH_LEVER: {
-    ACTIVE_PRESS:   { dark: "#00ff41", light: "#16a34a" },
-    TIMEOUT_PRESS:  { dark: "#00aa2e", light: "#4d7c0f" },
-    INACTIVE_PRESS: { dark: "#666666", light: "#9ca3af" },
+    ACTIVE_PRESS:   "#00ff41",
+    TIMEOUT_PRESS:  "#00aa2e",
+    INACTIVE_PRESS: "#666666",
   },
   LH_LEVER: {
-    ACTIVE_PRESS:   { dark: "#41ff00", light: "#65a30d" },
-    TIMEOUT_PRESS:  { dark: "#2eaa00", light: "#4d7c0f" },
-    INACTIVE_PRESS: { dark: "#666666", light: "#9ca3af" },
+    ACTIVE_PRESS:   "#41ff00",
+    TIMEOUT_PRESS:  "#2eaa00",
+    INACTIVE_PRESS: "#666666",
   },
 };
 
@@ -94,14 +93,14 @@ const PADDING_RIGHT = 16;
 const MIN_BAR_WIDTH = 2;
 const MARKER_WIDTH = 3;
 
-function getDeviceColor(device: string, isDark: boolean, event?: string): string {
+function getDeviceColor(device: string, event?: string): string {
   if (event) {
     const leverEntry = LEVER_EVENT_COLORS[device]?.[event];
-    if (leverEntry) return isDark ? leverEntry.dark : leverEntry.light;
+    if (leverEntry) return leverEntry;
   }
   const entry = DEVICE_COLORS[device];
-  if (entry) return isDark ? entry.dark : entry.light;
-  return isDark ? "#aaaaaa" : "#9ca3af";
+  if (entry) return entry;
+  return "#aaaaaa";
 }
 
 function formatTime(seconds: number): string {
@@ -148,7 +147,6 @@ interface TooltipData {
 }
 
 export function EventTimeline({ events }: Props) {
-  const isDark = useThemeStore((s) => s.mode) === "dark";
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [containerRef, containerWidth] = useContainerWidth();
@@ -199,8 +197,8 @@ export function EventTimeline({ events }: Props) {
   const handleMouseLeave = useCallback(() => setTooltip(null), []);
 
   // These MUST be called before any early return (Rules of Hooks)
-  const accentRgb = useMemo(() => readAccentRgb(), [isDark]);
-  const textPrimaryRgb = useMemo(() => readTextPrimaryRgb(), [isDark]);
+  const accentRgb = useMemo(() => readAccentRgb(), []);
+  const textPrimaryRgb = useMemo(() => readTextPrimaryRgb(), []);
 
   // Filter out PAVLOV and CONTROLLER events from display (keep them in data for backend auto-stop)
   const displayEvents = events.filter((e) => e.device !== "PAVLOV" && e.device !== "CONTROLLER");
@@ -239,9 +237,9 @@ export function EventTimeline({ events }: Props) {
 
   const ticks = computeTimeTicks(minTime, maxTime);
 
-  const axisColor = isDark ? `rgba(${accentRgb}, 0.3)` : "rgba(0,0,0,0.1)";
+  const axisColor = `rgba(${accentRgb}, 0.3)`;
   const textColor = `rgb(${textPrimaryRgb})`;
-  const gridColor = isDark ? `rgba(${accentRgb}, 0.05)` : "rgba(0,0,0,0.03)";
+  const gridColor = `rgba(${accentRgb}, 0.05)`;
 
   return (
     <div className="rounded-lg border border-theme-border bg-panel p-4">
@@ -271,7 +269,7 @@ export function EventTimeline({ events }: Props) {
                   y={y + LANE_HEIGHT / 2}
                   textAnchor="end"
                   dominantBaseline="central"
-                  fill={getDeviceColor(device, isDark)}
+                  fill={getDeviceColor(device)}
                   fontSize={11}
                   fontFamily="JetBrains Mono, monospace"
                 >
@@ -327,7 +325,7 @@ export function EventTimeline({ events }: Props) {
             const endSec = (event.end_timestamp - baseTs) / 1000;
             const x = LABEL_WIDTH + startSec * pixelsPerSecond;
             const isInstantaneous = event.start_timestamp === event.end_timestamp;
-            const color = getDeviceColor(event.device, isDark, event.event);
+            const color = getDeviceColor(event.device, event.event);
 
             if (isInstantaneous) {
               return (
@@ -377,7 +375,7 @@ export function EventTimeline({ events }: Props) {
               top: tooltip.y - 8,
             }}
           >
-            <div className="font-semibold" style={{ color: getDeviceColor(tooltip.device, isDark, tooltip.event) }}>
+            <div className="font-semibold" style={{ color: getDeviceColor(tooltip.device, tooltip.event) }}>
               {displayName(tooltip.device)}
             </div>
             <div className="text-theme-text">{tooltip.event}</div>
@@ -397,7 +395,7 @@ export function EventTimeline({ events }: Props) {
           if (LEVER_DEVICES.has(device)) {
             const subtypes = LEVER_EVENT_COLORS[device];
             return Object.entries(subtypes).map(([eventType, colors]) => {
-              const color = isDark ? colors.dark : colors.light;
+              const color = colors;
               const label = `${displayName(device)} ${eventType.replace("_PRESS", "").toLowerCase()}`;
               return (
                 <span key={`${device}-${eventType}`} className="flex items-center gap-1">
@@ -410,7 +408,7 @@ export function EventTimeline({ events }: Props) {
               );
             });
           }
-          const color = getDeviceColor(device, isDark);
+          const color = getDeviceColor(device);
           return (
             <span key={device} className="flex items-center gap-1">
               <span

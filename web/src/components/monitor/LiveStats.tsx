@@ -12,7 +12,7 @@ interface ParadigmStatsConfig {
 
 const PARADIGM_CONFIG: Record<string, ParadigmStatsConfig> = {
   fr:        { pressTypes: ["ACTIVE", "TIMEOUT", "INACTIVE"], hasTrials: false, showLeverStats: true  },
-  vi:        { pressTypes: ["ACTIVE", "TIMEOUT", "INACTIVE"], hasTrials: false, showLeverStats: true  },
+  vi:        { pressTypes: ["ACTIVE", "INACTIVE"],            hasTrials: false, showLeverStats: true  },
   pr:        { pressTypes: ["ACTIVE", "TIMEOUT", "INACTIVE"], hasTrials: false, showLeverStats: true  },
   pavlovian: { pressTypes: ["ACTIVE", "INACTIVE"],            hasTrials: true,  showLeverStats: false },
   omission:  { pressTypes: ["ACTIVE", "INACTIVE"],            hasTrials: false, showLeverStats: true  },

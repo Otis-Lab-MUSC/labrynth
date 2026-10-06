@@ -44,12 +44,15 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
       lhLever: { ...prev.lhLever, ...patch },
     }));
 
-  const showTimeout = !isParadigm(paradigm, "omission", "pavlovian");
-  // Timeout mode is only declared for fr/pr/vi (+ _lite twins) — omission and
-  // pavlovian firmware have no lever timeout, so the control is absent rather
+  // VI has no timeout: its reward is gated by the availability window, so a post-reward
+  // lockout is not part of the schedule. The control is absent and the dispatch path
+  // pins the firmware's timeout to 0 (leverSchedulerCommands).
+  const showTimeout = !isParadigm(paradigm, "omission", "pavlovian", "vi");
+  // Timeout mode is only declared for fr/pr/vi (+ _lite twins), but shown for fr/pr only —
+  // omission, pavlovian and VI have no lever timeout, so the control is absent rather
   // than disabled. Must never outlive showTimeout: a mode for a hidden timeout
   // is meaningless.
-  const showTimeoutMode = showTimeout && isParadigm(paradigm, "fr", "pr", "vi");
+  const showTimeoutMode = showTimeout && isParadigm(paradigm, "fr", "pr");
 
   return (
     <div className="card">

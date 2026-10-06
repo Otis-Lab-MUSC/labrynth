@@ -1,11 +1,10 @@
-import { useThemeStore } from "../../../store/useThemeStore";
 
 const COLORS = {
-  lever:   { dark: "#00ff41", light: "#16a34a" },
-  cue:     { dark: "#ffaa00", light: "#d97706" },
-  pump:    { dark: "#00aaff", light: "#2563eb" },
-  laser:   { dark: "#ff4444", light: "#dc2626" },
-  timeout: { dark: "#888888", light: "#6b7280" },
+  lever:   "#00ff41",
+  cue:     "#ffaa00",
+  pump:    "#00aaff",
+  laser:   "#ff4444",
+  timeout: "#888888",
 } as const;
 
 interface Props {
@@ -13,12 +12,9 @@ interface Props {
 }
 
 export function FR1FlowDiagram({ compact = false }: Props) {
-  const isDark = useThemeStore((s) => s.mode) === "dark";
-  const pick = (c: { dark: string; light: string }) => isDark ? c.dark : c.light;
-
-  const textFill = isDark ? "#e5e7eb" : "#374151";
-  const subtextFill = isDark ? "#9ca3af" : "#6b7280";
-  const arrowFill = isDark ? "#6b7280" : "#9ca3af";
+  const textFill = "#e5e7eb";
+  const subtextFill = "#9ca3af";
+  const arrowFill = "#6b7280";
   const h = compact ? 72 : 88;
   const blockY = compact ? 10 : 16;
   const blockH = compact ? 32 : 36;
@@ -56,8 +52,8 @@ export function FR1FlowDiagram({ compact = false }: Props) {
     >
       {blocks.map((block, i) => {
         const { x, w } = positions[i];
-        const fill = pick(block.color);
-        const fillBg = isDark ? `${fill}18` : `${fill}20`;
+        const fill = block.color;
+        const fillBg = `${fill}18`;
         return (
           <g key={block.label + i}>
             {/* Block rect */}

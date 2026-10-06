@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { useLogStore } from "../../store/useLogStore";
-import { useThemeStore } from "../../store/useThemeStore";
 import type { LogLevel } from "../../store/useLogStore";
 
 const LEVEL_CLASSES: Record<LogLevel, string> = {
@@ -20,7 +19,6 @@ export function TerminalPanel() {
   const isOpen = useLogStore((s) => s.isOpen);
   const toggleOpen = useLogStore((s) => s.toggleOpen);
   const clearLogs = useLogStore((s) => s.clearLogs);
-  const isReacher = useThemeStore((s) => s.themeId) === "reacher";
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const userScrolledUp = useRef(false);
@@ -40,66 +38,66 @@ export function TerminalPanel() {
   }, [entries.length]);
 
   return (
-    <div data-tour="terminal-bar" className="border-t border-theme-border bg-surface flex-shrink-0">
-      {/* Toggle bar */}
-      <button
-        onClick={toggleOpen}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-theme-text/70 hover:text-theme-text hover:bg-accent/5 transition"
-      >
-        {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        <span className="font-mono text-xs font-medium tracking-wide">Terminal</span>
-        {entries.length > 0 && (
-          <span className="ml-1 rounded-full bg-accent/15 px-1.5 py-0 text-[10px] font-mono text-accent">
-            {entries.length}
-          </span>
-        )}
-        <span className="flex-1" />
-        {isOpen && (
-          <span
-            role="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              clearLogs();
-            }}
-            className="rounded p-0.5 hover:bg-red-500/20 text-theme-text/40 hover:text-red-400 transition"
-            title="Clear logs"
-          >
-            <Trash2 size={13} />
-          </span>
-        )}
-      </button>
-
-      {/* Terminal header bar (Reacher theme) */}
-      {isOpen && isReacher && (
-        <div className="terminal-header">
-          <span className="terminal-label">TERMINAL</span>
-        </div>
-      )}
-
-      {/* Log area */}
-      {isOpen && (
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex h-60 flex-col-reverse overflow-y-auto px-3 pb-2 font-mono text-xs leading-relaxed"
+    <div data-tour="terminal-bar" className="flex-shrink-0 px-3 pb-3 pt-1">
+      {/* One panel: header row + log body share a single border, so the terminal
+          reads as a distinct console rather than a strip of the page. */}
+      <div className="overflow-hidden rounded-md border border-accent/25 bg-black/70 shadow-[0_0_12px_rgb(var(--color-accent)/0.08)]">
+        <button
+          onClick={toggleOpen}
+          aria-expanded={isOpen}
+          className={`flex w-full items-center gap-2 px-3 py-1.5 text-theme-text/70 hover:text-theme-text hover:bg-accent/5 transition ${
+            isOpen ? "border-b border-accent/20" : ""
+          }`}
         >
-          {entries.map((entry) => (
-            <div key={entry.id} className="flex gap-2 py-px">
-              {isReacher && <span className="text-accent shrink-0">&gt;</span>}
-              <span className="text-theme-text/30 whitespace-nowrap">
-                [{formatTime(entry.timestamp)}]
-              </span>
-              <span className={`w-11 shrink-0 font-semibold uppercase ${LEVEL_CLASSES[entry.level]}`}>
-                {entry.level}
-              </span>
-              <span className="text-theme-text/50">&mdash;</span>
-              <span className={`break-all ${entry.level === "error" ? "text-red-400" : "text-theme-text/80"}`}>
-                {entry.message}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.15em] text-accent">
+            Terminal
+          </span>
+          {entries.length > 0 && (
+            <span className="rounded-full bg-accent/15 px-1.5 text-[10px] font-mono text-accent">
+              {entries.length}
+            </span>
+          )}
+          <span className="flex-1" />
+          {isOpen && (
+            <span
+              role="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                clearLogs();
+              }}
+              className="rounded p-0.5 hover:bg-red-500/20 text-theme-text/40 hover:text-red-400 transition"
+              title="Clear logs"
+            >
+              <Trash2 size={13} />
+            </span>
+          )}
+        </button>
+
+        {isOpen && (
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex h-60 flex-col-reverse overflow-y-auto px-3 py-2 font-mono text-xs leading-relaxed"
+          >
+            {entries.map((entry) => (
+              <div key={entry.id} className="flex gap-2 py-px">
+                <span className="text-accent shrink-0">&gt;</span>
+                <span className="text-theme-text/30 whitespace-nowrap">
+                  [{formatTime(entry.timestamp)}]
+                </span>
+                <span className={`w-11 shrink-0 font-semibold uppercase ${LEVEL_CLASSES[entry.level]}`}>
+                  {entry.level}
+                </span>
+                <span className="text-theme-text/50">&mdash;</span>
+                <span className={`break-all ${entry.level === "error" ? "text-red-400" : "text-theme-text/80"}`}>
+                  {entry.message}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

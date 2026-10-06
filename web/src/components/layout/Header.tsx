@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Moon, Sun, RotateCcw, X, Info } from "lucide-react";
+import { Plus, RotateCcw, X, Info } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useThemeStore } from "../../store/useThemeStore";
 import { useLogStore } from "../../store/useLogStore";
@@ -129,37 +129,61 @@ function ReacherIcon() {
   );
 }
 
-function SessionStatusDot({ state }: { state: SessionState }) {
-  if (state === "idle" || state === "uploading" || state === "connected") {
-    return null;
-  }
+function SessionStatusDot({ state, draft }: { state: SessionState; draft: boolean }) {
+  // Draft tabs have no hardware behind them yet, and "uploading" is transient.
+  if (draft || state === "uploading") return null;
 
-  if (state === "armed") {
-    return (
-      <span
-        className="mr-1.5 inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-status-pulse"
-        aria-label="Session armed, waiting for external trigger"
-      />
-    );
-  }
-
-  if (state === "running" || state === "paused") {
+  if (state === "running") {
     return (
       <span
         className="mr-1.5 inline-block h-2 w-2 shrink-0 rounded-full bg-green-500 animate-status-pulse"
-        aria-label={`Session ${state}`}
+        aria-label="Session running"
       />
     );
   }
 
-  // stopped
+  // Yellow: idle (connected, not started), armed for an external trigger, or paused.
+  if (state === "idle" || state === "connected" || state === "armed" || state === "paused") {
+    const label =
+      state === "armed" ? "Session armed, waiting for external trigger"
+      : state === "paused" ? "Session paused"
+      : "Session idle";
+    return (
+      <span
+        className={`mr-1.5 inline-block h-2 w-2 shrink-0 rounded-full bg-yellow-400 ${state === "armed" ? "animate-status-pulse" : ""}`}
+        aria-label={label}
+      />
+    );
+  }
+
+  // stopped / disconnected
   return (
     <span
       className="mr-1.5 inline-block h-2 w-2 shrink-0 rounded-full border border-red-500"
-      aria-label="Session stopped"
+      aria-label={state === "disconnected" ? "Session disconnected" : "Session stopped"}
     />
   );
 }
+
+type SystemState = "running" | "idle" | "offline";
+
+/** Header SYS_ONLINE state: green = a session is running, yellow = sessions are
+ *  idle / armed / paused, red = nothing is running or ready. */
+function deriveSystemState(sessions: Map<string, Session>): SystemState {
+  let idle = false;
+  for (const s of sessions.values()) {
+    if (s.draft) continue;
+    if (s.state === "running") return "running";
+    if (s.state === "idle" || s.state === "connected" || s.state === "armed" || s.state === "paused") idle = true;
+  }
+  return idle ? "idle" : "offline";
+}
+
+const SYSTEM_STATE_LABEL: Record<SystemState, string> = {
+  running: "System online, session running",
+  idle: "System online, sessions idle or paused",
+  offline: "No session running",
+};
 
 function getCloseWarning(session: Session): { title: string; message: string; variant: "danger" | "warning" } {
   const name = session.name || "Unnamed session";
@@ -215,9 +239,10 @@ export function Header() {
     setSessionName,
   } = useSessionStore();
   const { machines } = useMachineStore();
-  const { mode, toggleMode, theme } = useThemeStore();
+  const { theme } = useThemeStore();
   const { setActivePanel } = useNavigationStore();
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
+  const systemState = deriveSystemState(sessions);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -325,7 +350,7 @@ export function Header() {
         {branding.showCursor && <span className="animate-blink">|</span>}
       </span>
       {theme.id === "reacher" && (
-        <span className="sys-online">
+        <span className="sys-online" data-state={systemState} title={SYSTEM_STATE_LABEL[systemState]}>
           <span className="pulse-dot" />
           <span className="sys-label">SYS_ONLINE</span>
         </span>
@@ -399,7 +424,7 @@ export function Header() {
                     : "hover:bg-accent/10 text-theme-text"
                 }`}
               >
-                <SessionStatusDot state={s.state} />
+                <SessionStatusDot state={s.state} draft={s.draft} />
                 {displayName}
                 <MachineBadge machineId={s.machineId} machines={machines} />
               </button>
@@ -449,15 +474,6 @@ export function Header() {
         title="About Labrynth"
       >
         <Info size={18} />
-      </button>
-
-      {/* Mode toggle */}
-      <button
-        onClick={toggleMode}
-        className="rounded p-1.5 hover:bg-accent/10 text-theme-text"
-        title="Toggle dark/light"
-      >
-        {mode === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       </button>
 
       {/* Close confirmation dialog */}
