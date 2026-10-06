@@ -45,12 +45,10 @@ function readAccentRgb(): [number, number, number] {
 
 export function EmberCircuitBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const modeRef = useRef(useThemeStore.getState().mode);
   const accentRef = useRef<[number, number, number]>(readAccentRgb());
 
   useEffect(() => {
-    const unsub = useThemeStore.subscribe((s) => {
-      modeRef.current = s.mode;
+    const unsub = useThemeStore.subscribe(() => {
       requestAnimationFrame(() => {
         accentRef.current = readAccentRgb();
       });
@@ -170,7 +168,6 @@ export function EmberCircuitBackground() {
 
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const isDark = modeRef.current === "dark";
       const [ar, ag, ab] = accentRef.current;
 
       ctx!.clearRect(0, 0, w, h);
@@ -184,7 +181,7 @@ export function EmberCircuitBackground() {
       }
 
       // --- Draw base circuit segments ---
-      const baseSegAlpha = isDark ? 0.05 : 0.03;
+      const baseSegAlpha = 0.05;
       for (const seg of segments) {
         const fromNode = nodes[seg.from];
         const toNode = nodes[seg.to];
@@ -206,7 +203,7 @@ export function EmberCircuitBackground() {
         // Glow overlay
         if (seg.glow > 0.01) {
           ctx!.save();
-          ctx!.strokeStyle = `rgba(${ar}, ${ag}, ${ab}, ${seg.glow * (isDark ? 0.35 : 0.2)})`;
+          ctx!.strokeStyle = `rgba(${ar}, ${ag}, ${ab}, ${seg.glow * 0.35})`;
           ctx!.lineWidth = 2.5;
           ctx!.shadowColor = `rgba(${ar}, ${ag}, ${ab}, ${seg.glow * 0.3})`;
           ctx!.shadowBlur = 6;
@@ -228,7 +225,7 @@ export function EmberCircuitBackground() {
       }
 
       // --- Draw base circuit nodes ---
-      const baseNodeAlpha = isDark ? 0.07 : 0.04;
+      const baseNodeAlpha = 0.07;
       for (const node of nodes) {
         // Glow overlay
         if (node.glow > 0.01) {
@@ -237,7 +234,7 @@ export function EmberCircuitBackground() {
             node.x, node.y, 0,
             node.x, node.y, node.size * 2.5,
           );
-          grad.addColorStop(0, `rgba(${ar}, ${ag}, ${ab}, ${node.glow * (isDark ? 0.4 : 0.25)})`);
+          grad.addColorStop(0, `rgba(${ar}, ${ag}, ${ab}, ${node.glow * 0.4})`);
           grad.addColorStop(1, `rgba(${ar}, ${ag}, ${ab}, 0)`);
           ctx!.fillStyle = grad;
           ctx!.shadowColor = `rgba(${ar}, ${ag}, ${ab}, ${node.glow * 0.3})`;
@@ -249,7 +246,7 @@ export function EmberCircuitBackground() {
         }
 
         // Base shape
-        ctx!.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${Math.max(baseNodeAlpha, node.glow * (isDark ? 0.3 : 0.18))})`;
+        ctx!.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${Math.max(baseNodeAlpha, node.glow * 0.3)})`;
         if (node.type === "component") {
           // Small rectangle
           const half = node.size / 2;
@@ -339,7 +336,7 @@ export function EmberCircuitBackground() {
         }
 
         // Draw current head
-        const flowAlpha = isDark ? 0.7 : 0.45;
+        const flowAlpha = 0.7;
         ctx!.save();
         ctx!.shadowColor = `rgba(${ar}, ${ag}, ${ab}, ${flowAlpha * 0.6})`;
         ctx!.shadowBlur = 8;
@@ -384,7 +381,7 @@ export function EmberCircuitBackground() {
 
         if (p.life <= 0 || p.alpha < 0.01) return false;
 
-        const pAlpha = p.alpha * (isDark ? 1 : 0.6);
+        const pAlpha = p.alpha * 1;
         ctx!.save();
         ctx!.fillStyle = `rgba(${ar}, ${ag}, ${ab}, ${pAlpha})`;
         ctx!.shadowColor = `rgba(${ar}, ${ag}, ${ab}, ${pAlpha * 0.5})`;

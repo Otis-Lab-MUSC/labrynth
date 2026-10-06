@@ -449,56 +449,39 @@ body {
   transform: none;
 }
 
-/* ── Terminal header bar ── */
-.theme-reacher .terminal-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
-  background: rgb(var(--color-panel));
-  border-bottom: 1px solid rgb(var(--color-border));
-}
-
-.theme-reacher .terminal-header .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.theme-reacher .terminal-header .dot-red { background: #ff5f56; }
-.theme-reacher .terminal-header .dot-yellow { background: #ffbd2e; }
-.theme-reacher .terminal-header .dot-green { background: #27c93f; }
-
-.theme-reacher .terminal-header .terminal-label {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: rgb(var(--color-text-secondary));
-  margin-left: auto;
-}
-
-/* ── SYS_ONLINE indicator ── */
+/* ── SYS_ONLINE indicator ──
+   data-state: running (green) | idle (yellow) | offline (red). Drives both the dot and the label. */
 .theme-reacher .sys-online {
+  --sys-color: 239 68 68; /* offline: red-500 */
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   margin-left: 0.75rem;
 }
+.theme-reacher .sys-online[data-state="running"] { --sys-color: 34 197 94; }  /* green-500 */
+.theme-reacher .sys-online[data-state="idle"]    { --sys-color: 250 204 21; } /* yellow-400 */
 
 .theme-reacher .sys-online .pulse-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgb(var(--color-accent));
-  animation: pulse-glow 2s ease-in-out infinite;
+  background: rgb(var(--sys-color));
+  box-shadow: 0 0 6px rgb(var(--sys-color) / 0.3);
+}
+.theme-reacher .sys-online[data-state="running"] .pulse-dot {
+  animation: sys-pulse 2s ease-in-out infinite;
 }
 
 .theme-reacher .sys-online .sys-label {
   font-family: var(--font-mono);
   font-size: 0.6rem;
   letter-spacing: 0.15em;
-  color: rgb(var(--color-accent));
+  color: rgb(var(--sys-color));
+}
+
+@keyframes sys-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgb(var(--sys-color) / 0.15); }
+  50% { box-shadow: 0 0 16px rgb(var(--sys-color) / 0.45); }
 }
 
 /* ── Boot sequence ── */

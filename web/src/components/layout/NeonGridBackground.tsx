@@ -29,12 +29,10 @@ function readAccentRgb(): [number, number, number] {
 
 export function NeonGridBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const modeRef = useRef(useThemeStore.getState().mode);
   const accentRef = useRef<[number, number, number]>(readAccentRgb());
 
   useEffect(() => {
-    const unsub = useThemeStore.subscribe((s) => {
-      modeRef.current = s.mode;
+    const unsub = useThemeStore.subscribe(() => {
       requestAnimationFrame(() => {
         accentRef.current = readAccentRgb();
       });
@@ -76,10 +74,10 @@ export function NeonGridBackground() {
       return horizonY + cameraH * scale;
     }
 
-    function drawGrid(w: number, h: number, ar: number, ag: number, ab: number, isDark: boolean, cameraH: number) {
+    function drawGrid(w: number, h: number, ar: number, ag: number, ab: number, cameraH: number) {
       const horizonY = h * 0.38;
       const vanishX = w / 2;
-      const baseAlpha = isDark ? 0.15 : 0.07;
+      const baseAlpha = 0.15;
 
       // Horizontal lines — quadratic z-spacing (denser near horizon)
       ctx!.lineWidth = 1;
@@ -124,9 +122,9 @@ export function NeonGridBackground() {
       }
     }
 
-    function drawHorizonGlow(w: number, h: number, ar: number, ag: number, ab: number, isDark: boolean) {
+    function drawHorizonGlow(w: number, h: number, ar: number, ag: number, ab: number) {
       const horizonY = h * 0.38;
-      const alpha = isDark ? 0.4 : 0.2;
+      const alpha = 0.4;
 
       ctx!.save();
       ctx!.strokeStyle = `rgba(${ar}, ${ag}, ${ab}, ${alpha})`;
@@ -140,7 +138,7 @@ export function NeonGridBackground() {
       ctx!.restore();
     }
 
-    function drawPulseWaves(w: number, h: number, ar: number, ag: number, ab: number, isDark: boolean, dt: number, cameraH: number) {
+    function drawPulseWaves(w: number, h: number, ar: number, ag: number, ab: number, dt: number, cameraH: number) {
       const horizonY = h * 0.38;
 
       pulses = pulses.filter((pulse) => {
@@ -152,7 +150,7 @@ export function NeonGridBackground() {
         const y = projectY(pulse.z, horizonY, cameraH);
         if (y > h) return true;
 
-        const alpha = intensity * (isDark ? 0.35 : 0.18);
+        const alpha = intensity * 0.35;
 
         // Primary glow
         ctx!.save();
@@ -192,8 +190,8 @@ export function NeonGridBackground() {
       nextPulseTime = now + PULSE_SPAWN_MIN + Math.random() * (PULSE_SPAWN_MAX - PULSE_SPAWN_MIN);
     }
 
-    function drawScanlines(w: number, h: number, isDark: boolean) {
-      const alpha = isDark ? 0.04 : 0.02;
+    function drawScanlines(w: number, h: number) {
+      const alpha = 0.04;
       ctx!.fillStyle = `rgba(0, 0, 0, ${alpha})`;
       for (let y = 0; y < h; y += SCANLINE_SPACING) {
         ctx!.fillRect(0, y, w, 1);
@@ -203,15 +201,14 @@ export function NeonGridBackground() {
     function drawStaticFrame() {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const isDark = modeRef.current === "dark";
       const [ar, ag, ab] = accentRef.current;
       const horizonY = h * 0.38;
       const cameraH = (h - horizonY) * Z_NEAR / FOCAL_LENGTH;
 
       ctx!.clearRect(0, 0, w, h);
-      drawGrid(w, h, ar, ag, ab, isDark, cameraH);
-      drawHorizonGlow(w, h, ar, ag, ab, isDark);
-      drawScanlines(w, h, isDark);
+      drawGrid(w, h, ar, ag, ab, cameraH);
+      drawHorizonGlow(w, h, ar, ag, ab);
+      drawScanlines(w, h);
     }
 
     let lastTime = 0;
@@ -227,18 +224,17 @@ export function NeonGridBackground() {
 
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const isDark = modeRef.current === "dark";
       const [ar, ag, ab] = accentRef.current;
       const horizonY = h * 0.38;
       const cameraH = (h - horizonY) * Z_NEAR / FOCAL_LENGTH;
 
       ctx!.clearRect(0, 0, w, h);
 
-      drawGrid(w, h, ar, ag, ab, isDark, cameraH);
-      drawHorizonGlow(w, h, ar, ag, ab, isDark);
+      drawGrid(w, h, ar, ag, ab, cameraH);
+      drawHorizonGlow(w, h, ar, ag, ab);
       spawnPulse(now);
-      drawPulseWaves(w, h, ar, ag, ab, isDark, dt, cameraH);
-      drawScanlines(w, h, isDark);
+      drawPulseWaves(w, h, ar, ag, ab, dt, cameraH);
+      drawScanlines(w, h);
 
       animationId = requestAnimationFrame(draw);
     }

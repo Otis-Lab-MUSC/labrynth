@@ -102,12 +102,10 @@ function spawnBolt(w: number, h: number): LightningBolt {
 
 export function StormSynapseBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const modeRef = useRef(useThemeStore.getState().mode);
   const accentRef = useRef<[number, number, number]>(readAccentRgb());
 
   useEffect(() => {
-    const unsub = useThemeStore.subscribe((s) => {
-      modeRef.current = s.mode;
+    const unsub = useThemeStore.subscribe(() => {
       requestAnimationFrame(() => {
         accentRef.current = readAccentRgb();
       });
@@ -225,7 +223,6 @@ export function StormSynapseBackground() {
 
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const isDark = modeRef.current === "dark";
       const [ar, ag, ab] = accentRef.current;
 
       ctx!.clearRect(0, 0, w, h);
@@ -241,7 +238,7 @@ export function StormSynapseBackground() {
       bolts = bolts.filter((bolt) => {
         bolt.age++;
         for (const branch of bolt.branches) branch.age++;
-        drawBolt(bolt, ar, ag, ab, isDark ? 1 : 0.6);
+        drawBolt(bolt, ar, ag, ab, 1);
         return bolt.age < bolt.maxAge;
       });
 
@@ -262,8 +259,8 @@ export function StormSynapseBackground() {
         }
 
         // Render node
-        const baseAlpha = isDark ? 0.12 : 0.06;
-        const glowAlpha = node.brightness * (isDark ? 0.5 : 0.3);
+        const baseAlpha = 0.12;
+        const glowAlpha = node.brightness * 0.5;
 
         if (node.brightness > 0.15) {
           // Bright fired state with radial gradient
@@ -306,7 +303,7 @@ export function StormSynapseBackground() {
         const to = nodes[arc.toIdx];
         const px = from.x + (to.x - from.x) * arc.progress;
         const py = from.y + (to.y - from.y) * arc.progress;
-        const arcAlpha = isDark ? 0.5 : 0.3;
+        const arcAlpha = 0.5;
 
         // Draw arc line (partial)
         ctx!.save();

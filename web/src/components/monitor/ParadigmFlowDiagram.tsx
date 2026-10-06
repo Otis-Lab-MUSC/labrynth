@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useThemeStore } from "../../store/useThemeStore";
 import type { HardwareUiState, LaserUiState } from "../../types";
 import { baseParadigm } from "../../lib/paradigm";
 
@@ -47,14 +46,14 @@ interface TrialTimeline {
 
 // ─── Colors & Constants ──────────────────────────────────────────────
 
-const COLORS: Record<LaneId, { dark: string; light: string }> = {
-  lever:   { dark: "#00ff41", light: "#16a34a" },
-  cue:     { dark: "#ffaa00", light: "#d97706" },
-  pump:    { dark: "#00aaff", light: "#2563eb" },
-  laser:   { dark: "#ff4444", light: "#dc2626" },
-  timeout: { dark: "#888888", light: "#6b7280" },
-  iti:     { dark: "#a855f7", light: "#7c3aed" },
-  trace:   { dark: "#6b7280", light: "#9ca3af" },
+const COLORS: Record<LaneId, string> = {
+  lever:   "#00ff41",
+  cue:     "#ffaa00",
+  pump:    "#00aaff",
+  laser:   "#ff4444",
+  timeout: "#888888",
+  iti:     "#a855f7",
+  trace:   "#6b7280",
 };
 
 const LANE_LABELS: Record<LaneId, string> = {
@@ -426,11 +425,10 @@ function buildPavlovianTimeline(
 
 // ─── SVG Renderer ────────────────────────────────────────────────────
 
-function TimelineDiagram({ timeline, isDark, containerW }: { timeline: TrialTimeline; isDark: boolean; containerW: number }) {
-  const pick = (c: { dark: string; light: string }) => (isDark ? c.dark : c.light);
-  const textFill = isDark ? "#e5e7eb" : "#374151";
-  const subtextFill = isDark ? "#9ca3af" : "#6b7280";
-  const gridColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+function TimelineDiagram({ timeline, containerW }: { timeline: TrialTimeline; containerW: number }) {
+  const textFill = "#e5e7eb";
+  const subtextFill = "#9ca3af";
+  const gridColor = "rgba(255,255,255,0.06)";
 
   const layout = computeLayout(timeline, containerW);
   const { activeLanes, laneY, sqrtTotal, plotW, totalW, totalH, timeAxisY } = layout;
@@ -454,7 +452,7 @@ function TimelineDiagram({ timeline, isDark, containerW }: { timeline: TrialTime
           y={laneY.get(lane)! + LANE_H / 2}
           textAnchor="end"
           dominantBaseline="central"
-          fill={pick(COLORS[lane])}
+          fill={COLORS[lane]}
           fontSize={8}
           fontFamily="var(--font-body)"
           fontWeight={600}
@@ -470,8 +468,8 @@ function TimelineDiagram({ timeline, isDark, containerW }: { timeline: TrialTime
         const w = barWidth(bar.startMs, bar.endMs, sqrtTotal, plotW);
         const ly = laneY.get(bar.lane)!;
         const y = ly + (LANE_H - BAR_H) / 2;
-        const color = pick(COLORS[bar.lane]);
-        const fillBg = isDark ? `${color}18` : `${color}20`;
+        const color = COLORS[bar.lane];
+        const fillBg = `${color}18`;
         const textFits = w >= OVERFLOW_THRESHOLD;
 
         return (
@@ -601,17 +599,17 @@ function TimelineDiagram({ timeline, isDark, containerW }: { timeline: TrialTime
         return (
           <g key={`trace-${i}`}>
             {/* Left tick */}
-            <line x1={x1} y1={bracketY} x2={x1} y2={bracketY + tickDown} stroke={pick(COLORS.trace)} strokeWidth={1} opacity={0.6} />
+            <line x1={x1} y1={bracketY} x2={x1} y2={bracketY + tickDown} stroke={COLORS.trace} strokeWidth={1} opacity={0.6} />
             {/* Horizontal span */}
-            <line x1={x1} y1={bracketY + tickDown} x2={x2} y2={bracketY + tickDown} stroke={pick(COLORS.trace)} strokeWidth={1} strokeDasharray="3 2" opacity={0.6} />
+            <line x1={x1} y1={bracketY + tickDown} x2={x2} y2={bracketY + tickDown} stroke={COLORS.trace} strokeWidth={1} strokeDasharray="3 2" opacity={0.6} />
             {/* Right tick */}
-            <line x1={x2} y1={bracketY} x2={x2} y2={bracketY + tickDown} stroke={pick(COLORS.trace)} strokeWidth={1} opacity={0.6} />
+            <line x1={x2} y1={bracketY} x2={x2} y2={bracketY + tickDown} stroke={COLORS.trace} strokeWidth={1} opacity={0.6} />
             {/* Label */}
             <text
               x={(x1 + x2) / 2}
               y={bracketY - 2}
               textAnchor="middle"
-              fill={pick(COLORS.trace)}
+              fill={COLORS.trace}
               fontSize={ANNO_FONT_SIZE}
               fontFamily="var(--font-body)"
               fontStyle="italic"
@@ -725,7 +723,6 @@ export function ParadigmFlowDiagram({
   paradigmSettings,
   pavlovianParams,
 }: ParadigmFlowDiagramProps) {
-  const isDark = useThemeStore((s) => s.mode) === "dark";
   const p = paradigm.toLowerCase();
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -752,7 +749,7 @@ export function ParadigmFlowDiagram({
     return (
       <div ref={containerRef} className="space-y-3">
         {timelines.map((tl, i) => (
-          <TimelineDiagram key={i} timeline={tl} isDark={isDark} containerW={containerW} />
+          <TimelineDiagram key={i} timeline={tl} containerW={containerW} />
         ))}
       </div>
     );
@@ -783,7 +780,7 @@ export function ParadigmFlowDiagram({
 
   return (
     <div ref={containerRef}>
-      <TimelineDiagram timeline={timeline} isDark={isDark} containerW={containerW} />
+      <TimelineDiagram timeline={timeline} containerW={containerW} />
     </div>
   );
 }

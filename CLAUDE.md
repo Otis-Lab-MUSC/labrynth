@@ -138,7 +138,7 @@ Machine discovery uses mDNS (polled by `useMachineStore.startDiscoveryPolling`).
   carry verbatim field values. Setup and rationale:
   [docs/issue-reporting.md](docs/issue-reporting.md).
 - **`components/`** — feature-area folders: `session/`, `configuration/`, `monitor/`, `data/`, `hardware/`, `program/`, `machines/`, `terminal/`, `layout/`, `tutorial/`.
-- **`themes/`** — 5 named themes (`reacher`, `terminal`, `neural`, `midnight`, `ember`), each with a `dark` and `light` palette plus background, font, radius, glass tokens. Theme is applied by writing CSS variables on `:root` (no Tailwind dark-mode toggle alone — `apply()` in `useThemeStore` sets `--color-*`, `--font-*`, etc.). Default: `reacher`. Persistence: `localStorage["labrynth-mode"]`.
+- **`themes/`** — 5 named themes (`reacher`, `terminal`, `neural`, `midnight`, `ember`), each with a single dark palette plus background, font, radius, glass tokens. Dark is the only mode — there is no light palette or toggle. Theme is applied by writing CSS variables on `:root` (`apply()` in `useThemeStore` sets `--color-*`, `--font-*`, etc.). Default: `reacher`. Nothing is persisted; older builds' `labrynth-mode` / `reacher-mode` keys are cleared on load.
 - **`types/index.ts`** — shared TypeScript interfaces (`Session`, `Machine`, `BehaviorEvent`, `FirmwareConfig`, …).
 
 Session lifecycle: `idle → uploading → connected → running → paused → stopped` (plus `disconnected` for serial drop, and `armed` — see below). Real-time counters (infusions, presses, trials, frames, CS+/CS−) are driven entirely by WebSocket events, not by polling.

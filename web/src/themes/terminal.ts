@@ -7,17 +7,6 @@ export const terminalTheme: ThemeDefinition = {
   id: "terminal",
   name: "Terminal",
   colors: {
-    light: {
-      surface: "255 255 255",
-      panel: "243 244 246",
-      textPrimary: "17 24 39",
-      textSecondary: "107 114 128",
-      accent: "22 163 74",
-      accentHover: "21 128 61",
-      accentContrast: "0 0 0",
-      border: "0 0 0",
-      input: "249 250 251",
-    },
     dark: {
       surface: "10 10 10",
       panel: "17 17 17",

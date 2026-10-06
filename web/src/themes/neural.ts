@@ -7,17 +7,6 @@ export const neuralTheme: ThemeDefinition = {
   id: "neural",
   name: "Neural",
   colors: {
-    light: {
-      surface: "255 255 255",
-      panel: "248 250 252",
-      textPrimary: "30 41 59",
-      textSecondary: "100 116 139",
-      accent: "124 58 237",
-      accentHover: "109 40 217",
-      accentContrast: "255 255 255",
-      border: "100 116 139",
-      input: "241 245 249",
-    },
     dark: {
       surface: "10 11 20",
       panel: "17 24 39",
