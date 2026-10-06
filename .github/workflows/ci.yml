@@ -42,6 +42,13 @@ jobs:
       - name: TypeScript build
         run: npx tsc -b
 
+      # The terminal CLI carries a Python copy of the web's session presets and
+      # command tables (cli/presets.py). Diff them by value so "SA High" means
+      # the same session from either surface. Stdlib-only; reuses web's esbuild.
+      - name: CLI/web preset parity
+        working-directory: .
+        run: python3 scripts/check-cli-parity.py
+
   # Version gate — pyproject.toml is the source of truth; verify web/package.json
   # and the README badge agree with it. Catches a hand-edited version, which
   # `scripts/bump-version.py` exists to prevent.
