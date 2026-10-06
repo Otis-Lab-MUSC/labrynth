@@ -45,7 +45,7 @@ PRESET_COMMAND_MAP: dict[str, dict] = {
 }
 
 # Params the backend does not declare for every paradigm (PARAM_PARADIGMS).
-PARAM_PARADIGMS: dict[str, list[str]] = {"timeoutMode": ["fr", "pr", "vi"]}
+PARAM_PARADIGMS: dict[str, list[str]] = {"timeoutMode": ["fr", "pr"]}
 
 LEVER_COMMANDS = {
     "rh": {"active": 1081, "inactive": 1080, "timeout": 1074, "timeoutMode": 1077, "key": "rhLever"},
@@ -127,6 +127,11 @@ def lever_scheduler_commands(paradigm: str | None, active: str, hw: dict) -> lis
     out: list[Command] = [(codes["active"], None)]
     if not _filter_targets(hw, other):
         out.append((LEVER_COMMANDS[other]["inactive"], None))
+    # VI has no timeout, but the firmware boots with a 20 s post-reward lockout. Pin it to 0
+    # on every dispatch, armed or not, and never send a mode (mirrors the web).
+    if is_paradigm(paradigm, "vi"):
+        out.append((codes["timeout"], 0))
+        return out
     if not hw.get("rhLever", {}).get("armed") and not hw.get("lhLever", {}).get("armed"):
         return out
     if src.get("timeout") is not None:
