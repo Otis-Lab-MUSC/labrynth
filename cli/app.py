@@ -11,6 +11,7 @@ import json
 import time
 from dataclasses import dataclass, field
 from typing import Callable
+from urllib.parse import quote
 
 from prompt_toolkit import Application
 from prompt_toolkit.buffer import Buffer
@@ -20,7 +21,7 @@ from prompt_toolkit.layout import HSplit, Layout, Window
 from prompt_toolkit.layout.controls import BufferControl, FormattedTextControl
 from prompt_toolkit.styles import Style
 
-from .client import ReacherClient
+from .client import ReacherClient, _read_api_key
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Helpers
@@ -283,6 +284,19 @@ LIMIT_TYPES_OPERANT = ["Time", "Infusion", "Both"]
 LIMIT_TYPES_PAVLOVIAN = ["Trials", "Infusion"]
 
 DEVICE_BY_ID = {d["id"]: d for d in DEVICE_CONFIGS}
+
+# Firmware config-record device names -> CLI device ids (arm-state sync).
+FIRMWARE_DEVICE_TO_CLI_ID: dict[str, str] = {
+    "LEVER_RH": "rh-lever",
+    "LEVER_LH": "lh-lever",
+    "CUE": "primary-cue",
+    "CUE2": "secondary-cue",
+    "PUMP": "primary-pump",
+    "PUMP2": "secondary-pump",
+    "LASER": "laser",
+    "LICK": "lick-circuit",
+    "MICROSCOPE": "microscope",
+}
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1523,7 +1537,12 @@ class ReacherCLI:
             self._invalidate()
             return
 
+        # The backend rejects a socket whose ?token= is not the API key (403
+        # before any session lookup), so the token is mandatory, not optional.
+        token = _read_api_key()
         ws_url = f"ws://localhost:{self.port}/ws/{self.session.id}"
+        if token:
+            ws_url += f"?token={quote(token)}"
         attempt = 0
         max_attempts = 15
         connected_once = False
@@ -1552,7 +1571,15 @@ class ReacherCLI:
                                 msg = json.loads(raw)
                             except json.JSONDecodeError:
                                 continue
-                            self._handle_ws_message(msg)
+                            # A handler bug must not tear down the socket: an
+                            # exception here used to escape the read loop and
+                            # trigger a reconnect on every offending message.
+                            try:
+                                self._handle_ws_message(msg)
+                            except Exception as exc:
+                                self.monitor_lines.append((
+                                    "class:status-bar-error",
+                                    f"Bad {msg.get('type', '?')} message: {exc}"))
                             self._invalidate()
                     finally:
                         refresh.cancel()
@@ -1643,10 +1670,12 @@ class ReacherCLI:
                     self.session.program_end = time.time()
 
         elif msg_type == "config":
-            if self.session:
-                armed = data.get("armed", {})
-                if armed:
-                    self.session.armed.update(armed)
+            # One record per device: {"device": "LEVER_RH", "armed": true, ...}.
+            # Mirrors DEVICE_TO_UI_KEY in web/src/hooks/useSessionWebSockets.ts.
+            dev_id = FIRMWARE_DEVICE_TO_CLI_ID.get(str(data.get("device", "")))
+            armed = data.get("armed")
+            if self.session and dev_id and isinstance(armed, bool):
+                self.session.armed[dev_id] = armed
 
         elif msg_type == "split":
             seg = data.get("segment_number", "?")
