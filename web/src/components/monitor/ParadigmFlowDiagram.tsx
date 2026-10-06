@@ -286,7 +286,8 @@ function buildPRTimeline(hw: HardwareUiState, ps: ParadigmSettings): TrialTimeli
 }
 
 function buildVITimeline(hw: HardwareUiState, ps: ParadigmSettings): TrialTimeline {
-  const frTl = buildFRTimeline(hw, ps);
+  // VI has no timeout, so the lane FR draws for it is dropped here.
+  const frTl = buildFRTimeline({ ...hw, rhLever: { ...hw.rhLever, timeout: 0 }, lhLever: { ...hw.lhLever, timeout: 0 } }, ps);
 
   const viDur = ps.interval || 5000;
   const bars: TimeBar[] = [

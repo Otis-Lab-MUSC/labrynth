@@ -32,6 +32,8 @@ export interface SummaryContext {
    *  Callers pass `canDispatchParam("timeoutMode", paradigm)` so the summary cannot
    *  claim a setting the dispatch loops skip. */
   timeoutModeApplies: boolean;
+  /** The lever has a timeout on this paradigm — false for VI, which has none. */
+  timeoutApplies: boolean;
 }
 
 // Every device in HardwareUiState except the testMode flag and the external
@@ -85,7 +87,7 @@ function leverParts(s: LeverUiState, ctx: SummaryContext): string[] {
   // and the dispatch loops skip it elsewhere (devicePresets.PARAM_PARADIGMS).
   const modeLabel = s.timeoutMode === 1 ? "Reward-only" : "Every press";
   return [
-    `T:${s.timeout / 1000}s`,
+    ...(ctx.timeoutApplies ? [`T:${s.timeout / 1000}s`] : []),
     ...(ctx.timeoutModeApplies ? [`TMode:${modeLabel}`] : []),
   ];
 }

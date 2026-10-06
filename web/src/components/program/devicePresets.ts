@@ -61,7 +61,7 @@ export const PRESET_COMMAND_MAP: Record<string, { arm: number; disarm: number; p
  * `tests/test_timeout_mode_e2e.py` parses this table and fails if the two drift.
  */
 export const PARAM_PARADIGMS: Record<string, string[]> = {
-  timeoutMode: ["fr", "pr", "vi"],
+  timeoutMode: ["fr", "pr"],
 };
 
 /** Operant paradigms: the sketches that carry the reward-chain commands (221, 1080/1081, 1380/1381). */
@@ -127,6 +127,12 @@ export function leverSchedulerCommands(
   const src = levers[codes.key];
   const out: Array<[number, number?]> = [[codes.active]];
   if (filterTargets(levers, other).length === 0) out.push([LEVER_COMMANDS[other].inactive]);
+  // VI has no timeout, but the firmware boots with a 20 s post-reward lockout. Hiding the
+  // control is not enough: pin it to 0 on every dispatch, armed or not, and never send a mode.
+  if (isParadigm(paradigm, "vi")) {
+    out.push([codes.timeout, 0]);
+    return out;
+  }
   // Like the per-lever loop it replaces, write timeout only when a lever is armed — an untouched
   // store default (0) must not overwrite the firmware's own default timeout.
   if (!levers.rhLever?.armed && !levers.lhLever?.armed) return out;

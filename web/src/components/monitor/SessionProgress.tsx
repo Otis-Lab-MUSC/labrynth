@@ -27,8 +27,8 @@ function ProgressMouse({ running }: { running: boolean }) {
   return (
     <svg
       viewBox="0 0 42 22"
-      width="26"
-      height="14"
+      width="44"
+      height="23"
       fill="none"
       role="img"
       aria-label={running ? "Session running" : "Session not running"}
@@ -73,6 +73,31 @@ function ProgressMouse({ running }: { running: boolean }) {
   );
 }
 
+/** Cheese wedge: the goal at the end of the track. Lights up once the bar is full. */
+function ProgressCheese({ reached }: { reached: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 22"
+      width="26"
+      height="24"
+      fill="none"
+      role="img"
+      aria-label={reached ? "Goal reached" : "Goal"}
+      className={`block shrink-0 transition-all duration-300 ${
+        reached ? "drop-shadow-[0_0_5px_rgb(250_204_21/0.7)]" : "opacity-80"
+      }`}
+    >
+      {/* Wedge, front-left face + top face */}
+      <path d="M2 17 L20 17 L20 11 C14 10.5 7 8 2 4 Z" fill="#facc15" stroke="#a16207" strokeWidth="1.1" strokeLinejoin="round" />
+      <path d="M2 4 L8 1.5 L22 6.5 L20 11 C14 10.5 7 8 2 4 Z" fill="#fde047" stroke="#a16207" strokeWidth="1.1" strokeLinejoin="round" />
+      {/* Holes */}
+      <circle cx="9" cy="13.5" r="1.7" fill="#a16207" opacity="0.8" />
+      <circle cx="15.5" cy="14.2" r="1.1" fill="#a16207" opacity="0.8" />
+      <circle cx="14" cy="6.6" r="1" fill="#a16207" opacity="0.7" />
+    </svg>
+  );
+}
+
 function ProgressBar({
   label,
   pct,
@@ -92,19 +117,26 @@ function ProgressBar({
         <span className="text-theme-text/60 uppercase text-xs tracking-wider">{label}</span>
         <span className="text-accent font-bold tabular-nums text-xs">{display}</span>
       </div>
-      <div className="relative h-5 w-full rounded-full bg-black/60 border border-theme-border/60">
-        <div
-          className="h-full rounded-full bg-accent/40 transition-all duration-300"
-          style={{ width: `${pct}%` }}
-        />
-        {showMouse && (
+      <div className="flex items-center gap-2">
+        <div className="relative h-8 flex-1 rounded-full bg-black/60 border border-theme-border/60">
+          {/* Progress trail: a dashed line rather than a solid fill, so the mouse stands out */}
           <div
-            className="absolute inset-y-0 flex items-center transition-all duration-300"
-            style={{ left: `${pct}%`, transform: "translateX(-100%)" }}
-          >
-            <ProgressMouse running={running} />
-          </div>
-        )}
+            className="absolute left-2 top-1/2 h-[3px] -translate-y-1/2 transition-all duration-300"
+            style={{
+              width: `calc(${pct}% - 0.5rem)`,
+              backgroundImage: "repeating-linear-gradient(90deg, rgb(var(--color-accent) / 0.6) 0 7px, transparent 7px 13px)",
+            }}
+          />
+          {showMouse && (
+            <div
+              className="absolute inset-y-0 flex items-center transition-all duration-300"
+              style={{ left: `${pct}%`, transform: "translateX(-100%)" }}
+            >
+              <ProgressMouse running={running} />
+            </div>
+          )}
+        </div>
+        {showMouse && <ProgressCheese reached={pct >= 100} />}
       </div>
     </div>
   );
