@@ -4,6 +4,11 @@ Usage:
     python -m cli                  # auto-start backend + CLI
     python -m cli --no-server      # CLI only (backend must be running)
     python -m cli --port 6229      # custom backend port
+    python -m cli --machine rpi-01 # control a paired machine (name, hostname or id prefix)
+
+Remote machines are always reached through this machine's backend
+(/api/proxy/<device_id>/...), which holds the remote API key. Pair a machine
+first from the Machines menu.
 """
 
 from __future__ import annotations
@@ -63,6 +68,12 @@ def main() -> None:
         "--no-server",
         action="store_true",
         help="Don't auto-start the backend server",
+    )
+    parser.add_argument(
+        "--machine",
+        metavar="NAME",
+        default=None,
+        help="Start controlling a paired machine (name, hostname, or device-id prefix)",
     )
     parser.add_argument(
         "--selftest",
@@ -128,11 +139,8 @@ def main() -> None:
         print(f"Backend already running on port {args.port}.")
 
     from cli.app import ReacherCLI
-    from cli.client import ReacherClient
 
-    base = f"http://localhost:{args.port}"
-    app = ReacherCLI(port=args.port)
-    app.api = ReacherClient(base_url=base)
+    app = ReacherCLI(port=args.port, machine=args.machine)
     asyncio.run(app.run_async())
 
 

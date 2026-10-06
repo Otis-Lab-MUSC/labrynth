@@ -52,7 +52,7 @@ Installer builds bundle `avrdude` for firmware uploads — nothing else to insta
 | macOS | `brew install avrdude` |
 | Windows | [avrdude releases](https://github.com/avrdudes/avrdude/releases), or `choco install avrdude` |
 
-Reference documentation lives in [`docs/`](docs/) ([issue reporting](docs/issue-reporting.md)); [CONTRIBUTING.md](CONTRIBUTING.md) covers the branching and versioning workflow, and [RELEASING.md](RELEASING.md) covers release channels and tagging.
+Reference documentation lives in [`docs/`](docs/) ([running sessions on a Raspberry Pi from the CLI](docs/remote-cli.md), [issue reporting](docs/issue-reporting.md)); [CONTRIBUTING.md](CONTRIBUTING.md) covers the branching and versioning workflow, and [RELEASING.md](RELEASING.md) covers release channels and tagging.
 
 ---
 
