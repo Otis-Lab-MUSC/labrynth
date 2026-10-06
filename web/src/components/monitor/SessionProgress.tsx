@@ -12,6 +12,9 @@ function fmtTime(seconds: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+/** Rendered mouse width in px; the bar geometry is derived from it. */
+const MOUSE_W = 44;
+
 /** Hip positions (x) and phase offsets for the four legs: diagonal pairs move together. */
 const MOUSE_LEGS = [
   { x: 11.5, delay: "0s" },
@@ -27,7 +30,7 @@ function ProgressMouse({ running }: { running: boolean }) {
   return (
     <svg
       viewBox="0 0 42 22"
-      width="44"
+      width={MOUSE_W}
       height="23"
       fill="none"
       role="img"
@@ -118,19 +121,19 @@ function ProgressBar({
         <span className="text-accent font-bold tabular-nums text-xs">{display}</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="relative h-8 flex-1 rounded-full bg-black/60 border border-theme-border/60">
-          {/* Progress trail: a dashed line rather than a solid fill, so the mouse stands out */}
+        {/* The mouse lives inside the track: it starts at the left edge and its travel is
+            the track width minus its own width, so it reaches the right edge at 100%. */}
+        <div className="relative h-8 flex-1 overflow-hidden rounded-full bg-black/60 border border-theme-border/60">
+          {/* Fill sits behind the mouse and ends at its midpoint. Kept faint (accent/25) so the
+              opaque mouse and its glow stay the brightest thing on the bar. */}
           <div
-            className="absolute left-2 top-1/2 h-[3px] -translate-y-1/2 transition-all duration-300"
-            style={{
-              width: `calc(${pct}% - 0.5rem)`,
-              backgroundImage: "repeating-linear-gradient(90deg, rgb(var(--color-accent) / 0.6) 0 7px, transparent 7px 13px)",
-            }}
+            className="absolute inset-y-0 left-0 rounded-full bg-accent/25 transition-all duration-300"
+            style={{ width: showMouse ? `calc(${MOUSE_W / 2}px + (100% - ${MOUSE_W}px) * ${pct / 100})` : `${pct}%` }}
           />
           {showMouse && (
             <div
               className="absolute inset-y-0 flex items-center transition-all duration-300"
-              style={{ left: `${pct}%`, transform: "translateX(-100%)" }}
+              style={{ left: `calc((100% - ${MOUSE_W}px) * ${pct / 100})` }}
             >
               <ProgressMouse running={running} />
             </div>
