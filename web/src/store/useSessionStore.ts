@@ -56,7 +56,6 @@ export const defaultHardwareUiState = (): HardwareUiState => ({
   lickCircuit: { armed: false },
   microscope: { armed: false, frameRate: null, frameAveraging: null },
   slm: { armed: false, pin: 11, laserFrequency: null, laserDuration: null },
-  externalTrigger: { armed: false, pin: 18 },
   testMode: false,
 });
 
@@ -152,7 +151,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         ? state.activeSessionId
         : null;
 
-    const { session_id } = await client.createSession(port, paradigm);
+    // The backend binds a request for the generic SIMULATOR port to its own SIMn instance.
+    const { session_id, port: boundPort } = await client.createSession(port, paradigm);
     set((s) => {
       const next = new Map(s.sessions);
       const nextOrder = [...s.sessionOrder];
@@ -164,7 +164,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       } else {
         nextOrder.push(session_id);
       }
-      next.set(session_id, newSession(session_id, port, paradigm ?? null, machineId));
+      next.set(session_id, newSession(session_id, boundPort ?? port, paradigm ?? null, machineId));
       return { sessions: next, activeSessionId: session_id, sessionOrder: nextOrder };
     });
     return session_id;
@@ -211,12 +211,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const isNewStart = state === "running" && sess.programStartTime === null;
       const now = Date.now();
 
-      // Arming clears the run buffers; the trigger only stamps t0. Keeping these
-      // separate matters because the CONTROLLER/START event that *causes* the
-      // armed -> running transition is appended before the transition lands — a
-      // reset there would discard the very event that started the run.
-      const isArming = state === "armed" && sess.state !== "armed";
-      const resetData = isArming || (isNewStart && sess.state !== "armed");
+      const resetData = isNewStart;
 
       // Pause tracking
       const transitioningToPaused = state === "paused" && sess.state !== "paused";
@@ -229,11 +224,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       next.set(id, {
         ...sess,
         state,
-        // Arming declares that a new run is about to begin, so the anchor is
-        // cleared here — otherwise a session armed after an earlier run would
-        // carry that run's start time, isNewStart would stay false on the
-        // trigger, and the elapsed clock would open at hours instead of zero.
-        programStartTime: isArming ? null : isNewStart ? now : sess.programStartTime,
+        programStartTime: isNewStart ? now : sess.programStartTime,
         programEndTime: resetData ? null : (state === "stopped" && sess.programEndTime === null ? now : sess.programEndTime),
         pausedTime: resetData ? 0 : sess.pausedTime + pauseDelta,
         pauseStartTime: resetData

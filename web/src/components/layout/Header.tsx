@@ -142,15 +142,12 @@ function SessionStatusDot({ state, draft }: { state: SessionState; draft: boolea
     );
   }
 
-  // Yellow: idle (connected, not started), armed for an external trigger, or paused.
-  if (state === "idle" || state === "connected" || state === "armed" || state === "paused") {
-    const label =
-      state === "armed" ? "Session armed, waiting for external trigger"
-      : state === "paused" ? "Session paused"
-      : "Session idle";
+  // Yellow: idle (connected, not started) or paused.
+  if (state === "idle" || state === "connected" || state === "paused") {
+    const label = state === "paused" ? "Session paused" : "Session idle";
     return (
       <span
-        className={`mr-1.5 inline-block h-2 w-2 shrink-0 rounded-full bg-yellow-400 ${state === "armed" ? "animate-status-pulse" : ""}`}
+        className={`mr-1.5 inline-block h-2 w-2 shrink-0 rounded-full bg-yellow-400`}
         aria-label={label}
       />
     );
@@ -168,13 +165,13 @@ function SessionStatusDot({ state, draft }: { state: SessionState; draft: boolea
 type SystemState = "running" | "idle" | "offline";
 
 /** Header SYS_ONLINE state: green = a session is running, yellow = sessions are
- *  idle / armed / paused, red = nothing is running or ready. */
+ *  idle / paused, red = nothing is running or ready. */
 function deriveSystemState(sessions: Map<string, Session>): SystemState {
   let idle = false;
   for (const s of sessions.values()) {
     if (s.draft) continue;
     if (s.state === "running") return "running";
-    if (s.state === "idle" || s.state === "connected" || s.state === "armed" || s.state === "paused") idle = true;
+    if (s.state === "idle" || s.state === "connected" || s.state === "paused") idle = true;
   }
   return idle ? "idle" : "offline";
 }
@@ -192,13 +189,6 @@ function getCloseWarning(session: Session): { title: string; message: string; va
       title: "Close running session?",
       message: `"${name}" is currently ${session.state}. Closing will stop the program. Session logs are saved, but unexported data will need to be recovered from log files.`,
       variant: "danger",
-    };
-  }
-  if (session.state === "armed") {
-    return {
-      title: "Close armed session?",
-      message: `"${name}" is armed and waiting for an external trigger. Closing disarms the board and cancels the pending start — the trigger will not begin a run.`,
-      variant: "warning",
     };
   }
   if (session.behaviorData.length > 0) {

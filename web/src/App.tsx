@@ -75,7 +75,6 @@ function AppContent() {
     (s) => [...s.sessions.values()].some(
       (sess) =>
         sess.state === "connected" ||
-        sess.state === "armed" ||
         sess.state === "running" ||
         sess.state === "paused"
     )

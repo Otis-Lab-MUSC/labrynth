@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, Pause, Square, Scissors, RotateCcw } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
-import { useLogStore } from "../../store/useLogStore";
 import { getClientForSession } from "../../api/sessionClient";
 import { triggerAutoExport } from "../../hooks/useSessionWebSockets";
 import { EventTimeline } from "./EventTimeline";
@@ -20,27 +19,6 @@ export function MonitorPanel() {
   const [confirmRestart, setConfirmRestart] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
-  // Ref, not just state: a second click before the first render commits must
-  // still see the in-flight guard, or it reaches POST /program/{id}/start
-  // while "running" — that silently wipes buffered behavior data (F2, #2c).
-  const startingNowRef = useRef(false);
-  const [startingNow, setStartingNow] = useState(false);
-
-  const handleStartNow = async () => {
-    if (startingNowRef.current || !activeSessionId) return;
-    startingNowRef.current = true;
-    setStartingNow(true);
-    try {
-      await getClientForSession(activeSessionId)?.startProgram(activeSessionId);
-    } catch (e) {
-      useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Failed to start program");
-      useLogStore.getState().setOpen(true);
-    } finally {
-      startingNowRef.current = false;
-      setStartingNow(false);
-    }
-  };
-
   useEffect(() => {
     if (session?.state === "running") {
       timerRef.current = setInterval(() => forceUpdate((n) => n + 1), 1000);
@@ -69,47 +47,12 @@ export function MonitorPanel() {
 
   const canControl = session.state === "running" || session.state === "paused";
   const isHostOffline = session.state === "disconnected";
-  const isArmed = session.state === "armed";
 
   return (
     <div className="space-y-6">
       <div data-tour="monitor-heading" className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-theme-text">Session</h2>
       </div>
-
-      {isArmed && (
-        <div
-          role="status"
-          className="rounded border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm font-mono text-amber-400"
-        >
-          <p className="flex items-center gap-2">
-            <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-amber-500 animate-status-pulse" />
-            Armed — waiting for external trigger on pin{" "}
-            {session.hardwareUi.externalTrigger?.pin ?? 18}.
-          </p>
-          <p className="mt-1 text-xs text-amber-400/70">
-            The run starts on the next rising TTL edge. Settings are locked until
-            then — cancel to change them.
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button
-              onClick={handleStartNow}
-              disabled={startingNow}
-              className="rounded bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Start now without waiting for the trigger"
-            >
-              {startingNow ? "Starting…" : "Start Now"}
-            </button>
-            <button
-              onClick={() => getClientForSession(activeSessionId!)?.disarmExternalTrigger(activeSessionId!)}
-              className="rounded border border-amber-500/30 px-3 py-1 text-xs font-semibold text-amber-300/80 hover:bg-amber-500/10 transition-colors"
-              title="Disarm and return to settings"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
 
       {isHostOffline && (
         <div role="status" className="rounded border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-mono text-red-400">
@@ -132,9 +75,9 @@ export function MonitorPanel() {
         <div role="group" aria-label="Session transport controls" className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setStartModalOpen(true)}
-            disabled={session.state === "running" || isArmed}
+            disabled={session.state === "running"}
             aria-label="Start session"
-            title={isArmed ? "Armed — cancel first to change settings" : "Start a new session"}
+            title="Start a new session"
             className="inline-flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-white font-mono transition hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
           >
             <Play size={16} aria-hidden="true" />

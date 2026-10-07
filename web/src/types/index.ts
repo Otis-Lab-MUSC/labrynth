@@ -2,9 +2,6 @@ export type SessionState =
   | "idle"
   | "uploading"
   | "connected"
-  /** Configured and waiting for an external TTL edge to start the run. Config is
-   *  frozen while armed — the trigger can land at any instant. */
-  | "armed"
   | "running"
   | "paused"
   | "stopped"
@@ -81,12 +78,6 @@ export interface SlmUiState extends DeviceArmState {
   laserDuration: number | null;
 }
 
-/** External TTL start trigger. Mega-only — the UNO `_lite` firmware omits it
- *  along with the rest of the two-photon support. */
-export interface ExternalTriggerUiState extends DeviceArmState {
-  pin: number;
-}
-
 export interface HardwareUiState {
   rhLever: LeverUiState;
   lhLever: LeverUiState;
@@ -98,7 +89,6 @@ export interface HardwareUiState {
   lickCircuit: DeviceArmState;
   microscope: MicroscopeUiState;
   slm: SlmUiState;
-  externalTrigger: ExternalTriggerUiState;
   testMode: boolean;
 }
 

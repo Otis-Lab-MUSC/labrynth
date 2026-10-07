@@ -17,6 +17,10 @@ export function FirmwareUploadCard({ sessionId, detectedBoard }: Props) {
   const [selectedParadigm, setSelectedParadigm] = useState("");
   const { upload, uploading, error } = useFirmwareUpload(sessionId);
   const progress = useSessionStore((s) => s.uploadProgress.get(sessionId));
+  const sessionState = useSessionStore((s) => s.sessions.get(sessionId)?.state);
+  // The backend refuses a reflash mid-run (409): it reboots the board and would end the run
+  // with no stop and no export. Say so here instead of surfacing the 409.
+  const runActive = sessionState === "running" || sessionState === "paused";
 
   useEffect(() => {
     api.listBoards().then((r) => setBoards(r.boards)).catch(() => {});
@@ -65,12 +69,17 @@ export function FirmwareUploadCard({ sessionId, detectedBoard }: Props) {
         </select>
         <button
           onClick={() => upload(selectedParadigm, selectedBoard)}
-          disabled={!selectedParadigm || uploading}
+          disabled={!selectedParadigm || uploading || runActive}
+          title={runActive ? "Stop the session to upload firmware" : undefined}
           className="btn-sm bg-accent text-accent-contrast hover:bg-accent-hover disabled:opacity-50"
         >
           {uploading ? "Uploading..." : "Upload"}
         </button>
       </div>
+
+      {runActive && !uploading && (
+        <p className="text-xs text-theme-text/60">Firmware can't be uploaded during a run. Stop the session first.</p>
+      )}
 
       {uploading && (
         <div className="flex items-center gap-2 font-mono text-xs text-theme-text/60">

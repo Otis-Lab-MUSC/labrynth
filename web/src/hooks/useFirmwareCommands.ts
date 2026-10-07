@@ -5,8 +5,6 @@ import type { CommandSpec } from "../types";
 
 /** MICROSCOPE_ARM — present only on two-photon-capable firmware. */
 const MICROSCOPE_ARM = 901;
-/** EXT_TRIGGER_ARM — present only on firmware built with external-trigger support. */
-const EXT_TRIGGER_ARM = 1201;
 
 /**
  * The command set the *running* firmware actually accepts, plus the capability
@@ -45,10 +43,6 @@ export function useFirmwareCommands(sessionId: string | null) {
     () => commands.some((c) => c.code === MICROSCOPE_ARM),
     [commands],
   );
-  const hasExternalTrigger = useMemo(
-    () => commands.some((c) => c.code === EXT_TRIGGER_ARM),
-    [commands],
-  );
 
-  return { commands, hasTwoPhoton, hasExternalTrigger };
+  return { commands, hasTwoPhoton };
 }

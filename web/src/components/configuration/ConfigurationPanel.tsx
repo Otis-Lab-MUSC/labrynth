@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { defaultHardwareUiState } from "../../store/useSessionStore";
@@ -7,7 +7,7 @@ import { PavlovianSettings } from "../program/PavlovianSettings";
 import { LimitConfig } from "../program/LimitConfig";
 import { DEVICE_PRESETS, PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS, canDispatchParam, isSharedLeverParam, activeLeverOf, leverSchedulerCommands, rewardPump2 } from "../program/devicePresets";
 import type { DevicePreset } from "../program/devicePresets";
-import { SESSION_PRESETS, SessionPresetCard, buildPresetFromSession, SavePresetDialog } from "../program/presets";
+import { SESSION_PRESETS, SessionPresetCard, buildPresetFromSession, resolveParadigmSettings, resolveLimits, SavePresetDialog } from "../program/presets";
 import type { SessionPreset } from "../program/presets";
 import { PARADIGM_DEFAULTS } from "../program/presets/deviceMetadata";
 import { ConfirmDialog } from "../layout/ConfirmDialog";
@@ -20,8 +20,6 @@ import { LaserControl } from "../hardware/LaserControl";
 import { LickCircuitControl } from "../hardware/LickCircuitControl";
 import { MicroscopeControl } from "../hardware/MicroscopeControl";
 import { SLMControl } from "../hardware/SLMControl";
-import { ExternalTriggerControl } from "../hardware/ExternalTriggerControl";
-import { ConfigLock } from "../layout/ConfigLock";
 import { usePinOverridesHydration } from "../hardware/usePinOverridesHydration";
 import { useTutorialStore } from "../../store/useTutorialStore";
 import { laserPhaseActive } from "../monitor/hardwareSummary";
@@ -74,6 +72,7 @@ export function ConfigurationPanel() {
   const setLimitSettings = useSessionStore((s) => s.setLimitSettings);
   const setPavlovianParams = useSessionStore((s) => s.setPavlovianParams);
   const setFileConfig = useSessionStore((s) => s.setFileConfig);
+  const setPinOverrides = useSessionStore((s) => s.setPinOverrides);
 
   const userPresets = useUserPresetStore((s) => s.userPresets);
   const saveUserPreset = useUserPresetStore((s) => s.savePreset);
@@ -92,14 +91,16 @@ export function ConfigurationPanel() {
 
   // Dirty-state baseline: factory defaults until a preset is applied
   const baselineRef = useRef<Baseline>(defaultBaseline());
+  // LimitConfig's on-screen limits, which reach the store only on "Set Limits".
+  const limitDraftRef = useRef<SessionPreset["limitDefaults"] | null>(null);
+  const handleLimitDraft = useCallback((l: SessionPreset["limitDefaults"]) => { limitDraftRef.current = l; }, []);
 
   const paradigm = session?.paradigm?.toLowerCase();
   const isPav = paradigm === "pavlovian";
 
   // Optional hardware follows what the running firmware actually accepts, not
   // the board name — see useFirmwareCommands.
-  const { commands, hasTwoPhoton, hasExternalTrigger } = useFirmwareCommands(activeSessionId);
-  const isArmed = session?.state === "armed";
+  const { commands, hasTwoPhoton } = useFirmwareCommands(activeSessionId);
 
   // Auto-expand hardware section when tutorial navigates to a hardware step
   const tutorialActive = useTutorialStore((s) => s.active);
@@ -158,7 +159,7 @@ export function ConfigurationPanel() {
 
   const handleSavePreset = (name: string) => {
     if (!session || !session.paradigm) return;
-    const preset = buildPresetFromSession(name, session);
+    const preset = buildPresetFromSession(name, session, limitDraftRef.current);
     saveUserPreset(preset);
     setSaveDialogOpen(false);
     setSelectedPresetId(preset.id);
@@ -172,9 +173,23 @@ export function ConfigurationPanel() {
     if (selectedPresetId === id) setSelectedPresetId("");
   };
 
-  // Apply a session preset: hardware + paradigm settings + limits + commands
+  // A preset is a pre-start configuration. Mid-run, applying one used to rewrite the panel
+  // (ratio, limits, progress bar) while sending nothing, so the screen disagreed with what the
+  // board and the host's limit monitor were enforcing. It is blocked until the run ends.
+  const presetApplyBlockedReason =
+    session?.state === "running" || session?.state === "paused"
+      ? "Presets can't be applied during a run. Stop the session to apply one."
+      : session?.state === "uploading"
+        ? "Presets can't be applied while firmware is uploading."
+        : null;
+
+  // Apply a session preset: hardware + paradigm settings + limits + pins + commands
   const applySessionPreset = async (preset: SessionPreset, armOverrides: Record<string, boolean>) => {
-    if (!activeSessionId) return;
+    if (!activeSessionId || presetApplyBlockedReason) return;
+
+    // Store first, commands second: a rejected command must never leave the panel showing the
+    // old ratio/limits (an early throw used to skip every store write below the command block).
+    const settings = resolveParadigmSettings(preset, session?.paradigmSettings ?? null);
 
     // 1. Deep-merge hardware state with arm overrides from card toggles
     updateHardwareUi(activeSessionId, (prev) => {
@@ -190,8 +205,14 @@ export function ConfigurationPanel() {
           // inheriting the preset's frequency/duration — those preset values exist
           // only to seed SessionPresetCard's display and the device's config if the
           // user re-arms it via an arm override (handled by the branch below).
+          // Lever timeout / mode are the exception: scheduler-wide, so they come from the preset
+          // even for a disarmed lever (below, the active lever's values win on both cards).
+          const isLever = key === "rhLever" || key === "lhLever";
+          const shared = isLever
+            ? Object.fromEntries(["timeout", "timeoutMode"].filter((k) => typeof valueObj[k] === "number").map((k) => [k, valueObj[k]]))
+            : {};
           const merged = armed === false
-            ? { ...prevDevice, armed: false }
+            ? { ...prevDevice, ...shared, armed: false }
             : { ...prevDevice, ...valueObj, armed };
           (result as unknown as Record<string, unknown>)[key] = merged;
         }
@@ -205,14 +226,50 @@ export function ConfigurationPanel() {
       // Timeout / timeout mode are scheduler-wide: the active lever's values win on both cards,
       // so an older preset carrying two different values cannot display two things the board
       // can't hold.
-      const src = result[activeLeverOf(preset.paradigmSettings) === "lh" ? "lhLever" : "rhLever"];
+      const src = result[activeLeverOf(settings) === "lh" ? "lhLever" : "rhLever"];
       result.rhLever = { ...result.rhLever, timeout: src.timeout, timeoutMode: src.timeoutMode };
       result.lhLever = { ...result.lhLever, timeout: src.timeout, timeoutMode: src.timeoutMode };
       return result;
     });
+    setParadigmSettings(activeSessionId, settings);
+    if (preset.pavlovianParams) {
+      setPavlovianParams(activeSessionId, { ...(session?.pavlovianParams ?? {}), ...preset.pavlovianParams });
+    }
+    setLimitSettings(activeSessionId, resolveLimits(preset, session?.limitSettings ?? null, paradigm));
+    setPresetKey((k) => k + 1);
 
     // 2. Send ARM/DISARM + param commands if connected or stopped (pre-start states)
     if (session?.state === "connected" || session?.state === "stopped") {
+      // One bad value (e.g. a stored frequency of 0 the backend rejects) is logged and skipped;
+      // it must not abort the rest of the preset.
+      const failures: string[] = [];
+      const send = async (code: number, value?: number) => {
+        try {
+          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, code, value);
+        } catch (e) {
+          failures.push(`${code}: ${e instanceof Error ? e.message : "failed"}`);
+        }
+      };
+
+      // 2a. Pin overrides first, so the arm/param commands below address the right pins.
+      // Only when connected: PinField is read-only in every other state.
+      if (session.state === "connected" && preset.pinOverrides) {
+        const wanted = Object.fromEntries(
+          Object.entries(preset.pinOverrides).filter(
+            ([component, pin]) => Number.isInteger(pin) && session.pinOverrides[component] !== pin,
+          ),
+        );
+        if (Object.keys(wanted).length > 0) {
+          try {
+            const result = await getClientForSession(activeSessionId)?.setPins(activeSessionId, wanted);
+            if (result) setPinOverrides(activeSessionId, result.applied);
+            for (const err of result?.errors ?? []) failures.push(`pin ${err.component}: ${err.error}`);
+          } catch (e) {
+            failures.push(`pins: ${e instanceof Error ? e.message : "failed"}`);
+          }
+        }
+      }
+
       for (const [deviceKey, deviceState] of Object.entries(preset.hardware)) {
         const mapping = PRESET_COMMAND_MAP[deviceKey];
         if (!mapping || deviceKey === "testMode") continue;
@@ -221,16 +278,18 @@ export function ConfigurationPanel() {
         if ((deviceKey === "rhLever" || deviceKey === "lhLever") && paradigm === "pavlovian") continue;
         const armed = deviceKey in armOverrides ? armOverrides[deviceKey] : state.armed;
         if (armed !== undefined) {
-          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,armed ? mapping.arm : mapping.disarm);
+          await send(armed ? mapping.arm : mapping.disarm);
         }
-        if (mapping.params) {
+        // Params go only to armed devices, as at session start: a disarmed device's stored
+        // defaults (frequency 0, duration 0) are not settings and the backend rejects them.
+        if (armed && mapping.params) {
           for (const [paramKey, code] of Object.entries(mapping.params)) {
             // A command the backend does not declare for this paradigm 400s — see PARAM_PARADIGMS.
             if (!canDispatchParam(paramKey, paradigm)) continue;
             // Scheduler-wide in firmware: sent once after the device loop (leverSchedulerCommands).
             if (isSharedLeverParam(deviceKey, paramKey)) continue;
             if (state[paramKey] !== undefined && state[paramKey] !== null) {
-              await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,code, state[paramKey] as number);
+              await send(code, state[paramKey] as number);
             }
           }
         }
@@ -239,7 +298,7 @@ export function ConfigurationPanel() {
       // Send DISARM for devices NOT mentioned in the preset
       for (const [deviceKey, mapping] of Object.entries(PRESET_COMMAND_MAP)) {
         if (!(deviceKey in preset.hardware)) {
-          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,mapping.disarm);
+          await send(mapping.disarm);
         }
       }
 
@@ -249,7 +308,7 @@ export function ConfigurationPanel() {
         const armedIn = (key: "primaryPump" | "secondaryPump") =>
           key in armOverrides ? armOverrides[key] : ((preset.hardware[key] as { armed?: boolean } | undefined)?.armed ?? false);
         const pump2Active = rewardPump2({ primaryPump: { armed: armedIn("primaryPump") }, secondaryPump: { armed: armedIn("secondaryPump") } });
-        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, 221, pump2Active ? 1 : 0);
+        await send(221, pump2Active ? 1 : 0);
       }
 
       // 2b. Send laser mode/contingency command if preset specifies one.
@@ -261,13 +320,13 @@ export function ConfigurationPanel() {
         if (laserState?.mode) {
           // Pavlovian trial-paired modes require contingent (681) before filter command
           if (laserState.mode !== "independent" && laserState.mode !== "contingent" && laserState.mode !== "rh_lever" && laserState.mode !== "lh_lever") {
-            await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,681);
+            await send(681);
           }
-          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,LASER_MODE_COMMANDS[laserState.mode]);
+          await send(LASER_MODE_COMMANDS[laserState.mode]);
         }
         // 2c. Send laser phase command if Pavlovian preset specifies a phase
         if (laserPhaseActive(isPav, laserState?.mode, laserState?.phase)) {
-          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,PAV_LASER_PHASE_COMMANDS[laserState.phase]);
+          await send(PAV_LASER_PHASE_COMMANDS[laserState.phase]);
         }
       } else if (laserState?.contingency) {
         const contingencyCommand = {
@@ -276,56 +335,40 @@ export function ConfigurationPanel() {
           lh: LASER_MODE_COMMANDS.lh_lever,
           independent: LASER_MODE_COMMANDS.independent,
         }[laserState.contingency];
-        await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, contingencyCommand);
+        await send(contingencyCommand);
       }
 
       // 2d. Active lever + the one scheduler-wide timeout / mode, after every per-device command.
       // Read from the store so the merged (override-aware) values are what goes out.
       const merged = useSessionStore.getState().sessions.get(activeSessionId)?.hardwareUi;
       if (merged && ("rhLever" in preset.hardware || "lhLever" in preset.hardware)) {
-        for (const [code, value] of leverSchedulerCommands(paradigm, activeLeverOf(preset.paradigmSettings), merged)) {
-          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, code, value);
+        for (const [code, value] of leverSchedulerCommands(paradigm, activeLeverOf(settings), merged)) {
+          await send(code, value);
         }
       }
 
       // 3. Send paradigm-specific commands
       if (preset.pavlovianParams) {
         for (const [code, value] of Object.entries(preset.pavlovianParams)) {
-          await getClientForSession(activeSessionId)?.sendCommand(activeSessionId,Number(code), value);
+          await send(Number(code), value);
         }
-      } else if (isParadigm(paradigm, "fr", "pr", "vi", "omission")) {
-        try {
-          const client = getClientForSession(activeSessionId);
-          if (isParadigm(paradigm, "fr", "pr")) {
-            await client?.sendCommand(activeSessionId, 201, preset.paradigmSettings.ratio);
-          } else if (isParadigm(paradigm, "vi")) {
-            await client?.sendCommand(activeSessionId, 204, preset.paradigmSettings.interval);
-          } else {
-            await client?.sendCommand(activeSessionId, 203, preset.paradigmSettings.interval);
-          }
-        } catch (e) {
-          useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Failed to send paradigm command");
-          useLogStore.getState().setOpen(true);
-        }
+      } else if (isParadigm(paradigm, "fr", "pr")) {
+        await send(201, settings.ratio);
+        if (isParadigm(paradigm, "pr")) await send(205, settings.step);
+      } else if (isParadigm(paradigm, "vi")) {
+        await send(204, settings.interval);
+      } else if (isParadigm(paradigm, "omission")) {
+        await send(203, settings.interval);
+      }
+
+      if (failures.length > 0) {
+        useLogStore.getState().pushLog("error", `Preset applied, but ${failures.length} command(s) failed — ${failures.join("; ")}`);
+        useLogStore.getState().setOpen(true);
       }
     }
 
-    // 4. Update paradigm settings in store
-    setParadigmSettings(activeSessionId, preset.paradigmSettings);
-
-    // 4b. Update Pavlovian params in store if present
-    if (preset.pavlovianParams) {
-      setPavlovianParams(activeSessionId, preset.pavlovianParams);
-    }
-
-    // 5. Update limit settings in store
-    setLimitSettings(activeSessionId, preset.limitDefaults);
-
-    // 6. Force remount of ParadigmSettings/LimitConfig
-    setPresetKey((k) => k + 1);
-
-    // 7. Snapshot the post-apply state as the new baseline (deferred to next tick
-    //    so the store has flushed the updates above)
+    // Snapshot the post-apply state as the new baseline (deferred to next tick
+    // so the store has flushed the updates above)
     setTimeout(() => {
       const updated = useSessionStore.getState().sessions.get(activeSessionId);
       if (updated) baselineRef.current = snapshotBaseline(updated);
@@ -470,7 +513,6 @@ export function ConfigurationPanel() {
   const isRemoteSession = getClientForSession(activeSessionId)?.isRemote ?? false;
 
   return (
-    <ConfigLock locked={isArmed}>
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-theme-text">Session Configuration</h2>
 
@@ -555,6 +597,7 @@ export function ConfigurationPanel() {
           key={selectedSessionPreset.id}
           preset={selectedSessionPreset}
           onApply={(overrides) => applySessionPreset(selectedSessionPreset, overrides)}
+          applyBlockedReason={presetApplyBlockedReason}
           isUserPreset={selectedSessionPreset.id.startsWith("user-")}
           onDelete={() => setDeleteConfirm(selectedSessionPreset.id)}
         />
@@ -574,7 +617,7 @@ export function ConfigurationPanel() {
 
       {/* Limit Config */}
       <div data-tour="limit-config">
-        <LimitConfig key={`limits-${activeSessionId}-${presetKey}`} sessionId={activeSessionId} paradigm={paradigm} />
+        <LimitConfig key={`limits-${activeSessionId}-${presetKey}`} sessionId={activeSessionId} paradigm={paradigm} onDraftChange={handleLimitDraft} />
       </div>
 
       {/* Device Preset Dropdown (existing system, only if presets exist) */}
@@ -680,17 +723,6 @@ export function ConfigurationPanel() {
                   </div>
                 </section>
               )}
-
-              {/* External start trigger — Mega-only, stripped from "_lite" firmware
-                  alongside the two-photon devices. */}
-              {hasExternalTrigger && (
-                <section className="space-y-4 pt-6">
-                  <h4 className="text-sm font-semibold text-theme-text/70 uppercase tracking-wide">External Trigger</h4>
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <ExternalTriggerControl sessionId={activeSessionId} />
-                  </div>
-                </section>
-              )}
             </div>
           </div>
         )}
@@ -713,6 +745,5 @@ export function ConfigurationPanel() {
         onCancel={() => setDeleteConfirm(null)}
       />
     </div>
-    </ConfigLock>
   );
 }

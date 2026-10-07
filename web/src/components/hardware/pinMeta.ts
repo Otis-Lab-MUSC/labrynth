@@ -42,8 +42,7 @@ export type Component =
   | "lick"
   | "laser"
   | "microscope_trigger"
-  | "slm"
-  | "ext_trigger";
+  | "slm";
 
 /** Stable order used by the UI grid. */
 export const COMPONENT_KEYS: readonly Component[] = [
@@ -57,7 +56,6 @@ export const COMPONENT_KEYS: readonly Component[] = [
   "laser",
   "microscope_trigger",
   "slm",
-  "ext_trigger",
 ] as const;
 
 /** Backend SET_PIN command codes (suffix x76). */
@@ -72,7 +70,6 @@ export const SET_PIN_CODE: Record<Component, number> = {
   laser: 676,
   microscope_trigger: 976,
   slm: 1176,
-  ext_trigger: 1276,
 };
 
 /** Human-readable labels for the pin assignment table. */
@@ -87,7 +84,6 @@ export const COMPONENT_LABEL: Record<Component, string> = {
   laser: "Laser",
   microscope_trigger: "Microscope Trigger",
   slm: "SLM Timestamp",
-  ext_trigger: "External Trigger",
 };
 
 /** Components whose pins must support hardware PWM. */
@@ -102,7 +98,6 @@ export const COMPONENT_REQUIRES_PWM: Record<Component, boolean> = {
   lick: false,
   microscope_trigger: false,
   slm: false,
-  ext_trigger: false,
 };
 
 /** Components restricted to the PCINT0/PORTB group (pins 10–13 on the Mega). */
@@ -117,14 +112,12 @@ export const COMPONENT_REQUIRES_PCINT: Record<Component, boolean> = {
   lick: false,
   laser: false,
   microscope_trigger: false,
-  ext_trigger: false,
 };
 
 /** Components restricted to pins carrying an external-interrupt line (INT0-INT5).
- *  The external start trigger is the only one — it must latch a TTL edge with
- *  ISR precision, not a polled read. */
+ *  None today (the external start trigger was the only one); kept because
+ *  reacher's parity parser reads this record by name. */
 export const COMPONENT_REQUIRES_INT: Record<Component, boolean> = {
-  ext_trigger: true,
   slm: false,
   lever_rh: false,
   lever_lh: false,
@@ -149,7 +142,6 @@ export const DEFAULT_PIN: Record<Component, number> = {
   laser: 6,
   microscope_trigger: 9,
   slm: 11,
-  ext_trigger: 18,
 };
 
 // --- Board pin sets (must mirror backend pin_overrides.py) ---
@@ -160,18 +152,14 @@ const range = (start: number, endInclusive: number): number[] =>
 export const UNO_DIGITAL: readonly number[] = range(2, 13);
 export const UNO_PWM = new Set([3, 5, 6, 9, 10, 11]);
 // UNO_INT = {2, 3}, but both are spoken for: 2 is the fixed microscope timestamp
-// pin and 3 is the primary cue. Nothing is left for an external trigger, which
-// is why that feature is Mega-only.
+// pin and 3 is the primary cue.
 export const UNO_INT_ASSIGNABLE: readonly number[] = [];
 
 export const MEGA_DIGITAL: readonly number[] = range(2, 53);
 export const MEGA_PWM = new Set([...range(2, 13), 44, 45, 46]);
-// The Mega's full interrupt set is {2, 3, 18, 19, 20, 21}, but being
-// interrupt-capable is NOT sufficient to be assignable. Pin 2 is the microscope
-// timestamp (INT0) and pin 3 is the primary cue, and neither is caught by the
-// collision check — the timestamp pin is not a Component at all, so assigning a
-// trigger to pin 2 would silently replace Microscope::TimestampISR and stop 2P
-// frame timestamping with no error. Only INT2-INT5 are offered.
+// The Mega's full interrupt set is {2, 3, 18, 19, 20, 21}, but pin 2 is the
+// microscope timestamp (INT0) and pin 3 is the primary cue, so only INT2-INT5
+// are offered.
 // Mirror backend pin_overrides.PinConstraint.allowed_pins, not its MEGA_INT.
 export const MEGA_INT_ASSIGNABLE: readonly number[] = [18, 19, 20, 21];
 
@@ -207,25 +195,9 @@ export function pcint0PinsFor(board: BoardType | null | undefined): readonly num
 }
 
 /**
- * Return the pins assignable to a component that must latch a TTL edge via ISR.
- *
- * Mirror `pin_overrides.validate_pin`'s `allowed_pins` branch — NOT
- * `board_sets()`. Those two disagree on purpose and conflating them has been
- * wrong in both directions here:
- *
- * - `board_sets()` falls back to the narrower UNO sets for an unknown board.
- * - `validate_pin` intersects `allowed_pins` with the board's digital set
- *   **only when the board was genuinely identified**. `EXT_TRIGGER_PINS` is
- *   Mega-specific by construction, so intersecting it with a *guessed* UNO
- *   would empty it — and USB-ID detection legitimately returns null for clones
- *   and unrecognized adapters on real Mega hardware, which would leave those
- *   operators able to use the trigger on pin 18 but never move it.
- *
- * So: a *known* UNO correctly gets nothing, and an unknown board gets the full
- * set. That is safe rather than optimistic because the firmware re-validates —
- * `ExternalTrigger::SetPin` emits a level-006 error outside 18-21 — so an
- * unknown board that really is an UNO gets a clear error from the board instead
- * of a silently wrong assignment.
+ * Return the pins assignable to an interrupt-restricted component. Mirrors
+ * `pin_overrides.validate_pin`'s `allowed_pins` branch. Currently no component
+ * requires an interrupt pin (see COMPONENT_REQUIRES_INT).
  */
 export function intPinsFor(board: BoardType | null | undefined): readonly number[] {
   return board === "uno" ? UNO_INT_ASSIGNABLE : MEGA_INT_ASSIGNABLE;

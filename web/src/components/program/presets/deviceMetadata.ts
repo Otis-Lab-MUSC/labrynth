@@ -1,17 +1,12 @@
 import type { HardwareUiState } from "../../../types";
 import type { Session } from "../../../types";
 import type { SessionPreset, PresetDeviceEntry } from "./types";
+import { PRESET_VERSION } from "./types";
 
 /**
  * HardwareUiState keys that are deliberately NOT part of a session preset.
  *
- * `testMode` is transient session state. `externalTrigger` is a per-run start
- * mode, not a device: it has no arm command of its own, its `armed` flag mirrors
- * live firmware state rather than a configured choice, and its pin belongs to
- * `session.pinOverrides` like every other pin. Including it would put a bogus
- * "External Trigger" row on every preset card — marked *required* whenever the
- * preset happened to be saved while the board was armed — and re-applying that
- * preset would overwrite the live trigger pin.
+ * `testMode` is transient session state.
  *
  * Exported so a cross-repo device-parity check could distinguish an intentional
  * omission from drift. No such consumer exists today — the reacher-side check
@@ -20,7 +15,7 @@ import type { SessionPreset, PresetDeviceEntry } from "./types";
  * of `DeviceKey` below, so the exclusion is enforced by the compiler here even
  * with nothing reading it from outside.
  */
-export const PRESET_EXCLUDED_DEVICE_KEYS = ["testMode", "externalTrigger"] as const;
+export const PRESET_EXCLUDED_DEVICE_KEYS = ["testMode"] as const;
 
 type DeviceKey = keyof Omit<HardwareUiState, (typeof PRESET_EXCLUDED_DEVICE_KEYS)[number]>;
 
@@ -60,28 +55,31 @@ export const PARADIGM_DEFAULTS: SessionPreset["paradigmSettings"] = {
   activeLever: "rh",
 };
 
-const DEFAULT_LIMIT_SETTINGS: SessionPreset["limitDefaults"] = {
-  limitType: "Both",
-  timeLimit: 3600,
-  infusionLimit: 30,
-  delay: 10,
-};
+/** What LimitConfig shows for a session with no stored limits — Pavlovian has no Time/Both. */
+export function defaultLimitSettings(paradigm?: string | null): SessionPreset["limitDefaults"] {
+  return { limitType: paradigm === "pavlovian" ? "Trials" : "Time", timeLimit: 3600, infusionLimit: 30, delay: 10 };
+}
 
-export function buildPresetFromSession(name: string, session: Session): SessionPreset {
-  // Both excluded keys are stripped from the persisted blob, not just testMode:
-  // applying a preset spreads `hardware` back over hardwareUi, so a retained
-  // externalTrigger would overwrite the session's live trigger pin.
-  const { testMode: _testMode, externalTrigger: _externalTrigger, ...hardware } =
-    session.hardwareUi;
+/** `limits` is LimitConfig's on-screen state: it only reaches the store on "Set Limits", so a
+ *  preset saved without it would silently drop limits the user can see but has not Set. */
+export function buildPresetFromSession(
+  name: string,
+  session: Session,
+  limits?: SessionPreset["limitDefaults"] | null,
+): SessionPreset {
+  const { testMode: _testMode, ...hardware } = session.hardwareUi;
+  const pinOverrides = { ...session.pinOverrides };
 
   return {
     id: "user-" + crypto.randomUUID(),
+    version: PRESET_VERSION,
     name,
     paradigm: session.paradigm ?? "fr",
     devices: buildDeviceEntries(session.hardwareUi),
     hardware,
     paradigmSettings: session.paradigmSettings ?? { ...PARADIGM_DEFAULTS },
     ...(session.pavlovianParams ? { pavlovianParams: { ...session.pavlovianParams } } : {}),
-    limitDefaults: session.limitSettings ?? { ...DEFAULT_LIMIT_SETTINGS },
+    limitDefaults: limits ?? session.limitSettings ?? defaultLimitSettings(session.paradigm),
+    pinOverrides,
   };
 }

@@ -249,7 +249,7 @@ export class MachineApiClient {
   listSessions = () =>
     this.request<{ sessions: Array<Record<string, unknown>> }>("/sessions");
   createSession = (port: string, paradigm?: string) =>
-    this.request<{ session_id: string }>("/sessions", {
+    this.request<{ session_id: string; port?: string }>("/sessions", {
       method: "POST",
       body: JSON.stringify({ port, paradigm }),
     });
@@ -303,13 +303,6 @@ export class MachineApiClient {
   // --- Program ---
   startProgram = (id: string) =>
     this.request(`/program/${id}/start`, { method: "POST" });
-  /** Push the session to "armed": firmware watches the trigger pin and starts
-   *  itself on the next TTL edge. The run only begins when the edge lands. */
-  armExternalTrigger = (id: string) =>
-    this.request(`/program/${id}/arm-trigger`, { method: "POST" });
-  /** Cancel an arm, returning the session to "connected" without starting. */
-  disarmExternalTrigger = (id: string) =>
-    this.request(`/program/${id}/disarm-trigger`, { method: "POST" });
   stopProgram = (id: string) =>
     this.request(`/program/${id}/stop`, { method: "POST" });
   pauseProgram = (id: string) =>
@@ -494,10 +487,6 @@ export const stopProgram = (id: string) =>
   isDemoMode() ? mock.stopProgram(id) : getLocalClient().stopProgram(id);
 export const pauseProgram = (id: string) =>
   isDemoMode() ? mock.pauseProgram(id) : getLocalClient().pauseProgram(id);
-export const armExternalTrigger = (id: string) =>
-  isDemoMode() ? mock.armExternalTrigger(id) : getLocalClient().armExternalTrigger(id);
-export const disarmExternalTrigger = (id: string) =>
-  isDemoMode() ? mock.disarmExternalTrigger(id) : getLocalClient().disarmExternalTrigger(id);
 export const setLimit = (id: string, body: { type: string; time_limit?: number; infusion_limit?: number; delay?: number }) =>
   isDemoMode() ? mock.setLimit(id, body) : getLocalClient().setLimit(id, body);
 
