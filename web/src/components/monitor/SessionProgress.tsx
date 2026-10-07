@@ -106,13 +106,11 @@ function ProgressBar({
   pct,
   display,
   running,
-  showMouse,
 }: {
   label: string;
   pct: number;
   display: string;
   running: boolean;
-  showMouse: boolean;
 }) {
   return (
     <div className="space-y-1">
@@ -128,18 +126,16 @@ function ProgressBar({
               opaque mouse and its glow stay the brightest thing on the bar. */}
           <div
             className="absolute inset-y-0 left-0 rounded-full bg-accent/25 transition-all duration-300"
-            style={{ width: showMouse ? `calc(${MOUSE_W / 2}px + (100% - ${MOUSE_W}px) * ${pct / 100})` : `${pct}%` }}
+            style={{ width: `calc(${MOUSE_W / 2}px + (100% - ${MOUSE_W}px) * ${pct / 100})` }}
           />
-          {showMouse && (
-            <div
-              className="absolute inset-y-0 flex items-center transition-all duration-300"
-              style={{ left: `calc((100% - ${MOUSE_W}px) * ${pct / 100})` }}
-            >
-              <ProgressMouse running={running} />
-            </div>
-          )}
+          <div
+            className="absolute inset-y-0 flex items-center transition-all duration-300"
+            style={{ left: `calc((100% - ${MOUSE_W}px) * ${pct / 100})` }}
+          >
+            <ProgressMouse running={running} />
+          </div>
         </div>
-        {showMouse && <ProgressCheese reached={pct >= 100} />}
+        <ProgressCheese reached={pct >= 100} />
       </div>
     </div>
   );
@@ -169,8 +165,8 @@ export function SessionProgress({ session, elapsed }: Props) {
         <div className="flex-1 border-b border-dashed border-theme-border" />
       </div>
       <div className="space-y-3">
-        {showTime && <ProgressBar label="TIME" pct={timePct} display={`${fmtTime(elapsed)} / ${fmtTime(limits.timeLimit)}`} running={running} showMouse />}
-        {showCount && <ProgressBar label={countLabel} pct={countPct} display={`${currentCount} / ${limits.infusionLimit}`} running={running} showMouse={!showTime} />}
+        {showTime && <ProgressBar label="TIME" pct={timePct} display={`${fmtTime(elapsed)} / ${fmtTime(limits.timeLimit)}`} running={running} />}
+        {showCount && <ProgressBar label={countLabel} pct={countPct} display={`${currentCount} / ${limits.infusionLimit}`} running={running} />}
       </div>
     </div>
   );
