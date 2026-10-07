@@ -249,7 +249,7 @@ export class MachineApiClient {
   listSessions = () =>
     this.request<{ sessions: Array<Record<string, unknown>> }>("/sessions");
   createSession = (port: string, paradigm?: string) =>
-    this.request<{ session_id: string }>("/sessions", {
+    this.request<{ session_id: string; port?: string }>("/sessions", {
       method: "POST",
       body: JSON.stringify({ port, paradigm }),
     });

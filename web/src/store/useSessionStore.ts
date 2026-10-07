@@ -151,7 +151,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         ? state.activeSessionId
         : null;
 
-    const { session_id } = await client.createSession(port, paradigm);
+    // The backend binds a request for the generic SIMULATOR port to its own SIMn instance.
+    const { session_id, port: boundPort } = await client.createSession(port, paradigm);
     set((s) => {
       const next = new Map(s.sessions);
       const nextOrder = [...s.sessionOrder];
@@ -163,7 +164,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       } else {
         nextOrder.push(session_id);
       }
-      next.set(session_id, newSession(session_id, port, paradigm ?? null, machineId));
+      next.set(session_id, newSession(session_id, boundPort ?? port, paradigm ?? null, machineId));
       return { sessions: next, activeSessionId: session_id, sessionOrder: nextOrder };
     });
     return session_id;
