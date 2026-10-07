@@ -1169,6 +1169,13 @@ class ReacherCLI:
         if not self.session:
             self._set_status("No session", error=True)
             return
+        # The host refuses a reflash mid-run (409); say why before the board/paradigm prompts.
+        if self.session.state in ("running", "paused", "uploading"):
+            self._set_status(
+                f"Can't upload firmware while the session is {self.session.state} — stop it first",
+                error=True,
+            )
+            return
         self._prompt_select(
             "Select Board",
             [("Arduino Uno", "uno"), ("Arduino Mega", "mega")],
@@ -1442,13 +1449,20 @@ class ReacherCLI:
             self._set_status("No session", error=True)
             return
         preset = P.PRESET_BY_ID[preset_id]
+        # Same rule as the web panel: a preset is pre-start configuration, so it is
+        # refused mid-run instead of rewriting the displayed settings and limits.
+        if s.state in ("running", "paused", "uploading"):
+            self._set_status(
+                f"Can't apply a preset while the session is {s.state} — stop it first", error=True
+            )
+            return
         self._set_status(f"Applying preset: {preset['name']}...")
         try:
             merged = P.merge_preset_hardware(s.hw, preset)
             s.hw = merged
             dropped: list[int] = []
-            # Commands only go out pre-start; otherwise the state is staged and
-            # sent by the start-time re-send, exactly like the web.
+            # Commands only go out pre-start (connected/stopped). In idle/disconnected
+            # the state is staged and sent by the start-time re-send, like the web.
             if s.state in ("connected", "stopped"):
                 dropped = await self._send_commands(P.preset_commands(preset, s.paradigm, merged))
             s.paradigm_settings.update(preset.get("paradigmSettings", {}))

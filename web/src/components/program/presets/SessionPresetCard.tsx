@@ -13,6 +13,8 @@ interface Props {
   onUpdate?: () => void;
   onRename?: (name: string) => void;
   canUpdate?: boolean;
+  /** Set while the session is mid-run: Apply is disabled and this explains why. */
+  applyBlockedReason?: string | null;
 }
 
 function DeviceRow({
@@ -75,7 +77,7 @@ function formatTimeLimit(seconds: number): string {
   return `${seconds}s`;
 }
 
-export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete, onUpdate, onRename, canUpdate }: Props) {
+export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete, onUpdate, onRename, canUpdate, applyBlockedReason }: Props) {
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -102,6 +104,7 @@ export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete, onU
   }, [applied]);
 
   const handleApply = async () => {
+    if (applyBlockedReason) return;
     setApplying(true);
     try {
       await onApply(armState);
@@ -251,9 +254,14 @@ export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete, onU
       </div>
 
       {/* Apply button */}
+      {applyBlockedReason && (
+        <p className="text-xs text-theme-text/60" data-log-id="preset-apply-blocked">{applyBlockedReason}</p>
+      )}
       <button
         onClick={handleApply}
-        disabled={applying || applied}
+        disabled={applying || applied || !!applyBlockedReason}
+        title={applyBlockedReason ?? undefined}
+        data-log-id="preset-apply"
         className={`btn-sm w-full py-2 font-medium transition-colors ${
           applied
             ? "bg-green-600 text-white"

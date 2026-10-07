@@ -173,9 +173,19 @@ export function ConfigurationPanel() {
     if (selectedPresetId === id) setSelectedPresetId("");
   };
 
+  // A preset is a pre-start configuration. Mid-run, applying one used to rewrite the panel
+  // (ratio, limits, progress bar) while sending nothing, so the screen disagreed with what the
+  // board and the host's limit monitor were enforcing. It is blocked until the run ends.
+  const presetApplyBlockedReason =
+    session?.state === "running" || session?.state === "paused"
+      ? "Presets can't be applied during a run. Stop the session to apply one."
+      : session?.state === "uploading"
+        ? "Presets can't be applied while firmware is uploading."
+        : null;
+
   // Apply a session preset: hardware + paradigm settings + limits + pins + commands
   const applySessionPreset = async (preset: SessionPreset, armOverrides: Record<string, boolean>) => {
-    if (!activeSessionId) return;
+    if (!activeSessionId || presetApplyBlockedReason) return;
 
     // Store first, commands second: a rejected command must never leave the panel showing the
     // old ratio/limits (an early throw used to skip every store write below the command block).
@@ -587,6 +597,7 @@ export function ConfigurationPanel() {
           key={selectedSessionPreset.id}
           preset={selectedSessionPreset}
           onApply={(overrides) => applySessionPreset(selectedSessionPreset, overrides)}
+          applyBlockedReason={presetApplyBlockedReason}
           isUserPreset={selectedSessionPreset.id.startsWith("user-")}
           onDelete={() => setDeleteConfirm(selectedSessionPreset.id)}
         />
