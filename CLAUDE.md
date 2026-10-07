@@ -141,9 +141,8 @@ Machine discovery uses mDNS (polled by `useMachineStore.startDiscoveryPolling`).
 - **`themes/`** — 5 named themes (`reacher`, `terminal`, `neural`, `midnight`, `ember`), each with a single dark palette plus background, font, radius, glass tokens. Dark is the only mode — there is no light palette or toggle. Theme is applied by writing CSS variables on `:root` (`apply()` in `useThemeStore` sets `--color-*`, `--font-*`, etc.). Default: `reacher`. Nothing is persisted; older builds' `labrynth-mode` / `reacher-mode` keys are cleared on load.
 - **`types/index.ts`** — shared TypeScript interfaces (`Session`, `Machine`, `BehaviorEvent`, `FirmwareConfig`, …).
 
-Session lifecycle: `idle → uploading → connected → running → paused → stopped` (plus `disconnected` for serial drop, and `armed` — see below). Real-time counters (infusions, presses, trials, frames, CS+/CS−) are driven entirely by WebSocket events, not by polling.
+Session lifecycle: `idle → uploading → connected → running → paused → stopped` (plus `disconnected` for serial drop). Real-time counters (infusions, presses, trials, frames, CS+/CS−) are driven entirely by WebSocket events, not by polling.
 
-**External start trigger.** A session can instead be *armed* (`connected → armed`, via `POST /api/program/{id}/arm-trigger`), holding until a rising TTL edge on a Mega pin starts it. The firmware self-starts by calling its own `StartSession()` — the same function `cmd:101` calls — so the 2P trigger pulse and firmware t0 are identical to a software start; the host learns of it one serial line later and only then stamps its wall-clock anchor. Run buffers reset at **arm** time, not on the trigger, so the `CONTROLLER/START` event that causes `armed → running` is not wiped by its own reset. Config is frozen while armed (`ConfigLock` in both config panels; the backend 409s device commands) because config applies one command per request and an edge landing mid-edit would start a run half-configured. The whole UI is gated on the firmware advertising `EXT_TRIGGER_ARM` (1201), so it self-hides on `_lite` builds. Mega-only. See [docs/external-trigger.md](docs/external-trigger.md).
 
 ### CLI (`cli/`)
 

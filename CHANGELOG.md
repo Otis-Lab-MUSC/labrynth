@@ -12,6 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+- Frontend + CLI: the **external start trigger** ("Wait for external trigger" start mode,
+  External Trigger hardware card, the `armed` session state, `ConfigLock`, and the
+  `arm-trigger` / `disarm-trigger` client calls) is removed end to end, along with
+  `docs/external-trigger.md`. Sessions start only from the Start button. Old saved
+  presets that still carry an `externalTrigger` hardware entry are ignored.
+
 ### Added
 - Frontend + CLI: **Timeout mode** control on the RH/LH lever cards (FR, PR, VI and
   their lite twins) — choose whether the lever timeout window opens on *every active

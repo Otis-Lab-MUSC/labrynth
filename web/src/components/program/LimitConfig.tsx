@@ -9,9 +9,11 @@ const LIMIT_DEFAULTS = { timeLimit: 3600, infusionLimit: 30, delay: 10 };
 interface Props {
   sessionId: string;
   paradigm?: string;
+  /** Reports the on-screen limits, Set or not, so "Save Preset" captures what the user sees. */
+  onDraftChange?: (limits: { limitType: string; timeLimit: number; infusionLimit: number; delay: number }) => void;
 }
 
-export function LimitConfig({ sessionId, paradigm }: Props) {
+export function LimitConfig({ sessionId, paradigm, onDraftChange }: Props) {
   const session = useSessionStore((s) => s.sessions.get(sessionId));
   const setLimitSettings = useSessionStore((s) => s.setLimitSettings);
 
@@ -38,6 +40,10 @@ export function LimitConfig({ sessionId, paradigm }: Props) {
     setInfusionLimit(LIMIT_DEFAULTS.infusionLimit);
     setDelay(LIMIT_DEFAULTS.delay);
   }, [session?.limitSettings, defaultLimitType]);
+
+  useEffect(() => {
+    onDraftChange?.({ limitType, timeLimit, infusionLimit, delay });
+  }, [limitType, timeLimit, infusionLimit, delay, onDraftChange]);
 
   const handleSet = async () => {
     try {

@@ -5,6 +5,7 @@ export { SA_HIGH_LITE_PRESET, SA_MID_LITE_PRESET, SA_LOW_LITE_PRESET, SA_EXTINCT
 export { PAV_ACQUISITION_PRESET, PAV_REVERSAL_PRESET } from "./pavlovianPresets";
 export { SessionPresetCard } from "./SessionPresetCard";
 export { buildPresetFromSession } from "./deviceMetadata";
+export { resolveParadigmSettings, resolveLimits } from "./resolve";
 export { SavePresetDialog } from "./SavePresetDialog";
 export { PresetActionMenu } from "./PresetActionMenu";
 

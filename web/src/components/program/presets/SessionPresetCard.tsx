@@ -1,7 +1,9 @@
-import { useState, useCallback } from "react";
+import { Fragment, useState, useCallback } from "react";
 import type { SessionPreset, PresetDeviceEntry } from "./types";
 import type { HardwareUiState } from "../../../types";
 import { PresetActionMenu } from "./PresetActionMenu";
+import { isParadigm } from "../../../lib/paradigm";
+import { isOperantParadigm } from "../devicePresets";
 
 interface Props {
   preset: SessionPreset;
@@ -114,6 +116,17 @@ export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete, onU
   const showInfusion = limitDefaults.limitType === "Infusion" || limitDefaults.limitType === "Both";
   const showTrials = limitDefaults.limitType === "Trials";
 
+  // Fields a preset saved by an older build may lack are skipped rather than shown as "undefined".
+  const ps: Partial<SessionPreset["paradigmSettings"]> = preset.paradigmSettings ?? {};
+  const paradigmRows: Array<[string, string]> = [];
+  if (isParadigm(preset.paradigm, "fr", "pr") && ps.ratio != null) paradigmRows.push(["Ratio", String(ps.ratio)]);
+  if (isParadigm(preset.paradigm, "pr") && ps.step != null) paradigmRows.push(["PR Step", String(ps.step)]);
+  if (isParadigm(preset.paradigm, "vi", "omission") && ps.interval != null) {
+    paradigmRows.push([isParadigm(preset.paradigm, "vi") ? "VI Interval" : "Omission Interval", `${ps.interval}ms`]);
+  }
+  if (isOperantParadigm(preset.paradigm) && ps.activeLever) paradigmRows.push(["Reinforced Lever", ps.activeLever.toUpperCase()]);
+  const pinSummary = Object.entries(preset.pinOverrides ?? {}).map(([c, p]) => `${c} ${p}`).join(", ");
+
   return (
     <div data-tour="preset-card" className="card border-l-4 border-l-accent space-y-4">
       {/* Header */}
@@ -168,6 +181,12 @@ export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete, onU
       <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
         <span className="text-theme-text/50 font-mono">Limit Type</span>
         <span className="text-theme-text">{limitDefaults.limitType}</span>
+        {paradigmRows.map(([label, value]) => (
+          <Fragment key={label}>
+            <span className="text-theme-text/50 font-mono">{label}</span>
+            <span className="text-theme-text">{value}</span>
+          </Fragment>
+        ))}
         {showTime && (
           <>
             <span className="text-theme-text/50 font-mono">Time Limit</span>
@@ -196,6 +215,12 @@ export function SessionPresetCard({ preset, onApply, isUserPreset, onDelete, onU
             <span className="text-theme-text">{preset.pavlovianParams[206]}%</span>
             <span className="text-theme-text/50 font-mono">Trace Interval</span>
             <span className="text-theme-text">{preset.pavlovianParams[214]}ms</span>
+          </>
+        )}
+        {pinSummary && (
+          <>
+            <span className="text-theme-text/50 font-mono">Pins</span>
+            <span className="text-theme-text">{pinSummary}</span>
           </>
         )}
       </div>

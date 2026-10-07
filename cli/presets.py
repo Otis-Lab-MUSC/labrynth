@@ -61,7 +61,7 @@ DEVICE_TO_UI_KEY: dict[str, str] = {
     "CUE": "primaryCue", "CUE2": "secondaryCue", "PUMP": "primaryPump",
     "PUMP2": "secondaryPump", "LASER": "laser", "LICK": "lickCircuit",
     "MICROSCOPE": "microscope", "LEVER_RH": "rhLever", "LEVER_LH": "lhLever",
-    "SLM": "slm", "EXT_TRIGGER": "externalTrigger",
+    "SLM": "slm",
 }
 
 # Web device keys <-> the CLI's kebab-case device ids (DEVICE_CONFIGS in app.py).
