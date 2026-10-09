@@ -87,7 +87,12 @@ async function requestQuit(opts: { interactive: boolean }): Promise<void> {
   console.log(`[labrynth] quit requested (interactive=${opts.interactive})`);
   const sup = supervisor;
   try {
-    if (sup !== null && !startPending && sup.mode === "spawned" && (await hasActiveSession(baseUrl))) {
+    // null = the session check failed. Treat it like an active session: never stop a backend
+    // that might be recording just because /api/sessions did not answer.
+    const active =
+      sup !== null && !startPending && sup.mode === "spawned" ? await hasActiveSession(baseUrl) : false;
+    if (sup !== null && active !== false) {
+      if (active === null) console.log("[labrynth] could not check sessions; assuming one may be running");
       const choice = opts.interactive
         ? await ask({
             type: "warning",
@@ -95,7 +100,7 @@ async function requestQuit(opts: { interactive: boolean }): Promise<void> {
             defaultId: 0,
             cancelId: 0,
             title: "Session in progress",
-            message: "A session is running.",
+            message: active === null ? "A session may be running." : "A session is running.",
             detail:
               "Closing will not stop the recording. The REACHER backend keeps running in the background; " +
               "open Labrynth again to return to it.",
@@ -109,7 +114,9 @@ async function requestQuit(opts: { interactive: boolean }): Promise<void> {
       console.log("[labrynth] session running; leaving backend alive");
       sup.detach();
     } else if (sup !== null) {
-      console.log("[labrynth] stopping backend");
+      console.log(
+        sup.mode === "attached" ? "[labrynth] leaving attached backend running" : "[labrynth] stopping backend",
+      );
       await sup.stop();
     }
   } catch (err) {

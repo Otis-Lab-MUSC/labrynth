@@ -20,6 +20,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   presets that still carry an `externalTrigger` hardware entry are ignored.
 
 ### Added
+- **Desktop shell (Linux).** Labrynth now opens in its own native window. The Electron main
+  process owns the REACHER backend: it starts the backend as a child process, or attaches to
+  one already answering on the port, and stops only the backend it started. Closing the
+  window while a session runs asks whether to keep the window open or close it and keep
+  recording; in the second case the backend keeps running and relaunching attaches to it.
+  Signal and logout quits never stop a recording. `labrynth --browser` starts the backend and
+  opens the system browser instead. The `.deb` and `.AppImage` now come from electron-builder;
+  the `.tar.gz` remains the browser-mode bundle. Presets and paired machines saved in the
+  browser build do not carry over.
 - Frontend + CLI: **Timeout mode** control on the RH/LH lever cards (FR, PR, VI and
   their lite twins) — choose whether the lever timeout window opens on *every active
   press* or only on the *reward-triggering press*. Sent as command 1077 (RH) / 1377

@@ -84,8 +84,12 @@ export type IsReacherBackend = (baseUrl: string, timeoutMs?: number) => Promise<
 export type FetchToken = (baseUrl: string) => Promise<string | null>;
 /** Token + GET <base>/api/sessions with `Authorization: Bearer <token>`. Returns [] on any failure. */
 export type ListSessions = (baseUrl: string) => Promise<SessionSummary[]>;
-/** True when any session state is in ACTIVE_SESSION_STATES. False on any failure. */
-export type HasActiveSession = (baseUrl: string) => Promise<boolean>;
+/**
+ * True when any session state is in ACTIVE_SESSION_STATES, false when none is.
+ * null when the check itself failed (token or /api/sessions unreachable): callers must treat
+ * null as "possibly recording" and never stop the backend on it.
+ */
+export type HasActiveSession = (baseUrl: string) => Promise<boolean | null>;
 
 // ---------------------------------------------------------------------------
 // backend.ts — backend process resolution and supervision

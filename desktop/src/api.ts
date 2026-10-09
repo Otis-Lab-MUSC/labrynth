@@ -82,22 +82,31 @@ export const fetchToken: FetchToken = async (baseUrl: string): Promise<string | 
   return body.token;
 };
 
-/** Fetches a token, then GET <base>/api/sessions with Bearer auth. Returns [] on any failure. */
-export const listSessions: ListSessions = async (baseUrl: string): Promise<SessionSummary[]> => {
+/** Token + GET <base>/api/sessions. The session array, or null when any step fails. */
+async function fetchSessions(baseUrl: string): Promise<unknown[] | null> {
   const token = await fetchToken(baseUrl);
-  if (token === null) return [];
+  if (token === null) return null;
   const body = await getJson(
     `${baseUrl}/api/sessions`,
-    { Authorization: `Bearer ${token}` },
+    { Authorization: "Bearer " + token },
     REQUEST_TIMEOUT_MS,
   );
-  if (!isRecord(body) || !Array.isArray(body.sessions)) return [];
-  return body.sessions as SessionSummary[];
+  if (!isRecord(body) || !Array.isArray(body.sessions)) return null;
+  return body.sessions;
+}
+
+/** Fetches a token, then GET <base>/api/sessions with Bearer auth. Returns [] on any failure. */
+export const listSessions: ListSessions = async (baseUrl: string): Promise<SessionSummary[]> => {
+  return ((await fetchSessions(baseUrl)) ?? []) as SessionSummary[];
 };
 
-/** True when any session's state is in ACTIVE_SESSION_STATES. False on any failure. */
-export const hasActiveSession: HasActiveSession = async (baseUrl: string): Promise<boolean> => {
-  const sessions: unknown[] = await listSessions(baseUrl);
+/**
+ * True when any session's state is in ACTIVE_SESSION_STATES, false when none is, null when the
+ * check failed. null is deliberately distinct from false so a failed check never reads as idle.
+ */
+export const hasActiveSession: HasActiveSession = async (baseUrl: string): Promise<boolean | null> => {
+  const sessions = await fetchSessions(baseUrl);
+  if (sessions === null) return null;
   const active: readonly string[] = ACTIVE_SESSION_STATES;
   return sessions.some(
     (s) => isRecord(s) && typeof s.state === "string" && active.includes(s.state),
