@@ -279,7 +279,9 @@ jobs:
           path: dist/labrynth-cli-${{ needs.version-check.outputs.version }}-macos-arm64.tar.gz
 
   # -------------------------------------------------------------------
-  # Linux — DEB package (.deb), tarball (.tar.gz), AppImage
+  # Linux — desktop app (.deb + AppImage via electron-builder), browser-mode tarball,
+  # CLI tarball. The desktop version comes from desktop/package.json, which
+  # bump-version.py keeps equal to the tag version (enforced by --check above).
   # -------------------------------------------------------------------
   build-linux:
     needs: [version-check]
@@ -298,12 +300,16 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
+      # Node 22 here, not env.NODE_VERSION (20): Electron 44 needs node >= 22.12.
+      # Windows/macOS keep 20. This job's frontend build runs on 22 as well.
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '22'
           cache: 'npm'
-          cache-dependency-path: web/package-lock.json
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
 
       - name: Install avrdude
         run: sudo apt-get update -qq && sudo apt-get install -y -qq avrdude
@@ -334,37 +340,24 @@ jobs:
       - name: Install Python build tools
         run: python -m pip install pyinstaller prompt_toolkit httpx websockets
 
+      # --desktop: npm ci + tsc + electron-builder --linux (deb, AppImage, dir) under dist/desktop/.
       - name: Build application
-        run: python build.py --cli --avrdude "${{ steps.avrdude.outputs.path }}"
+        run: python build.py --cli --desktop --avrdude "${{ steps.avrdude.outputs.path }}"
 
       - name: Smoke-test CLI bundle
         run: ./dist/LabrynthCLI/LabrynthCLI --selftest
 
-      - name: Build DEB package
-        env:
-          VERSION: ${{ needs.version-check.outputs.version }}
+      # Starts the packaged Electron app under a virtual X display, waits for the
+      # backend's /health, quits it, and checks that the processes and port are gone.
+      # No step-level continue-on-error, so this step fails the job when the app is
+      # broken. The job is still continue-on-error at job level, and the release job
+      # runs under always(). A broken desktop build therefore does not block the
+      # release. The release artifact check passes on the tarballs alone, so it does
+      # not catch a missing .deb or AppImage.
+      - name: Smoke-test desktop shell
         run: |
-          PKG="labrynth_${VERSION}_amd64"
-          mkdir -p "${PKG}/DEBIAN"
-          mkdir -p "${PKG}/opt/labrynth"
-          mkdir -p "${PKG}/usr/local/bin"
-
-          cat > "${PKG}/DEBIAN/control" <<EOF
-          Package: labrynth
-          Version: ${VERSION}
-          Section: science
-          Priority: optional
-          Architecture: amd64
-          Maintainer: Otis Lab <otislab@musc.edu>
-          Description: Labrynth — Neuroscience experiment control system
-           Head-fixed rodent operant conditioning control software.
-          EOF
-
-          cp -r dist/Labrynth/* "${PKG}/opt/labrynth/"
-          chmod +x "${PKG}/opt/labrynth/Labrynth"
-          ln -s /opt/labrynth/Labrynth "${PKG}/usr/local/bin/labrynth"
-
-          dpkg-deb --build "$PKG"
+          sudo apt-get install -y -qq xvfb
+          xvfb-run -a scripts/desktop-smoke.sh dist/desktop/linux-unpacked/labrynth
 
       - name: Build tarball
         env:
@@ -376,68 +369,26 @@ jobs:
           VERSION: ${{ needs.version-check.outputs.version }}
         run: tar -czf "labrynth-cli-${VERSION}-linux-x64.tar.gz" -C dist LabrynthCLI
 
-      - name: Build AppImage
+      # Flatten into one directory. upload-artifact keeps paths relative to the
+      # common ancestor, so uploading dist/desktop/* next to root-level files would
+      # nest the .deb/.AppImage under dist/ and the release job's artifacts/*.deb glob
+      # would miss them.
+      - name: Stage Linux installers
         env:
           VERSION: ${{ needs.version-check.outputs.version }}
         run: |
-          # Create AppDir structure
-          APPDIR="Labrynth.AppDir"
-          mkdir -p "${APPDIR}/usr/bin"
-          cp -r dist/Labrynth/* "${APPDIR}/usr/bin/"
-          chmod +x "${APPDIR}/usr/bin/Labrynth"
-
-          # AppRun entry point
-          cat > "${APPDIR}/AppRun" <<'APPRUN'
-          #!/bin/bash
-          HERE="$(dirname "$(readlink -f "$0")")"
-          exec "$HERE/usr/bin/Labrynth" "$@"
-          APPRUN
-          chmod +x "${APPDIR}/AppRun"
-
-          # Desktop entry and icon
-          cp installer/reacher.desktop "${APPDIR}/reacher.desktop"
-          if [ -f installer/icons/reacher.png ]; then
-            cp installer/icons/reacher.png "${APPDIR}/reacher.png"
-          else
-            # Generate a placeholder 256x256 icon if none exists
-            python3 -c "
-          import struct, zlib
-          W=H=256
-          raw = b''
-          for y in range(H):
-              raw += b'\x00'
-              for x in range(W):
-                  cx, cy = abs(x-W//2), abs(y-H//2)
-                  if cx < 80 and cy < 80:
-                      raw += b'\x00\xff\x41\xff'
-                  else:
-                      raw += b'\x00\x00\x00\x00'
-          def chunk(t,d): return struct.pack('>I',len(d))+t+d+struct.pack('>I',zlib.crc32(t+d)&0xffffffff)
-          hdr = struct.pack('>IIBBBBB',W,H,8,6,0,0,0)
-          with open('${APPDIR}/reacher.png','wb') as f:
-              f.write(b'\x89PNG\r\n\x1a\n')
-              f.write(chunk(b'IHDR',hdr))
-              f.write(chunk(b'IDAT',zlib.compress(raw)))
-              f.write(chunk(b'IEND',b''))
-          "
-          fi
-
-          # Download appimagetool
-          wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool
-          chmod +x appimagetool
-
-          # Build the AppImage
-          ARCH=x86_64 ./appimagetool --no-appstream "${APPDIR}" "labrynth-${VERSION}-linux-x64.AppImage"
+          mkdir -p linux-installers
+          cp "dist/desktop/labrynth_${VERSION}_amd64.deb" \
+             "dist/desktop/labrynth-${VERSION}-linux-x64.AppImage" \
+             "labrynth-${VERSION}-linux-x64.tar.gz" \
+             "labrynth-cli-${VERSION}-linux-x64.tar.gz" \
+             linux-installers/
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v7
         with:
           name: linux-installers
-          path: |
-            labrynth_${{ needs.version-check.outputs.version }}_amd64.deb
-            labrynth-${{ needs.version-check.outputs.version }}-linux-x64.tar.gz
-            labrynth-cli-${{ needs.version-check.outputs.version }}-linux-x64.tar.gz
-            labrynth-${{ needs.version-check.outputs.version }}-linux-x64.AppImage
+          path: linux-installers/*
 
   # -------------------------------------------------------------------
   # Release — publish artifacts; proceeds even with partial platform coverage
@@ -491,9 +442,9 @@ jobs:
             |----------|------|-------|
             | Windows (x64) | `labrynth-*-windows-x64.exe` | Installer |
             | macOS (Apple Silicon) | `labrynth-*-macos-arm64.dmg` | M1/M2/M3/M4 |
-            | Linux (Debian/Ubuntu) | `labrynth_*_amd64.deb` | `sudo dpkg -i *.deb` |
-            | Linux (portable) | `labrynth-*-linux-x64.AppImage` | Any distro |
-            | Linux (tarball) | `labrynth-*-linux-x64.tar.gz` | Extract and run |
+            | Linux (Debian/Ubuntu) | `labrynth_*_amd64.deb` | Desktop app (native window). `sudo dpkg -i *.deb` |
+            | Linux (portable) | `labrynth-*-linux-x64.AppImage` | Desktop app, portable |
+            | Linux (tarball) | `labrynth-*-linux-x64.tar.gz` | Browser mode (opens your web browser) |
             | Terminal CLI (all platforms) | `labrynth-cli-*-<os>.tar.gz` | Headless TUI — extract and run `LabrynthCLI` |
 
             > Not all platforms may be available for this build — check the attached assets.
@@ -518,6 +469,9 @@ jobs:
             chmod +x labrynth-*-linux-x64.AppImage
             ./labrynth-*-linux-x64.AppImage
             ```
+
+            **Linux desktop app:** `labrynth --browser` starts the backend and opens your
+            web browser instead of the app window.
             </details>
           files: |
             artifacts/*.exe

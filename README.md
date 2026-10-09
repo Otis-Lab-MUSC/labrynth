@@ -30,7 +30,9 @@ Prebuilt installers are attached to the [latest release](https://github.com/Otis
 |---|---|
 | Windows | [`.exe`](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest) |
 | macOS | [`.dmg`](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest) |
-| Linux | [`.deb` / `.AppImage`](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest) |
+| Linux | [`.deb` / `.AppImage`](https://github.com/Otis-Lab-MUSC/labrynth/releases/latest) (desktop app), `.tar.gz` (browser mode) |
+
+The Linux packages now open in their own window. `labrynth --browser` or the `.tar.gz` use your web browser instead.
 
 ---
 
@@ -52,7 +54,7 @@ Installer builds bundle `avrdude` for firmware uploads — nothing else to insta
 | macOS | `brew install avrdude` |
 | Windows | [avrdude releases](https://github.com/avrdudes/avrdude/releases), or `choco install avrdude` |
 
-Reference documentation lives in [`docs/`](docs/) ([running sessions on a Raspberry Pi from the CLI](docs/remote-cli.md), [issue reporting](docs/issue-reporting.md)); [CONTRIBUTING.md](CONTRIBUTING.md) covers the branching and versioning workflow, and [RELEASING.md](RELEASING.md) covers release channels and tagging.
+Reference documentation lives in [`docs/`](docs/) ([running sessions on a Raspberry Pi from the CLI](docs/remote-cli.md), [issue reporting](docs/issue-reporting.md), [desktop shell](docs/desktop-shell.md)); [CONTRIBUTING.md](CONTRIBUTING.md) covers the branching and versioning workflow, and [RELEASING.md](RELEASING.md) covers release channels and tagging.
 
 ---
 

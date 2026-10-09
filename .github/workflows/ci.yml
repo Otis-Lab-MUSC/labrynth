@@ -69,3 +69,32 @@ jobs:
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml | head -1)
           echo "pyproject.toml version: $version"
           python scripts/bump-version.py --check "$version"
+
+  # Desktop gate — TypeScript typecheck of the Electron shell (desktop/).
+  # Node is pinned to 22 rather than env.NODE_VERSION because electron 44
+  # requires node >= 22.12.
+  desktop:
+    name: desktop
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      # Typecheck only: skip the ~100 MB Electron binary download.
+      - name: Install
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
+      - name: TypeScript
+        run: npx tsc -p . --noEmit

@@ -1,0 +1,55 @@
+appId: com.otislab.labrynth
+productName: Labrynth
+copyright: "Copyright (c) 2026 Otis Lab"
+
+directories:
+  output: ../dist/desktop
+  buildResources: build-resources
+
+# App code only. desktop/node_modules holds devDependencies alone, so no
+# runtime modules need packaging. main = build/main.js (see package.json).
+files:
+  - "build/**/*.js"
+  - "package.json"
+
+# Lands at <resources>/backend/Labrynth (the PyInstaller one-dir GUI bundle)
+# and <resources>/icon.png. backend.ts resolves the backend from there.
+extraResources:
+  - from: ../dist/Labrynth
+    to: backend
+    filter:
+      - "**/*"
+  - from: ../installer/icons/reacher.png
+    to: icon.png
+
+asar: true
+
+linux:
+  # dir = unpacked tree for local smoke tests; the tar.gz stays the old browser bundle.
+  target:
+    - deb
+    - AppImage
+    - dir
+  category: Science
+  icon: ../installer/icons/reacher.png
+  executableName: labrynth
+  # Matches desktopName in package.json: Electron uses it as the Wayland app_id / WM_CLASS,
+  # so the window is associated with this launcher entry.
+  syncDesktopName: true
+  synopsis: Neuroscience experiment control system
+  description: Head-fixed rodent operant conditioning control software.
+  maintainer: "Otis Lab <otislab@musc.edu>"
+  desktop:
+    entry:
+      Name: Labrynth
+      Comment: Neuroscience experiment control system
+      Categories: "Science;Education;"
+
+# Default deb depends are kept on purpose (no `depends` key).
+deb:
+  # Matched by reacher routers/update.py _resolve_asset: keep the _amd64.deb suffix.
+  artifactName: "labrynth_${version}_amd64.${ext}"
+
+appImage:
+  # Matched by reacher routers/update.py _resolve_asset: keep the -linux-x64.AppImage suffix.
+  artifactName: "labrynth-${version}-linux-x64.${ext}"
