@@ -237,10 +237,14 @@ function wireShell(): void {
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") app.quit();
   });
+  // Non-interactive on purpose: Electron routes SIGTERM/SIGINT (logout, system shutdown, kill)
+  // through before-quit, where a modal would block the shutdown. Non-interactive never kills a
+  // recording either: an active session is detached and keeps running. The window's close button
+  // is the interactive path.
   app.on("before-quit", (event) => {
     if (quitting) return;
     event.preventDefault();
-    void requestQuit({ interactive: true });
+    void requestQuit({ interactive: false });
   });
   process.on("SIGINT", () => void requestQuit({ interactive: false }));
   process.on("SIGTERM", () => void requestQuit({ interactive: false }));
