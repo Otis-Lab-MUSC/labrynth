@@ -1,0 +1,23 @@
+{
+  "name": "labrynth",
+  "productName": "Labrynth",
+  "version": "3.0.1-beta.8",
+  "description": "Labrynth desktop shell: native window for the REACHER experiment control backend",
+  "author": "Otis Lab <otislab@musc.edu>",
+  "homepage": "https://github.com/Otis-Lab-MUSC/labrynth",
+  "license": "SEE LICENSE IN ../LICENSE",
+  "private": true,
+  "main": "build/main.js",
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit",
+    "start": "npm run build && electron .",
+    "dist": "npm run build && electron-builder --linux --publish never"
+  },
+  "devDependencies": {
+    "@types/node": "24.9.0",
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3",
+    "typescript": "5.7.3"
+  }
+}
