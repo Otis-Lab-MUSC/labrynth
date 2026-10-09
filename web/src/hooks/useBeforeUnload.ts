@@ -1,9 +1,14 @@
 import { useEffect } from "react";
 import { getLocalClient, getToken } from "../api/client";
+import { isDesktop } from "../desktop";
 
 export function useBeforeUnload(blocked = false) {
   useEffect(() => {
-    if (blocked) return;
+    // In the Electron shell the main process owns backend shutdown and stops the
+    // backend on window close, and it ignores beforeunload vetoes. So the page must
+    // neither veto the close (preventDefault) nor fire the shutdown request: this
+    // hook is a no-op in desktop mode.
+    if (blocked || isDesktop()) return;
 
     // Prewarm the token cache so getCachedToken() below isn't reached cold
     // on a fast open-then-close.

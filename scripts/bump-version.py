@@ -11,7 +11,8 @@ Usage:
     python scripts/bump-version.py --print-reacher-ref   # print the reacher git ref from the stored pin
 
 Labrynth carries its own version (``pyproject.toml`` + ``web/package.json`` +
-the root and ``web/`` README badges + the demo mock's reported backend version)
+``desktop/package.json`` + the root and ``web/`` README badges + the demo mock's
+reported backend version)
 *and* a cross-repo pin on the ``reacher`` backend it ships. Those are
 independent axes:
 
@@ -162,6 +163,7 @@ REGEX_FILES: list[tuple[Path, str, str, "callable", str]] = [
 
 JSON_FILES: list[Path] = [
     ROOT / "web" / "package.json",
+    ROOT / "desktop" / "package.json",
 ]
 
 # -- cross-repo reacher pin (managed via --reacher-pin) ----------------------
