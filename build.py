@@ -21,6 +21,7 @@ Usage:
   python build.py --skip-llm               # skip llama.cpp + GGUF (faster local GUI builds)
   python build.py --cli                    # build GUI + LabrynthCLI console app
   python build.py --cli-only               # build only LabrynthCLI (no frontend)
+  python build.py --desktop                # also package the Electron shell (Linux: deb, AppImage)
 
 Requires: Python 3.10+, Node.js, npm, PyInstaller (pip install pyinstaller),
 and the reacher package installed (pip install reacher2p or -e ../reacher).
@@ -699,6 +700,60 @@ def report_output(name="Labrynth"):
 
 
 # ---------------------------------------------------------------------------
+# Desktop shell (Electron)
+# ---------------------------------------------------------------------------
+
+DESKTOP_DIR = os.path.join(PROJECT_ROOT, "desktop")
+DESKTOP_DIST = os.path.join(PROJECT_ROOT, "dist", "desktop")
+
+
+def _tree_size(path):
+    """Total size in bytes of every file under *path*."""
+    total = 0
+    for dirpath, _dirnames, filenames in os.walk(path):
+        for name in filenames:
+            full = os.path.join(dirpath, name)
+            if os.path.isfile(full) and not os.path.islink(full):
+                total += os.path.getsize(full)
+    return total
+
+
+def build_desktop():
+    """Package the Electron desktop shell around the GUI bundle (Linux only)."""
+    print("\n=== Stage 5: Electron desktop shell ===")
+    if platform.system() != "Linux":
+        print("  [SKIP] desktop packaging is Linux-only in this phase")
+        return
+
+    gui_exe = os.path.join(SCRIPT_DIR, "dist", "Labrynth", "Labrynth")
+    if not os.path.isfile(gui_exe):
+        print(f"ERROR: GUI bundle not found: {gui_exe}")
+        print("       Run the GUI build first (python build.py), then --desktop.")
+        sys.exit(1)
+    print(f"  [OK] GUI bundle: {os.path.dirname(gui_exe)}")
+
+    if not os.path.isfile(os.path.join(DESKTOP_DIR, "package.json")):
+        print(f"ERROR: package.json not found at {DESKTOP_DIR}")
+        sys.exit(1)
+
+    npm = "npm"
+    _run([npm, "ci"], cwd=DESKTOP_DIR)
+    _run([npm, "run", "build"], cwd=DESKTOP_DIR)
+    _run(["npx", "electron-builder", "--linux", "--publish", "never"], cwd=DESKTOP_DIR)
+
+    print(f"\n  Output: {DESKTOP_DIST}")
+    if not os.path.isdir(DESKTOP_DIST):
+        print("ERROR: electron-builder produced no dist/desktop directory.")
+        sys.exit(1)
+    for name in sorted(os.listdir(DESKTOP_DIST)):
+        path = os.path.join(DESKTOP_DIST, name)
+        if os.path.isfile(path):
+            print(f"  {os.path.getsize(path):>14,}  {name}")
+        else:
+            print(f"  {_tree_size(path):>14,}  {name}/  (directory total)")
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -734,7 +789,14 @@ def main():
         action="store_true",
         help="Skip downloading/bundling llama.cpp + GGUF (GUI builds only; issue reporting will be unavailable)",
     )
+    parser.add_argument(
+        "--desktop",
+        action="store_true",
+        help="Also package the Electron desktop shell (Linux: deb, AppImage) around the GUI bundle",
+    )
     args = parser.parse_args()
+    if args.desktop and args.cli_only:
+        parser.error("--desktop packages the GUI bundle and cannot be combined with --cli-only")
 
     print("Labrynth Build Orchestrator")
     print(f"  Platform: {platform.system()} {platform.machine()}")
@@ -775,6 +837,10 @@ def main():
 
     # Stage 4: Report (GUI)
     report_output()
+
+    # Stage 5 (optional): Electron desktop shell around the GUI bundle
+    if args.desktop:
+        build_desktop()
 
     # Optional: also build the standalone CLI bundle (no LLM)
     if args.cli:

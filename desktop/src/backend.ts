@@ -248,7 +248,8 @@ export class BackendSupervisor extends EventEmitter implements IBackendSuperviso
     let fd: number | null = null;
     if (logFile !== undefined) {
       fs.mkdirSync(path.dirname(logFile), { recursive: true });
-      fd = fs.openSync(logFile, "a");
+      // 0600: the backend prints its API key to stdout at startup.
+      fd = fs.openSync(logFile, "a", 0o600);
       stdio = ["ignore", fd, fd];
     }
 

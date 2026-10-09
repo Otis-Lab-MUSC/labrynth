@@ -1,6 +1,7 @@
 {
   "name": "labrynth",
   "productName": "Labrynth",
+  "desktopName": "labrynth.desktop",
   "version": "3.0.1-beta.8",
   "description": "Labrynth desktop shell: native window for the REACHER experiment control backend",
   "author": "Otis Lab <otislab@musc.edu>",
