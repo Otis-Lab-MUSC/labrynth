@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Play, Pause, Square, Scissors, RotateCcw } from "lucide-react";
 import { useSessionStore } from "../../store/useSessionStore";
+import { useLogStore } from "../../store/useLogStore";
 import { getClientForSession } from "../../api/sessionClient";
 import { triggerAutoExport } from "../../hooks/useSessionWebSockets";
 import { EventTimeline } from "./EventTimeline";
@@ -47,6 +48,7 @@ export function MonitorPanel() {
 
   const canControl = session.state === "running" || session.state === "paused";
   const isHostOffline = session.state === "disconnected";
+  const canStop = canControl || (isHostOffline && session.programStartTime !== null && session.programEndTime === null);
 
   return (
     <div className="space-y-6">
@@ -99,7 +101,7 @@ export function MonitorPanel() {
 
           <button
             onClick={() => setConfirmStop(true)}
-            disabled={!canControl}
+            disabled={!canStop}
             aria-label="Stop session"
             title="Stop the session (requires confirmation)"
             className="inline-flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-white font-mono transition hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
@@ -180,16 +182,31 @@ export function MonitorPanel() {
           session.state === "running"
             ? {
                 label: "Pause Instead",
-                onClick: () => {
-                  getClientForSession(activeSessionId)?.pauseProgram(activeSessionId);
-                  setConfirmStop(false);
+                onClick: async () => {
+                  try {
+                    await getClientForSession(activeSessionId)?.pauseProgram(activeSessionId);
+                  } catch (e) {
+                    useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Pause failed");
+                    useLogStore.getState().setOpen(true);
+                  } finally {
+                    setConfirmStop(false);
+                  }
                 },
               }
             : undefined
         }
-        onConfirm={() => {
-          getClientForSession(activeSessionId)?.stopProgram(activeSessionId);
-          setConfirmStop(false);
+        onConfirm={async () => {
+          try {
+            const result = await getClientForSession(activeSessionId)?.stopProgram(activeSessionId) as { status?: string } | undefined;
+            if (result?.status === "not_running") {
+              useLogStore.getState().pushLog("info", "Nothing was running");
+            }
+          } catch (e) {
+            useLogStore.getState().pushLog("error", e instanceof Error ? e.message : "Stop failed");
+            useLogStore.getState().setOpen(true);
+          } finally {
+            setConfirmStop(false);
+          }
         }}
         onCancel={() => setConfirmStop(false)}
       />
