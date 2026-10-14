@@ -210,4 +210,7 @@ export type WSMessage =
   | { type: "server_suspended"; session_id: string; data: { reason: string; hard_kill_in: number } }
   | { type: "server_resumed"; session_id: string; data: Record<string, never> }
   | { type: "session_orphaned"; session_id: string; data: { reason: string; hard_kill_in: number } }
+  | { type: "reconnected"; session_id: string; data: { attempt: number } }
+  | { type: "warning"; session_id: string; data: { message?: string; reason?: string; thread?: string; log_type?: string } }
+  | { type: "infusion_count"; session_id: string; data: { counted: number; by_pump: Record<string, number>; counted_pumps: string[]; follows_reward_pump: boolean } }
   | { type: "pong"; session_id: string; data?: Record<string, never> };

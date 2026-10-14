@@ -204,9 +204,33 @@ function handleMessage(msg: WSMessage) {
     }
     // Fix: XL-003 — Handle serial disconnect event
     case "disconnect": {
-      const { reason } = msg.data as { reason: string };
+      const { reason, reconnecting } = msg.data as { reason: string; reconnecting?: boolean };
       updateState(msg.session_id, "disconnected");
-      pushLog("error", `Serial disconnected: ${reason}`, msg.session_id);
+      pushLog(
+        "error",
+        reconnecting ? `Serial disconnected: ${reason} (reconnecting...)` : `Serial disconnected: ${reason}`,
+        msg.session_id,
+      );
+      break;
+    }
+    // The server restores the pre-drop state and broadcasts session_state itself, so no local state change here.
+    case "reconnected": {
+      const { attempt } = msg.data as { attempt: number };
+      pushLog("info", `Serial reconnected (attempt ${attempt})`, msg.session_id);
+      break;
+    }
+    case "warning": {
+      const { message, reason, thread, log_type } = msg.data as {
+        message?: string; reason?: string; thread?: string; log_type?: string;
+      };
+      let text = "Kernel warning";
+      if (typeof message === "string") {
+        text = message;
+      } else if (reason) {
+        const detail = thread ? ` (thread: ${thread})` : log_type ? ` (log_type: ${log_type})` : "";
+        text = `Kernel warning: ${reason}${detail}`;
+      }
+      pushLog("warn", text, msg.session_id);
       break;
     }
     // Fix: F-005 — Handle export_failed event from backend
