@@ -39,6 +39,7 @@ export function SessionStartModal() {
   const [timeLimit, setTimeLimit] = useState(3600);
   const [infusionLimit, setInfusionLimit] = useState(30);
   const [delay, setDelay] = useState(10);
+  const [countedPumps, setCountedPumps] = useState<string[] | null>(null);
   const [name, setName] = useState("");
 
   const paradigm = session?.paradigm?.toLowerCase();
@@ -54,6 +55,7 @@ export function SessionStartModal() {
     setTimeLimit(session.limitSettings?.timeLimit ?? 3600);
     setInfusionLimit(session.limitSettings?.infusionLimit ?? 30);
     setDelay(session.limitSettings?.delay ?? 10);
+    setCountedPumps(session.limitSettings?.countedPumps ?? null);
     // Auto-generate name if empty
     const autoName = session.name || `${(session.paradigm ?? "Session").toUpperCase()} ${session.port}`;
     setName(autoName);
@@ -92,7 +94,7 @@ export function SessionStartModal() {
     setStarting(true);
     try {
       // Build limit payload with only relevant fields
-      const limitPayload: { type: string; time_limit?: number; infusion_limit?: number; delay?: number } = {
+      const limitPayload: { type: string; time_limit?: number; infusion_limit?: number; delay?: number; counted_pumps?: string[] | null } = {
         type: limitType,
       };
       if (limitType === "Time" || limitType === "Both") {
@@ -102,8 +104,11 @@ export function SessionStartModal() {
         limitPayload.infusion_limit = infusionLimit;
         limitPayload.delay = delay;
       }
+      if (limitType === "Infusion" || limitType === "Both") {
+        limitPayload.counted_pumps = countedPumps;
+      }
       await getClientForSession(activeSessionId)?.setLimit(activeSessionId, limitPayload);
-      setLimitSettings(activeSessionId, { limitType, timeLimit, infusionLimit, delay });
+      setLimitSettings(activeSessionId, { limitType, timeLimit, infusionLimit, delay, countedPumps });
 
       // Persist name
       if (name !== session.name) {
@@ -360,6 +365,14 @@ export function SessionStartModal() {
                 <>
                   <span className="text-theme-text/60">{limitType === "Trials" ? "Trial Limit:" : "Infusion Limit:"}</span>
                   <span className="font-mono text-theme-text">{infusionLimit}</span>
+                  {limitType !== "Trials" && (
+                    <>
+                      <span className="text-theme-text/60">Counts Toward Limit:</span>
+                      <span className="font-mono text-theme-text">
+                        {countedPumps === null ? "Auto (reward pump)" : countedPumps.length > 1 ? "Pump 1 + Pump 2" : countedPumps[0] === "PUMP_2" ? "Pump 2" : "Pump 1"}
+                      </span>
+                    </>
+                  )}
                   <span className="text-theme-text/60">Stop Delay:</span>
                   <span className="font-mono text-theme-text">{delay}s</span>
                 </>

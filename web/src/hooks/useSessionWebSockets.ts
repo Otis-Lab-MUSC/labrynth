@@ -245,6 +245,11 @@ function handleMessage(msg: WSMessage) {
       pushLog("error", `Kernel error: ${reason}`, msg.session_id);
       break;
     }
+    case "infusion_count": {
+      const { counted, by_pump } = msg.data as { counted: number; by_pump: Record<string, number> };
+      useSessionStore.getState().setServerInfusionCount(msg.session_id, counted, by_pump);
+      break;
+    }
     case "split": {
       const { segment_number } = msg.data as { segment_number: number };
       useSessionStore.getState().handleSplit(msg.session_id, segment_number);

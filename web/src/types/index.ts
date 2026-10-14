@@ -146,7 +146,11 @@ export interface Session {
   pauseStartTime: number | null;
   pavlovianParams: Record<number, number> | null;
   paradigmSettings: { ratio: number; step: number; interval: number; activeLever?: "rh" | "lh" } | null;
-  limitSettings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number } | null;
+  /** `countedPumps` absent or null = Auto (the server follows the reward pump). */
+  limitSettings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number; countedPumps?: string[] | null } | null;
+  /** Whole-session infusion count from the server (`infusion_count` WS event); null until the first one arrives. */
+  serverInfusionCount: number | null;
+  infusionsByPump: Record<string, number> | null;
   trialCount: number;
   csPlusCount: number;
   csMinusCount: number;

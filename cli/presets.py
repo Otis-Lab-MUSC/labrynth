@@ -402,6 +402,9 @@ def limit_payload(limits: dict) -> dict:
     if t in ("Infusion", "Both", "Trials"):
         body["infusion_limit"] = int(limits.get("infusionLimit", 30))
         body["delay"] = int(limits.get("delay", 10))
+    if t in ("Infusion", "Both"):
+        # Explicit null is sent on purpose: it means Auto, not "leave unchanged".
+        body["counted_pumps"] = limits.get("countedPumps")
     return body
 
 

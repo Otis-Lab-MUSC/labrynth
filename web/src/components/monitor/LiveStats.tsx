@@ -48,6 +48,9 @@ export function LiveStats({ session }: Props) {
 
   const sessionStats: { label: string; value: string | number }[] = [
     { label: "INFUSIONS", value: session.infusionCount },
+    ...(session.infusionsByPump && session.infusionsByPump.PUMP_2 > 0
+      ? [{ label: "P1 / P2", value: `${session.infusionsByPump.PUMP_1 ?? 0} / ${session.infusionsByPump.PUMP_2}` }]
+      : []),
     { label: "LICKS", value: lickCount },
     ...(config.hasTrials
       ? [

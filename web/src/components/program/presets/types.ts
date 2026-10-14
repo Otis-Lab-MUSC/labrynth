@@ -34,6 +34,8 @@ export interface SessionPreset {
     timeLimit: number;
     infusionLimit: number;
     delay: number;
+    /** Absent or null ⇒ Auto (follow the reward pump). */
+    countedPumps?: string[] | null;
   };
   /** Per-component pin overrides (lowercase Component keys). Absent ⇒ pins are left as they are. */
   pinOverrides?: Record<string, number>;

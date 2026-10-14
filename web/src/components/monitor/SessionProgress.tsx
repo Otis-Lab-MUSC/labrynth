@@ -154,7 +154,9 @@ export function SessionProgress({ session, elapsed }: Props) {
   if (!showTime && !showCount) return null;
 
   const timePct = showTime ? Math.min(elapsed / limits.timeLimit, 1) * 100 : 0;
-  const currentCount = isTrials ? session.trialCount : session.infusionCount;
+  // The server stops on its own whole-session count, so the bar tracks that rather than the
+  // local segment count (which can include pumps the limit does not count).
+  const currentCount = isTrials ? session.trialCount : (session.serverInfusionCount ?? session.cumulativeInfusionCount + session.infusionCount);
   const countPct = showCount ? Math.min(currentCount / limits.infusionLimit, 1) * 100 : 0;
   const countLabel = isTrials ? "TRIALS" : "INFUSIONS";
 

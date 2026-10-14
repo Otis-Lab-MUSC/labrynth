@@ -72,6 +72,8 @@ export function useSessionRecovery() {
         try {
           const info = await client.getSession(entry.sessionId);
           if (info && (info as Record<string, unknown>).state !== "destroying") {
+            const infusionCountFromServer = (info as Record<string, unknown>).infusion_count;
+            const infusionsByPumpFromServer = (info as Record<string, unknown>).infusions_by_pump as Record<string, number> | undefined;
             useSessionStore.setState((s) => {
               const next = new Map(s.sessions);
               if (next.has(entry.sessionId)) return s;
@@ -91,6 +93,8 @@ export function useSessionRecovery() {
                 frameData: [],
                 slmData: [],
                 infusionCount: 0,
+                serverInfusionCount: typeof infusionCountFromServer === "number" ? infusionCountFromServer : null,
+                infusionsByPump: infusionsByPumpFromServer ?? null,
                 pressCount: 0,
                 programStartTime: null,
                 programEndTime: null,
