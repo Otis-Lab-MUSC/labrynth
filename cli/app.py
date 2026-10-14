@@ -1159,7 +1159,7 @@ class ReacherCLI:
             return
         try:
             await self.api.disconnect_serial(self.session.id)
-            self.session.state = "idle"
+            self.session.state = "disconnected"
             self._set_status("Serial disconnected")
             self._rebuild_current_menu()
         except Exception as exc:
@@ -1573,7 +1573,10 @@ class ReacherCLI:
             self._set_status("Cancelled")
             return
         try:
-            await self.api.stop_program(self.session.id)
+            result = await self.api.stop_program(self.session.id)
+            if result.get("status") == "not_running":
+                self._set_status("Nothing was running")
+                return
             self.session.state = "stopped"
             self.session.program_end = time.time()
             self._set_status("Session stopped")
@@ -1900,8 +1903,23 @@ class ReacherCLI:
             if s:
                 s.state = "disconnected"
             reason = data.get("reason", "unknown")
-            self._log(f"  [error] Serial disconnected: {reason}", error=True)
-            self._set_status(f"Serial disconnected on {self.target_name}: {reason}", error=True)
+            suffix = " (reconnecting...)" if data.get("reconnecting") else ""
+            self._log(f"  [error] Serial disconnected: {reason}{suffix}", error=True)
+            self._set_status(f"Serial disconnected on {self.target_name}: {reason}{suffix}", error=True)
+
+        elif msg_type == "reconnected":
+            attempt = data.get("attempt", "?")
+            self._log(f"  [info] Serial reconnected (attempt {attempt})")
+            self._set_status(f"Serial reconnected on {self.target_name} (attempt {attempt})")
+
+        elif msg_type == "warning":
+            text = data.get("message")
+            if not text and data.get("reason"):
+                where = data.get("thread") or data.get("log_type")
+                text = f"{data['reason']} ({where})" if where else data["reason"]
+            text = f"Kernel warning: {text}" if text else "Kernel warning"
+            self._log(f"  [warn] {text}", error=True)
+            self._set_status(text, error=True)
 
         elif msg_type in ("export_failed", "kernel_error"):
             label = "Auto-export failed" if msg_type == "export_failed" else "Kernel error"
