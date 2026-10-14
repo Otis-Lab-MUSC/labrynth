@@ -75,7 +75,7 @@ export function SessionStartModal() {
           paradigmSettings: session.paradigmSettings ?? undefined,
           hardwareUi: session.hardwareUi as unknown as Record<string, unknown>,
           pavlovianParams: session.pavlovianParams ?? undefined,
-          limitSettings: session.limitSettings ?? undefined,
+          limitSettings: { limitType, timeLimit, infusionLimit, delay },
         });
         setValidating(false);
         if (result && result.warnings.length > 0) {
