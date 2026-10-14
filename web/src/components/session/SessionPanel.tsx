@@ -9,7 +9,7 @@ import { FirmwareUploadCard } from "./FirmwareUploadCard";
 import { ConfirmDialog } from "../layout/ConfirmDialog";
 import { MachineManagement } from "./MachineManagement";
 
-function getDisconnectWarning(session: Session): { title: string; message: string; variant: "danger" | "warning" } | null {
+function getDisconnectWarning(session: Session): { title: string; message: string; variant: "danger" | "warning" } {
   if (session.programStartTime !== null) {
     return {
       title: "Disconnect session?",
@@ -31,7 +31,11 @@ function getDisconnectWarning(session: Session): { title: string; message: strin
       variant: "warning",
     };
   }
-  return null;
+  return {
+    title: "Disconnect session?",
+    message: `This closes the serial port and removes "${session.name}" from this window.`,
+    variant: "warning",
+  };
 }
 
 export function SessionPanel() {
@@ -123,12 +127,7 @@ export function SessionPanel() {
 
   const handleDisconnect = () => {
     if (!activeSession) return;
-    const warning = getDisconnectWarning(activeSession);
-    if (warning) {
-      setConfirmOpen(true);
-    } else {
-      doDisconnect();
-    }
+    setConfirmOpen(true);
   };
 
   return (

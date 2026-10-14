@@ -23,7 +23,8 @@ interface SessionStore {
   setUploadProgress: (id: string, percent: number, stage: string) => void;
   setPavlovianParams: (id: string, params: Record<number, number>) => void;
   setParadigmSettings: (id: string, settings: { ratio: number; step: number; interval: number; activeLever?: "rh" | "lh" }) => void;
-  setLimitSettings: (id: string, settings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number }) => void;
+  setLimitSettings: (id: string, settings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number; countedPumps?: string[] | null }) => void;
+  setServerInfusionCount: (id: string, counted: number, byPump: Record<string, number>) => void;
   setParadigm: (id: string, paradigm: string) => void;
   setBoard: (id: string, board: BoardType) => void;
   resetSessionData: (id: string) => void;
@@ -40,6 +41,8 @@ interface SessionStore {
 }
 
 const ZERO_LEVER: LeverCounts = { active: 0, timeout: 0, inactive: 0 };
+
+const PUMP_DEVICES = new Set(["PUMP", "PUMP_1", "PUMP_2"]);
 
 const DEFAULT_CONTINGENCY = (): ContingencyConfig => ({
   leverFilter: "none", delay: 0,
@@ -83,6 +86,8 @@ const newSession = (id: string, port: string, paradigm: string | null, machineId
   pavlovianParams: null,
   paradigmSettings: null,
   limitSettings: null,
+  serverInfusionCount: null,
+  infusionsByPump: null,
   trialCount: 0,
   csPlusCount: 0,
   csMinusCount: 0,
@@ -239,6 +244,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           frameData: [],
           slmData: [],
           infusionCount: 0,
+          serverInfusionCount: null,
+          infusionsByPump: null,
           pressCount: 0,
           trialCount: 0,
           csPlusCount: 0,
@@ -269,7 +276,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       if (!sess || (sess.state !== "running" && sess.state !== "paused")) return s;
       const next = new Map(s.sessions);
       const infusionCount =
-        (event.device === "PUMP" || event.device === "PUMP_1") && event.event === "INFUSION"
+        PUMP_DEVICES.has(event.device) && event.event === "INFUSION"
           ? sess.infusionCount + 1
           : sess.infusionCount;
       const pressCount =
@@ -335,12 +342,10 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const rhLeverCounts = { ...ZERO_LEVER };
       const lhLeverCounts = { ...ZERO_LEVER };
       for (const e of events) {
-        // Both spellings are live and paradigm-dependent: the operant Scheduler
-        // emits PUMP_1, PavlovianScheduler emits bare PUMP. Missing PUMP_1 here
-        // zeroed the infusion count on every operant paradigm whenever this
-        // recompute ran (reconnect recovery), and a split then folded the zero
-        // into cumulativeInfusionCount permanently. Keep in sync with addEvent.
-        if ((e.device === "PUMP" || e.device === "PUMP_1") && e.event === "INFUSION") infusionCount++;
+        // All pump spellings count (see PUMP_DEVICES): a recompute that missed one
+        // would zero the local count on reconnect, and a split would fold that zero
+        // into cumulativeInfusionCount permanently.
+        if (PUMP_DEVICES.has(e.device) && e.event === "INFUSION") infusionCount++;
         if ((e.device === "RH_LEVER" || e.device === "LH_LEVER" || e.device === "LEVER_RH" || e.device === "LEVER_LH") && e.event.includes("PRESS")) pressCount++;
         if (e.device === "PAVLOV" && e.event === "TRIAL_START") {
           trialCount++;
@@ -424,6 +429,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       return { sessions: next };
     }),
 
+  setServerInfusionCount: (id, counted, byPump) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, { ...sess, serverInfusionCount: counted, infusionsByPump: byPump });
+      return { sessions: next };
+    }),
+
   setParadigm: (id, paradigm) =>
     set((s) => {
       const sess = s.sessions.get(id);
@@ -454,6 +468,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         frameData: [],
         slmData: [],
         infusionCount: 0,
+        serverInfusionCount: null,
+        infusionsByPump: null,
         pressCount: 0,
         programStartTime: null,
         programEndTime: null,
@@ -485,6 +501,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         frameData: [],
         slmData: [],
         infusionCount: 0,
+        serverInfusionCount: null,
+        infusionsByPump: null,
         pressCount: 0,
         programStartTime: null,
         programEndTime: null,
@@ -642,6 +660,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         frameData: [],
         slmData: [],
         infusionCount: 0,
+        serverInfusionCount: null,
+        infusionsByPump: null,
         pressCount: 0,
         trialCount: 0,
         csPlusCount: 0,

@@ -441,12 +441,16 @@ export function Header() {
       <div className="flex-1" />
 
       {/* Reset button */}
-      {activeSession && (activeSession.state === "connected" || activeSession.state === "stopped" || activeSession.state === "running") && (
+      {activeSession && (activeSession.state === "connected" || activeSession.state === "stopped" || activeSession.state === "running" || activeSession.state === "paused" || activeSession.state === "disconnected") && (
         <button
           onClick={() => setResetOpen(true)}
-          disabled={activeSession.state === "running"}
+          disabled={activeSession.state === "paused" || activeSession.state === "disconnected"}
           className="rounded p-1.5 hover:bg-red-500/20 text-theme-text disabled:opacity-40 disabled:cursor-not-allowed"
-          title="Reset session"
+          title={
+            activeSession.state === "paused" ? "Resume or stop before resetting"
+              : activeSession.state === "disconnected" ? "Reconnect before resetting"
+                : "Reset session"
+          }
         >
           <RotateCcw size={18} />
         </button>

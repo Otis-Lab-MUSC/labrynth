@@ -36,5 +36,15 @@ export function resolveLimits(
     ...(isNum(l.timeLimit) ? { timeLimit: l.timeLimit } : {}),
     ...(isNum(l.infusionLimit) ? { infusionLimit: l.infusionLimit } : {}),
     ...(isNum(l.delay) ? { delay: l.delay } : {}),
+    // Always written, unlike the fields above: a preset that predates the setting means Auto,
+    // not "keep whatever pump the session counted last".
+    countedPumps: normalizeCountedPumps(l.countedPumps),
   };
 }
+
+/** Absent, empty, or only unknown pumps ⇒ Auto (follow the reward pump). */
+const normalizeCountedPumps = (v: unknown): string[] | null => {
+  if (!Array.isArray(v)) return null;
+  const pumps = [...new Set(v.filter((p): p is string => p === "PUMP_1" || p === "PUMP_2"))];
+  return pumps.length > 0 ? pumps : null;
+};

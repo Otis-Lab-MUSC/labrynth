@@ -146,7 +146,11 @@ export interface Session {
   pauseStartTime: number | null;
   pavlovianParams: Record<number, number> | null;
   paradigmSettings: { ratio: number; step: number; interval: number; activeLever?: "rh" | "lh" } | null;
-  limitSettings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number } | null;
+  /** `countedPumps` absent or null = Auto (the server follows the reward pump). */
+  limitSettings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number; countedPumps?: string[] | null } | null;
+  /** Whole-session infusion count from the server (`infusion_count` WS event); null until the first one arrives. */
+  serverInfusionCount: number | null;
+  infusionsByPump: Record<string, number> | null;
   trialCount: number;
   csPlusCount: number;
   csMinusCount: number;
@@ -210,4 +214,7 @@ export type WSMessage =
   | { type: "server_suspended"; session_id: string; data: { reason: string; hard_kill_in: number } }
   | { type: "server_resumed"; session_id: string; data: Record<string, never> }
   | { type: "session_orphaned"; session_id: string; data: { reason: string; hard_kill_in: number } }
+  | { type: "reconnected"; session_id: string; data: { attempt: number } }
+  | { type: "warning"; session_id: string; data: { message?: string; reason?: string; thread?: string; log_type?: string } }
+  | { type: "infusion_count"; session_id: string; data: { counted: number; by_pump: Record<string, number>; counted_pumps: string[]; follows_reward_pump: boolean } }
   | { type: "pong"; session_id: string; data?: Record<string, never> };

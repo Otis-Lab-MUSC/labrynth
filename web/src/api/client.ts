@@ -311,7 +311,7 @@ export class MachineApiClient {
     this.request(`/program/${id}/split`, { method: "POST" });
   restartProgram = (id: string) =>
     this.request(`/program/${id}/restart`, { method: "POST" });
-  setLimit = (id: string, body: { type: string; time_limit?: number; infusion_limit?: number; delay?: number }) =>
+  setLimit = (id: string, body: { type: string; time_limit?: number; infusion_limit?: number; delay?: number; counted_pumps?: string[] | null }) =>
     this.request(`/program/${id}/limit`, { method: "POST", body: JSON.stringify(body) });
 
   // --- Data ---
@@ -487,7 +487,7 @@ export const stopProgram = (id: string) =>
   isDemoMode() ? mock.stopProgram(id) : getLocalClient().stopProgram(id);
 export const pauseProgram = (id: string) =>
   isDemoMode() ? mock.pauseProgram(id) : getLocalClient().pauseProgram(id);
-export const setLimit = (id: string, body: { type: string; time_limit?: number; infusion_limit?: number; delay?: number }) =>
+export const setLimit = (id: string, body: { type: string; time_limit?: number; infusion_limit?: number; delay?: number; counted_pumps?: string[] | null }) =>
   isDemoMode() ? mock.setLimit(id, body) : getLocalClient().setLimit(id, body);
 
 // --- Data ---

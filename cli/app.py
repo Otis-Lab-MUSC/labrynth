@@ -41,7 +41,16 @@ def _limits_from_preset(limit_defaults: dict) -> dict:
         "time_limit": int(limit_defaults.get("timeLimit", 3600)),
         "infusion_limit": int(limit_defaults.get("infusionLimit", 30)),
         "delay": int(limit_defaults.get("delay", 10)),
+        "counted_pumps": _counted_pumps_from_preset(limit_defaults.get("countedPumps")),
     }
+
+
+def _counted_pumps_from_preset(value) -> list[str] | None:
+    """Absent, empty, or only unknown pumps -> None (Auto), matching the web resolver."""
+    if not isinstance(value, list):
+        return None
+    pumps = list(dict.fromkeys(p for p in value if p in ("PUMP_1", "PUMP_2")))
+    return pumps or None
 
 
 def _safe_int(val: str, label: str = "value") -> int | None:
@@ -266,6 +275,17 @@ SYSTEM_COMMANDS = {"test_chain": 103, "test_mode": 104}
 LIMIT_TYPES_OPERANT = ["Time", "Infusion", "Both"]
 LIMIT_TYPES_PAVLOVIAN = ["Trials", "Infusion"]
 
+# Devices whose INFUSION events count toward the local fallback count.
+PUMP_DEVICES = ("PUMP", "PUMP_1", "PUMP_2")
+
+# Counted-pump choice -> (label, backend value); None is Auto (follow the reward pump).
+COUNTED_PUMP_CHOICES = {
+    "auto": ("Auto (reward pump)", None),
+    "pump1": ("Pump 1", ["PUMP_1"]),
+    "pump2": ("Pump 2", ["PUMP_2"]),
+    "both": ("Pump 1 + Pump 2", ["PUMP_1", "PUMP_2"]),
+}
+
 DEVICE_BY_ID = {d["id"]: d for d in DEVICE_CONFIGS}
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -286,6 +306,9 @@ class SessionState:
     behavior_data: list[dict] = field(default_factory=list)
     frame_data: list[float] = field(default_factory=list)
     infusion_count: int = 0
+    # Server-side counted total from the infusion_count WS event; None until one arrives.
+    server_infusion_count: int | None = None
+    infusions_by_pump: dict | None = None
     press_count: int = 0
     trial_count: int = 0
     rh_counts: dict = field(default_factory=lambda: {"active": 0, "timeout": 0, "inactive": 0})
@@ -303,7 +326,8 @@ class SessionState:
     )
     pavlovian_params: dict = field(default_factory=dict)  # {code: value}, last-set Pavlovian params
     limit_settings: dict = field(
-        default_factory=lambda: {"type": "Time", "time_limit": 3600, "infusion_limit": 30, "delay": 10}
+        default_factory=lambda: {"type": "Time", "time_limit": 3600, "infusion_limit": 30, "delay": 10,
+                                  "counted_pumps": None}
     )
     file_config: dict = field(default_factory=lambda: {"filename": "", "destination": "", "notes": ""})
     backend_event_count: int = 0
@@ -346,6 +370,15 @@ class SessionState:
             return "--:--:--"
         s = int(self.elapsed)
         return f"{s // 3600:02d}:{(s % 3600) // 60:02d}:{s % 60:02d}"
+
+    @property
+    def infusions_text(self) -> str:
+        if self.server_infusion_count is None:
+            return f"Infusions: {self.infusion_count}"
+        by_pump = self.infusions_by_pump or {}
+        p1, p2 = by_pump.get("PUMP_1", 0), by_pump.get("PUMP_2", 0)
+        detail = f" (P1 {p1} / P2 {p2})" if p2 else ""
+        return f"Infusions: {self.server_infusion_count} counted{detail}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -551,10 +584,10 @@ class ReacherCLI:
         if s:
             if P.base_paradigm(s.paradigm) == "pavlovian":
                 stats = (f"  Trials: {s.trial_count} (CS+ {s.cs_plus_count} / CS- {s.cs_minus_count})"
-                         f"  |  Infusions: {s.infusion_count}")
+                         f"  |  {s.infusions_text}")
             else:
                 rh, lh = s.rh_counts, s.lh_counts
-                stats = (f"  Infusions: {s.infusion_count}  |  Presses: {s.press_count}"
+                stats = (f"  {s.infusions_text}  |  Presses: {s.press_count}"
                          f"  (RH {rh.get('active', 0)}/{rh.get('timeout', 0)}/{rh.get('inactive', 0)}"
                          f"  LH {lh.get('active', 0)}/{lh.get('timeout', 0)}/{lh.get('inactive', 0)})")
             if s.frame_count:
@@ -885,6 +918,15 @@ class ReacherCLI:
             ), suffix=f"({s.limit_settings['delay']})" if s else ""),
             MenuItem("Back", action=self._pop_menu),
         ]
+        if s and current_type in ("Infusion", "Both"):
+            counted = s.limit_settings.get("counted_pumps")
+            counted_label = next((label for label, pumps in COUNTED_PUMP_CHOICES.values()
+                                  if pumps == counted), str(counted))
+            items.insert(3, MenuItem("Set Counted Pumps", action=lambda: self._prompt_select(
+                "Select Counted Pumps",
+                [(label, key) for key, (label, _) in COUNTED_PUMP_CHOICES.items()],
+                self._set_counted_pumps,
+            ), suffix=f"({counted_label})"))
         return MenuState(title="Program > Limits", items=items)
 
     def _monitor_menu(self) -> MenuState:
@@ -1159,7 +1201,7 @@ class ReacherCLI:
             return
         try:
             await self.api.disconnect_serial(self.session.id)
-            self.session.state = "idle"
+            self.session.state = "disconnected"
             self._set_status("Serial disconnected")
             self._rebuild_current_menu()
         except Exception as exc:
@@ -1275,6 +1317,7 @@ class ReacherCLI:
         if not s:
             return
         s.infusion_count = s.press_count = s.trial_count = 0
+        s.server_infusion_count = s.infusions_by_pump = None
         s.cs_plus_count = s.cs_minus_count = s.frame_count = 0
         s.backend_event_count = 0
         s.rh_counts = {"active": 0, "timeout": 0, "inactive": 0}
@@ -1342,6 +1385,12 @@ class ReacherCLI:
                          board=info.get("board"), state=info.get("state", "idle"))
         s.firmware_info = info.get("firmware_info")
         s.attached = True
+        # The server reports a list even in Auto mode, so only an explicit choice is kept;
+        # otherwise the next limit edit would pin Auto to whichever pump is active now.
+        if info.get("follows_reward_pump") is False:
+            s.limit_settings["counted_pumps"] = info.get("counted_pumps")
+        s.server_infusion_count = info.get("infusion_count")
+        s.infusions_by_pump = info.get("infusions_by_pump")
         if s.paradigm:
             s.name = f"{s.paradigm.upper()} {s.port}"
         self.session = s
@@ -1573,7 +1622,10 @@ class ReacherCLI:
             self._set_status("Cancelled")
             return
         try:
-            await self.api.stop_program(self.session.id)
+            result = await self.api.stop_program(self.session.id)
+            if result.get("status") == "not_running":
+                self._set_status("Nothing was running")
+                return
             self.session.state = "stopped"
             self.session.program_end = time.time()
             self._set_status("Session stopped")
@@ -1642,7 +1694,8 @@ class ReacherCLI:
     async def _send_limits(self) -> None:
         lim = self.session.limit_settings
         body = P.limit_payload({"limitType": lim["type"], "timeLimit": lim["time_limit"],
-                                "infusionLimit": lim["infusion_limit"], "delay": lim["delay"]})
+                                "infusionLimit": lim["infusion_limit"], "delay": lim["delay"],
+                                "countedPumps": lim.get("counted_pumps")})
         limit_type = body.pop("type")
         await self.api.set_limit(self.session.id, limit_type, **body)
 
@@ -1670,6 +1723,19 @@ class ReacherCLI:
         except Exception as exc:
             self._set_status(f"Set limit failed: {exc}", error=True)
 
+    async def _set_counted_pumps(self, key: str) -> None:
+        if not self.session:
+            self._set_status("No session", error=True)
+            return
+        label, pumps = COUNTED_PUMP_CHOICES[key]
+        self.session.limit_settings["counted_pumps"] = list(pumps) if pumps else None
+        try:
+            await self._send_limits()
+            self._set_status(f"Counted pumps set to {label}")
+            self._rebuild_current_menu()
+        except Exception as exc:
+            self._set_status(f"Set limit failed: {exc}", error=True)
+
     # ───────────────────────────────────────────────────────────────────
     # Monitor actions
     # ───────────────────────────────────────────────────────────────────
@@ -1680,7 +1746,7 @@ class ReacherCLI:
             return
         s = self.session
         self._set_status(
-            f"Elapsed: {s.elapsed_str}  |  Infusions: {s.infusion_count}  |  "
+            f"Elapsed: {s.elapsed_str}  |  {s.infusions_text}  |  "
             f"Presses: {s.press_count}  |  State: {s.state}"
         )
 
@@ -1847,7 +1913,7 @@ class ReacherCLI:
                     s.backend_event_count += 1
                 dev = device.upper()
                 evt = event.upper()
-                if dev in ("PUMP", "PUMP_1") and evt == "INFUSION":
+                if dev in PUMP_DEVICES and evt == "INFUSION":
                     s.infusion_count += 1
                 elif dev in ("RH_LEVER", "LEVER_RH", "LH_LEVER", "LEVER_LH") and "PRESS" in evt:
                     s.press_count += 1
@@ -1869,6 +1935,11 @@ class ReacherCLI:
         elif msg_type == "frame":
             if s:
                 s.frame_count += 1
+
+        elif msg_type == "infusion_count":
+            if s:
+                s.server_infusion_count = data.get("counted")
+                s.infusions_by_pump = data.get("by_pump")
 
         elif msg_type == "session_state":
             state = data.get("state", "")
@@ -1900,8 +1971,23 @@ class ReacherCLI:
             if s:
                 s.state = "disconnected"
             reason = data.get("reason", "unknown")
-            self._log(f"  [error] Serial disconnected: {reason}", error=True)
-            self._set_status(f"Serial disconnected on {self.target_name}: {reason}", error=True)
+            suffix = " (reconnecting...)" if data.get("reconnecting") else ""
+            self._log(f"  [error] Serial disconnected: {reason}{suffix}", error=True)
+            self._set_status(f"Serial disconnected on {self.target_name}: {reason}{suffix}", error=True)
+
+        elif msg_type == "reconnected":
+            attempt = data.get("attempt", "?")
+            self._log(f"  [info] Serial reconnected (attempt {attempt})")
+            self._set_status(f"Serial reconnected on {self.target_name} (attempt {attempt})")
+
+        elif msg_type == "warning":
+            text = data.get("message")
+            if not text and data.get("reason"):
+                where = data.get("thread") or data.get("log_type")
+                text = f"{data['reason']} ({where})" if where else data["reason"]
+            text = f"Kernel warning: {text}" if text else "Kernel warning"
+            self._log(f"  [warn] {text}", error=True)
+            self._set_status(text, error=True)
 
         elif msg_type in ("export_failed", "kernel_error"):
             label = "Auto-export failed" if msg_type == "export_failed" else "Kernel error"
