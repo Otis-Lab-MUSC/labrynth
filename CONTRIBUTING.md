@@ -54,10 +54,12 @@ chore(web): bump vite to 6
 
 ## Before opening a PR
 
-There is no test framework here by design — ESLint is the automated check:
+There is no test framework here by design — ESLint and the TypeScript build are the
+automated checks, and CI runs them on every PR:
 
 ```bash
 cd web && npm run lint
+npx tsc -b
 ```
 
 Verify behavior by running the dev server (`npm run dev`) against a live
