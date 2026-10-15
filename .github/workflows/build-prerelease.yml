@@ -10,6 +10,10 @@ on:
         required: false
         default: 'main'
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -23,6 +27,7 @@ jobs:
   # -------------------------------------------------------------------
   version-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       version: ${{ steps.version.outputs.version }}
       reacher_ref: ${{ steps.reacher_ref.outputs.ref }}
@@ -80,12 +85,18 @@ jobs:
           fi
 
   # -------------------------------------------------------------------
+  # CI — the same gates as a pull request, run against the tagged commit
+  # -------------------------------------------------------------------
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  # -------------------------------------------------------------------
   # Windows — Inno Setup installer (.exe)
   # -------------------------------------------------------------------
   build-windows:
-    needs: [version-check]
+    needs: [version-check, ci]
     runs-on: windows-latest
-    continue-on-error: true
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -197,9 +208,9 @@ jobs:
   # macOS — DMG disk image (.dmg) — Apple Silicon (arm64)
   # -------------------------------------------------------------------
   build-macos-arm64:
-    needs: [version-check]
+    needs: [version-check, ci]
     runs-on: macos-latest
-    continue-on-error: true
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -282,13 +293,13 @@ jobs:
   # Linux — DEB package (.deb), tarball (.tar.gz), AppImage
   # -------------------------------------------------------------------
   build-linux:
-    needs: [version-check]
+    needs: [version-check, ci]
     # Pinned, not ubuntu-latest: the bundled avrdude is whatever this image's
     # apt pocket carries (noble → 7.1+dfsg-3build2), and the avrdude.conf
     # bundled beside it must come from that same package. Re-pointing
     # ubuntu-latest would swap both under us without a code change.
     runs-on: ubuntu-24.04
-    continue-on-error: true
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -440,15 +451,17 @@ jobs:
             labrynth-${{ needs.version-check.outputs.version }}-linux-x64.AppImage
 
   # -------------------------------------------------------------------
-  # Release — publish artifacts; proceeds even with partial platform coverage
+  # Release — publish artifacts; any failed build job blocks the release
   # -------------------------------------------------------------------
   release:
     needs: [build-windows, build-macos-arm64, build-linux, version-check]
     runs-on: ubuntu-latest
-    # Run even if some build jobs failed (continue-on-error makes them report 'success'),
-    # but only for tag-triggered runs and only if version-check passed.
-    if: always() && github.ref_type == 'tag' && needs.version-check.result == 'success'
+    timeout-minutes: 15
+    if: github.ref_type == 'tag'
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
       - name: Download all artifacts
         uses: actions/download-artifact@v8
         with:
@@ -458,18 +471,8 @@ jobs:
       - name: List artifacts
         run: ls -lhR artifacts/
 
-      - name: Verify at least one artifact was produced
-        run: |
-          shopt -s nullglob
-          assets=(artifacts/*.exe artifacts/*.dmg artifacts/*.deb artifacts/*.tar.gz artifacts/*.AppImage)
-          if [ ${#assets[@]} -eq 0 ]; then
-            echo "ERROR: no installer artifacts were produced - refusing to publish an empty release." >&2
-            echo "       The release notes name a bundled reacher version, so an assetless release" >&2
-            echo "       is indistinguishable from a good one for anyone reading the release page." >&2
-            exit 1
-          fi
-          echo "Attaching ${#assets[@]} artifact(s):"
-          printf '  %s\n' "${assets[@]}"
+      - name: Verify all release assets were produced
+        run: bash scripts/verify-release-assets.sh artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -495,8 +498,6 @@ jobs:
             | Linux (portable) | `labrynth-*-linux-x64.AppImage` | Any distro |
             | Linux (tarball) | `labrynth-*-linux-x64.tar.gz` | Extract and run |
             | Terminal CLI (all platforms) | `labrynth-cli-*-<os>.tar.gz` | Headless TUI — extract and run `LabrynthCLI` |
-
-            > Not all platforms may be available for this build — check the attached assets.
 
             ## Reporting issues
             Include: OS version, exact installer filename, and the reacher version shown in the app's About modal.

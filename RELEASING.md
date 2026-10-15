@@ -17,9 +17,15 @@ Both workflows build the same installer formats for all platforms:
 | Linux (Debian/Ubuntu) | `labrynth_*_amd64.deb` |
 | Linux (portable) | `labrynth-*-linux-x64.AppImage` |
 | Linux (tarball) | `labrynth-*-linux-x64.tar.gz` |
+| Terminal CLI (all platforms) | `labrynth-cli-*-<os>.tar.gz` |
 
 The build installs `reacher` from source, so a Labrynth release does **not**
 depend on `reacher` being on PyPI.
+
+Both release workflows call `ci.yml` before any build, so a red CI blocks the tag.
+A complete release has all 8 assets above (3 GUI installers are not enough without
+the CLI tarballs). The `release` job runs `scripts/verify-release-assets.sh` and
+publishes nothing if any is missing. Every job has a timeout.
 
 ## Versioning semantics
 
@@ -30,7 +36,8 @@ depend on `reacher` being on PyPI.
 | `vX.Y.Z-rc.N` | Same as beta (final soak) | Feature-complete; data format frozen; only blocking-bug fixes |
 | `vX.Y.Z` | All end users | All platforms tested; "Latest" on GitHub |
 
-**Alpha** is permitted to fail a platform build. **Beta must produce working installers
+**Every tag must produce all 8 release assets**, alpha included — a failed platform build
+blocks publishing. **Beta must produce working installers
 on all platforms** — a build failure for a beta tag is a workflow error to fix, not a soft skip.
 
 ## Prerelease ladder
@@ -91,6 +98,9 @@ git push origin main
 git tag -a v3.1.0 -m "Labrynth v3.1.0"
 git push origin v3.1.0
 ```
+
+As with prereleases, the stable build derives the reacher ref from the `reacher2p>=`
+pin in `pyproject.toml`, so step 2 determines which backend ships.
 
 ## Promoting through the ladder
 
