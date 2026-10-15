@@ -1,21 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useSessionStore, defaultHardwareUiState } from "../store/useSessionStore";
 import { useMachineStore, LOCAL_PLACEHOLDER_ID } from "../store/useMachineStore";
-import type { Session, SessionState } from "../types";
+import type { BehaviorEvent, SessionState } from "../types";
+import { restoredFields, toStoredSession, type StoredSession } from "../lib/sessionRecovery";
 
 const STORAGE_KEY = "reacher-sessions";
-
-interface StoredSession {
-  sessionId: string;
-  port: string;
-  paradigm: string | null;
-  /** deviceId of the owning Machine. Absent in legacy entries — defaults to local. */
-  machineId?: string;
-  /** Last known paradigm ratio/step/interval, so a reload doesn't silently drop the
-   *  value the user configured (and possibly already sent) back to firmware. Absent
-   *  in legacy entries or when never configured. */
-  paradigmSettings?: Session["paradigmSettings"];
-}
 
 /** Persist live session IDs to localStorage and recover on reload. */
 export function useSessionRecovery() {
@@ -85,8 +74,7 @@ export function useSessionRecovery() {
                 paradigm: entry.paradigm,
                 board: null,
                 state: (((info as Record<string, unknown>).state as string) || "idle") as SessionState,
-                name: "",
-                notes: "",
+                ...restoredFields(entry),
                 firmwareInfo: null,
                 hardwareSettings: [],
                 behaviorData: [],
@@ -101,8 +89,6 @@ export function useSessionRecovery() {
                 pausedTime: 0,
                 pauseStartTime: null,
                 pavlovianParams: null,
-                paradigmSettings: entry.paradigmSettings ?? null,
-                limitSettings: null,
                 trialCount: 0,
                 csPlusCount: 0,
                 csMinusCount: 0,
@@ -128,6 +114,7 @@ export function useSessionRecovery() {
                 activeSessionId: s.activeSessionId ?? entry.sessionId,
               };
             });
+            await rehydrateData(client, entry.sessionId);
           }
         } catch {
           // Session no longer exists on backend — skip
@@ -144,12 +131,9 @@ export function useSessionRecovery() {
   useEffect(() => {
     return useSessionStore.subscribe((state) => {
       const entries: StoredSession[] = [];
-      for (const [id, sess] of state.sessions) {
+      for (const sess of state.sessions.values()) {
         if (!sess.draft) {
-          entries.push({
-            sessionId: id, port: sess.port, paradigm: sess.paradigm, machineId: sess.machineId,
-            paradigmSettings: sess.paradigmSettings,
-          });
+          entries.push(toStoredSession(sess));
         }
       }
       if (entries.length > 0) {
@@ -164,12 +148,9 @@ export function useSessionRecovery() {
 function syncToStorage() {
   const { sessions } = useSessionStore.getState();
   const entries: StoredSession[] = [];
-  for (const [id, sess] of sessions) {
+  for (const sess of sessions.values()) {
     if (!sess.draft) {
-      entries.push({
-        sessionId: id, port: sess.port, paradigm: sess.paradigm, machineId: sess.machineId,
-        paradigmSettings: sess.paradigmSettings,
-      });
+      entries.push(toStoredSession(sess));
     }
   }
   if (entries.length > 0) {
@@ -177,4 +158,33 @@ function syncToStorage() {
   } else {
     localStorage.removeItem(STORAGE_KEY);
   }
+}
+
+/** Pull the recorded data back from the backend, which keeps it for the session's whole
+ *  life (running or stopped). Without this a reload leaves a stopped session looking empty. */
+async function rehydrateData(client: NonNullable<ReturnType<ReturnType<typeof useMachineStore.getState>["getClient"]>>, sessionId: string) {
+  const [behavior, frames, slm] = await Promise.allSettled([
+    client.getBehavior(sessionId),
+    client.getFrames(sessionId),
+    client.getSlmEvents(sessionId),
+  ]);
+  const cur = useSessionStore.getState().sessions.get(sessionId);
+  if (!cur) return;
+  // A live event that landed while we were fetching means the buffer is already newer.
+  if (behavior.status === "fulfilled" && behavior.value.data.length >= cur.behaviorData.length) {
+    useSessionStore.getState().replaceEvents(sessionId, behavior.value.data as unknown as BehaviorEvent[]);
+  }
+  useSessionStore.setState((s) => {
+    const sess = s.sessions.get(sessionId);
+    if (!sess) return s;
+    const next = new Map(s.sessions);
+    next.set(sessionId, {
+      ...sess,
+      frameData: frames.status === "fulfilled" && frames.value.frames.length >= sess.frameData.length
+        ? (frames.value.frames as number[]) : sess.frameData,
+      slmData: slm.status === "fulfilled" && slm.value.slm.length >= sess.slmData.length
+        ? slm.value.slm : sess.slmData,
+    });
+    return { sessions: next };
+  });
 }
