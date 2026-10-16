@@ -6,6 +6,9 @@ import type { CommandSpec } from "../types";
 /** MICROSCOPE_ARM — present only on two-photon-capable firmware. */
 const MICROSCOPE_ARM = 901;
 
+/** AUX_ARM — present only on firmware with the TTL shock output (Mega fr). */
+const AUX_ARM = 1401;
+
 /**
  * The command set the *running* firmware actually accepts, plus the capability
  * flags derived from it.
@@ -44,5 +47,10 @@ export function useFirmwareCommands(sessionId: string | null) {
     [commands],
   );
 
-  return { commands, hasTwoPhoton };
+  const hasAux = useMemo(
+    () => commands.some((c) => c.code === AUX_ARM),
+    [commands],
+  );
+
+  return { commands, hasTwoPhoton, hasAux };
 }
