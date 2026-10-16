@@ -6,7 +6,8 @@ import { PRESET_VERSION } from "./types";
 /**
  * HardwareUiState keys that are deliberately NOT part of a session preset.
  *
- * `testMode` is transient session state.
+ * `testMode` is transient session state. `aux` (shock output) is excluded so a preset can never carry
+ * `armed` or a shock configuration into another session.
  *
  * Exported so a cross-repo device-parity check could distinguish an intentional
  * omission from drift. No such consumer exists today — the reacher-side check
@@ -15,7 +16,7 @@ import { PRESET_VERSION } from "./types";
  * of `DeviceKey` below, so the exclusion is enforced by the compiler here even
  * with nothing reading it from outside.
  */
-export const PRESET_EXCLUDED_DEVICE_KEYS = ["testMode"] as const;
+export const PRESET_EXCLUDED_DEVICE_KEYS = ["testMode", "aux"] as const;
 
 type DeviceKey = keyof Omit<HardwareUiState, (typeof PRESET_EXCLUDED_DEVICE_KEYS)[number]>;
 
@@ -67,7 +68,7 @@ export function buildPresetFromSession(
   session: Session,
   limits?: SessionPreset["limitDefaults"] | null,
 ): SessionPreset {
-  const { testMode: _testMode, ...hardware } = session.hardwareUi;
+  const { testMode: _testMode, aux: _aux, ...hardware } = session.hardwareUi;
   const pinOverrides = { ...session.pinOverrides };
 
   return {
