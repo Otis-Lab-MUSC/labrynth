@@ -1077,7 +1077,7 @@ class ReacherCLI:
             if n is None:
                 self._set_status(f"Invalid number: {val!r}", error=True)
                 return
-            callback(n)
+            return callback(n)
         self._prompt_input(prompt, _validate)
 
     def _prompt_select(self, title: str, options: list[tuple[str, str]], callback: Callable) -> None:
