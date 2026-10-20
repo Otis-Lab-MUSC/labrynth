@@ -12,3 +12,5 @@ __pycache__/
 *.bak
 *.tsbuildinfo
 ARCHITECTURE*.md
+.claude/settings.local.json*
+BACKEND_*.md
