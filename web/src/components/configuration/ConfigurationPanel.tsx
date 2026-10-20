@@ -20,6 +20,7 @@ import { LaserControl } from "../hardware/LaserControl";
 import { LickCircuitControl } from "../hardware/LickCircuitControl";
 import { MicroscopeControl } from "../hardware/MicroscopeControl";
 import { SLMControl } from "../hardware/SLMControl";
+import { AuxOutputControl } from "../hardware/AuxOutputControl";
 import { usePinOverridesHydration } from "../hardware/usePinOverridesHydration";
 import { useTutorialStore } from "../../store/useTutorialStore";
 import { laserPhaseActive } from "../monitor/hardwareSummary";
@@ -100,7 +101,7 @@ export function ConfigurationPanel() {
 
   // Optional hardware follows what the running firmware actually accepts, not
   // the board name — see useFirmwareCommands.
-  const { commands, hasTwoPhoton } = useFirmwareCommands(activeSessionId);
+  const { commands, hasTwoPhoton, hasAux } = useFirmwareCommands(activeSessionId);
 
   // Auto-expand hardware section when tutorial navigates to a hardware step
   const tutorialActive = useTutorialStore((s) => s.active);
@@ -195,7 +196,9 @@ export function ConfigurationPanel() {
     updateHardwareUi(activeSessionId, (prev) => {
       const result = { ...prev };
       for (const [key, value] of Object.entries(preset.hardware)) {
-        if (key === "testMode") {
+        if (key === "aux") {
+          continue; // never arm or configure the shock output from a preset
+        } else if (key === "testMode") {
           result.testMode = value as boolean;
         } else if (key in result) {
           const valueObj = value as unknown as Record<string, unknown>;
@@ -382,7 +385,9 @@ export function ConfigurationPanel() {
     updateHardwareUi(activeSessionId, (prev) => {
       const result = { ...prev };
       for (const [key, value] of Object.entries(preset.hardware)) {
-        if (key === "testMode") {
+        if (key === "aux") {
+          continue; // never arm or configure the shock output from a preset
+        } else if (key === "testMode") {
           result.testMode = value as boolean;
         } else if (key in result) {
           (result as unknown as Record<string, unknown>)[key] = {
@@ -710,6 +715,7 @@ export function ConfigurationPanel() {
                   <div data-tour="pump-card"><PumpControl sessionId={activeSessionId} label="1" prefix="" paradigm={paradigm} /></div>
                   <PumpControl sessionId={activeSessionId} label="2" prefix="2" paradigm={paradigm} />
                   <LaserControl sessionId={activeSessionId} paradigm={paradigm} />
+                  {hasAux && <AuxOutputControl sessionId={activeSessionId} />}
                 </div>
               </section>
 

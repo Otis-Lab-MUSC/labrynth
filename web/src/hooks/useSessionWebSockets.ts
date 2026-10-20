@@ -28,6 +28,7 @@ const DEVICE_TO_UI_KEY: Record<string, string> = {
   LEVER_RH: "rhLever",
   LEVER_LH: "lhLever",
   SLM: "slm",
+  AUX: "aux",
 };
 
 export async function triggerAutoExport(sessionId: string) {
@@ -174,6 +175,16 @@ function handleMessage(msg: WSMessage) {
             if (typeof raw.timeout === "number") patch.timeout = raw.timeout;
             if (typeof raw.mode === "string") patch.mode = raw.mode;
             if (typeof raw.pin === "number") patch.pin = raw.pin;
+            if (raw.device === "AUX") {
+              // Firmware snake_case -> UI camelCase; AUX mode is numeric (0/1), unlike the laser's string mode.
+              if (raw.mode === 0 || raw.mode === 1) patch.mode = raw.mode;
+              if (typeof raw.onset_delay === "number") patch.onsetDelay = raw.onset_delay;
+              if (typeof raw.probability === "number") patch.probability = raw.probability;
+              if (typeof raw.block_k === "number") patch.blockK = raw.block_k;
+              if (typeof raw.block_n === "number") patch.blockN = raw.block_n;
+              // raw.seed is the *effective* seed; syncing it would turn "auto" (0) into a pinned seed.
+              if (typeof raw.test_fire === "boolean") patch.testFire = raw.test_fire;
+            }
             return { [uiKey]: { ...current, ...patch } } as Partial<typeof prev>;
           });
         }

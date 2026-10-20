@@ -78,6 +78,18 @@ export interface SlmUiState extends DeviceArmState {
   laserDuration: number | null;
 }
 
+export interface AuxUiState extends DeviceArmState {
+  /** TTL shock output. `armed` is only ever set from the firmware's level-000 line or a confirmed arm. */
+  duration: number;
+  onsetDelay: number;
+  mode: 0 | 1;  // 0 = independent, 1 = block
+  probability: number;
+  blockK: number;
+  blockN: number;
+  seed: number;  // 0 = auto
+  testFire: boolean;
+}
+
 export interface HardwareUiState {
   rhLever: LeverUiState;
   lhLever: LeverUiState;
@@ -89,6 +101,7 @@ export interface HardwareUiState {
   lickCircuit: DeviceArmState;
   microscope: MicroscopeUiState;
   slm: SlmUiState;
+  aux: AuxUiState;
   testMode: boolean;
 }
 
