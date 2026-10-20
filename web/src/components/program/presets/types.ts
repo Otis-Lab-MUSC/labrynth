@@ -1,7 +1,7 @@
 import type { HardwareUiState } from "../../../types";
 
 export interface PresetDeviceEntry {
-  key: keyof Omit<HardwareUiState, "testMode">;
+  key: keyof Omit<HardwareUiState, "testMode" | "aux">;
   label: string;
   role: string;
   required: boolean;

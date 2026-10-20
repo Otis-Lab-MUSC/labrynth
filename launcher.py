@@ -2,6 +2,23 @@
 import os
 import sys
 
+# reacher.api.app.main() only special-cases --version. Every other argv,
+# including --help, falls through to uvicorn on REACHER_PORT (default 6229).
+# Handle help here, before that import, so the GUI binary exits without
+# binding a port.
+if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
+    print(
+        "Usage: Labrynth [-h] [-V] [-i]\n"
+        "\n"
+        "Start the Labrynth GUI (REACHER backend and bundled web UI).\n"
+        "\n"
+        "Options:\n"
+        "  -h, --help        Show this help and exit\n"
+        "  -V, --version     Print the reacher version and exit\n"
+        "  -i, --incognito   Open the UI in a private browser window\n",
+    )
+    raise SystemExit(0)
+
 _LABRYNTH_ROOT = os.path.dirname(os.path.abspath(__file__))
 # In a frozen PyInstaller build _MEIPASS/static holds the React dist;
 # in dev the frontend lives at web/dist relative to the repo root.

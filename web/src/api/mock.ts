@@ -211,15 +211,31 @@ const TWO_PHOTON_MOCK_COMMANDS = [
   { code: 1101, name: "SLM_ARM", description: "Arm SLM", payload_key: null, payload_type: null },
 ];
 
+// TTL shock output — Mega "fr" only (not lite, not Pavlovian). The UI gates the AUX card on 1401.
+const AUX_MOCK_COMMANDS = [
+  { code: 1400, name: "AUX_DISARM", description: "Disarm AUX shock output", payload_key: null, payload_type: null },
+  { code: 1401, name: "AUX_ARM", description: "Arm AUX shock output", payload_key: null, payload_type: null },
+  { code: 1403, name: "AUX_TEST", description: "Deliver one test pulse now", payload_key: null, payload_type: null },
+  { code: 1472, name: "AUX_SET_DURATION", description: "Pulse duration (ms, 1-5000)", payload_key: "duration", payload_type: "int" },
+  { code: 1477, name: "AUX_SET_ONSET_DELAY", description: "Onset delay (ms)", payload_key: "delay", payload_type: "int" },
+  { code: 1480, name: "AUX_SET_MODE", description: "0=independent, 1=block", payload_key: "mode", payload_type: "int" },
+  { code: 1481, name: "AUX_SET_PROBABILITY", description: "Shock probability (0-100)", payload_key: "probability", payload_type: "int" },
+  { code: 1482, name: "AUX_SET_BLOCK_K", description: "Shocks per block (0..n)", payload_key: "k", payload_type: "int" },
+  { code: 1483, name: "AUX_SET_BLOCK_N", description: "Block size (1-100)", payload_key: "n", payload_type: "int" },
+  { code: 1484, name: "AUX_SET_SEED", description: "RNG seed (0 = auto)", payload_key: "seed", payload_type: "int" },
+  { code: 1485, name: "AUX_SET_TEST_FIRE", description: "Allow pulses in test mode", payload_key: "enable", payload_type: "bool" },
+];
+
 export const getCommands = async (id: string) => {
   const session = useSessionStore.getState().sessions.get(id);
   const paradigm = session?.paradigm ?? "fr";
   const base = paradigm.toLowerCase().endsWith("_lite") ? [] : TWO_PHOTON_MOCK_COMMANDS;
+  const aux = paradigm.toLowerCase() === "fr" ? AUX_MOCK_COMMANDS : [];
   return {
     paradigm,
     commands: paradigm.toLowerCase() === "pavlovian"
       ? [...PAVLOVIAN_MOCK_COMMANDS, ...base]
-      : base,
+      : [...base, ...aux],
   };
 };
 

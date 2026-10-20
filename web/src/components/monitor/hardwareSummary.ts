@@ -6,6 +6,7 @@ import type {
   LaserUiState,
   MicroscopeUiState,
   SlmUiState,
+  AuxUiState,
   DeviceArmState,
 } from "../../types";
 
@@ -21,6 +22,7 @@ export const DEVICE_LABELS: Record<string, string> = {
   lickCircuit: "Lick Circuit",
   microscope: "Microscope",
   slm: "SLM",
+  aux: "Shock (AUX)",
 };
 
 export interface SummaryContext {
@@ -145,6 +147,15 @@ function slmParts(s: SlmUiState): string[] {
   return parts;
 }
 
+function auxParts(s: AuxUiState): string[] {
+  const parts: string[] = [`${s.duration}ms`];
+  if (s.onsetDelay > 0) parts.push(`Delay:${s.onsetDelay}ms`);
+  parts.push(s.mode === 1 ? `Block ${s.blockK}/${s.blockN}` : `P:${s.probability}%`);
+  parts.push(s.seed === 0 ? "Seed:auto" : `Seed:${s.seed}`);
+  if (s.testFire) parts.push("Test-fire ON");
+  return parts;
+}
+
 // Exhaustive per-device formatters. The mapped-type key set is the drift guard (see above).
 const FORMATTERS: { [K in SummaryDeviceKey]: (state: HardwareUiState[K], ctx: SummaryContext) => string[] } = {
   rhLever: leverParts,
@@ -157,6 +168,7 @@ const FORMATTERS: { [K in SummaryDeviceKey]: (state: HardwareUiState[K], ctx: Su
   lickCircuit: (_s: DeviceArmState) => [],
   microscope: microscopeParts,
   slm: slmParts,
+  aux: auxParts,
 };
 
 /**

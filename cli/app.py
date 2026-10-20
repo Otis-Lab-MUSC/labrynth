@@ -1077,7 +1077,7 @@ class ReacherCLI:
             if n is None:
                 self._set_status(f"Invalid number: {val!r}", error=True)
                 return
-            callback(n)
+            return callback(n)
         self._prompt_input(prompt, _validate)
 
     def _prompt_select(self, title: str, options: list[tuple[str, str]], callback: Callable) -> None:
@@ -1638,8 +1638,12 @@ class ReacherCLI:
             self._set_status("No session", error=True)
             return
         try:
-            await self.api.pause_program(self.session.id)
-            if self.session.state == "paused":
+            was_paused = self.session.state == "paused"
+            result = await self.api.pause_program(self.session.id)
+            # The session_state WS update can land before this response, so
+            # branch on what the backend did rather than on local state.
+            status = result.get("status") if isinstance(result, dict) else None
+            if status == "resumed" or (status != "paused" and was_paused):
                 # Resume
                 if self.session.pause_start:
                     self.session.paused_time += time.time() - self.session.pause_start

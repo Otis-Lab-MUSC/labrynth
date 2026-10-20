@@ -31,6 +31,7 @@ const DEVICE_COLORS: Record<string, string> = {
   LICK:       "#ff55ff",
   LASER:      "#ff4444",
   SLM:        "#ff00ff",
+  AUX_1:      "#ff2d2d",
   CONTROLLER: "#888888",
   // Bare CUE/PUMP are current level-007 names, not legacy: PavlovianScheduler
   // spells the *primaries* without the _1 suffix the operant Scheduler uses
@@ -74,11 +75,27 @@ const DEVICE_DISPLAY_NAMES: Record<string, string> = {
   LASER: "Laser",
   LICK: "Lick Circuit",
   SLM: "SLM",
+  AUX_1: "Shock (AUX)",
   CONTROLLER: "Controller",
   // See DEVICE_COLORS: bare CUE/PUMP are current, not legacy.
   CUE: "Cue 1",
   PUMP: "Pump 1",
 };
+
+// AUX_1 outcomes are told apart by fill, not just hue: SHOCK solid red, SHOCK_OMITTED hollow
+// (the draw said no), SHOCK_SUPPRESSED hollow dashed amber (blocked by test mode / safety gate).
+const AUX_EVENT_COLORS: Record<string, string> = {
+  SHOCK: "#ff2d2d",
+  SHOCK_OMITTED: "#ff8a8a",
+  SHOCK_SUPPRESSED: "#ffb020",
+};
+
+function auxMarkProps(device: string, event: string, color: string) {
+  if (device !== "AUX_1") return { fill: color, stroke: undefined, strokeDasharray: undefined };
+  if (event === "SHOCK_OMITTED") return { fill: "none", stroke: color, strokeDasharray: undefined };
+  if (event === "SHOCK_SUPPRESSED") return { fill: "none", stroke: color, strokeDasharray: "2 2" };
+  return { fill: color, stroke: undefined, strokeDasharray: undefined };
+}
 
 const displayName = (raw: string): string => DEVICE_DISPLAY_NAMES[raw] ?? raw;
 
@@ -98,6 +115,7 @@ function getDeviceColor(device: string, event?: string): string {
     const leverEntry = LEVER_EVENT_COLORS[device]?.[event];
     if (leverEntry) return leverEntry;
   }
+  if (device === "AUX_1" && event && AUX_EVENT_COLORS[event]) return AUX_EVENT_COLORS[event];
   const entry = DEVICE_COLORS[device];
   if (entry) return entry;
   return "#aaaaaa";
@@ -212,7 +230,7 @@ export function EventTimeline({ events }: Props) {
   }
 
   // Compute active lanes from unique device names, preserving a stable order
-  const deviceOrder = ["LEVER_RH", "LEVER_LH", "CUE_1", "CUE_2", "PUMP_1", "PUMP_2", "LICK", "LASER", "SLM", "CONTROLLER",
+  const deviceOrder = ["LEVER_RH", "LEVER_LH", "CUE_1", "CUE_2", "PUMP_1", "PUMP_2", "LICK", "LASER", "SLM", "AUX_1", "CONTROLLER",
                        "CUE", "PUMP"];
   const activeDevices = new Set(displayEvents.map((e) => e.device));
   const activeLanes = deviceOrder.filter((d) => activeDevices.has(d));
@@ -326,16 +344,21 @@ export function EventTimeline({ events }: Props) {
             const x = LABEL_WIDTH + startSec * pixelsPerSecond;
             const isInstantaneous = event.start_timestamp === event.end_timestamp;
             const color = getDeviceColor(event.device, event.event);
+            const mark = auxMarkProps(event.device, event.event, color);
+            const markWidth = event.device === "AUX_1" ? MARKER_WIDTH * 2 : MARKER_WIDTH;
 
             if (isInstantaneous) {
               return (
                 <rect
                   key={idx}
-                  x={x - MARKER_WIDTH / 2}
+                  x={x - markWidth / 2}
                   y={y}
-                  width={MARKER_WIDTH}
+                  width={markWidth}
                   height={barHeight}
-                  fill={color}
+                  fill={mark.fill}
+                  stroke={mark.stroke}
+                  strokeWidth={mark.stroke ? 1.5 : undefined}
+                  strokeDasharray={mark.strokeDasharray}
                   opacity={0.9}
                   rx={1}
                   onMouseEnter={(e) => handleMouseEnter(e, event, baseTs)}
@@ -355,7 +378,10 @@ export function EventTimeline({ events }: Props) {
                 y={y}
                 width={barWidth}
                 height={barHeight}
-                fill={color}
+                fill={mark.fill}
+                stroke={mark.stroke}
+                strokeWidth={mark.stroke ? 1.5 : undefined}
+                strokeDasharray={mark.strokeDasharray}
                 opacity={0.8}
                 rx={2}
                 onMouseEnter={(e) => handleMouseEnter(e, event, baseTs)}
