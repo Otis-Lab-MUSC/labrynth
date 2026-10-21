@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from "react";
 import type { Session } from "../../types";
+import { countShocks, shouldJolt } from "../../lib/shockEvents.ts";
 
 interface Props {
   session: Session;
@@ -24,19 +26,11 @@ const MOUSE_LEGS = [
 ] as const;
 
 /** Side-on mouse facing right. Legs swing and the body bobs only while `running`;
- *  paused / stopped leave it standing still. */
-function ProgressMouse({ running }: { running: boolean }) {
+ *  paused / stopped leave it standing still. A delivered shock hops it once. */
+function ProgressMouse({ running, shocked }: { running: boolean; shocked: boolean }) {
   const legClass = running ? "animate-mouse-leg motion-reduce:animate-none" : "";
-  return (
-    <svg
-      viewBox="0 0 42 22"
-      width={MOUSE_W}
-      height="23"
-      fill="none"
-      role="img"
-      aria-label={running ? "Session running" : "Session not running"}
-      className="block text-accent drop-shadow-[0_0_3px_rgb(var(--color-accent)/0.55)]"
-    >
+  const body = (
+    <>
       {/* Legs sit behind the body so the hips are hidden */}
       {MOUSE_LEGS.map((leg) => (
         <line
@@ -66,12 +60,38 @@ function ProgressMouse({ running }: { running: boolean }) {
         <circle cx="27.5" cy="6.4" r="3" fill="currentColor" opacity="0.6" />
         <circle cx="27.5" cy="6.4" r="1.5" fill="rgb(var(--color-surface))" opacity="0.55" />
         {/* Eye + nose */}
-        <circle cx="32" cy="10.3" r="0.9" fill="rgb(var(--color-surface))" />
+        <circle cx="32" cy="10.3" r={shocked ? 1.4 : 0.9} fill="rgb(var(--color-surface))" />
         <circle cx="38.3" cy="12.1" r="0.9" fill="rgb(var(--color-surface))" opacity="0.8" />
         {/* Whiskers */}
         <line x1="35.5" y1="12.2" x2="41" y2="10.6" stroke="currentColor" strokeWidth="0.6" opacity="0.7" />
         <line x1="35.5" y1="12.9" x2="41" y2="13.6" stroke="currentColor" strokeWidth="0.6" opacity="0.7" />
       </g>
+    </>
+  );
+  return (
+    <svg
+      viewBox="0 0 42 22"
+      width={MOUSE_W}
+      height="23"
+      fill="none"
+      overflow={shocked ? "visible" : undefined}
+      role="img"
+      aria-label={shocked ? "Shock delivered" : running ? "Session running" : "Session not running"}
+      className="block text-accent drop-shadow-[0_0_3px_rgb(var(--color-accent)/0.55)]"
+    >
+      {shocked ? (
+        <g className="animate-mouse-shock motion-reduce:animate-none" style={{ transformBox: "fill-box" }}>
+          {body}
+          {/* Spark above the back */}
+          <g stroke="#ff2d2d" strokeWidth="1" strokeLinecap="round">
+            <line x1="18" y1="4" x2="17" y2="1" />
+            <line x1="21" y1="3.5" x2="21" y2="0.5" />
+            <line x1="24" y1="4" x2="25" y2="1" />
+          </g>
+        </g>
+      ) : (
+        body
+      )}
     </svg>
   );
 }
@@ -106,11 +126,13 @@ function ProgressBar({
   pct,
   display,
   running,
+  shocked,
 }: {
   label: string;
   pct: number;
   display: string;
   running: boolean;
+  shocked: boolean;
 }) {
   return (
     <div className="space-y-1">
@@ -132,7 +154,7 @@ function ProgressBar({
             className="absolute inset-y-0 flex items-center transition-all duration-300"
             style={{ left: `calc((100% - ${MOUSE_W}px) * ${pct / 100})` }}
           >
-            <ProgressMouse running={running} />
+            <ProgressMouse running={running} shocked={shocked} />
           </div>
         </div>
         <ProgressCheese reached={pct >= 100} />
@@ -142,11 +164,27 @@ function ProgressBar({
 }
 
 export function SessionProgress({ session, elapsed }: Props) {
+  const shocks = countShocks(session.behaviorData);
+  const running = session.state === "running";
+  const seenShocks = useRef(shocks);
+  const [shocked, setShocked] = useState(false);
+
+  useEffect(() => {
+    // A segment split lowers the count; only a small rise is a live shock.
+    if (shouldJolt(seenShocks.current, shocks, running)) setShocked(true);
+    seenShocks.current = shocks;
+  }, [shocks, running]);
+
+  useEffect(() => {
+    if (!shocked) return;
+    const t = setTimeout(() => setShocked(false), 600);
+    return () => clearTimeout(t);
+  }, [shocked]);
+
   const limits = session.limitSettings;
   if (!limits) return null;
   if (session.state !== "running" && session.state !== "paused" && session.state !== "stopped") return null;
 
-  const running = session.state === "running";
   const showTime = limits.limitType === "Time" || limits.limitType === "Both";
   const showCount = limits.limitType === "Infusion" || limits.limitType === "Both" || limits.limitType === "Trials";
   const isTrials = limits.limitType === "Trials";
@@ -167,8 +205,8 @@ export function SessionProgress({ session, elapsed }: Props) {
         <div className="flex-1 border-b border-dashed border-theme-border" />
       </div>
       <div className="space-y-3">
-        {showTime && <ProgressBar label="TIME" pct={timePct} display={`${fmtTime(elapsed)} / ${fmtTime(limits.timeLimit)}`} running={running} />}
-        {showCount && <ProgressBar label={countLabel} pct={countPct} display={`${currentCount} / ${limits.infusionLimit}`} running={running} />}
+        {showTime && <ProgressBar label="TIME" pct={timePct} display={`${fmtTime(elapsed)} / ${fmtTime(limits.timeLimit)}`} running={running} shocked={shocked} />}
+        {showCount && <ProgressBar label={countLabel} pct={countPct} display={`${currentCount} / ${limits.infusionLimit}`} running={running} shocked={shocked} />}
       </div>
     </div>
   );

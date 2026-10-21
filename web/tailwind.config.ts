@@ -61,6 +61,14 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-0.6px)" },
         },
+        "mouse-shock": {
+          "0%, 100%": { transform: "translate(0, 0)" },
+          "15%": { transform: "translate(-1px, -4px)" },
+          "30%": { transform: "translate(1px, -4px)" },
+          "45%": { transform: "translate(-1px, -2px)" },
+          "60%": { transform: "translate(1px, -1px)" },
+          "80%": { transform: "translate(-0.5px, 0)" },
+        },
         "status-pulse": {
           "0%, 100%": { opacity: "1", transform: "scale(1)" },
           "50%": { opacity: "0.6", transform: "scale(0.92)" },
@@ -86,6 +94,7 @@ export default {
         "reacher-glow": "reacher-glow 3s ease-in-out infinite",
         "mouse-leg": "mouse-leg 0.32s ease-in-out infinite",
         "mouse-bob": "mouse-bob 0.16s ease-in-out infinite",
+        "mouse-shock": "mouse-shock 0.6s ease-out 1",
         "status-pulse": "status-pulse 2s ease-in-out infinite",
         "grid-drift": "grid-drift 60s linear infinite",
         glitch: "glitch 0.3s linear",
