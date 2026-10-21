@@ -42,6 +42,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `fr` sketch only; requires reacher 3.4.0-beta.12.
 - CI: a check that rejects Windows-reserved file names (`con`, `prn`, `aux`, `nul`,
   `com0`–`com9`, `lpt0`–`lpt9`) anywhere in the tree.
+- Frontend: **SHOCKS** (this segment) and **TOTAL SHOCKS** (all segments) counters in the
+  session stats, on boards with the shock output. Only delivered shocks count; omitted
+  and suppressed draws do not.
+- Frontend: the progress-bar mouse jolts when a shock is delivered.
+- Frontend: a **Live** button on the Event Timeline that resumes auto-scroll after you
+  scroll back.
 
 ### Changed
 - The shock card is now **Shock Output** everywhere a user sees it.
@@ -50,6 +56,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   (K)**, with a visible description of the mode.
 - The shock output defaults to unconfigured (duration 0, N 0). **Arm** stays disabled
   until a configured SET has been sent.
+- Shock Output: **Arm** and the **Test-mode pulses** toggle no longer ask for
+  confirmation; the one-shot **Test Pulse** still does. Turning test-mode pulses on is
+  disabled until a configured SET has been sent, like Arm. Status reads **Armed** /
+  **Disarmed**.
+- Event Timeline: a fixed time scale (10 px/s) with a gridline every 10 s and a label
+  every 30 s, so spacing no longer changes as the session grows; the lanes scroll
+  horizontally from the first minute, and lane names stay pinned on the left.
 
 ### Fixed
 - Frontend: the lever **Timeout** row is no longer rendered on `omission_lite`. Its
