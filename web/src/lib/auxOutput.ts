@@ -54,12 +54,10 @@ export function auxCommandsFor(state: AuxConfig): [number, number][] {
   ];
 }
 
-export type AuxConfirmAction = "arm" | "test" | "testFire";
+export type AuxConfirmAction = "test";
 
 export const AUX_CONFIRM: Record<AuxConfirmAction, string> = {
-  arm: "Arm the shock output? While armed, this session can deliver electric SHOCKS to the animal. Confirm the animal, the shock settings and the wiring are correct before continuing.",
   test: "Fire one shock test pulse now? This delivers a real SHOCK to any animal connected to the output.",
-  testFire: "Allow shock pulses in test mode? With this on, test-mode runs will deliver real SHOCKS to any animal connected to the output.",
 };
 
 export const SHOCK_LABEL = "Shock Output";
@@ -75,7 +73,7 @@ export function blockSummary(k: number, n: number): string {
 }
 
 export function auxStatusText(armed: boolean): string {
-  return armed ? "ARMED: will shock" : "Disarmed: no shock";
+  return armed ? "Armed" : "Disarmed";
 }
 
 /** Duration and, in block mode, block N must be set before the output can be armed or tested. */

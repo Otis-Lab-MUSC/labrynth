@@ -58,7 +58,6 @@ export function AuxOutputControl({ sessionId }: Props) {
   const canTest = isAuxConfigured(aux) && aux.configSent;
 
   const handleArm = () => {
-    if (!confirmAuxAction("arm")) return;
     send(AUX_ARM);
     update({ armed: true });
   };
@@ -75,7 +74,6 @@ export function AuxOutputControl({ sessionId }: Props) {
 
   const handleTestFire = () => {
     if (!aux.testFire) {
-      if (!confirmAuxAction("testFire")) return;
       send(AUX_SET_TEST_FIRE, 1);
       update({ testFire: true });
     } else {
@@ -176,7 +174,9 @@ export function AuxOutputControl({ sessionId }: Props) {
         <label className="text-sm w-36 text-theme-text/60" title="Allow pulses during test mode / TEST_CHAIN">Test-mode pulses:</label>
         <button
           onClick={handleTestFire}
-          className={`btn-sm ${aux.testFire ? "btn-toggle-red-on" : "btn-toggle-green-off"}`}
+          disabled={!aux.testFire && !canTest}
+          title={aux.testFire || canTest ? undefined : "Set the shock settings first"}
+          className={`btn-sm ${aux.testFire ? "btn-toggle-red-on" : "btn-toggle-green-off"} disabled:opacity-50`}
         >{aux.testFire ? "Allowed" : "Blocked"}</button>
       </div>
       <div className="flex justify-end">

@@ -68,7 +68,7 @@ test("1485 reflects testFire exactly", () => {
 });
 
 test("confirmAuxAction returns false when declined and passes the right text", () => {
-  for (const action of ["arm", "test", "testFire"]) {
+  for (const action of ["test"]) {
     const seen = [];
     const ok = confirmAuxAction(action, (m) => { seen.push(m); return false; });
     assert.equal(ok, false);
@@ -76,7 +76,11 @@ test("confirmAuxAction returns false when declined and passes the right text", (
     assert.match(AUX_CONFIRM[action], /shock/i);
     assert.match(AUX_CONFIRM[action], /animal/i);
   }
-  assert.equal(confirmAuxAction("arm", () => true), true);
+  assert.equal(confirmAuxAction("test", () => true), true);
+});
+
+test("AUX_CONFIRM only guards the test pulse", () => {
+  assert.deepEqual(Object.keys(AUX_CONFIRM), ["test"]);
 });
 
 test("blockSummary", () => {
@@ -87,8 +91,8 @@ test("blockSummary", () => {
 });
 
 test("auxStatusText", () => {
-  assert.equal(auxStatusText(true), "ARMED: will shock");
-  assert.equal(auxStatusText(false), "Disarmed: no shock");
+  assert.equal(auxStatusText(true), "Armed");
+  assert.equal(auxStatusText(false), "Disarmed");
 });
 
 test("isAuxConfigured needs a valid duration and, in block mode, a valid N", () => {
