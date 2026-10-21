@@ -35,6 +35,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Explained in Help → Configuration → Hardware Controls → Levers.
 - The mode is carried in the session start summary and captured by newly saved user
   presets, so what was run is recoverable from the session record.
+- Frontend: the session start modal shows the shock output as its own red banner
+  (armed or disarmed, with its settings spelled out) on boards that have one.
+- Frontend: a warning when a Pavlovian session starts with no cue armed.
+- Selectable **shock pin** for Shock Output (default 22, sent as command 1476). Mega
+  `fr` sketch only; requires reacher 3.4.0-beta.12.
+- CI: a check that rejects Windows-reserved file names (`con`, `prn`, `aux`, `nul`,
+  `com0`–`com9`, `lpt0`–`lpt9`) anywhere in the tree.
+
+### Changed
+- The shock card is now **Shock Output** everywhere a user sees it.
+- Every device card has one **SET** button that sends all of its settings in order.
+- Shock Output Block mode fields are **Rewards per block (N)** and **Shocks per block
+  (K)**, with a visible description of the mode.
+- The shock output defaults to unconfigured (duration 0, N 0). **Arm** stays disabled
+  until a configured SET has been sent.
 
 ### Fixed
 - Frontend: the lever **Timeout** row is no longer rendered on `omission_lite`. Its
@@ -47,6 +62,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   that later calls `startProgram()` — so an undeclared code did not degrade a session,
   it stopped it starting. Caught in review before release: as first written, the new
   `timeoutMode` param would have blocked every **omission** session start.
+
+### Known issues
+- The shock output works on the Arduino Mega with the `fr` sketch only.
+- A Pavlovian session started with no cues armed ends immediately. With reacher
+  3.4.0-beta.10 or later, Stop returns at once.
 
 ---
 

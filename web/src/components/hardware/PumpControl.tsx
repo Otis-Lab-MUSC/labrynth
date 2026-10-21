@@ -2,6 +2,7 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
 import { ContingencySection } from "./ContingencySection";
+import { CardSetButton } from "./CardSetButton";
 import { useRewardPump } from "../../hooks/useRewardPump";
 
 interface Props {
@@ -38,6 +39,7 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
   const { armed, duration, flowRateUlPerSec } = pump;
   const hasFlowRate = flowRateUlPerSec != null && flowRateUlPerSec > 0;
   const hasDuration = duration >= MIN_DURATION;
+  const durationValid = duration >= MIN_DURATION && duration <= MAX_DURATION;
   const volumeEstimateUl = hasFlowRate && hasDuration ? (duration * flowRateUlPerSec) / 1000 : null;
   const codes = CODES[prefix];
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
@@ -98,16 +100,19 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
         <label className="text-sm text-theme-text/60">Duration (ms):</label>
         <input type="number" value={duration} min={MIN_DURATION} max={MAX_DURATION}
           onChange={(e) => update({ duration: +e.target.value })}
-          className="w-24 input-base" />
-        <button onClick={() => send(codes.dur, duration)}
-          disabled={duration < MIN_DURATION || duration > MAX_DURATION}
-          className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+          className={`w-24 input-base${durationValid ? "" : " border-red-500"}`} />
       </div>
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Pump rate (µL/s):</label>
         <input type="number" value={flowRateUlPerSec ?? ""} min={0} step="any" placeholder="unset"
           onChange={(e) => update({ flowRateUlPerSec: e.target.value === "" ? null : +e.target.value })}
           className="w-24 input-base" />
+      </div>
+      <div className="flex justify-end">
+        <CardSetButton
+          fields={[{ code: codes.dur, value: duration, valid: durationValid, label: "Duration (ms)" }]}
+          send={send}
+        />
       </div>
       {volumeEstimateUl != null ? (
         <p className="text-xs text-theme-text/50">

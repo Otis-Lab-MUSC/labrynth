@@ -8,7 +8,10 @@ import { PRESET_COMMAND_MAP, LASER_MODE_COMMANDS, PAV_LASER_PHASE_COMMANDS, canD
 import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
 import { useRewardPump } from "../../hooks/useRewardPump";
 import { ValidationWarningPanel } from "./ValidationWarningPanel";
-import { DEVICE_LABELS, formatDeviceParams, laserPhaseActive } from "./hardwareSummary";
+import { DEVICE_LABELS, auxParts, formatDeviceParams, laserPhaseActive } from "./hardwareSummary";
+import { SHOCK_LABEL, auxStatusText } from "../../lib/auxOutput";
+import { useFirmwareCommands } from "../../hooks/useFirmwareCommands";
+import { Zap } from "lucide-react";
 import type { ValidationResult } from "../../api/client";
 
 // Shared with PavlovianSettings so the start-summary labels every param the
@@ -27,6 +30,7 @@ export function SessionStartModal() {
   const setLimitSettings = useSessionStore((s) => s.setLimitSettings);
 
   const hostPump = useRewardPump(startModalOpen ? activeSessionId : null);
+  const { hasAux } = useFirmwareCommands(activeSessionId);
 
   const [starting, setStarting] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -231,13 +235,18 @@ export function SessionStartModal() {
   const hw = session.hardwareUi;
   const devices = Object.entries(hw)
     .filter(([key]) => key !== "testMode")
+    .filter(([key]) => key !== "aux")
     .filter(([key]) => !isPavlovian || (key !== "rhLever" && key !== "lhLever")) as [string, { armed: boolean; [k: string]: unknown }][];
+  const pavNoCuesArmed = isPavlovian && !hw.primaryCue.armed && !hw.secondaryCue.armed;
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-panel border border-theme-border rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto m-4">
         <div className="p-6 space-y-5">
           <h2 className="text-xl font-semibold text-theme-text">Review Session Configuration</h2>
+          {pavNoCuesArmed && (
+            <p className="text-sm text-amber-400">No cues armed: the session will end immediately.</p>
+          )}
 
           {/* Session Info */}
           <section>
@@ -383,6 +392,18 @@ export function SessionStartModal() {
           {/* Hardware Summary (read-only) */}
           <section>
             <h3 className="text-sm font-medium text-theme-text/60 uppercase tracking-wide mb-2">Hardware</h3>
+            {hasAux && (
+              <div className="border-2 border-[#ff2d2d] bg-[#ff2d2d]/10 rounded p-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-[#ff2d2d]" />
+                  <span className="text-sm font-semibold text-theme-text">{SHOCK_LABEL}</span>
+                </div>
+                <p className={`text-lg font-bold ${hw.aux.armed ? "text-[#ff2d2d]" : "text-theme-text/60"}`}>
+                  {auxStatusText(hw.aux.armed)}
+                </p>
+                <p className="font-mono text-xs text-theme-text/60">{auxParts(hw.aux).join("  ")}</p>
+              </div>
+            )}
             <div className="border border-theme-border rounded overflow-hidden">
               <table className="w-full text-sm">
                 <thead>

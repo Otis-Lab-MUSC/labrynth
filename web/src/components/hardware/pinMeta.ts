@@ -42,7 +42,8 @@ export type Component =
   | "lick"
   | "laser"
   | "microscope_trigger"
-  | "slm";
+  | "slm"
+  | "aux";
 
 /** Stable order used by the UI grid. */
 export const COMPONENT_KEYS: readonly Component[] = [
@@ -56,6 +57,7 @@ export const COMPONENT_KEYS: readonly Component[] = [
   "laser",
   "microscope_trigger",
   "slm",
+  "aux",
 ] as const;
 
 /** Backend SET_PIN command codes (suffix x76). */
@@ -70,6 +72,7 @@ export const SET_PIN_CODE: Record<Component, number> = {
   laser: 676,
   microscope_trigger: 976,
   slm: 1176,
+  aux: 1476,
 };
 
 /** Human-readable labels for the pin assignment table. */
@@ -84,6 +87,7 @@ export const COMPONENT_LABEL: Record<Component, string> = {
   laser: "Laser",
   microscope_trigger: "Microscope Trigger",
   slm: "SLM Timestamp",
+  aux: "Shock Output",
 };
 
 /** Components whose pins must support hardware PWM. */
@@ -98,6 +102,12 @@ export const COMPONENT_REQUIRES_PWM: Record<Component, boolean> = {
   lick: false,
   microscope_trigger: false,
   slm: false,
+  aux: false,
+};
+
+/** Components that only exist on the Mega; empty on every other board. */
+export const COMPONENT_MEGA_ONLY: Partial<Record<Component, boolean>> = {
+  aux: true,
 };
 
 /** Components restricted to the PCINT0/PORTB group (pins 10–13 on the Mega). */
@@ -112,6 +122,7 @@ export const COMPONENT_REQUIRES_PCINT: Record<Component, boolean> = {
   lick: false,
   laser: false,
   microscope_trigger: false,
+  aux: false,
 };
 
 /** Components restricted to pins carrying an external-interrupt line (INT0-INT5).
@@ -128,6 +139,7 @@ export const COMPONENT_REQUIRES_INT: Record<Component, boolean> = {
   lick: false,
   laser: false,
   microscope_trigger: false,
+  aux: false,
 };
 
 /** Firmware default pins (from reacher/firmware/.../Pins.h). */
@@ -142,6 +154,7 @@ export const DEFAULT_PIN: Record<Component, number> = {
   laser: 6,
   microscope_trigger: 9,
   slm: 11,
+  aux: 22,
 };
 
 // --- Board pin sets (must mirror backend pin_overrides.py) ---
@@ -220,6 +233,7 @@ export function validPinsFor(
     : requirePcint
       ? pcint0PinsFor(board)
       : digitalPinsFor(board);
+  if (COMPONENT_MEGA_ONLY[component] && board !== "mega") return [];
   const requirePwm = COMPONENT_REQUIRES_PWM[component];
   const pwm = pwmPinsFor(board);
   return [...digital].filter((p) => {

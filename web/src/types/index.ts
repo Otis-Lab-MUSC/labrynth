@@ -88,6 +88,10 @@ export interface AuxUiState extends DeviceArmState {
   blockN: number;
   seed: number;  // 0 = auto
   testFire: boolean;
+  /** true after a full SET of a configured card; any field edit clears it. Arm is disabled until true. */
+  configSent: boolean;
+  /** Last firmware refusal, cleared by the next successful SET or by dismiss. */
+  lastError?: string;
 }
 
 export interface HardwareUiState {

@@ -75,7 +75,7 @@ const DEVICE_DISPLAY_NAMES: Record<string, string> = {
   LASER: "Laser",
   LICK: "Lick Circuit",
   SLM: "SLM",
-  AUX_1: "Shock (AUX)",
+  AUX_1: "Shock Output",
   CONTROLLER: "Controller",
   // See DEVICE_COLORS: bare CUE/PUMP are current, not legacy.
   CUE: "Cue 1",

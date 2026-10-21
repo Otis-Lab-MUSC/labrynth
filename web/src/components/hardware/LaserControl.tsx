@@ -2,6 +2,8 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { LASER_MODE_COMMANDS } from "../program/devicePresets";
 import { FIRMWARE_GAPS, hasFirmwareGap } from "../../generated/firmwareGaps";
+import type { CardField } from "../../lib/cardSet";
+import { CardSetButton } from "./CardSetButton";
 import { PinField } from "./PinField";
 import { SquareWaveCanvas } from "./SquareWaveCanvas";
 
@@ -33,6 +35,16 @@ export function LaserControl({ sessionId, paradigm }: Props) {
   const delayMax = isPavlovian
     ? Math.max(0, (phase === "cue" ? (pavParams?.[213] ?? 2000) : (pavParams?.[215] ?? 5000)) - 1)
     : 600000;
+  const delayValid = onsetDelay >= 0 && onsetDelay <= delayMax;
+  const freqValid = frequency >= 1 && frequency <= 65535;
+  const durValid = duration >= 1 && duration <= 600000;
+  const delayField: CardField = { code: 673, value: onsetDelay, valid: delayValid, label: "Delay (ms)" };
+  const setFields: CardField[] = [
+    ...(!isPavlovian && contingency !== "independent" ? [delayField] : []),
+    { code: 671, value: frequency, valid: freqValid, label: "Freq (Hz)" },
+    { code: 672, value: duration, valid: durValid, label: "Dur (ms)" },
+    ...(isPavlovian ? [delayField] : []),
+  ];
 
   return (
     <div className="card">
@@ -135,11 +147,8 @@ export function LaserControl({ sessionId, paradigm }: Props) {
               <label className="text-xs text-theme-text/60">Delay (ms):</label>
               <input type="number" value={onsetDelay} min={0} max={delayMax}
                 onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, onsetDelay: Math.min(Math.max(0, +e.target.value), delayMax) } }))}
-                className="w-24 input-base"
+                className={`w-24 input-base${delayValid ? "" : " border-red-500"}`}
                 title="Onset delay from lever press onset to laser activation" />
-              <button onClick={() => send(673, onsetDelay)}
-                disabled={onsetDelay < 0 || onsetDelay > delayMax}
-                className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
             </div>
           )}
         </div>
@@ -148,31 +157,25 @@ export function LaserControl({ sessionId, paradigm }: Props) {
         <label className="text-sm text-theme-text/60" title="Integer ms timing causes ~2-4% error at 30/40 Hz. Exact at 1, 10, 20, 25, 50 Hz.">Freq (Hz):</label>
         <input type="number" value={frequency} min={1} max={65535}
           onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, frequency: +e.target.value } }))}
-          className="w-24 input-base" />
-        <button onClick={() => send(671, frequency)}
-          disabled={frequency < 1 || frequency > 65535}
-          className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+          className={`w-24 input-base${freqValid ? "" : " border-red-500"}`} />
       </div>
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Dur (ms):</label>
         <input type="number" value={duration} min={1} max={600000}
           onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, duration: +e.target.value } }))}
-          className="w-24 input-base" />
-        <button onClick={() => send(672, duration)}
-          disabled={duration < 1 || duration > 600000}
-          className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+          className={`w-24 input-base${durValid ? "" : " border-red-500"}`} />
       </div>
       {isPavlovian && (
         <div className="flex items-center gap-2">
           <label className="text-sm text-theme-text/60" title="Onset delay from trigger to laser activation">Delay (ms):</label>
           <input type="number" value={onsetDelay} min={0} max={delayMax}
             onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, onsetDelay: Math.min(Math.max(0, +e.target.value), delayMax) } }))}
-            className="w-24 input-base" />
-          <button onClick={() => send(673, onsetDelay)}
-            disabled={onsetDelay < 0 || onsetDelay > delayMax}
-            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+            className={`w-24 input-base${delayValid ? "" : " border-red-500"}`} />
         </div>
       )}
+      <div className="flex justify-end">
+        <CardSetButton fields={setFields} send={send} />
+      </div>
       <SquareWaveCanvas frequency={frequency} duration={duration} />
     </div>
   );

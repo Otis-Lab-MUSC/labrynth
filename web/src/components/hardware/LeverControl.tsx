@@ -1,7 +1,9 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
+import { CardSetButton } from "./CardSetButton";
 import { isParadigm } from "../../lib/paradigm";
+import type { CardField } from "../../lib/cardSet";
 
 interface Props {
   sessionId: string;
@@ -54,6 +56,10 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
   // is meaningless.
   const showTimeoutMode = showTimeout && isParadigm(paradigm, "fr", "pr");
 
+  const setFields: CardField[] = [];
+  if (showTimeout) setFields.push({ code: codes.timeout, value: timeout, valid: timeout >= 0 && timeout <= 600000, label: "Timeout (ms)" });
+  if (showTimeoutMode) setFields.push({ code: codes.timeoutMode, value: timeoutMode, valid: true, label: "Timeout starts on" });
+
   return (
     <div className="card">
       <h3 className="font-medium text-theme-text">
@@ -76,11 +82,8 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
           <input
             type="number" value={timeout} min={0} max={600000}
             onChange={(e) => setShared({ timeout: +e.target.value })}
-            className="w-24 input-base"
+            className={`w-24 input-base ${timeout < 0 || timeout > 600000 ? "border-red-500" : ""}`}
           />
-          <button onClick={() => send(codes.timeout, timeout)}
-            disabled={timeout < 0 || timeout > 600000}
-            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
         </div>
       )}
       {showTimeoutMode && (
@@ -96,14 +99,21 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
-          <button onClick={() => send(codes.timeoutMode, timeoutMode)}
-            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
         </div>
       )}
       {showTimeout && (
         <p className="text-xs text-theme-text/50">
           Scheduler-wide: timeout and timeout mode are shared by both levers.
         </p>
+      )}
+      {setFields.length > 0 && (
+        <div className="flex justify-end">
+          <CardSetButton
+            label="SET"
+            fields={setFields}
+            send={send}
+          />
+        </div>
       )}
     </div>
   );

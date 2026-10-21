@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
+import { CardSetButton } from "./CardSetButton";
 
 interface Props {
   sessionId: string;
@@ -53,6 +54,7 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
 
   const contingency = device.contingency;
   const leverFilter = contingency.leverFilter;
+  const delayValid = contingency.delay >= 0 && contingency.delay <= 600000;
 
   const send = (code: number, value?: number) =>
     getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
@@ -72,7 +74,6 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
   };
 
   const setDelay = (ms: number) => {
-    send(DELAY_CMD[deviceKey], ms);
     updateHardwareUi(sessionId, (prev) => ({
       [deviceKey]: {
         ...(prev[deviceKey] as typeof device),
@@ -110,18 +111,26 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
       {deviceKey === "secondaryCue" ? (
         <p className="text-xs text-theme-text/50 italic">Shares onset delay with Cue 1</p>
       ) : (
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-theme-text/60">Delay (ms):</label>
-          <input
-            type="number"
-            min={0}
-            max={600000}
-            value={contingency.delay}
-            onChange={(e) => setDelay(+e.target.value)}
-            className="w-24 input-base"
-            title="Onset delay from trigger to device activation"
-          />
-        </div>
+        <>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-theme-text/60">Delay (ms):</label>
+            <input
+              type="number"
+              min={0}
+              max={600000}
+              value={contingency.delay}
+              onChange={(e) => setDelay(+e.target.value)}
+              className={`w-24 input-base${delayValid ? "" : " border-red-500"}`}
+              title="Onset delay from trigger to device activation"
+            />
+          </div>
+          <div className="flex justify-end">
+            <CardSetButton
+              fields={[{ code: DELAY_CMD[deviceKey], value: contingency.delay, valid: delayValid, label: "Delay (ms)" }]}
+              send={send}
+            />
+          </div>
+        </>
       )}
     </div>
   );

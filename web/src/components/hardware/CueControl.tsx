@@ -2,6 +2,7 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
 import { ContingencySection } from "./ContingencySection";
+import { CardSetButton } from "./CardSetButton";
 
 interface Props {
   sessionId: string;
@@ -29,6 +30,8 @@ export function CueControl({ sessionId, label, prefix, paradigm }: Props) {
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
   // Pavlovian freq/duration are owned by PavlovianSettings (commands 210/211/213); hide here to avoid duplicates.
   const showFreqDur = paradigm !== "pavlovian";
+  const freqValid = frequency >= 1 && frequency <= 65535;
+  const durValid = duration >= 1 && duration <= 600000;
 
   return (
     <div className="card">
@@ -52,10 +55,7 @@ export function CueControl({ sessionId, label, prefix, paradigm }: Props) {
           <label className="text-sm text-theme-text/60">Freq (Hz):</label>
           <input type="number" value={frequency} min={1} max={65535}
             onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], frequency: +e.target.value } }))}
-            className="w-24 input-base" />
-          <button onClick={() => send(codes.freq, frequency)}
-            disabled={frequency < 1 || frequency > 65535}
-            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+            className={`w-24 input-base${freqValid ? "" : " border-red-500"}`} />
         </div>
       )}
       {showFreqDur && (
@@ -63,10 +63,18 @@ export function CueControl({ sessionId, label, prefix, paradigm }: Props) {
           <label className="text-sm text-theme-text/60">Dur (ms):</label>
           <input type="number" value={duration} min={1} max={600000}
             onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], duration: +e.target.value } }))}
-            className="w-24 input-base" />
-          <button onClick={() => send(codes.dur, duration)}
-            disabled={duration < 1 || duration > 600000}
-            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+            className={`w-24 input-base${durValid ? "" : " border-red-500"}`} />
+        </div>
+      )}
+      {showFreqDur && (
+        <div className="flex justify-end">
+          <CardSetButton
+            fields={[
+              { code: codes.freq, value: frequency, valid: freqValid, label: "Freq (Hz)" },
+              { code: codes.dur, value: duration, valid: durValid, label: "Dur (ms)" },
+            ]}
+            send={send}
+          />
         </div>
       )}
       <ContingencySection sessionId={sessionId} deviceKey={storeKey} paradigm={paradigm} />

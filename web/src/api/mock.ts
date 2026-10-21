@@ -213,8 +213,8 @@ const TWO_PHOTON_MOCK_COMMANDS = [
 
 // TTL shock output — Mega "fr" only (not lite, not Pavlovian). The UI gates the AUX card on 1401.
 const AUX_MOCK_COMMANDS = [
-  { code: 1400, name: "AUX_DISARM", description: "Disarm AUX shock output", payload_key: null, payload_type: null },
-  { code: 1401, name: "AUX_ARM", description: "Arm AUX shock output", payload_key: null, payload_type: null },
+  { code: 1400, name: "AUX_DISARM", description: "Disarm Shock Output", payload_key: null, payload_type: null },
+  { code: 1401, name: "AUX_ARM", description: "Arm Shock Output", payload_key: null, payload_type: null },
   { code: 1403, name: "AUX_TEST", description: "Deliver one test pulse now", payload_key: null, payload_type: null },
   { code: 1472, name: "AUX_SET_DURATION", description: "Pulse duration (ms, 1-5000)", payload_key: "duration", payload_type: "int" },
   { code: 1477, name: "AUX_SET_ONSET_DELAY", description: "Onset delay (ms)", payload_key: "delay", payload_type: "int" },

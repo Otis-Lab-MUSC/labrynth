@@ -7,6 +7,7 @@ import { useTutorialStore } from "../store/useTutorialStore";
 import { useLogStore } from "../store/useLogStore";
 import { useAppStore } from "../store/useAppStore";
 import { getClientForSession } from "../api/sessionClient";
+import { auxStateFromEvent } from "../lib/auxEvents";
 import type { LogLevel } from "../store/useLogStore";
 import type { WSMessage, BehaviorEvent, FirmwareConfig, SessionState } from "../types";
 
@@ -144,6 +145,9 @@ function handleMessage(msg: WSMessage) {
       // until the next *IDN?.
       if (raw.device === "CONTROLLER" && (typeof raw.sketch === "string" || typeof raw.version === "string")) {
         setFirmwareInfo(msg.session_id, configData);
+        updateHardwareUi(msg.session_id, (prev) => ({
+          aux: auxStateFromEvent(prev.aux, { kind: "config", data: raw }),
+        }));
       } else {
         pushHardwareSetting(msg.session_id, configData);
 
@@ -185,6 +189,10 @@ function handleMessage(msg: WSMessage) {
               // raw.seed is the *effective* seed; syncing it would turn "auto" (0) into a pinned seed.
               if (typeof raw.test_fire === "boolean") patch.testFire = raw.test_fire;
             }
+            if (raw.device === "AUX") {
+              const guarded = auxStateFromEvent(prev.aux, { kind: "config", data: raw });
+              return { aux: { ...prev.aux, ...patch, armed: guarded.armed, configSent: guarded.configSent } } as Partial<typeof prev>;
+            }
             return { [uiKey]: { ...current, ...patch } } as Partial<typeof prev>;
           });
         }
@@ -199,6 +207,11 @@ function handleMessage(msg: WSMessage) {
     case "error": {
       const { desc, device } = msg.data as { desc: string; device: string };
       pushLog("error", `[${device}] ${desc}`, msg.session_id);
+      if (device === "AUX") {
+        updateHardwareUi(msg.session_id, (prev) => ({
+          aux: auxStateFromEvent(prev.aux, { kind: "error", data: msg.data as unknown as Record<string, unknown> }),
+        }));
+      }
       break;
     }
     case "upload_progress": {
@@ -217,6 +230,7 @@ function handleMessage(msg: WSMessage) {
     case "disconnect": {
       const { reason, reconnecting } = msg.data as { reason: string; reconnecting?: boolean };
       updateState(msg.session_id, "disconnected");
+      updateHardwareUi(msg.session_id, (prev) => ({ aux: auxStateFromEvent(prev.aux, { kind: "disconnect" }) }));
       pushLog(
         "error",
         reconnecting ? `Serial disconnected: ${reason} (reconnecting...)` : `Serial disconnected: ${reason}`,
@@ -227,6 +241,7 @@ function handleMessage(msg: WSMessage) {
     // The server restores the pre-drop state and broadcasts session_state itself, so no local state change here.
     case "reconnected": {
       const { attempt } = msg.data as { attempt: number };
+      updateHardwareUi(msg.session_id, (prev) => ({ aux: auxStateFromEvent(prev.aux, { kind: "reconnected" }) }));
       pushLog("info", `Serial reconnected (attempt ${attempt})`, msg.session_id);
       break;
     }

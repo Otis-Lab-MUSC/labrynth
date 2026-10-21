@@ -9,6 +9,7 @@ import type {
   AuxUiState,
   DeviceArmState,
 } from "../../types";
+import { SHOCK_LABEL } from "../../lib/auxOutput.ts";
 
 // Display labels for every device surfaced in the start-summary Hardware table.
 export const DEVICE_LABELS: Record<string, string> = {
@@ -22,7 +23,7 @@ export const DEVICE_LABELS: Record<string, string> = {
   lickCircuit: "Lick Circuit",
   microscope: "Microscope",
   slm: "SLM",
-  aux: "Shock (AUX)",
+  aux: SHOCK_LABEL,
 };
 
 export interface SummaryContext {
@@ -147,10 +148,14 @@ function slmParts(s: SlmUiState): string[] {
   return parts;
 }
 
-function auxParts(s: AuxUiState): string[] {
-  const parts: string[] = [`${s.duration}ms`];
-  if (s.onsetDelay > 0) parts.push(`Delay:${s.onsetDelay}ms`);
-  parts.push(s.mode === 1 ? `Block ${s.blockK}/${s.blockN}` : `P:${s.probability}%`);
+export function auxParts(s: AuxUiState): string[] {
+  const parts: string[] = [s.duration > 0 ? `Duration:${s.duration}ms` : "Duration: not set"];
+  parts.push(`Onset:${s.onsetDelay}ms`);
+  if (s.mode === 1) {
+    parts.push(s.blockN > 0 ? `Block: ${s.blockK} of every ${s.blockN}` : "Block: N not set");
+  } else {
+    parts.push(`P:${s.probability}%`);
+  }
   parts.push(s.seed === 0 ? "Seed:auto" : `Seed:${s.seed}`);
   if (s.testFire) parts.push("Test-fire ON");
   return parts;
