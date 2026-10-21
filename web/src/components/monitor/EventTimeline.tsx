@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import type { BehaviorEvent } from "../../types";
 import { useContainerWidth } from "../../hooks/useContainerWidth";
+import { TIMELINE_PX_PER_SEC, fixedTicks, formatTickLabel } from "../../lib/timelineScale.ts";
 
 function readAccentRgb(): string {
   const raw = getComputedStyle(document.documentElement)
@@ -128,32 +129,6 @@ function formatTime(seconds: number): string {
   return `${m}m${s.toFixed(0)}s`;
 }
 
-function computeTimeTicks(minTime: number, maxTime: number): number[] {
-  const range = maxTime - minTime;
-  if (range <= 0) return [0];
-
-  // Choose a nice tick interval
-  const rawInterval = range / 8;
-  const mag = Math.pow(10, Math.floor(Math.log10(rawInterval)));
-  const candidates = [1, 2, 5, 10, 20, 30, 60];
-  let interval = candidates[candidates.length - 1] * mag;
-  for (const c of candidates) {
-    if (c * mag >= rawInterval) {
-      interval = c * mag;
-      break;
-    }
-  }
-  if (interval < 1) interval = 1;
-
-  const ticks: number[] = [];
-  const start = Math.ceil(minTime / interval) * interval;
-  for (let t = start; t <= maxTime; t += interval) {
-    ticks.push(t);
-  }
-  if (ticks.length === 0) ticks.push(minTime);
-  return ticks;
-}
-
 interface TooltipData {
   x: number;
   y: number;
@@ -172,6 +147,7 @@ export function EventTimeline({ events }: Props) {
   // Auto-scroll to latest event; pause when user scrolls left, resume at right edge
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const scrollAnchorRef = useRef(true);
+  const [following, setFollowing] = useState(true);
 
   const combinedRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -191,6 +167,15 @@ export function EventTimeline({ events }: Props) {
     const el = scrollRef.current;
     if (!el) return;
     scrollAnchorRef.current = el.scrollWidth - el.scrollLeft - el.clientWidth < 20;
+    setFollowing(scrollAnchorRef.current);
+  }, []);
+
+  const jumpToLive = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollLeft = el.scrollWidth;
+    scrollAnchorRef.current = true;
+    setFollowing(true);
   }, []);
 
   const handleMouseEnter = useCallback(
@@ -244,16 +229,14 @@ export function EventTimeline({ events }: Props) {
   // Time range
   const baseTs = Math.min(...displayEvents.map((e) => e.start_timestamp));
   const maxTs = Math.max(...displayEvents.map((e) => e.end_timestamp));
-  const minTime = 0;
   const maxTime = Math.max((maxTs - baseTs) / 1000, 1);
 
-  // SVG dimensions — fill container, scroll when data overflows
+  // SVG dimensions — fixed time scale; the lanes SVG grows past the panel when data overflows
   const chartHeight = PADDING_TOP + activeLanes.length * (LANE_HEIGHT + LANE_GAP) + TIME_AXIS_HEIGHT;
-  const dataWidth = LABEL_WIDTH + maxTime * 4 + PADDING_RIGHT; // minimum 4px/sec
-  const chartWidth = Math.max(containerWidth, dataWidth);
-  const pixelsPerSecond = (chartWidth - LABEL_WIDTH - PADDING_RIGHT) / maxTime;
+  const chartWidth = Math.max(containerWidth, maxTime * TIMELINE_PX_PER_SEC + PADDING_RIGHT);
+  const pixelsPerSecond = TIMELINE_PX_PER_SEC;
 
-  const ticks = computeTimeTicks(minTime, maxTime);
+  const ticks = fixedTicks((chartWidth - PADDING_RIGHT) / pixelsPerSecond);
 
   const axisColor = `rgba(${accentRgb}, 0.3)`;
   const textColor = `rgb(${textPrimaryRgb})`;
@@ -261,158 +244,187 @@ export function EventTimeline({ events }: Props) {
 
   return (
     <div className="rounded-lg border border-theme-border bg-panel p-4">
-      <h3 className="mb-2 font-medium text-theme-text">Event Timeline</h3>
-      <div ref={combinedRef} className="overflow-x-auto" style={{ position: "relative" }} onScroll={handleScroll}>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="font-medium text-theme-text">Event Timeline</h3>
+        {!following && (
+          <button
+            type="button"
+            className="btn-sm"
+            aria-label="Jump to live"
+            onClick={jumpToLive}
+          >
+            Live
+          </button>
+        )}
+      </div>
+      <div className="flex">
         <svg
-          ref={svgRef}
-          width={chartWidth}
+          width={LABEL_WIDTH}
           height={chartHeight}
-          className="font-mono"
+          className="shrink-0 font-mono"
         >
-          {/* Lane backgrounds and labels */}
+          {/* Lane labels: fixed column, outside the scroller so they stay visible */}
           {activeLanes.map((device, i) => {
             const y = PADDING_TOP + i * (LANE_HEIGHT + LANE_GAP);
             return (
-              <g key={device}>
+              <text
+                key={device}
+                x={LABEL_WIDTH - 8}
+                y={y + LANE_HEIGHT / 2}
+                textAnchor="end"
+                dominantBaseline="central"
+                fill={getDeviceColor(device)}
+                fontSize={11}
+                fontFamily="JetBrains Mono, monospace"
+              >
+                {displayName(device)}
+              </text>
+            );
+          })}
+        </svg>
+
+        <div ref={combinedRef} className="min-w-0 flex-1 overflow-x-auto" style={{ position: "relative" }} onScroll={handleScroll}>
+          <svg
+            ref={svgRef}
+            width={chartWidth}
+            height={chartHeight}
+            className="font-mono"
+          >
+            {/* Lane backgrounds */}
+            {activeLanes.map((device, i) => {
+              const y = PADDING_TOP + i * (LANE_HEIGHT + LANE_GAP);
+              return (
                 <rect
-                  x={LABEL_WIDTH}
+                  key={device}
+                  x={0}
                   y={y}
-                  width={chartWidth - LABEL_WIDTH - PADDING_RIGHT}
+                  width={chartWidth - PADDING_RIGHT}
                   height={LANE_HEIGHT}
                   fill={gridColor}
                   rx={2}
                 />
-                <text
-                  x={LABEL_WIDTH - 8}
-                  y={y + LANE_HEIGHT / 2}
-                  textAnchor="end"
-                  dominantBaseline="central"
-                  fill={getDeviceColor(device)}
-                  fontSize={11}
-                  fontFamily="JetBrains Mono, monospace"
-                >
-                  {displayName(device)}
-                </text>
-              </g>
-            );
-          })}
+              );
+            })}
 
-          {/* Time axis grid lines */}
-          {ticks.map((t) => {
-            const x = LABEL_WIDTH + (t - minTime) * pixelsPerSecond;
-            return (
-              <g key={t}>
-                <line
-                  x1={x}
-                  y1={PADDING_TOP}
-                  x2={x}
-                  y2={chartHeight - TIME_AXIS_HEIGHT}
-                  stroke={axisColor}
-                  strokeDasharray="2 4"
-                />
-                <text
-                  x={x}
-                  y={chartHeight - TIME_AXIS_HEIGHT + 16}
-                  textAnchor="middle"
-                  fill={textColor}
-                  fontSize={10}
-                  fontFamily="JetBrains Mono, monospace"
-                >
-                  {formatTime(t)}
-                </text>
-              </g>
-            );
-          })}
+            {/* Time axis grid lines */}
+            {ticks.map(({ t, label }) => {
+              const x = t * pixelsPerSecond;
+              return (
+                <g key={t}>
+                  <line
+                    x1={x}
+                    y1={PADDING_TOP}
+                    x2={x}
+                    y2={chartHeight - TIME_AXIS_HEIGHT}
+                    stroke={axisColor}
+                    strokeDasharray="2 4"
+                  />
+                  {label && (
+                    <text
+                      x={x}
+                      y={chartHeight - TIME_AXIS_HEIGHT + 16}
+                      textAnchor={t === 0 ? "start" : "middle"}
+                      fill={textColor}
+                      fontSize={10}
+                      fontFamily="JetBrains Mono, monospace"
+                    >
+                      {formatTickLabel(t)}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
 
-          {/* Time axis line */}
-          <line
-            x1={LABEL_WIDTH}
-            y1={chartHeight - TIME_AXIS_HEIGHT}
-            x2={chartWidth - PADDING_RIGHT}
-            y2={chartHeight - TIME_AXIS_HEIGHT}
-            stroke={axisColor}
-          />
+            {/* Time axis line */}
+            <line
+              x1={0}
+              y1={chartHeight - TIME_AXIS_HEIGHT}
+              x2={chartWidth - PADDING_RIGHT}
+              y2={chartHeight - TIME_AXIS_HEIGHT}
+              stroke={axisColor}
+            />
 
-          {/* Event bars */}
-          {displayEvents.map((event, idx) => {
-            const lane = laneIndex.get(event.device);
-            if (lane === undefined) return null;
-            const y = PADDING_TOP + lane * (LANE_HEIGHT + LANE_GAP) + 2;
-            const barHeight = LANE_HEIGHT - 4;
-            const startSec = (event.start_timestamp - baseTs) / 1000;
-            const endSec = (event.end_timestamp - baseTs) / 1000;
-            const x = LABEL_WIDTH + startSec * pixelsPerSecond;
-            const isInstantaneous = event.start_timestamp === event.end_timestamp;
-            const color = getDeviceColor(event.device, event.event);
-            const mark = auxMarkProps(event.device, event.event, color);
-            const markWidth = event.device === "AUX_1" ? MARKER_WIDTH * 2 : MARKER_WIDTH;
+            {/* Event bars */}
+            {displayEvents.map((event, idx) => {
+              const lane = laneIndex.get(event.device);
+              if (lane === undefined) return null;
+              const y = PADDING_TOP + lane * (LANE_HEIGHT + LANE_GAP) + 2;
+              const barHeight = LANE_HEIGHT - 4;
+              const startSec = (event.start_timestamp - baseTs) / 1000;
+              const endSec = (event.end_timestamp - baseTs) / 1000;
+              const x = startSec * pixelsPerSecond;
+              const isInstantaneous = event.start_timestamp === event.end_timestamp;
+              const color = getDeviceColor(event.device, event.event);
+              const mark = auxMarkProps(event.device, event.event, color);
+              const markWidth = event.device === "AUX_1" ? MARKER_WIDTH * 2 : MARKER_WIDTH;
 
-            if (isInstantaneous) {
+              if (isInstantaneous) {
+                return (
+                  <rect
+                    key={idx}
+                    x={x - markWidth / 2}
+                    y={y}
+                    width={markWidth}
+                    height={barHeight}
+                    fill={mark.fill}
+                    stroke={mark.stroke}
+                    strokeWidth={mark.stroke ? 1.5 : undefined}
+                    strokeDasharray={mark.strokeDasharray}
+                    opacity={0.9}
+                    rx={1}
+                    onMouseEnter={(e) => handleMouseEnter(e, event, baseTs)}
+                    onMouseLeave={handleMouseLeave}
+                    style={{ cursor: "pointer" }}
+                  />
+                );
+              }
+
+              const rawWidth = (endSec - startSec) * pixelsPerSecond;
+              const barWidth = Math.max(rawWidth, MIN_BAR_WIDTH);
+
               return (
                 <rect
                   key={idx}
-                  x={x - markWidth / 2}
+                  x={x}
                   y={y}
-                  width={markWidth}
+                  width={barWidth}
                   height={barHeight}
                   fill={mark.fill}
                   stroke={mark.stroke}
                   strokeWidth={mark.stroke ? 1.5 : undefined}
                   strokeDasharray={mark.strokeDasharray}
-                  opacity={0.9}
-                  rx={1}
+                  opacity={0.8}
+                  rx={2}
                   onMouseEnter={(e) => handleMouseEnter(e, event, baseTs)}
                   onMouseLeave={handleMouseLeave}
                   style={{ cursor: "pointer" }}
                 />
               );
-            }
+            })}
+          </svg>
 
-            const rawWidth = (endSec - startSec) * pixelsPerSecond;
-            const barWidth = Math.max(rawWidth, MIN_BAR_WIDTH);
-
-            return (
-              <rect
-                key={idx}
-                x={x}
-                y={y}
-                width={barWidth}
-                height={barHeight}
-                fill={mark.fill}
-                stroke={mark.stroke}
-                strokeWidth={mark.stroke ? 1.5 : undefined}
-                strokeDasharray={mark.strokeDasharray}
-                opacity={0.8}
-                rx={2}
-                onMouseEnter={(e) => handleMouseEnter(e, event, baseTs)}
-                onMouseLeave={handleMouseLeave}
-                style={{ cursor: "pointer" }}
-              />
-            );
-          })}
-        </svg>
-
-        {/* Tooltip */}
-        {tooltip && (
-          <div
-            className="pointer-events-none absolute z-10 rounded border border-theme-border bg-panel px-2 py-1 font-mono text-xs shadow-lg"
-            style={{
-              left: Math.min(tooltip.x + 12, chartWidth - 200),
-              top: tooltip.y - 8,
-            }}
-          >
-            <div className="font-semibold" style={{ color: getDeviceColor(tooltip.device, tooltip.event) }}>
-              {displayName(tooltip.device)}
+          {/* Tooltip */}
+          {tooltip && (
+            <div
+              className="pointer-events-none absolute z-10 rounded border border-theme-border bg-panel px-2 py-1 font-mono text-xs shadow-lg"
+              style={{
+                left: Math.min(tooltip.x + 12, chartWidth - 200),
+                top: Math.max(0, tooltip.y - 8),
+              }}
+            >
+              <div className="font-semibold" style={{ color: getDeviceColor(tooltip.device, tooltip.event) }}>
+                {displayName(tooltip.device)}
+              </div>
+              <div className="text-theme-text">{tooltip.event}</div>
+              <div className="text-theme-text/60">
+                {formatTime(tooltip.start)} &rarr; {formatTime(tooltip.end)}
+              </div>
+              <div className="text-theme-text/60">
+                Duration: {tooltip.duration.toFixed(2)}s
+              </div>
             </div>
-            <div className="text-theme-text">{tooltip.event}</div>
-            <div className="text-theme-text/60">
-              {formatTime(tooltip.start)} &rarr; {formatTime(tooltip.end)}
-            </div>
-            <div className="text-theme-text/60">
-              Duration: {tooltip.duration.toFixed(2)}s
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Color legend */}
