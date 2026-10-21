@@ -185,6 +185,7 @@ export interface Session {
   cumulativeTrialCount: number;
   cumulativeCsPlusCount: number;
   cumulativeCsMinusCount: number;
+  cumulativeShockCount: number;
   cumulativeRhLeverCounts: LeverCounts;
   cumulativeLhLeverCounts: LeverCounts;
   cumulativeElapsedTime: number;

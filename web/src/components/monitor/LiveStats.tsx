@@ -1,4 +1,6 @@
 import type { Session, LeverCounts } from "../../types";
+import { useFirmwareCommands } from "../../hooks/useFirmwareCommands";
+import { countShocks } from "../../lib/shockEvents";
 
 interface Props {
   session: Session;
@@ -37,10 +39,13 @@ function leverTotal(counts: LeverCounts): number {
 export function LiveStats({ session }: Props) {
   const config: ParadigmStatsConfig =
     (session.paradigm ? PARADIGM_CONFIG[session.paradigm] : undefined) ?? DEFAULT_CONFIG;
+  const { hasAux } = useFirmwareCommands(session.id);
 
   const lickCount = session.behaviorData.filter(
     (e) => e.device === "LICK" && e.event === "LICK"
   ).length;
+
+  const shockCount = countShocks(session.behaviorData);
 
   const slmFrameCount = session.behaviorData.filter(
     (e) => e.device === "SLM" && e.event === "TIMESTAMP"
@@ -52,6 +57,7 @@ export function LiveStats({ session }: Props) {
       ? [{ label: "P1 / P2", value: `${session.infusionsByPump.PUMP_1 ?? 0} / ${session.infusionsByPump.PUMP_2}` }]
       : []),
     { label: "LICKS", value: lickCount },
+    ...(hasAux || shockCount > 0 ? [{ label: "SHOCKS", value: shockCount }] : []),
     ...(config.hasTrials
       ? [
           { label: "TRIALS", value: session.trialCount },
@@ -152,6 +158,7 @@ export function LiveStats({ session }: Props) {
                   { label: "TOTAL CS-", value: session.cumulativeCsMinusCount + session.csMinusCount },
                 ]
               : []),
+            ...(hasAux || shockCount > 0 ? [{ label: "TOTAL SHOCKS", value: session.cumulativeShockCount + shockCount }] : []),
           ].map((stat) => (
             <div
               key={stat.label}
