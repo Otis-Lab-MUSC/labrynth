@@ -6,7 +6,7 @@ import {
   AUX_SET_PROBABILITY, AUX_SET_BLOCK_K, AUX_SET_BLOCK_N, AUX_SET_SEED, AUX_SET_TEST_FIRE,
   confirmAuxAction, isValidDuration, isValidOnsetDelay, isValidProbability,
   isValidBlockN, isValidBlockK, isValidSeed,
-} from "../../lib/aux";
+} from "../../lib/auxOutput";
 
 interface Props {
   sessionId: string;

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   auxCommandsFor, confirmAuxAction, AUX_CONFIRM,
   isValidDuration, isValidOnsetDelay, isValidProbability, isValidBlockN, isValidBlockK, isValidSeed, isValidMode,
-} from "../src/lib/aux.ts";
+} from "../src/lib/auxOutput.ts";
 
 const state = { duration: 500, onsetDelay: 0, mode: 0, probability: 0, blockK: 0, blockN: 10, seed: 0, testFire: false };
 
