@@ -69,6 +69,8 @@ export function CueControl({ sessionId, label, prefix, paradigm }: Props) {
       {showFreqDur && (
         <div className="flex justify-end">
           <CardSetButton
+            sessionId={sessionId}
+            cardId={`cue${prefix}`}
             fields={[
               { code: codes.freq, value: frequency, valid: freqValid, label: "Freq (Hz)" },
               { code: codes.dur, value: duration, valid: durValid, label: "Dur (ms)" },

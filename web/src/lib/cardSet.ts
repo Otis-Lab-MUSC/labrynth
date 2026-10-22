@@ -35,3 +35,38 @@ export async function sendAll(
   }
   return { sent, error: null };
 }
+
+/** Where a card's Set stands against what was last sent to the firmware. */
+export type CardSyncState = "not-sent" | "unsent-changes" | "synced";
+
+export const SYNC_LABEL: Record<CardSyncState, string> = {
+  "not-sent": "Not sent",
+  "unsent-changes": "Unsent changes",
+  synced: "Synced",
+};
+
+/** Stable fingerprint of what a Set would send (code + value, in order). */
+export function fieldsSignature(fields: CardField[]): string {
+  return JSON.stringify(fields.map((f) => [f.code, f.value]));
+}
+
+/**
+ * Sync state of a card. `lastSentSig` is the fieldsSignature captured when the last Set
+ * went through (null = never sent from this card). `externalSent`, when a card tracks its
+ * own flag (Shock Output's configSent), is authoritative.
+ */
+export function cardSyncState(
+  fields: CardField[],
+  lastSentSig: string | null,
+  externalSent?: boolean,
+): CardSyncState {
+  if (externalSent === true) return "synced";
+  if (externalSent === false) return lastSentSig === null ? "not-sent" : "unsent-changes";
+  if (lastSentSig === null) return "not-sent";
+  return fieldsSignature(fields) === lastSentSig ? "synced" : "unsent-changes";
+}
+
+/** Red outline only on a device that is armed: a disarmed card may be configured in any order. */
+export function showInvalid(armed: boolean, valid: boolean): boolean {
+  return armed && !valid;
+}

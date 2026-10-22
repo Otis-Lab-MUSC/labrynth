@@ -174,7 +174,7 @@ export function LaserControl({ sessionId, paradigm }: Props) {
         </div>
       )}
       <div className="flex justify-end">
-        <CardSetButton fields={setFields} send={send} />
+        <CardSetButton sessionId={sessionId} cardId="laser" fields={setFields} send={send} />
       </div>
       <SquareWaveCanvas frequency={frequency} duration={duration} />
     </div>

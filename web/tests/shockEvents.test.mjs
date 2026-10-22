@@ -1,7 +1,7 @@
 // Run: node --test tests/
 import test from "node:test";
 import assert from "node:assert/strict";
-import { countShocks, shouldJolt } from "../src/lib/shockEvents.ts";
+import { countShocks, shouldJolt, SHOCK_ANIM_MS } from "../src/lib/shockEvents.ts";
 
 test("countShocks counts AUX_1 SHOCK only", () => {
   const events = [
@@ -25,4 +25,8 @@ test("shouldJolt fires only on a small increase while running", () => {
   assert.equal(shouldJolt(0, 1, false), false);
   assert.equal(shouldJolt(2, 2, true), false);
   assert.equal(shouldJolt(5, 0, true), false);
+});
+
+test("shock animation window is long enough for the dramatic pose", () => {
+  assert.equal(SHOCK_ANIM_MS, 900);
 });

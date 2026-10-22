@@ -180,7 +180,7 @@ export function AuxOutputControl({ sessionId }: Props) {
         >{aux.testFire ? "Allowed" : "Blocked"}</button>
       </div>
       <div className="flex justify-end">
-        <CardSetButton fields={setFields} send={send} onSent={() => update({ configSent: true, lastError: undefined })} />
+        <CardSetButton sessionId={sessionId} cardId="aux" externalSent={aux.configSent} fields={setFields} send={send} onSent={() => update({ configSent: true, lastError: undefined })} />
       </div>
     </div>
   );

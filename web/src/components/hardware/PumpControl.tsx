@@ -110,6 +110,8 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
       </div>
       <div className="flex justify-end">
         <CardSetButton
+          sessionId={sessionId}
+          cardId={`pump${prefix}`}
           fields={[{ code: codes.dur, value: duration, valid: durationValid, label: "Duration (ms)" }]}
           send={send}
         />

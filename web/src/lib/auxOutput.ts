@@ -87,3 +87,16 @@ export function confirmAuxAction(
 ): boolean {
   return confirmFn(AUX_CONFIRM[action]) === true;
 }
+
+/** The Shock Output appears in the pre-session modal and flow diagram only when the firmware has it AND it is armed. */
+export function isShockVisible(hasAux: boolean, armed: boolean): boolean {
+  return hasAux && armed;
+}
+
+/** Text for the shock bar in the paradigm flow diagram. */
+export function auxBarSpec(
+  s: Pick<AuxConfig, "mode" | "probability" | "blockK" | "blockN" | "duration">,
+): { label: string; sublabel: string } {
+  const rate = s.mode === 1 ? `${s.blockK}/${s.blockN}` : `${s.probability}%`;
+  return { label: "SHOCK", sublabel: `${rate} · ${s.duration}ms` };
+}

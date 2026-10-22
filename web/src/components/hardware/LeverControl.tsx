@@ -109,6 +109,8 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
       {setFields.length > 0 && (
         <div className="flex justify-end">
           <CardSetButton
+            sessionId={sessionId}
+            cardId={`lever${side}`}
             label="SET"
             fields={setFields}
             send={send}

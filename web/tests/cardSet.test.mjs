@@ -1,7 +1,7 @@
 // Run: node --test tests/   (Node >= 22.18 strips the TypeScript types itself)
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildCardCommands, firstInvalid, sendAll } from "../src/lib/cardSet.ts";
+import { buildCardCommands, firstInvalid, sendAll, cardSyncState, fieldsSignature, showInvalid, SYNC_LABEL } from "../src/lib/cardSet.ts";
 
 const ok = (code, value, label) => ({ code, value, valid: true, label });
 const bad = (code, value, label) => ({ code, value, valid: false, label });
@@ -75,4 +75,32 @@ test("sendAll awaits each send before starting the next", async () => {
     "start 2", "end 2",
     "start 3", "end 3",
   ]);
+});
+
+test("sync state: never sent, in sync, edited", () => {
+  const f = [ok(1, 10), ok(2, 20)];
+  assert.equal(cardSyncState(f, null), "not-sent");
+  const sig = fieldsSignature(f);
+  assert.equal(cardSyncState(f, sig), "synced");
+  assert.equal(cardSyncState([ok(1, 10), ok(2, 21)], sig), "unsent-changes");
+});
+
+test("sync state: an external flag is authoritative", () => {
+  const f = [ok(1, 10)];
+  const sig = fieldsSignature(f);
+  assert.equal(cardSyncState(f, null, true), "synced");
+  assert.equal(cardSyncState(f, null, false), "not-sent");
+  assert.equal(cardSyncState(f, sig, false), "unsent-changes");
+});
+
+test("sync labels", () => {
+  assert.deepEqual(Object.keys(SYNC_LABEL).sort(), ["not-sent", "synced", "unsent-changes"]);
+  assert.equal(SYNC_LABEL["unsent-changes"], "Unsent changes");
+});
+
+test("red outline only when armed and invalid", () => {
+  assert.equal(showInvalid(true, false), true);
+  assert.equal(showInvalid(false, false), false);
+  assert.equal(showInvalid(true, true), false);
+  assert.equal(showInvalid(false, true), false);
 });

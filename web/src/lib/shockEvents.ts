@@ -13,3 +13,6 @@ export function countShocks(events: ReadonlyArray<{ device: string; event: strin
 export function shouldJolt(prev: number, next: number, running: boolean): boolean {
   return running && next > prev && next - prev <= 2;
 }
+
+/** How long the progress mouse stays in its "shocked" state after a delivered shock. */
+export const SHOCK_ANIM_MS = 900;

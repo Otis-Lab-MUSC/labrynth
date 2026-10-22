@@ -126,6 +126,8 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
           </div>
           <div className="flex justify-end">
             <CardSetButton
+              sessionId={sessionId}
+              cardId={`${deviceKey}-delay`}
               fields={[{ code: DELAY_CMD[deviceKey], value: contingency.delay, valid: delayValid, label: "Delay (ms)" }]}
               send={send}
             />

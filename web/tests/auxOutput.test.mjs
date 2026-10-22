@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   auxCommandsFor, confirmAuxAction, AUX_CONFIRM, AUX_MODE_HELP, SHOCK_LABEL,
-  blockSummary, auxStatusText, isAuxConfigured,
+  blockSummary, auxStatusText, isAuxConfigured, isShockVisible, auxBarSpec,
   isValidDuration, isValidOnsetDelay, isValidProbability, isValidBlockN, isValidBlockK, isValidSeed, isValidMode,
 } from "../src/lib/auxOutput.ts";
 
@@ -107,4 +107,16 @@ test("AUX_MODE_HELP and SHOCK_LABEL", () => {
   assert.equal(AUX_MODE_HELP[0], "Independent: each reward is shocked with probability P.");
   assert.equal(AUX_MODE_HELP[1], "Block: exactly K shocks in every N rewards, at random positions.");
   assert.equal(SHOCK_LABEL, "Shock Output");
+});
+
+test("shock section is visible only when supported and armed", () => {
+  assert.equal(isShockVisible(true, true), true);
+  assert.equal(isShockVisible(true, false), false);
+  assert.equal(isShockVisible(false, true), false);
+  assert.equal(isShockVisible(false, false), false);
+});
+
+test("flow diagram bar text for independent and block mode", () => {
+  assert.deepEqual(auxBarSpec({ mode: 0, probability: 50, blockK: 0, blockN: 0, duration: 200 }), { label: "SHOCK", sublabel: "50% · 200ms" });
+  assert.deepEqual(auxBarSpec({ mode: 1, probability: 0, blockK: 2, blockN: 5, duration: 300 }), { label: "SHOCK", sublabel: "2/5 · 300ms" });
 });
