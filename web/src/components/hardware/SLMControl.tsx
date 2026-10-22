@@ -1,7 +1,8 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
+import { showInvalid } from "../../lib/cardSet";
 import type { CardField } from "../../lib/cardSet";
-import { CardSetButton } from "./CardSetButton";
+import { CardHeader } from "./CardHeader";
 import { PinField } from "./PinField";
 
 interface Props {
@@ -24,10 +25,13 @@ export function SLMControl({ sessionId }: Props) {
 
   return (
     <div className="card">
-      <h3 className="font-medium text-theme-text">
-        SLM Sync
-        <PinField sessionId={sessionId} component="slm" />
-      </h3>
+      <CardHeader
+        sessionId={sessionId}
+        cardId="slm"
+        title={<>SLM Sync <PinField sessionId={sessionId} component="slm" /></>}
+        fields={setFields}
+        send={send}
+      />
       <div className="flex gap-2">
         <button
           onClick={() => { send(1101); updateHardwareUi(sessionId, (prev) => ({ slm: { ...prev.slm, armed: true } })); }}
@@ -49,7 +53,7 @@ export function SLMControl({ sessionId }: Props) {
             slm: { ...prev.slm, laserFrequency: e.target.value ? Number(e.target.value) : null },
           }))}
           placeholder="e.g. 40"
-          className={`flex-1 input-base${freqValid ? "" : " border-red-500"}`}
+          className={`flex-1 input-base${showInvalid(armed, freqValid) ? " border-red-500" : ""}`}
         />
       </div>
       <div className="flex items-center gap-2">
@@ -63,11 +67,8 @@ export function SLMControl({ sessionId }: Props) {
             slm: { ...prev.slm, laserDuration: e.target.value ? Number(e.target.value) : null },
           }))}
           placeholder="e.g. 5000"
-          className={`flex-1 input-base${durValid ? "" : " border-red-500"}`}
+          className={`flex-1 input-base${showInvalid(armed, durValid) ? " border-red-500" : ""}`}
         />
-      </div>
-      <div className="flex justify-end">
-        <CardSetButton sessionId={sessionId} cardId="slm" fields={setFields} send={send} />
       </div>
     </div>
   );

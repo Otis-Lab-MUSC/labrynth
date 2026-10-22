@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { CardSetButton } from "./CardSetButton";
+import { showInvalid } from "../../lib/cardSet";
 
 interface Props {
   sessionId: string;
@@ -120,11 +121,9 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
               max={600000}
               value={contingency.delay}
               onChange={(e) => setDelay(+e.target.value)}
-              className={`w-24 input-base${delayValid ? "" : " border-red-500"}`}
+              className={`w-24 input-base${showInvalid(device.armed, delayValid) ? " border-red-500" : ""}`}
               title="Onset delay from trigger to device activation"
             />
-          </div>
-          <div className="flex justify-end">
             <CardSetButton
               sessionId={sessionId}
               cardId={`${deviceKey}-delay`}

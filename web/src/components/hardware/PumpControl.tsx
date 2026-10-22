@@ -2,7 +2,9 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
 import { ContingencySection } from "./ContingencySection";
-import { CardSetButton } from "./CardSetButton";
+import { CardHeader } from "./CardHeader";
+import { firstInvalid, showInvalid } from "../../lib/cardSet";
+import type { CardField } from "../../lib/cardSet";
 import { useRewardPump } from "../../hooks/useRewardPump";
 
 interface Props {
@@ -47,6 +49,9 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
   const update = (patch: Partial<typeof pump>) =>
     updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], ...patch } }));
 
+  const fields: CardField[] = [{ code: codes.dur, value: duration, valid: durationValid, label: "Duration (ms)" }];
+  const invalid = firstInvalid(fields);
+
   const isOperant = paradigm !== undefined && paradigm !== "pavlovian";
 
   const handleArm = () => {
@@ -76,19 +81,29 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
 
   return (
     <div className="card">
-      <h3 className="font-medium text-theme-text flex items-center gap-2 flex-wrap">
-        <span>Pump {label}</span>
-        <PinField sessionId={sessionId} component={prefix === "2" ? "pump2" : "pump"} />
-        {isOperant && armed && !siblingPump?.armed && (
-          <span className="rounded px-1.5 py-0.5 text-xs font-mono bg-green-600/20 text-green-400 uppercase tracking-wide">
-            Active
+      <CardHeader
+        sessionId={sessionId}
+        cardId={`pump${prefix}`}
+        title={
+          <span className="flex items-center gap-2 flex-wrap">
+            <span>Pump {label}</span>
+            <PinField sessionId={sessionId} component={prefix === "2" ? "pump2" : "pump"} />
+            {isOperant && armed && !siblingPump?.armed && (
+              <span className="rounded px-1.5 py-0.5 text-xs font-mono bg-green-600/20 text-green-400 uppercase tracking-wide">
+                Active
+              </span>
+            )}
           </span>
-        )}
-      </h3>
+        }
+        fields={fields}
+        send={send}
+      />
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleArm}
-          className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
+          disabled={invalid !== null}
+          title={invalid !== null ? `Fix ${invalid} first` : undefined}
+          className={`btn-sm disabled:opacity-50 ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
           onClick={handleDisarm}
@@ -100,21 +115,13 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
         <label className="text-sm text-theme-text/60">Duration (ms):</label>
         <input type="number" value={duration} min={MIN_DURATION} max={MAX_DURATION}
           onChange={(e) => update({ duration: +e.target.value })}
-          className={`w-24 input-base${durationValid ? "" : " border-red-500"}`} />
+          className={`w-24 input-base${showInvalid(armed, durationValid) ? " border-red-500" : ""}`} />
       </div>
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Pump rate (µL/s):</label>
         <input type="number" value={flowRateUlPerSec ?? ""} min={0} step="any" placeholder="unset"
           onChange={(e) => update({ flowRateUlPerSec: e.target.value === "" ? null : +e.target.value })}
           className="w-24 input-base" />
-      </div>
-      <div className="flex justify-end">
-        <CardSetButton
-          sessionId={sessionId}
-          cardId={`pump${prefix}`}
-          fields={[{ code: codes.dur, value: duration, valid: durationValid, label: "Duration (ms)" }]}
-          send={send}
-        />
       </div>
       {volumeEstimateUl != null ? (
         <p className="text-xs text-theme-text/50">

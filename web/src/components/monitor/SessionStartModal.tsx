@@ -9,7 +9,7 @@ import { ParadigmFlowDiagram } from "./ParadigmFlowDiagram";
 import { useRewardPump } from "../../hooks/useRewardPump";
 import { ValidationWarningPanel } from "./ValidationWarningPanel";
 import { DEVICE_LABELS, auxParts, formatDeviceParams, laserPhaseActive } from "./hardwareSummary";
-import { SHOCK_LABEL, auxStatusText } from "../../lib/auxOutput";
+import { SHOCK_LABEL, auxStatusText, isShockVisible } from "../../lib/auxOutput";
 import { useFirmwareCommands } from "../../hooks/useFirmwareCommands";
 import { Zap } from "lucide-react";
 import type { ValidationResult } from "../../api/client";
@@ -392,7 +392,7 @@ export function SessionStartModal() {
           {/* Hardware Summary (read-only) */}
           <section>
             <h3 className="text-sm font-medium text-theme-text/60 uppercase tracking-wide mb-2">Hardware</h3>
-            {hasAux && (
+            {isShockVisible(hasAux, hw.aux.armed) && (
               <div className="border-2 border-[#ff2d2d] bg-[#ff2d2d]/10 rounded p-3 mb-3">
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-[#ff2d2d]" />

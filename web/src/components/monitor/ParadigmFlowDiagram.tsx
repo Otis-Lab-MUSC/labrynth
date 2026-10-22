@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { HardwareUiState, LaserUiState } from "../../types";
 import { baseParadigm } from "../../lib/paradigm";
+import { auxBarSpec } from "../../lib/auxOutput";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
-type LaneId = "iti" | "lever" | "cue" | "trace" | "pump" | "laser" | "timeout";
+type LaneId = "iti" | "lever" | "cue" | "trace" | "pump" | "laser" | "shock" | "timeout";
 
 interface TimeBar {
   lane: LaneId;
@@ -51,6 +52,7 @@ const COLORS: Record<LaneId, string> = {
   cue:     "#ffaa00",
   pump:    "#00aaff",
   laser:   "#ff4444",
+  shock:   "#ff2d2d",
   timeout: "#888888",
   iti:     "#a855f7",
   trace:   "#6b7280",
@@ -63,10 +65,11 @@ const LANE_LABELS: Record<LaneId, string> = {
   trace: "TRACE",
   pump: "PUMP",
   laser: "LASER",
+  shock: "SHOCK",
   timeout: "TIMEOUT",
 };
 
-const LANE_ORDER: LaneId[] = ["iti", "lever", "cue", "trace", "pump", "laser", "timeout"];
+const LANE_ORDER: LaneId[] = ["iti", "lever", "cue", "trace", "pump", "laser", "shock", "timeout"];
 
 const LABEL_W = 70;
 const LANE_H = 38;
@@ -183,6 +186,15 @@ function addIndependentLaserAnnotation(bars: TimeBar[], hw: HardwareUiState, isI
   }
 }
 
+// Shocks follow the reward: `anchorMs` is the pump start when a pump is armed, else the
+// builder's reward moment. Returns the bar's start so the caller can add its arrow entry.
+function addShockBar(bars: TimeBar[], hw: HardwareUiState, anchorMs: number): number | null {
+  if (!hw.aux.armed) return null;
+  const startMs = anchorMs + hw.aux.onsetDelay;
+  bars.push({ lane: "shock", startMs, endMs: startMs + hw.aux.duration, ...auxBarSpec(hw.aux) });
+  return startMs;
+}
+
 // Groups trigger-driven devices that share the same onset time into one
 // "<verb> → X" arrow, and emits separate arrows for devices whose own
 // per-device delay puts them at a different onset time.
@@ -252,6 +264,9 @@ function buildFRTimeline(hw: HardwareUiState, ps: ParadigmSettings): TrialTimeli
     bars.push({ lane: "laser", startMs: laserStart, endMs: laserStart + hw.laser.duration, label: "LASER", sublabel: `${hw.laser.duration}ms` });
     pressArrowEntries.push({ lane: "laser", start: laserStart });
   }
+
+  const shockStart = addShockBar(bars, hw, pumpStart ?? chainFireMs);
+  if (shockStart !== null) pressArrowEntries.push({ lane: "shock", start: shockStart });
 
   pushTriggerArrows(arrows, pressEnd, pressArrowEntries);
 
@@ -352,6 +367,9 @@ function buildOmissionTimeline(hw: HardwareUiState, ps: ParadigmSettings): Trial
     pressArrowEntries.push({ lane: "laser", start: laserStart });
   }
 
+  const shockStart = addShockBar(bars, hw, pumpStart ?? holdEnd);
+  if (shockStart !== null) pressArrowEntries.push({ lane: "shock", start: shockStart });
+
   pushTriggerArrows(arrows, holdEnd, pressArrowEntries, "no press");
 
   // Derived "trace interval" gap — only meaningful when the cue actually fires
@@ -417,6 +435,8 @@ function buildPavlovianTimeline(
       rewardLanes.push("laser");
     }
   }
+
+  if (addShockBar(bars, hw, rewardStart) !== null) rewardLanes.push("shock");
 
   arrows.push({ fromLane: "cue", fromEndMs: cueEnd, toLanes: rewardLanes, toStartMs: rewardStart, label: `${cueLabel.toLowerCase()} → ${rewardLanes.join(" + ")}` });
 

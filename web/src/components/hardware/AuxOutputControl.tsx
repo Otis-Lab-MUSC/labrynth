@@ -1,13 +1,14 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import type { AuxUiState } from "../../types";
+import { showInvalid } from "../../lib/cardSet";
 import type { CardField } from "../../lib/cardSet";
-import { CardSetButton } from "./CardSetButton";
+import { CardHeader } from "./CardHeader";
 import { PinField } from "./PinField";
 import {
   AUX_ARM, AUX_DISARM, AUX_TEST, AUX_SET_DURATION, AUX_SET_ONSET_DELAY, AUX_SET_MODE,
   AUX_SET_PROBABILITY, AUX_SET_BLOCK_K, AUX_SET_BLOCK_N, AUX_SET_SEED, AUX_SET_TEST_FIRE,
-  AUX_MODE_HELP, SHOCK_LABEL, auxCommandsFor, auxStatusText, blockSummary, confirmAuxAction,
+  AUX_MODE_HELP, SHOCK_LABEL, auxCommandsFor, blockSummary, confirmAuxAction,
   isAuxConfigured, isValidBlockK, isValidBlockN, isValidDuration, isValidMode, isValidOnsetDelay,
   isValidProbability, isValidSeed,
 } from "../../lib/auxOutput";
@@ -100,22 +101,22 @@ export function AuxOutputControl({ sessionId }: Props) {
         value={opts.blankIsZero && value === 0 ? "" : value}
         onChange={(e) => onChange(e.target.value === "" ? (opts.blankIsZero ? 0 : NaN) : Number(e.target.value))}
         placeholder={opts.placeholder}
-        className={`flex-1 input-base${valid ? "" : " border-red-500"}`}
+        className={`flex-1 input-base${showInvalid(aux.armed, valid) ? " border-red-500" : ""}`}
       />
     </div>
   );
 
   return (
     <div className="card">
-      <div className="flex items-baseline gap-2">
-        <h3 className="font-medium text-theme-text">
-          {SHOCK_LABEL}
-          <PinField sessionId={sessionId} component="aux" />
-        </h3>
-        <span className={`text-xs ${aux.armed ? "text-red-500 font-semibold" : "text-theme-text/60"}`}>
-          {auxStatusText(aux.armed)}
-        </span>
-      </div>
+      <CardHeader
+        sessionId={sessionId}
+        cardId="aux"
+        title={<>{SHOCK_LABEL} <PinField sessionId={sessionId} component="aux" /></>}
+        fields={setFields}
+        send={send}
+        onSent={() => update({ configSent: true, lastError: undefined })}
+        externalSent={aux.configSent}
+      />
       {aux.lastError && (
         <div className="flex items-center gap-2 text-xs text-red-500">
           <span>{aux.lastError}</span>
@@ -178,9 +179,6 @@ export function AuxOutputControl({ sessionId }: Props) {
           title={aux.testFire || canTest ? undefined : "Set the shock settings first"}
           className={`btn-sm ${aux.testFire ? "btn-toggle-red-on" : "btn-toggle-green-off"} disabled:opacity-50`}
         >{aux.testFire ? "Allowed" : "Blocked"}</button>
-      </div>
-      <div className="flex justify-end">
-        <CardSetButton sessionId={sessionId} cardId="aux" externalSent={aux.configSent} fields={setFields} send={send} onSent={() => update({ configSent: true, lastError: undefined })} />
       </div>
     </div>
   );

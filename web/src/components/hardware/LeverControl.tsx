@@ -1,8 +1,9 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
-import { CardSetButton } from "./CardSetButton";
+import { CardHeader } from "./CardHeader";
 import { isParadigm } from "../../lib/paradigm";
+import { firstInvalid, showInvalid } from "../../lib/cardSet";
 import type { CardField } from "../../lib/cardSet";
 
 interface Props {
@@ -60,16 +61,24 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
   if (showTimeout) setFields.push({ code: codes.timeout, value: timeout, valid: timeout >= 0 && timeout <= 600000, label: "Timeout (ms)" });
   if (showTimeoutMode) setFields.push({ code: codes.timeoutMode, value: timeoutMode, valid: true, label: "Timeout starts on" });
 
+  const invalid = firstInvalid(setFields);
+
   return (
     <div className="card">
-      <h3 className="font-medium text-theme-text">
-        {side} Lever
-        <PinField sessionId={sessionId} component={side === "RH" ? "lever_rh" : "lever_lh"} />
-      </h3>
+      <CardHeader
+        sessionId={sessionId}
+        cardId={`lever${side}`}
+        title={<>{side} Lever <PinField sessionId={sessionId} component={side === "RH" ? "lever_rh" : "lever_lh"} /></>}
+        label="SET"
+        fields={setFields}
+        send={send}
+      />
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => { send(codes.arm); updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], armed: true } })); }}
-          className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
+          disabled={invalid !== null}
+          title={invalid !== null ? `Fix ${invalid} first` : undefined}
+          className={`btn-sm disabled:opacity-50 ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
           onClick={() => { send(codes.disarm); updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], armed: false } })); }}
@@ -82,7 +91,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
           <input
             type="number" value={timeout} min={0} max={600000}
             onChange={(e) => setShared({ timeout: +e.target.value })}
-            className={`w-24 input-base ${timeout < 0 || timeout > 600000 ? "border-red-500" : ""}`}
+            className={`w-24 input-base ${showInvalid(armed, timeout >= 0 && timeout <= 600000) ? "border-red-500" : ""}`}
           />
         </div>
       )}
@@ -105,17 +114,6 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
         <p className="text-xs text-theme-text/50">
           Scheduler-wide: timeout and timeout mode are shared by both levers.
         </p>
-      )}
-      {setFields.length > 0 && (
-        <div className="flex justify-end">
-          <CardSetButton
-            sessionId={sessionId}
-            cardId={`lever${side}`}
-            label="SET"
-            fields={setFields}
-            send={send}
-          />
-        </div>
       )}
     </div>
   );

@@ -12,6 +12,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Frontend: each hardware card's **Set** button now sits in the card header beside a sync chip
+  (*Not sent* / *Unsent changes* / *Synced*). Red input outlines show only on an armed device, and
+  Arm stays disabled while a card's values are invalid; a disarmed card can be configured freely.
+- Frontend: the Shock Output card no longer shows the Armed/Disarmed text. The pre-session modal
+  shows the Shock Output box only when the output is armed, and the Paradigm Flow diagram gains a
+  SHOCK lane when it is armed.
+- Frontend: the progress mouse reacts to a delivered shock with a bigger jump, a separate shocked
+  pose and a cartoon flash (still off under reduced motion).
+
+### Fixed
+- Frontend: the Firmware Upload card no longer lists the UNO `_lite` firmware for a Mega. It starts
+  on the resolved board and discards stale firmware-list replies.
+
 ### Removed
 - Frontend + CLI: the **external start trigger** ("Wait for external trigger" start mode,
   External Trigger hardware card, the `armed` session state, `ConfigLock`, and the

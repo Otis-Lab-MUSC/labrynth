@@ -2,8 +2,9 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { LASER_MODE_COMMANDS } from "../program/devicePresets";
 import { FIRMWARE_GAPS, hasFirmwareGap } from "../../generated/firmwareGaps";
+import { firstInvalid, showInvalid } from "../../lib/cardSet";
 import type { CardField } from "../../lib/cardSet";
-import { CardSetButton } from "./CardSetButton";
+import { CardHeader } from "./CardHeader";
 import { PinField } from "./PinField";
 import { SquareWaveCanvas } from "./SquareWaveCanvas";
 
@@ -46,16 +47,23 @@ export function LaserControl({ sessionId, paradigm }: Props) {
     ...(isPavlovian ? [delayField] : []),
   ];
 
+  const invalid = firstInvalid(setFields);
+
   return (
     <div className="card">
-      <h3 className="font-medium text-theme-text">
-        Laser
-        <PinField sessionId={sessionId} component="laser" />
-      </h3>
+      <CardHeader
+        sessionId={sessionId}
+        cardId="laser"
+        title={<>Laser <PinField sessionId={sessionId} component="laser" /></>}
+        fields={setFields}
+        send={send}
+      />
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => { send(601); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, armed: true } })); }}
-          className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
+          disabled={invalid !== null}
+          title={invalid !== null ? `Fix ${invalid} first` : undefined}
+          className={`btn-sm disabled:opacity-50 ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
           onClick={() => { send(600); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, armed: false } })); }}
@@ -147,7 +155,7 @@ export function LaserControl({ sessionId, paradigm }: Props) {
               <label className="text-xs text-theme-text/60">Delay (ms):</label>
               <input type="number" value={onsetDelay} min={0} max={delayMax}
                 onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, onsetDelay: Math.min(Math.max(0, +e.target.value), delayMax) } }))}
-                className={`w-24 input-base${delayValid ? "" : " border-red-500"}`}
+                className={`w-24 input-base${showInvalid(armed, delayValid) ? " border-red-500" : ""}`}
                 title="Onset delay from lever press onset to laser activation" />
             </div>
           )}
@@ -157,25 +165,22 @@ export function LaserControl({ sessionId, paradigm }: Props) {
         <label className="text-sm text-theme-text/60" title="Integer ms timing causes ~2-4% error at 30/40 Hz. Exact at 1, 10, 20, 25, 50 Hz.">Freq (Hz):</label>
         <input type="number" value={frequency} min={1} max={65535}
           onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, frequency: +e.target.value } }))}
-          className={`w-24 input-base${freqValid ? "" : " border-red-500"}`} />
+          className={`w-24 input-base${showInvalid(armed, freqValid) ? " border-red-500" : ""}`} />
       </div>
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Dur (ms):</label>
         <input type="number" value={duration} min={1} max={600000}
           onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, duration: +e.target.value } }))}
-          className={`w-24 input-base${durValid ? "" : " border-red-500"}`} />
+          className={`w-24 input-base${showInvalid(armed, durValid) ? " border-red-500" : ""}`} />
       </div>
       {isPavlovian && (
         <div className="flex items-center gap-2">
           <label className="text-sm text-theme-text/60" title="Onset delay from trigger to laser activation">Delay (ms):</label>
           <input type="number" value={onsetDelay} min={0} max={delayMax}
             onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, onsetDelay: Math.min(Math.max(0, +e.target.value), delayMax) } }))}
-            className={`w-24 input-base${delayValid ? "" : " border-red-500"}`} />
+            className={`w-24 input-base${showInvalid(armed, delayValid) ? " border-red-500" : ""}`} />
         </div>
       )}
-      <div className="flex justify-end">
-        <CardSetButton sessionId={sessionId} cardId="laser" fields={setFields} send={send} />
-      </div>
       <SquareWaveCanvas frequency={frequency} duration={duration} />
     </div>
   );
