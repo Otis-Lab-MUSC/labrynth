@@ -12,6 +12,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- Frontend: each hardware card's **Set** button now sits in the card header beside a sync chip
+  (*Not sent* / *Unsent changes* / *Synced*). Red input outlines show only on an armed device, and
+  Arm stays disabled while a card's values are invalid; a disarmed card can be configured freely.
+- Frontend: the Shock Output card no longer shows the Armed/Disarmed text. The pre-session modal
+  shows the Shock Output box only when the output is armed, and the Paradigm Flow diagram gains a
+  SHOCK lane when it is armed.
+- Frontend: the progress mouse reacts to a delivered shock with a bigger jump, a separate shocked
+  pose and a cartoon flash (still off under reduced motion).
+
+### Fixed
+- Frontend: the Firmware Upload card no longer lists the UNO `_lite` firmware for a Mega. It starts
+  on the resolved board and discards stale firmware-list replies.
+
 ### Removed
 - Frontend + CLI: the **external start trigger** ("Wait for external trigger" start mode,
   External Trigger hardware card, the `armed` session state, `ConfigLock`, and the
@@ -35,6 +49,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Explained in Help → Configuration → Hardware Controls → Levers.
 - The mode is carried in the session start summary and captured by newly saved user
   presets, so what was run is recoverable from the session record.
+- Frontend: the session start modal shows the shock output as its own red banner
+  (armed or disarmed, with its settings spelled out) on boards that have one.
+- Frontend: a warning when a Pavlovian session starts with no cue armed.
+- Selectable **shock pin** for Shock Output (default 22, sent as command 1476). Mega
+  `fr` sketch only; requires reacher 3.4.0-beta.12.
+- CI: a check that rejects Windows-reserved file names (`con`, `prn`, `aux`, `nul`,
+  `com0`–`com9`, `lpt0`–`lpt9`) anywhere in the tree.
+- Frontend: **SHOCKS** (this segment) and **TOTAL SHOCKS** (all segments) counters in the
+  session stats, on boards with the shock output. Only delivered shocks count; omitted
+  and suppressed draws do not.
+- Frontend: the progress-bar mouse jolts when a shock is delivered.
+- Frontend: a **Live** button on the Event Timeline that resumes auto-scroll after you
+  scroll back.
+
+### Changed
+- The shock card is now **Shock Output** everywhere a user sees it.
+- Every device card has one **SET** button that sends all of its settings in order.
+- Shock Output Block mode fields are **Rewards per block (N)** and **Shocks per block
+  (K)**, with a visible description of the mode.
+- The shock output defaults to unconfigured (duration 0, N 0). **Arm** stays disabled
+  until a configured SET has been sent.
+- Shock Output: **Arm** and the **Test-mode pulses** toggle no longer ask for
+  confirmation; the one-shot **Test Pulse** still does. Turning test-mode pulses on is
+  disabled until a configured SET has been sent, like Arm. Status reads **Armed** /
+  **Disarmed**.
+- Event Timeline: a fixed time scale (10 px/s) with a gridline every 10 s and a label
+  every 30 s, so spacing no longer changes as the session grows; the lanes scroll
+  horizontally from the first minute, and lane names stay pinned on the left.
 
 ### Fixed
 - Frontend: the lever **Timeout** row is no longer rendered on `omission_lite`. Its
@@ -47,6 +89,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   that later calls `startProgram()` — so an undeclared code did not degrade a session,
   it stopped it starting. Caught in review before release: as first written, the new
   `timeoutMode` param would have blocked every **omission** session start.
+
+### Known issues
+- The shock output works on the Arduino Mega with the `fr` sketch only.
+- A Pavlovian session started with no cues armed ends immediately. With reacher
+  3.4.0-beta.10 or later, Stop returns at once.
 
 ---
 

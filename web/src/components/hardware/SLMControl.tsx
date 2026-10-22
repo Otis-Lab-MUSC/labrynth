@@ -1,5 +1,8 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
+import { showInvalid } from "../../lib/cardSet";
+import type { CardField } from "../../lib/cardSet";
+import { CardHeader } from "./CardHeader";
 import { PinField } from "./PinField";
 
 interface Props {
@@ -13,13 +16,22 @@ export function SLMControl({ sessionId }: Props) {
   const laserDuration = slm?.laserDuration ?? null;
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
+  const freqValid = laserFrequency !== null && laserFrequency >= 1 && laserFrequency <= 65535;
+  const durValid = laserDuration !== null && laserDuration >= 1 && laserDuration <= 600000;
+  const setFields: CardField[] = [
+    { code: 1102, value: laserFrequency ?? 0, valid: freqValid, label: "Laser Freq (Hz)" },
+    { code: 1103, value: laserDuration ?? 0, valid: durValid, label: "Laser Dur (ms)" },
+  ];
 
   return (
     <div className="card">
-      <h3 className="font-medium text-theme-text">
-        SLM Sync
-        <PinField sessionId={sessionId} component="slm" />
-      </h3>
+      <CardHeader
+        sessionId={sessionId}
+        cardId="slm"
+        title={<>SLM Sync <PinField sessionId={sessionId} component="slm" /></>}
+        fields={setFields}
+        send={send}
+      />
       <div className="flex gap-2">
         <button
           onClick={() => { send(1101); updateHardwareUi(sessionId, (prev) => ({ slm: { ...prev.slm, armed: true } })); }}
@@ -41,11 +53,8 @@ export function SLMControl({ sessionId }: Props) {
             slm: { ...prev.slm, laserFrequency: e.target.value ? Number(e.target.value) : null },
           }))}
           placeholder="e.g. 40"
-          className="flex-1 input-base"
+          className={`flex-1 input-base${showInvalid(armed, freqValid) ? " border-red-500" : ""}`}
         />
-        <button onClick={() => send(1102, laserFrequency ?? undefined)}
-          disabled={laserFrequency === null || laserFrequency < 1 || laserFrequency > 65535}
-          className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
       </div>
       <div className="flex items-center gap-2">
         <label className="text-sm w-36 text-theme-text/60" title="Bookkeeping only — not tied to the LASER device's actual state">Laser Dur (ms):</label>
@@ -58,11 +67,8 @@ export function SLMControl({ sessionId }: Props) {
             slm: { ...prev.slm, laserDuration: e.target.value ? Number(e.target.value) : null },
           }))}
           placeholder="e.g. 5000"
-          className="flex-1 input-base"
+          className={`flex-1 input-base${showInvalid(armed, durValid) ? " border-red-500" : ""}`}
         />
-        <button onClick={() => send(1103, laserDuration ?? undefined)}
-          disabled={laserDuration === null || laserDuration < 1 || laserDuration > 600000}
-          className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
       </div>
     </div>
   );

@@ -274,7 +274,7 @@ export function SessionPanel() {
 
       {/* Firmware upload */}
       {activeSession && !activeSession.draft && (
-        <div data-tour="firmware-card"><FirmwareUploadCard key={activeSession.id} sessionId={activeSession.id} detectedBoard={detectedBoard} /></div>
+        <div data-tour="firmware-card"><FirmwareUploadCard key={activeSession.id} sessionId={activeSession.id} detectedBoard={detectedBoard} sessionBoard={activeSession.board} paradigm={activeSession.paradigm} /></div>
       )}
 
       {(() => {

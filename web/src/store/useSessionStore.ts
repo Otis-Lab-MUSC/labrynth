@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { BoardType, Session, SessionState, BehaviorEvent, FirmwareConfig, LeverCounts, HardwareUiState, ContingencyConfig } from "../types";
 import { useMachineStore } from "./useMachineStore";
+import { countShocks } from "../lib/shockEvents";
 
 interface SessionStore {
   sessions: Map<string, Session>;
@@ -59,7 +60,7 @@ export const defaultHardwareUiState = (): HardwareUiState => ({
   lickCircuit: { armed: false },
   microscope: { armed: false, frameRate: null, frameAveraging: null },
   slm: { armed: false, pin: 11, laserFrequency: null, laserDuration: null },
-  aux: { armed: false, duration: 500, onsetDelay: 0, mode: 0, probability: 0, blockK: 0, blockN: 10, seed: 0, testFire: false },
+  aux: { armed: false, duration: 0, onsetDelay: 0, mode: 0, probability: 0, blockK: 0, blockN: 0, seed: 0, testFire: false, configSent: false },
   testMode: false,
 });
 
@@ -104,6 +105,7 @@ const newSession = (id: string, port: string, paradigm: string | null, machineId
   cumulativeTrialCount: 0,
   cumulativeCsPlusCount: 0,
   cumulativeCsMinusCount: 0,
+  cumulativeShockCount: 0,
   cumulativeRhLeverCounts: { ...ZERO_LEVER },
   cumulativeLhLeverCounts: { ...ZERO_LEVER },
   cumulativeElapsedTime: 0,
@@ -259,6 +261,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           cumulativeTrialCount: 0,
           cumulativeCsPlusCount: 0,
           cumulativeCsMinusCount: 0,
+          cumulativeShockCount: 0,
           cumulativeRhLeverCounts: { ...ZERO_LEVER },
           cumulativeLhLeverCounts: { ...ZERO_LEVER },
           cumulativeElapsedTime: 0,
@@ -620,6 +623,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         cumulativeTrialCount: sess.cumulativeTrialCount + sess.trialCount,
         cumulativeCsPlusCount: sess.cumulativeCsPlusCount + sess.csPlusCount,
         cumulativeCsMinusCount: sess.cumulativeCsMinusCount + sess.csMinusCount,
+        cumulativeShockCount: sess.cumulativeShockCount + countShocks(sess.behaviorData),
         cumulativeRhLeverCounts: {
           active: sess.cumulativeRhLeverCounts.active + sess.rhLeverCounts.active,
           timeout: sess.cumulativeRhLeverCounts.timeout + sess.rhLeverCounts.timeout,
@@ -675,6 +679,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         cumulativeTrialCount: 0,
         cumulativeCsPlusCount: 0,
         cumulativeCsMinusCount: 0,
+        cumulativeShockCount: 0,
         cumulativeRhLeverCounts: { ...ZERO_LEVER },
         cumulativeLhLeverCounts: { ...ZERO_LEVER },
         cumulativeElapsedTime: 0,

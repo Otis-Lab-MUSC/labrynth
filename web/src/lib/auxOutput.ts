@@ -39,11 +39,14 @@ export const isValidSeed = (v: unknown) => isInt(v) && v >= 0;
  * block_n precedes block_k so k is never checked against a stale n.
  */
 export function auxCommandsFor(state: AuxConfig): [number, number][] {
+  // An untouched block config (N still 0) is not sent in independent mode: firmware would clamp n=0 up to 1.
+  const block: [number, number][] = state.mode === 1 || state.blockN !== 0
+    ? [[AUX_SET_BLOCK_N, state.blockN], [AUX_SET_BLOCK_K, state.blockK]]
+    : [];
   return [
     [AUX_SET_MODE, state.mode],
     [AUX_SET_PROBABILITY, state.probability],
-    [AUX_SET_BLOCK_N, state.blockN],
-    [AUX_SET_BLOCK_K, state.blockK],
+    ...block,
     [AUX_SET_DURATION, state.duration],
     [AUX_SET_ONSET_DELAY, state.onsetDelay],
     [AUX_SET_SEED, state.seed],
@@ -51,17 +54,49 @@ export function auxCommandsFor(state: AuxConfig): [number, number][] {
   ];
 }
 
-export type AuxConfirmAction = "arm" | "test" | "testFire";
+export type AuxConfirmAction = "test";
 
 export const AUX_CONFIRM: Record<AuxConfirmAction, string> = {
-  arm: "Arm the AUX output? While armed, this session can deliver electric SHOCKS to the animal. Confirm the animal, the shock settings and the wiring are correct before continuing.",
-  test: "Fire one AUX test pulse now? This delivers a real SHOCK to any animal connected to the output.",
-  testFire: "Allow AUX pulses in test mode? With this on, test-mode runs will deliver real SHOCKS to any animal connected to the output.",
+  test: "Fire one shock test pulse now? This delivers a real SHOCK to any animal connected to the output.",
 };
+
+export const SHOCK_LABEL = "Shock Output";
+
+export const AUX_MODE_HELP: Record<0 | 1, string> = {
+  0: "Independent: each reward is shocked with probability P.",
+  1: "Block: exactly K shocks in every N rewards, at random positions.",
+};
+
+export function blockSummary(k: number, n: number): string {
+  if (n < 1) return "Set N and K";
+  return `${k} of every ${n} rewards shocked`;
+}
+
+export function auxStatusText(armed: boolean): string {
+  return armed ? "Armed" : "Disarmed";
+}
+
+/** Duration and, in block mode, block N must be set before the output can be armed or tested. */
+export function isAuxConfigured(s: Pick<AuxConfig, "duration" | "mode" | "blockN">): boolean {
+  return isValidDuration(s.duration) && (s.mode === 0 || isValidBlockN(s.blockN));
+}
 
 export function confirmAuxAction(
   action: AuxConfirmAction,
   confirmFn: (message: string) => boolean = globalThis.confirm,
 ): boolean {
   return confirmFn(AUX_CONFIRM[action]) === true;
+}
+
+/** The Shock Output appears in the pre-session modal and flow diagram only when the firmware has it AND it is armed. */
+export function isShockVisible(hasAux: boolean, armed: boolean): boolean {
+  return hasAux && armed;
+}
+
+/** Text for the shock bar in the paradigm flow diagram. */
+export function auxBarSpec(
+  s: Pick<AuxConfig, "mode" | "probability" | "blockK" | "blockN" | "duration">,
+): { label: string; sublabel: string } {
+  const rate = s.mode === 1 ? `${s.blockK}/${s.blockN}` : `${s.probability}%`;
+  return { label: "SHOCK", sublabel: `${rate} · ${s.duration}ms` };
 }

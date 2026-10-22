@@ -55,6 +55,13 @@ jobs:
         working-directory: .
         run: python3 scripts/check-cli-parity.py
 
+      # Windows refuses reserved device names (aux, nul, com1, ...) and forbidden
+      # characters, so a tracked path like web/src/aux.ts breaks the Windows
+      # installer build long after this job would have passed.
+      - name: Windows path check
+        working-directory: .
+        run: python3 -I scripts/check-windows-paths.py && python3 -I scripts/check-windows-paths.py --self-test
+
   # Version gate — pyproject.toml is the source of truth; verify web/package.json
   # and the README badge agree with it. Catches a hand-edited version, which
   # `scripts/bump-version.py` exists to prevent.

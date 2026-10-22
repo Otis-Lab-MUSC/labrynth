@@ -104,6 +104,7 @@ export function useSessionRecovery() {
                 cumulativeTrialCount: 0,
                 cumulativeCsPlusCount: 0,
                 cumulativeCsMinusCount: 0,
+                cumulativeShockCount: 0,
                 cumulativeRhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
                 cumulativeLhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
                 cumulativeElapsedTime: 0,

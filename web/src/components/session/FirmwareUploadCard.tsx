@@ -4,15 +4,19 @@ import type { BoardType } from "../../types";
 import * as api from "../../api/client";
 import { useFirmwareUpload } from "../../hooks/useFirmwareUpload";
 import { useSessionStore } from "../../store/useSessionStore";
+import { resolveBoard } from "../../lib/firmwareBoard";
 
 interface Props {
   sessionId: string;
   detectedBoard?: string | null;
+  sessionBoard?: string | null;
+  paradigm?: string | null;
 }
 
-export function FirmwareUploadCard({ sessionId, detectedBoard }: Props) {
+export function FirmwareUploadCard({ sessionId, detectedBoard, sessionBoard, paradigm }: Props) {
+  const resolvedBoard = resolveBoard(detectedBoard, sessionBoard, paradigm);
   const [boards, setBoards] = useState<Array<{ id: string; name: string }>>([]);
-  const [selectedBoard, setSelectedBoard] = useState<BoardType>("uno");
+  const [selectedBoard, setSelectedBoard] = useState<BoardType>(resolvedBoard ?? "uno");
   const [paradigms, setParadigms] = useState<string[]>([]);
   const [selectedParadigm, setSelectedParadigm] = useState("");
   const { upload, uploading, error } = useFirmwareUpload(sessionId);
@@ -27,12 +31,14 @@ export function FirmwareUploadCard({ sessionId, detectedBoard }: Props) {
   }, []);
 
   useEffect(() => {
-    if (detectedBoard) setSelectedBoard(detectedBoard as BoardType);
-  }, [detectedBoard]);
+    if (resolvedBoard) setSelectedBoard(resolvedBoard);
+  }, [resolvedBoard]);
 
   useEffect(() => {
+    let cancelled = false;
     setSelectedParadigm("");
-    api.listParadigms(selectedBoard).then((r) => setParadigms(r.paradigms)).catch(() => {});
+    api.listParadigms(selectedBoard).then((r) => { if (!cancelled) setParadigms(r.paradigms); }).catch(() => {});
+    return () => { cancelled = true; };
   }, [selectedBoard]);
 
   return (
@@ -51,7 +57,7 @@ export function FirmwareUploadCard({ sessionId, detectedBoard }: Props) {
               </option>
             ))}
           </select>
-          {detectedBoard && selectedBoard === detectedBoard && (
+          {resolvedBoard && selectedBoard === resolvedBoard && (
             <span className="text-xs text-theme-text/50 font-mono">Auto-detected</span>
           )}
         </div>
