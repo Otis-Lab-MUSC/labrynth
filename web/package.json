@@ -9,7 +9,8 @@
     "build:demo": "tsc -b && VITE_DEMO_SITE=true vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "gen:gaps": "node scripts/gen-firmware-gaps.mjs"
+    "gen:gaps": "node scripts/gen-firmware-gaps.mjs",
+    "gen:tables": "node scripts/gen-reacher-tables.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

@@ -107,6 +107,7 @@ hiddenimports = [
     "cli.app",
     "cli.client",
     "cli.presets",
+    "cli.reacher_tables",
     "httpx",
     "websockets",
     # Backend entry the frozen CLI re-spawns as the server process
