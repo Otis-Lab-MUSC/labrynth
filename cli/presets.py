@@ -20,39 +20,42 @@ from __future__ import annotations
 import copy
 from typing import Iterable
 
+from .reacher_tables import CMD
+
 Command = tuple[int, "int | None"]
 
 # ── Command maps (devicePresets.ts) ──────────────────────────────────────────
 
 LASER_MODE_COMMANDS: dict[str, int] = {
-    "contingent": 681, "independent": 682, "rh_lever": 684, "lh_lever": 685,
-    "cs_plus": 691, "cs_minus": 692, "cs_both": 693,
+    "contingent": CMD["LASER_MODE_CONTINGENT"], "independent": CMD["LASER_MODE_INDEPENDENT"],
+    "rh_lever": CMD["LASER_TRIGGER_RH_ONLY"], "lh_lever": CMD["LASER_TRIGGER_LH_ONLY"],
+    "cs_plus": CMD["PAV_LASER_CS_PLUS"], "cs_minus": CMD["PAV_LASER_CS_MINUS"], "cs_both": CMD["PAV_LASER_CS_BOTH"],
 }
 
-PAV_LASER_PHASE_COMMANDS: dict[str, int] = {"reward": 694, "cue": 695}
+PAV_LASER_PHASE_COMMANDS: dict[str, int] = {"reward": CMD["PAV_LASER_PHASE_REWARD"], "cue": CMD["PAV_LASER_PHASE_CUE"]}
 
 PRESET_COMMAND_MAP: dict[str, dict] = {
-    "rhLever":       {"arm": 1001, "disarm": 1000, "params": {"timeout": 1074, "timeoutMode": 1077}},
-    "lhLever":       {"arm": 1301, "disarm": 1300, "params": {"timeout": 1374, "timeoutMode": 1377}},
-    "primaryCue":    {"arm": 301, "disarm": 300, "params": {"frequency": 371, "duration": 372, "leverFilter": 378, "delay": 377}},
-    "secondaryCue":  {"arm": 311, "disarm": 310, "params": {"frequency": 381, "duration": 382, "leverFilter": 388}},
-    "primaryPump":   {"arm": 401, "disarm": 400, "params": {"duration": 472, "leverFilter": 478, "delay": 477}},
-    "secondaryPump": {"arm": 411, "disarm": 410, "params": {"duration": 482, "leverFilter": 488, "delay": 487}},
-    "laser":         {"arm": 601, "disarm": 600, "params": {"frequency": 671, "duration": 672, "delay": 673}},
-    "lickCircuit":   {"arm": 501, "disarm": 500},
-    "microscope":    {"arm": 901, "disarm": 900},
-    "slm":           {"arm": 1101, "disarm": 1100, "params": {"laserFrequency": 1102, "laserDuration": 1103}},
+    "rhLever":       {"arm": CMD["LEVER_RH_ARM"], "disarm": CMD["LEVER_RH_DISARM"], "params": {"timeout": CMD["LEVER_RH_SET_TIMEOUT"], "timeoutMode": CMD["LEVER_RH_SET_TIMEOUT_MODE"]}},
+    "lhLever":       {"arm": CMD["LEVER_LH_ARM"], "disarm": CMD["LEVER_LH_DISARM"], "params": {"timeout": CMD["LEVER_LH_SET_TIMEOUT"], "timeoutMode": CMD["LEVER_LH_SET_TIMEOUT_MODE"]}},
+    "primaryCue":    {"arm": CMD["CUE_ARM"], "disarm": CMD["CUE_DISARM"], "params": {"frequency": CMD["CUE_SET_FREQUENCY"], "duration": CMD["CUE_SET_DURATION"], "leverFilter": CMD["CUE_SET_LEVER_FILTER"], "delay": CMD["CUE_SET_ONSET_DELAY"]}},
+    "secondaryCue":  {"arm": CMD["CUE2_ARM"], "disarm": CMD["CUE2_DISARM"], "params": {"frequency": CMD["CUE2_SET_FREQUENCY"], "duration": CMD["CUE2_SET_DURATION"], "leverFilter": CMD["CUE2_SET_LEVER_FILTER"]}},
+    "primaryPump":   {"arm": CMD["PUMP_ARM"], "disarm": CMD["PUMP_DISARM"], "params": {"duration": CMD["PUMP_SET_DURATION"], "leverFilter": CMD["PUMP_SET_LEVER_FILTER"], "delay": CMD["PUMP_SET_ONSET_DELAY"]}},
+    "secondaryPump": {"arm": CMD["PUMP2_ARM"], "disarm": CMD["PUMP2_DISARM"], "params": {"duration": CMD["PUMP2_SET_DURATION"], "leverFilter": CMD["PUMP2_SET_LEVER_FILTER"], "delay": CMD["PUMP2_SET_ONSET_DELAY"]}},
+    "laser":         {"arm": CMD["LASER_ARM"], "disarm": CMD["LASER_DISARM"], "params": {"frequency": CMD["LASER_SET_FREQUENCY"], "duration": CMD["LASER_SET_DURATION"], "delay": CMD["LASER_SET_ONSET_DELAY"]}},
+    "lickCircuit":   {"arm": CMD["LICK_ARM"], "disarm": CMD["LICK_DISARM"]},
+    "microscope":    {"arm": CMD["MICROSCOPE_ARM"], "disarm": CMD["MICROSCOPE_DISARM"]},
+    "slm":           {"arm": CMD["SLM_ARM"], "disarm": CMD["SLM_DISARM"], "params": {"laserFrequency": CMD["SLM_SET_LASER_FREQUENCY"], "laserDuration": CMD["SLM_SET_LASER_DURATION"]}},
 }
 
 # Params the backend does not declare for every paradigm (PARAM_PARADIGMS).
 PARAM_PARADIGMS: dict[str, list[str]] = {"timeoutMode": ["fr", "pr"]}
 
 LEVER_COMMANDS = {
-    "rh": {"active": 1081, "inactive": 1080, "timeout": 1074, "timeoutMode": 1077, "key": "rhLever"},
-    "lh": {"active": 1381, "inactive": 1380, "timeout": 1374, "timeoutMode": 1377, "key": "lhLever"},
+    "rh": {"active": CMD["LEVER_RH_SET_ACTIVE"], "inactive": CMD["LEVER_RH_SET_INACTIVE"], "timeout": CMD["LEVER_RH_SET_TIMEOUT"], "timeoutMode": CMD["LEVER_RH_SET_TIMEOUT_MODE"], "key": "rhLever"},
+    "lh": {"active": CMD["LEVER_LH_SET_ACTIVE"], "inactive": CMD["LEVER_LH_SET_INACTIVE"], "timeout": CMD["LEVER_LH_SET_TIMEOUT"], "timeoutMode": CMD["LEVER_LH_SET_TIMEOUT_MODE"], "key": "lhLever"},
 }
 
-SET_ACTIVE_PUMP = 221
+SET_ACTIVE_PUMP = CMD["SET_ACTIVE_PUMP"]
 LEVER_FILTER_VALUES = {"none": 0, "rh": 1, "lh": 2}
 
 # Firmware config-record device names -> web device keys
