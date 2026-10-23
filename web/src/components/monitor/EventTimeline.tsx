@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import type { BehaviorEvent } from "../../types";
 import { useContainerWidth } from "../../hooks/useContainerWidth";
 import { TIMELINE_PX_PER_SEC, fixedTicks, formatTickLabel } from "../../lib/timelineScale.ts";
+import type { EventDevice } from "../../generated/deviceNames";
 
 function readAccentRgb(): string {
   const raw = getComputedStyle(document.documentElement)
@@ -215,10 +216,10 @@ export function EventTimeline({ events }: Props) {
   }
 
   // Compute active lanes from unique device names, preserving a stable order
-  const deviceOrder = ["LEVER_RH", "LEVER_LH", "CUE_1", "CUE_2", "PUMP_1", "PUMP_2", "LICK", "LASER", "SLM", "AUX_1", "CONTROLLER",
-                       "CUE", "PUMP"];
+  const deviceOrder: readonly EventDevice[] = ["LEVER_RH", "LEVER_LH", "CUE_1", "CUE_2", "PUMP_1", "PUMP_2", "LICK", "LASER",
+                                                "SLM", "AUX_1", "CONTROLLER", "CUE", "PUMP"];
   const activeDevices = new Set(displayEvents.map((e) => e.device));
-  const activeLanes = deviceOrder.filter((d) => activeDevices.has(d));
+  const activeLanes: string[] = deviceOrder.filter((d) => activeDevices.has(d));
   // Append any unknown devices
   for (const d of activeDevices) {
     if (!activeLanes.includes(d)) activeLanes.push(d);

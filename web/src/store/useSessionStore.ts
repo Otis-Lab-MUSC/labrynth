@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { BoardType, Session, SessionState, BehaviorEvent, FirmwareConfig, LeverCounts, HardwareUiState, ContingencyConfig } from "../types";
 import { useMachineStore } from "./useMachineStore";
 import { countShocks } from "../lib/shockEvents";
+import type { EventDevice } from "../generated/deviceNames";
 
 interface SessionStore {
   sessions: Map<string, Session>;
@@ -43,7 +44,7 @@ interface SessionStore {
 
 const ZERO_LEVER: LeverCounts = { active: 0, timeout: 0, inactive: 0 };
 
-const PUMP_DEVICES = new Set(["PUMP", "PUMP_1", "PUMP_2"]);
+const PUMP_DEVICES: ReadonlySet<string> = new Set<EventDevice>(["PUMP", "PUMP_1", "PUMP_2"]);
 
 const DEFAULT_CONTINGENCY = (): ContingencyConfig => ({
   leverFilter: "none", delay: 0,
