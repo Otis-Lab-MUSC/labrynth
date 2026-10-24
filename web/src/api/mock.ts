@@ -1,5 +1,6 @@
 import type { BoardInfo, BoardType, Session } from "../types";
 import { useSessionStore } from "../store/useSessionStore";
+import { isParadigm } from "../lib/paradigm";
 
 let simulatorTimer: ReturnType<typeof setTimeout> | null = null;
 let frameInterval: ReturnType<typeof setInterval> | null = null;
@@ -211,6 +212,16 @@ const TWO_PHOTON_MOCK_COMMANDS = [
   { code: 1101, name: "SLM_ARM", description: "Arm SLM", payload_key: null, payload_type: null },
 ];
 
+// Lever timeout (fr/pr/vi/omission) and timeout mode (fr/pr/vi), as declared in reacher's registry.
+const LEVER_TIMEOUT_MOCK_COMMANDS = [
+  { code: 1074, name: "LEVER_RH_SET_TIMEOUT", description: "Post-reward lever timeout (ms)", payload_key: "timeout", payload_type: "int" },
+  { code: 1374, name: "LEVER_LH_SET_TIMEOUT", description: "Post-reward lever timeout (ms)", payload_key: "timeout", payload_type: "int" },
+];
+const TIMEOUT_MODE_MOCK_COMMANDS = [
+  { code: 1077, name: "LEVER_RH_SET_TIMEOUT_MODE", description: "0=every active press, 1=reward press only", payload_key: "timeout_mode", payload_type: "int" },
+  { code: 1377, name: "LEVER_LH_SET_TIMEOUT_MODE", description: "0=every active press, 1=reward press only", payload_key: "timeout_mode", payload_type: "int" },
+];
+
 // TTL shock output — Mega "fr" only (not lite, not Pavlovian). The UI gates the AUX card on 1401.
 const AUX_MOCK_COMMANDS = [
   { code: 1400, name: "AUX_DISARM", description: "Disarm Shock Output", payload_key: null, payload_type: null },
@@ -231,11 +242,12 @@ export const getCommands = async (id: string) => {
   const paradigm = session?.paradigm ?? "fr";
   const base = paradigm.toLowerCase().endsWith("_lite") ? [] : TWO_PHOTON_MOCK_COMMANDS;
   const aux = paradigm.toLowerCase() === "fr" ? AUX_MOCK_COMMANDS : [];
+  const timeoutMode = isParadigm(paradigm, "fr", "pr", "vi") ? TIMEOUT_MODE_MOCK_COMMANDS : [];
   return {
     paradigm,
     commands: paradigm.toLowerCase() === "pavlovian"
       ? [...PAVLOVIAN_MOCK_COMMANDS, ...base]
-      : [...base, ...aux],
+      : [...base, ...aux, ...LEVER_TIMEOUT_MOCK_COMMANDS, ...timeoutMode],
   };
 };
 
