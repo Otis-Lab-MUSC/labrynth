@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { BoardType, Session, SessionState, BehaviorEvent, FirmwareConfig, LeverCounts, HardwareUiState, ContingencyConfig } from "../types";
+import type { BoardType, CommandSpec, Session, SessionState, BehaviorEvent, FirmwareConfig, LeverCounts, HardwareUiState, ContingencyConfig } from "../types";
 import { useMachineStore } from "./useMachineStore";
 import { countShocks } from "../lib/shockEvents";
 
@@ -35,11 +35,15 @@ interface SessionStore {
   pushHardwareSetting: (id: string, config: FirmwareConfig) => void;
   updateHardwareUi: (id: string, updater: (prev: HardwareUiState) => Partial<HardwareUiState>) => void;
   setPinOverrides: (id: string, overrides: Record<string, number>) => void;
+  setFirmwareCommands: (id: string, commands: CommandSpec[]) => void;
   setFileConfig: (id: string, config: Partial<{ filename: string; destination: string }>) => void;
   setExportState: (id: string, partial: Partial<{ exporting: boolean; result: string | null; error: string | null }>) => void;
   handleSplit: (id: string, segmentNumber: number) => void;
   handleRestart: (id: string) => void;
 }
+
+/** States in which a board is attached and its command list stays valid ("stopped" keeps the port open). */
+export const LIVE_STATES: ReadonlySet<SessionState> = new Set<SessionState>(["connected", "running", "paused", "stopped"]);
 
 const ZERO_LEVER: LeverCounts = { active: 0, timeout: 0, inactive: 0 };
 
@@ -97,6 +101,7 @@ const newSession = (id: string, port: string, paradigm: string | null, machineId
   lhLeverCounts: { ...ZERO_LEVER },
   hardwareUi: defaultHardwareUiState(),
   pinOverrides: {},
+  firmwareCommands: null,
   fileConfig: { filename: "", destination: "" },
   exportState: { exporting: false, result: null, error: null },
   segmentNumber: 0,
@@ -232,6 +237,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       next.set(id, {
         ...sess,
         state,
+        // The command list describes the board on the other end of the port; once
+        // that board is gone (upload, disconnect) it may come back as another sketch.
+        firmwareCommands: LIVE_STATES.has(state) ? sess.firmwareCommands : null,
         programStartTime: isNewStart ? now : sess.programStartTime,
         programEndTime: resetData ? null : (state === "stopped" && sess.programEndTime === null ? now : sess.programEndTime),
         pausedTime: resetData ? 0 : sess.pausedTime + pauseDelta,
@@ -447,7 +455,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const sess = s.sessions.get(id);
       if (!sess) return s;
       const next = new Map(s.sessions);
-      next.set(id, { ...sess, paradigm });
+      next.set(id, { ...sess, paradigm, firmwareCommands: null });
       return { sessions: next };
     }),
 
@@ -584,6 +592,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       if (!sess) return s;
       const next = new Map(s.sessions);
       next.set(id, { ...sess, pinOverrides: { ...sess.pinOverrides, ...overrides } });
+      return { sessions: next };
+    }),
+
+  setFirmwareCommands: (id, commands) =>
+    set((s) => {
+      const sess = s.sessions.get(id);
+      if (!sess) return s;
+      const next = new Map(s.sessions);
+      next.set(id, { ...sess, firmwareCommands: commands });
       return { sessions: next };
     }),
 

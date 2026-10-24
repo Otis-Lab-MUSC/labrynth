@@ -177,6 +177,10 @@ export interface Session {
   /** Per-component Arduino pin overrides (lowercase Component keys). Empty
    *  object means firmware defaults are in effect. */
   pinOverrides: Record<string, number>;
+  /** Commands the connected firmware accepts (`GET /api/hardware/{id}/commands`),
+   *  fetched once per connect by `useFirmwareCommandsSync`. Null until then, and
+   *  again whenever the board goes away or the paradigm changes. */
+  firmwareCommands: CommandSpec[] | null;
   fileConfig: { filename: string; destination: string };
   exportState: { exporting: boolean; result: string | null; error: string | null };
   segmentNumber: number;
