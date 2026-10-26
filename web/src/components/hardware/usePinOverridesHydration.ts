@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useSessionStore } from "../../store/useSessionStore";
 import { getClientForSession } from "../../api/sessionClient";
+import type { ConfigDevice } from "../../generated/deviceNames";
+import type { Component } from "./pinMeta";
 
 /**
  * On `(sessionId, session.state)` transitioning to "connected", read
@@ -21,7 +23,7 @@ export function usePinOverridesHydration(sessionId: string | null | undefined) {
     client.getConfig(sessionId).then((cfg) => {
       if (cancelled) return;
       const next: Record<string, number> = {};
-      const componentByDevice: Record<string, string> = {
+      const componentByDevice: Partial<Record<ConfigDevice, Component>> = {
         CUE: "cue", CUE2: "cue2",
         PUMP: "pump", PUMP2: "pump2",
         LICK: "lick", LASER: "laser",
@@ -36,7 +38,7 @@ export function usePinOverridesHydration(sessionId: string | null | undefined) {
           if (typeof tp === "number") next.microscope_trigger = tp;
           continue;
         }
-        const c = componentByDevice[dev];
+        const c = componentByDevice[dev as ConfigDevice];
         const p = entry.pin;
         if (c && typeof p === "number") next[c] = p;
       }

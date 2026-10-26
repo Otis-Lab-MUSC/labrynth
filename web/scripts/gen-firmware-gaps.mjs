@@ -7,33 +7,16 @@
  * reacher's KNOWN_FIRMWARE_GAPS, never hand-written — a hand-written gate keeps
  * refusing after the firmware gap is closed.
  *
- * Usage:  npm run gen:gaps                    (expects ../reacher beside this repo)
- *         REACHER_SRC=/path/to/reacher npm run gen:gaps
+ * Usage:  npm run gen:gaps   (reacher source: see scripts/reacher-schema.mjs)
  */
-import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadSchema } from "./reacher-schema.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(here, "../src/generated/firmwareGaps.ts");
-const reacherRoot = process.env.REACHER_SRC ?? resolve(here, "../../../reacher");
-
-let dump;
-try {
-  const raw = execFileSync("python3", ["-m", "reacher.schema", "dump", "--json"], {
-    cwd: reacherRoot,
-    env: { ...process.env, PYTHONPATH: resolve(reacherRoot, "src") },
-    encoding: "utf8",
-    maxBuffer: 32 * 1024 * 1024,
-  });
-  dump = JSON.parse(raw);
-} catch (err) {
-  console.error(`Could not read the reacher schema from ${reacherRoot}`);
-  console.error("Set REACHER_SRC to your reacher checkout, or clone it beside this repo.");
-  console.error(String(err.message ?? err).split("\n")[0]);
-  process.exit(1);
-}
+const { dump } = loadSchema();
 
 const gaps = dump?.python?.known_firmware_gaps;
 if (!gaps || typeof gaps !== "object") {

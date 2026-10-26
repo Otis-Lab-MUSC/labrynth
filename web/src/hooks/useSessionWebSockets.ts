@@ -9,7 +9,8 @@ import { useAppStore } from "../store/useAppStore";
 import { getClientForSession } from "../api/sessionClient";
 import { auxStateFromEvent } from "../lib/auxEvents";
 import type { LogLevel } from "../store/useLogStore";
-import type { WSMessage, BehaviorEvent, FirmwareConfig, SessionState } from "../types";
+import type { WSMessage, BehaviorEvent, FirmwareConfig, SessionState, HardwareUiState } from "../types";
+import type { ConfigDevice } from "../generated/deviceNames";
 
 function normalizeLevel(level: string): LogLevel {
   if (level === "warn" || level === "warning") return "warn";
@@ -18,7 +19,7 @@ function normalizeLevel(level: string): LogLevel {
 }
 
 /** Map firmware config device names to hardwareUi keys for arm-state sync. */
-const DEVICE_TO_UI_KEY: Record<string, string> = {
+const DEVICE_TO_UI_KEY: Partial<Record<ConfigDevice, keyof HardwareUiState>> = {
   CUE: "primaryCue",
   CUE2: "secondaryCue",
   PUMP: "primaryPump",
@@ -166,7 +167,7 @@ function handleMessage(msg: WSMessage) {
         }
 
         // Sync arm state (and available params) from firmware config into hardwareUi
-        const uiKey = DEVICE_TO_UI_KEY[raw.device as string];
+        const uiKey = DEVICE_TO_UI_KEY[raw.device as ConfigDevice];
         if (uiKey) {
           updateHardwareUi(msg.session_id, (prev) => {
             const current = (prev as unknown as Record<string, Record<string, unknown>>)[uiKey];
