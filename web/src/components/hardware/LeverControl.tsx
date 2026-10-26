@@ -3,6 +3,7 @@ import { useSessionStore } from "../../store/useSessionStore";
 import { PinField } from "./PinField";
 import { CardHeader } from "./CardHeader";
 import { isParadigm } from "../../lib/paradigm";
+import { useFirmwareCommands } from "../../hooks/useFirmwareCommands";
 import { firstInvalid, showInvalid } from "../../lib/cardSet";
 import type { CardField } from "../../lib/cardSet";
 
@@ -29,6 +30,7 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
   const storeKey = STORE_KEY[side];
   const lever = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[storeKey]);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
+  const { has } = useFirmwareCommands(sessionId);
 
   if (!lever) return null;
 
@@ -47,15 +49,15 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
       lhLever: { ...prev.lhLever, ...patch },
     }));
 
-  // VI has no timeout: its reward is gated by the availability window, so a post-reward
-  // lockout is not part of the schedule. The control is absent and the dispatch path
-  // pins the firmware's timeout to 0 (leverSchedulerCommands).
-  const showTimeout = !isParadigm(paradigm, "omission", "pavlovian", "vi");
-  // Timeout mode is only declared for fr/pr/vi (+ _lite twins), but shown for fr/pr only —
-  // omission, pavlovian and VI have no lever timeout, so the control is absent rather
-  // than disabled. Must never outlive showTimeout: a mode for a hidden timeout
-  // is meaningless.
-  const showTimeoutMode = showTimeout && isParadigm(paradigm, "fr", "pr");
+  // Whether the firmware takes a timeout at all is answered by its command list; the
+  // name fallback covers the moments before a board answers. VI and omission declare
+  // the timeout but their schedules have no post-reward lockout: VI's reward is gated
+  // by the availability window (the dispatch path pins its timeout to 0, see
+  // leverSchedulerCommands) and omission ignores it (INTENTIONALLY_UNHANDLED in reacher).
+  const showTimeout =
+    (has(codes.timeout) ?? !isParadigm(paradigm, "pavlovian")) && !isParadigm(paradigm, "omission", "vi");
+  // Must never outlive showTimeout: a mode for a hidden timeout is meaningless.
+  const showTimeoutMode = showTimeout && (has(codes.timeoutMode) ?? isParadigm(paradigm, "fr", "pr"));
 
   const setFields: CardField[] = [];
   if (showTimeout) setFields.push({ code: codes.timeout, value: timeout, valid: timeout >= 0 && timeout <= 600000, label: "Timeout (ms)" });

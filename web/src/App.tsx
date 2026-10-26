@@ -26,6 +26,7 @@ import { useNavigationStore } from "./store/useNavigationStore";
 import { useMachineStore } from "./store/useMachineStore";
 import { useSessionStore } from "./store/useSessionStore";
 import { useSessionWebSockets } from "./hooks/useSessionWebSockets";
+import { useFirmwareCommandsSync } from "./hooks/useFirmwareCommands";
 import { useSessionRecovery } from "./hooks/useSessionRecovery";
 import { useBeforeUnload } from "./hooks/useBeforeUnload";
 import { useIdleTimer } from "./hooks/useIdleTimer";
@@ -82,6 +83,7 @@ function AppContent() {
 
   useSessionRecovery();
   useSessionWebSockets();
+  useFirmwareCommandsSync();
   useBeforeUnload(hasActiveSession);
   useIdleTimer(hasActiveSession);
   useScrollReveal();

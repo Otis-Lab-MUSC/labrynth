@@ -96,6 +96,7 @@ export function useSessionRecovery() {
                 lhLeverCounts: { active: 0, timeout: 0, inactive: 0 },
                 hardwareUi: defaultHardwareUiState(),
                 pinOverrides: {},
+                firmwareCommands: null,
                 fileConfig: { filename: "", destination: "" },
                 exportState: { exporting: false, result: null, error: null },
                 segmentNumber: 0,
