@@ -1,4 +1,4 @@
-// Run: node --test tests/   (Node >= 22.18 strips the TypeScript types itself)
+// Run (from web/): node --test tests/*.test.mjs   (Node >= 22.18 strips the TypeScript types itself)
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildCardCommands, firstInvalid, sendAll, cardSyncState, fieldsSignature, showInvalid, SYNC_LABEL } from "../src/lib/cardSet.ts";

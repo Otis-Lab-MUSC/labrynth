@@ -1,4 +1,4 @@
-// Run: node --test tests/
+// Run (from web/): node --test tests/*.test.mjs
 import test from "node:test";
 import assert from "node:assert/strict";
 import { boardFromParadigm, resolveBoard } from "../src/lib/firmwareBoard.ts";
