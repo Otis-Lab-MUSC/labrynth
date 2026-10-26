@@ -17,7 +17,17 @@ npm run dev         # Dev server :5173 — proxies /api and /ws to localhost:622
 npm run build       # tsc -b && vite build → web/dist/
 npm run build:demo  # Same with VITE_DEMO_SITE=true (deploys to static hosting via deploy-demo.yml)
 npm run lint        # ESLint
+npm run gen:tables  # Regenerate src/generated/{pinTables,deviceNames,commandCodes}.ts + cli/reacher_tables.py
+npm run gen:gaps    # Regenerate src/generated/firmwareGaps.ts
 ```
+
+The generators read reacher's schema dump (`python -m reacher.schema dump`),
+from `REACHER_SRC=/path/to/reacher`, else a `../reacher` checkout, else the
+installed `reacher2p` (`REACHER_SRC=installed` forces that; set `PYTHON` to the
+interpreter that has it). A checkout and the matching installed release give
+identical output. Never edit `web/src/generated/*` or `cli/reacher_tables.py`
+by hand; CI regenerates them from the pinned `reacher2p` and fails on any diff,
+so bumping the reacher pin can require a regenerate in the same PR.
 
 ### Backend for frontend dev
 
@@ -140,6 +150,7 @@ Machine discovery uses mDNS (polled by `useMachineStore.startDiscoveryPolling`).
 - **`components/`** — feature-area folders: `session/`, `configuration/`, `monitor/`, `data/`, `hardware/`, `program/`, `machines/`, `terminal/`, `layout/`, `tutorial/`.
 - **`themes/`** — 5 named themes (`reacher`, `terminal`, `neural`, `midnight`, `ember`), each with a single dark palette plus background, font, radius, glass tokens. Dark is the only mode — there is no light palette or toggle. Theme is applied by writing CSS variables on `:root` (`apply()` in `useThemeStore` sets `--color-*`, `--font-*`, etc.). Default: `reacher`. Nothing is persisted; older builds' `labrynth-mode` / `reacher-mode` keys are cleared on load.
 - **`types/index.ts`** — shared TypeScript interfaces (`Session`, `Machine`, `BehaviorEvent`, `FirmwareConfig`, …).
+- **`generated/`** — tables generated from reacher (see Commands): `pinTables.ts` (component keys, SET_PIN codes, role constraints, Pins.h defaults, board pin sets; re-exported by `components/hardware/pinMeta.ts`, which keeps the grid order, labels and pin rules), `deviceNames.ts` (`EventDevice` for WebSocket events, `ConfigDevice` for config records; type any device-name list against these so a misspelling fails `tsc`), `commandCodes.ts` (`CMD.<REGISTRY_NAME>`; use it instead of a numeric code), `firmwareGaps.ts`. reacher's parity checks parse `pinTables.ts` by name.
 
 Session lifecycle: `idle → uploading → connected → running → paused → stopped` (plus `disconnected` for serial drop). Real-time counters (infusions, presses, trials, frames, CS+/CS−) are driven entirely by WebSocket events, not by polling.
 
@@ -149,6 +160,7 @@ Session lifecycle: `idle → uploading → connected → running → paused → 
 - **`__main__.py`** — entry point. If backend isn't already on the port, spawns `python -m reacher` as a subprocess and waits up to 15 s for it to become reachable.
 - **`app.py`** — `ReacherCLI` (prompt_toolkit). Four modes: `MENU`, `INPUT`, `SELECT`, `MONITOR` (live WS feed). State + counters live on `SessionState` dataclass.
 - **`client.py`** — `ReacherClient`, async HTTP wrapper around the REST endpoints.
+- **`reacher_tables.py`** — generated command codes (`CMD["<REGISTRY_NAME>"]`), used by `presets.py`.
 
 The CLI mirrors browser-UI capabilities (sessions, hardware, program presets, limits, data export, live monitor).
 
@@ -161,7 +173,7 @@ The CLI mirrors browser-UI capabilities (sessions, hardware, program presets, li
 
 ### CI/CD (`.github/workflows/`)
 
-- **`ci.yml`** — pull-request gate (also runs on push to `main`, and as a reusable workflow called by both release workflows before any build): `frontend` job runs ESLint, `tsc -b` in `web/`, and the CLI/web preset parity check (`scripts/check-cli-parity.py`); `frontend-tests` job runs `node --test tests/*.test.mjs` on Node 22; `version` job checks `pyproject.toml`/`web/package.json`/README badge agree via `scripts/bump-version.py --check`. No test framework beyond `node:test` — see Testing above.
+- **`ci.yml`** — pull-request gate (also runs on push to `main`, and as a reusable workflow called by both release workflows before any build): `frontend` job runs ESLint, `tsc -b` in `web/`, and the CLI/web preset parity check (`scripts/check-cli-parity.py`); `frontend-tests` job runs `node --test tests/*.test.mjs` on Node 22; `generated-tables` job installs the pinned `reacher2p`, runs `gen:gaps` + `gen:tables`, and fails on any diff; `version` job checks `pyproject.toml`/`web/package.json`/README badge agree via `scripts/bump-version.py --check`. No test framework beyond `node:test` — see Testing above.
 - **`build-installers.yml`** — stable releases only (`vX.Y.Z` tags, no prerelease suffix). Builds Windows `.exe`, macOS `.dmg`, Linux `.deb` + `.tar.gz` + `.AppImage`, and the three `labrynth-cli-*` tarballs. Bundles the reacher ref derived from the `pyproject.toml` pin. The `release` job requires all 8 assets (`scripts/verify-release-assets.sh`) before publishing. `prerelease: false` hardcoded. Use `/release` skill to cut stable.
 - **`build-prerelease.yml`** — prerelease builds (`vX.Y.Z-alpha.*`, `vX.Y.Z-beta.*`, `vX.Y.Z-rc.*` tags). Same build matrix; `prerelease: true` hardcoded. All platform builds are required (no `continue-on-error`); the `release` job blocks publishing unless all 8 assets are present. The reacher ref to bundle is derived automatically from the `reacher2p>=` pin in `pyproject.toml` via `--print-reacher-ref`. Do **not** use `/release` for prereleases — see `RELEASING.md`.
 - **`deploy-demo.yml`** — deploys `web/dist/` (built with `VITE_DEMO_SITE=true`) as a static demo site. Demo mode swaps the API client for `demoClient.ts` + `mock.ts` and disables real backend calls.
