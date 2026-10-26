@@ -103,6 +103,30 @@ jobs:
           git diff --exit-code -- web/src/generated cli
           test -z "$(git status --porcelain -- web/src/generated cli)"
 
+  # Frontend unit tests — node:test over web/tests/*.test.mjs, no framework.
+  # They import the .ts sources directly, so they need Node's built-in type
+  # stripping (unflagged from 22.18); the build job stays on NODE_VERSION.
+  # Pass the files explicitly: `node --test tests/` treats the directory as one
+  # test file and fails.
+  frontend-tests:
+    name: frontend-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Unit tests
+        run: node --test tests/*.test.mjs
+
   # Version gate — pyproject.toml is the source of truth; verify web/package.json
   # and the README badge agree with it. Catches a hand-edited version, which
   # `scripts/bump-version.py` exists to prevent.

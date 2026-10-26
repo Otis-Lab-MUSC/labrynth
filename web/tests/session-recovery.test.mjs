@@ -1,5 +1,5 @@
 // Known-bug test: a page reload must not drop what the user typed or configured.
-// Run: node --test tests/   (Node >= 22.18 strips the TypeScript types itself; no framework)
+// Run (from web/): node --test tests/*.test.mjs   (Node >= 22.18 strips the TypeScript types itself; no framework)
 import test from "node:test";
 import assert from "node:assert/strict";
 import { toStoredSession, restoredFields } from "../src/lib/sessionRecovery.ts";
