@@ -148,3 +148,37 @@ jobs:
           version=$(sed -n 's/^version = "\(.*\)"/\1/p' pyproject.toml | head -1)
           echo "pyproject.toml version: $version"
           python scripts/bump-version.py --check "$version"
+
+  # Style ratchet — counts ruff rule families, mypy --strict errors, long files and
+  # functions, history comments and ESLint warnings, and fails if any count rises
+  # above scripts/style-baseline.json. Needs web/node_modules for the ESLint counts.
+  style:
+    name: style
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      # Installs the pinned ruff and mypy, plus the packages mypy resolves imports from.
+      - name: Install Python dependencies
+        run: pip install ".[cli,dev]"
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Style ratchet
+        run: python scripts/style-baseline.py

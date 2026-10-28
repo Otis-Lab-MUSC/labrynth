@@ -29,7 +29,17 @@ export default tseslint.config(
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "none" },
       ],
+      // Style gates; existing hits are recorded by scripts/style-baseline.py.
+      "max-lines": ["warn", { max: 300, skipBlankLines: true, skipComments: true }],
+      complexity: ["warn", 15],
+      "@typescript-eslint/no-explicit-any": "error",
+      "no-console": "warn",
     },
+  },
+  {
+    // Generated from reacher's schema; size is not ours to split.
+    files: ["src/generated/**"],
+    rules: { "max-lines": "off" },
   },
   {
     // Vite/Node-side config files run outside the browser.
