@@ -34,6 +34,10 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -48,6 +52,7 @@ _STAGE_ORDER = ["alpha", "beta", "rc"]
 
 
 def identity(v: str) -> str:
+    """Return the version unchanged."""
     return v
 
 
@@ -117,7 +122,7 @@ def next_stage_version(current: str, stage: str) -> str:
 # -- regex-based files (each declares the form it stores) --------------------
 # (file, pattern with 3 capture groups, replacement template, transform, label)
 
-REGEX_FILES: list[tuple[Path, str, str, "callable", str]] = [
+REGEX_FILES: list[tuple[Path, str, str, "Callable[[str], str]", str]] = [
     (
         ROOT / "pyproject.toml",
         r'^(version\s*=\s*")([^"]+)(")',
@@ -233,6 +238,7 @@ def check_version(expected: str) -> bool:
 
 
 def read_reacher_pin() -> str:
+    """Return the semver-form reacher pin from pyproject.toml, or a placeholder if absent."""
     text = REACHER_PIN_FILE.read_text()
     match = re.search(REACHER_PIN_RE, text)
     return match.group(2) if match else "<not found>"
@@ -251,6 +257,7 @@ def set_reacher_pin(semver: str) -> None:
 
 
 def main() -> None:
+    """Dispatch the command-line flags to the matching version operation."""
     args = sys.argv[1:]
 
     if not args:

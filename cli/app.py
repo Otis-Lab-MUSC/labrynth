@@ -10,8 +10,9 @@ import asyncio
 import json
 import os
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import TYPE_CHECKING
 
 from prompt_toolkit import Application
 from prompt_toolkit.buffer import Buffer
@@ -23,6 +24,9 @@ from prompt_toolkit.styles import Style
 
 from . import presets as P
 from .client import ReacherClient
+
+if TYPE_CHECKING:
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Helpers
@@ -45,7 +49,7 @@ def _limits_from_preset(limit_defaults: dict) -> dict:
     }
 
 
-def _counted_pumps_from_preset(value) -> list[str] | None:
+def _counted_pumps_from_preset(value: object) -> list[str] | None:
     """Absent, empty, or only unknown pumps -> None (Auto), matching the web resolver."""
     if not isinstance(value, list):
         return None
@@ -295,6 +299,8 @@ DEVICE_BY_ID = {d["id"]: d for d in DEVICE_CONFIGS}
 
 @dataclass
 class SessionState:
+    """Everything the CLI tracks about the one session it is controlling."""
+
     id: str
     port: str
     paradigm: str | None = None
@@ -302,13 +308,13 @@ class SessionState:
     state: str = "idle"
     name: str = ""
     notes: str = ""
-    firmware_info: dict | None = None
-    behavior_data: list[dict] = field(default_factory=list)
+    firmware_info: dict[str, object] | None = None
+    behavior_data: list[dict[str, object]] = field(default_factory=list)
     frame_data: list[float] = field(default_factory=list)
     infusion_count: int = 0
     # Server-side counted total from the infusion_count WS event; None until one arrives.
     server_infusion_count: int | None = None
-    infusions_by_pump: dict | None = None
+    infusions_by_pump: dict[str, object] | None = None
     press_count: int = 0
     trial_count: int = 0
     rh_counts: dict = field(default_factory=lambda: {"active": 0, "timeout": 0, "inactive": 0})
@@ -321,11 +327,11 @@ class SessionState:
     # the start-time dispatch in presets.py is shared with the web definitions.
     hw: dict = field(default_factory=P.default_hardware)
     test_mode: bool = False
-    paradigm_settings: dict = field(
+    paradigm_settings: dict[str, object] = field(
         default_factory=lambda: {"ratio": 1, "step": 1, "interval": 30000}
     )
     pavlovian_params: dict = field(default_factory=dict)  # {code: value}, last-set Pavlovian params
-    limit_settings: dict = field(
+    limit_settings: dict[str, object] = field(
         default_factory=lambda: {"type": "Time", "time_limit": 3600, "infusion_limit": 30, "delay": 10,
                                   "counted_pumps": None}
     )
@@ -343,19 +349,22 @@ class SessionState:
     attached: bool = False  # re-attached to a session this process did not create
 
     @property
-    def armed(self) -> dict:
+    def armed(self) -> dict[str, object]:
         """CLI device id -> armed, read-only view over ``hw``."""
         return {cli: bool(self.hw.get(web, {}).get("armed")) for web, cli in P.CLI_ID.items()}
 
     def behavior_count_hint(self) -> bool:
+        """Return True once the backend has reported at least one event."""
         return self.backend_event_count > 0
 
     @property
     def allowed_codes(self) -> set[int]:
+        """Return the command codes the running firmware declares."""
         return {int(c["code"]) for c in self.pav_commands if "code" in c}
 
     @property
     def elapsed(self) -> float:
+        """Return seconds of program time, excluding paused time."""
         if self.program_start is None:
             return 0.0
         end = self.program_end or time.time()
@@ -366,6 +375,7 @@ class SessionState:
 
     @property
     def elapsed_str(self) -> str:
+        """Return the elapsed time as ``HH:MM:SS`` (``--:--:--`` for an attached run with unknown start)."""
         if self.program_start is None and self.attached and self.state in ("running", "paused"):
             return "--:--:--"
         s = int(self.elapsed)
@@ -373,6 +383,7 @@ class SessionState:
 
     @property
     def infusions_text(self) -> str:
+        """Return the infusion counter line, preferring the server's counted total."""
         if self.server_infusion_count is None:
             return f"Infusions: {self.infusion_count}"
         by_pump = self.infusions_by_pump or {}
@@ -388,23 +399,29 @@ class SessionState:
 
 @dataclass
 class MenuItem:
+    """One row in a menu: a label, an optional action, and optional right-aligned info."""
+
     label: str
-    action: Callable | None = None  # async callable, or None for separator
+    action: Callable[..., object] | None = None  # async callable, or None for separator
     suffix: str = ""                # right-aligned info
     is_separator: bool = False
 
 
 @dataclass
 class MenuState:
+    """A menu screen: its title, rows, highlighted row and parent menu."""
+
     title: str
     items: list[MenuItem]
     selected: int = 0
     parent: MenuState | None = None
 
     def selectable_count(self) -> int:
+        """Return the number of rows that are not separators."""
         return sum(1 for i in self.items if not i.is_separator)
 
     def move(self, delta: int) -> None:
+        """Move the highlight by ``delta`` rows, wrapping around and skipping separators."""
         if not self.items:
             return
         n = len(self.items)
@@ -450,7 +467,10 @@ CLI_STYLE = Style.from_dict({
 
 
 class ReacherCLI:
-    def __init__(self, port: int = 6229, machine: str | None = None):
+    """The terminal UI: menus, prompts and live monitor over the REACHER backend."""
+
+    def __init__(self, port: int = 6229, machine: str | None = None) -> None:
+        """Create the CLI for the local backend on ``port``, optionally targeting a paired ``machine`` at startup."""
         # Always the LOCAL backend. A remote machine is reached through its
         # proxy (see ReacherClient.set_target), so the Pi's key never leaves it.
         self.api = ReacherClient(base_url=f"http://localhost:{port}")
@@ -466,34 +486,35 @@ class ReacherCLI:
         # Input mode state
         self.input_prompt: str = ""
         self.input_value: str = ""
-        self.input_callback: Callable | None = None
+        self.input_callback: Callable[..., object] | None = None
         self.input_mask: bool = False
 
         # Select mode state (arrow-key selection from a list)
         self.select_title: str = ""
         self.select_options: list[tuple[str, str]] = []  # (label, value)
         self.select_index: int = 0
-        self.select_callback: Callable | None = None
+        self.select_callback: Callable[..., object] | None = None
 
         # Live feed. One WebSocket per session runs in the background for the
         # whole time a session is open (not only in Monitor mode): it keeps
         # state/arm/counter mirrors current and lets the host's idle watchdog
         # see a connected client during long runs.
         self.monitor_lines: list[tuple[str, str]] = []
-        self._ws_task: asyncio.Task | None = None
+        self._ws_task: asyncio.Task[None] | None = None
         self.ws_connected: bool = False
 
         # Menu
         self.menu: MenuState = self._main_menu()
 
         # prompt_toolkit app (set up in run_async)
-        self.app: Application | None = None
+        self.app: Application[None] | None = None
 
     # ───────────────────────────────────────────────────────────────────
     # Rendering
     # ───────────────────────────────────────────────────────────────────
 
     def _render(self) -> FormattedText:
+        """Build the full screen for the current mode."""
         lines: list[tuple[str, str]] = []
 
         # Header: target machine, session state, live-link indicator
@@ -521,6 +542,7 @@ class ReacherCLI:
         return FormattedText(lines)
 
     def _render_menu(self, lines: list[tuple[str, str]]) -> None:
+        """Append the menu screen to ``lines``."""
         lines.append(("class:separator", "\u2550" * 50 + "\n"))
         lines.append(("class:breadcrumb", self.menu.title))
         lines.append(("", "\n"))
@@ -549,6 +571,7 @@ class ReacherCLI:
         self._render_status(lines)
 
     def _render_input(self, lines: list[tuple[str, str]]) -> None:
+        """Append the text-input prompt to ``lines``."""
         lines.append(("class:separator", "\u2550" * 50 + "\n"))
         lines.append(("class:input-prompt", self.input_prompt))
         lines.append(("", "\n\n"))
@@ -559,6 +582,7 @@ class ReacherCLI:
         self._render_status(lines)
 
     def _render_select(self, lines: list[tuple[str, str]]) -> None:
+        """Append the arrow-key selection list to ``lines``."""
         lines.append(("class:separator", "\u2550" * 50 + "\n"))
         lines.append(("class:breadcrumb", self.select_title))
         lines.append(("", "\n"))
@@ -575,6 +599,7 @@ class ReacherCLI:
         self._render_status(lines)
 
     def _render_monitor(self, lines: list[tuple[str, str]]) -> None:
+        """Append the live monitor (counters and recent events) to ``lines``."""
         s = self.session
         elapsed = s.elapsed_str if s else "00:00:00"
         lines.append(("class:separator", "\u2550" * 50 + "\n"))
@@ -608,15 +633,18 @@ class ReacherCLI:
         self._render_status(lines)
 
     def _render_status(self, lines: list[tuple[str, str]]) -> None:
+        """Append the status-bar message to ``lines`` if there is one."""
         if self.status_message:
             style = "class:status-bar-error" if self.status_is_error else "class:status-bar"
             lines.append((style, self.status_message + "\n"))
 
     def _invalidate(self) -> None:
+        """Ask prompt_toolkit to redraw the screen."""
         if self.app:
             self.app.invalidate()
 
     def _set_status(self, msg: str, error: bool = False) -> None:
+        """Show a message in the status bar and redraw."""
         self.status_message = msg
         self.status_is_error = error
         self._invalidate()
@@ -626,6 +654,7 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     def _main_menu(self) -> MenuState:
+        """Build the top-level menu."""
         items = [
             MenuItem("Machines", action=self._open_machines_menu, suffix=f"({self.target_name})"),
             MenuItem("Session", action=lambda: self._push_menu(self._session_menu())),
@@ -638,6 +667,7 @@ class ReacherCLI:
         return MenuState(title="Main Menu", items=items)
 
     def _session_menu(self) -> MenuState:
+        """Build the session menu (create, attach, connect, firmware, reset, destroy)."""
         s = self.session
         state_suffix = f"[{s.state}]" if s else ""
         items = [
@@ -656,6 +686,7 @@ class ReacherCLI:
         return MenuState(title="Session", items=items)
 
     def _hardware_menu(self) -> MenuState:
+        """Build the hardware menu, listing only devices the running firmware has."""
         items = []
         allowed = self.session.allowed_codes if self.session else set()
         for cfg in DEVICE_CONFIGS:
@@ -699,6 +730,7 @@ class ReacherCLI:
         return "unknown" if v is None else str(v)
 
     def _device_menu(self, device_id: str) -> MenuState:
+        """Build the menu for one device: arm, test, parameters and role."""
         cfg = DEVICE_BY_ID[device_id]
         s = self.session
         armed = s.armed.get(device_id, False) if s else False
@@ -756,6 +788,7 @@ class ReacherCLI:
         return MenuState(title=f"{title}  {suffix}", items=items)
 
     def _program_menu(self) -> MenuState:
+        """Build the program menu, with run controls matching the session state."""
         s = self.session
         items: list[MenuItem] = []
         items.append(MenuItem("Apply Preset",
@@ -784,6 +817,7 @@ class ReacherCLI:
         return MenuState(title="Program", items=items)
 
     def _preset_menu(self) -> MenuState:
+        """Build the menu of built-in presets for the session's paradigm."""
         s = self.session
         items: list[MenuItem] = []
         presets = P.presets_for(s.paradigm) if s else []
@@ -800,6 +834,7 @@ class ReacherCLI:
         return MenuState(title="Program > Apply Preset", items=items)
 
     def _paradigm_settings_menu(self) -> MenuState:
+        """Build the menu of settings relevant to the active paradigm."""
         # Mirror web/src/components/program/ParadigmSettings.tsx: show only the
         # fields relevant to the active paradigm, with live value suffixes.
         s = self.session
@@ -832,6 +867,7 @@ class ReacherCLI:
         return MenuState(title="Program > Paradigm Settings", items=items)
 
     def _pavlovian_menu(self) -> MenuState:
+        """Build the Pavlovian parameter menu from the firmware's command registry."""
         s = self.session
         tracked = s.pavlovian_params if s else {}
         items = []
@@ -844,9 +880,11 @@ class ReacherCLI:
         specs = s.pav_commands if s else []
 
         def _label(code: int, spec: dict) -> str:
+            """Return the menu label for a Pavlovian command."""
             return PAV_LABEL_OVERRIDES.get(code) or spec.get("description") or f"Code {code}"
 
         def _suffix(code: int) -> str:
+            """Return the last value set for a Pavlovian command, formatted for the menu."""
             return f"({tracked[code]})" if code in tracked else ""
 
         scalar = sorted(
@@ -895,6 +933,7 @@ class ReacherCLI:
         return MenuState(title="Program > Pavlovian Settings", items=items)
 
     def _limits_menu(self) -> MenuState:
+        """Build the menu for the session's stop limits."""
         s = self.session
         current_type = s.limit_settings["type"] if s else "Time"
         limit_types = LIMIT_TYPES_PAVLOVIAN if (s and s.paradigm == "pavlovian") else LIMIT_TYPES_OPERANT
@@ -930,6 +969,7 @@ class ReacherCLI:
         return MenuState(title="Program > Limits", items=items)
 
     def _monitor_menu(self) -> MenuState:
+        """Build the monitor menu."""
         items = [
             MenuItem("View Status", action=self._view_status),
             MenuItem("Live Stream", action=self._enter_monitor),
@@ -938,6 +978,7 @@ class ReacherCLI:
         return MenuState(title="Monitor", items=items)
 
     def _data_menu(self) -> MenuState:
+        """Build the menu for file naming, export and data preview."""
         s = self.session
         where = "on the Pi" if self.api.is_remote else "on this machine"
         local_dir = s.file_config.get("local_dir") if s else None
@@ -966,6 +1007,7 @@ class ReacherCLI:
         return MenuState(title="Data", items=items)
 
     def _machines_menu(self) -> MenuState:
+        """Build the menu for choosing the control target and pairing machines."""
         remote = self.api.device_id
         items: list[MenuItem] = [MenuItem("──── Control target ────", is_separator=True)]
         items.append(MenuItem("This machine (local)", action=lambda: self._select_target(None, "this machine"),
@@ -1014,11 +1056,13 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     def _push_menu(self, menu: MenuState) -> None:
+        """Open ``menu`` as a child of the current menu."""
         menu.parent = self.menu
         self.menu = menu
         self._invalidate()
 
     def _pop_menu(self) -> None:
+        """Return to the parent menu."""
         if self.menu.parent:
             self.menu = self.menu.parent
             # Rebuild to reflect updated state
@@ -1062,7 +1106,8 @@ class ReacherCLI:
     # Input / Select prompts
     # ───────────────────────────────────────────────────────────────────
 
-    def _prompt_input(self, prompt: str, callback: Callable, mask: bool = False) -> None:
+    def _prompt_input(self, prompt: str, callback: Callable[..., object], mask: bool = False) -> None:
+        """Switch to text-input mode and call ``callback`` with the submitted value."""
         self.mode = "input"
         self.input_prompt = prompt
         self.input_value = ""
@@ -1070,9 +1115,10 @@ class ReacherCLI:
         self.input_mask = mask
         self._invalidate()
 
-    def _prompt_int_input(self, prompt: str, callback: Callable) -> None:
+    def _prompt_int_input(self, prompt: str, callback: Callable[..., object]) -> None:
         """Like _prompt_input, but validates that the value is an integer."""
-        def _validate(val: str):
+        def _validate(val: str) -> object | None:
+            """Pass the value to the callback as an int, or report an invalid number."""
             n = _safe_int(val, prompt)
             if n is None:
                 self._set_status(f"Invalid number: {val!r}", error=True)
@@ -1080,7 +1126,8 @@ class ReacherCLI:
             return callback(n)
         self._prompt_input(prompt, _validate)
 
-    def _prompt_select(self, title: str, options: list[tuple[str, str]], callback: Callable) -> None:
+    def _prompt_select(self, title: str, options: list[tuple[str, str]], callback: Callable[..., object]) -> None:
+        """Switch to selection mode and call ``callback`` with the chosen option's value."""
         self.mode = "select"
         self.select_title = title
         self.select_options = options
@@ -1089,6 +1136,7 @@ class ReacherCLI:
         self._invalidate()
 
     def _submit_input(self) -> None:
+        """Leave input mode and run the callback with the typed value."""
         value = self.input_value.strip()
         cb = self.input_callback
         self.mode = "menu"
@@ -1098,6 +1146,7 @@ class ReacherCLI:
             self._run_action(lambda: cb(value))
 
     def _submit_select(self) -> None:
+        """Leave selection mode and run the callback with the chosen value."""
         if not self.select_options:
             self.mode = "menu"
             return
@@ -1110,6 +1159,7 @@ class ReacherCLI:
             self._run_action(lambda: cb(value))
 
     def _cancel_input(self) -> None:
+        """Leave input or selection mode without running the callback."""
         self.mode = "menu"
         self.input_callback = None
         self.select_callback = None
@@ -1119,8 +1169,10 @@ class ReacherCLI:
     # Async action runner
     # ───────────────────────────────────────────────────────────────────
 
-    def _run_action(self, coro_fn: Callable) -> None:
-        async def _wrapper():
+    def _run_action(self, coro_fn: Callable[..., object]) -> None:
+        """Run a menu action in the background, reporting any exception in the status bar."""
+        async def _wrapper() -> None:
+            """Call the action, await it if it is a coroutine, and show failures in the status bar."""
             try:
                 result = coro_fn()
                 if asyncio.iscoroutine(result):
@@ -1135,6 +1187,7 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     async def _create_session(self) -> None:
+        """Ask for a serial port, then create a session on it."""
         try:
             ports_resp = await self.api.list_ports()
             ports = ports_resp.get("ports", [])
@@ -1152,6 +1205,7 @@ class ReacherCLI:
         )
 
     async def _on_port_selected(self, port: str) -> None:
+        """Ask for an optional paradigm after a port is chosen."""
         # Optionally select paradigm
         try:
             paradigms_resp = await self.api.list_paradigms()
@@ -1169,6 +1223,7 @@ class ReacherCLI:
             await self._finish_create_session(port, None)
 
     async def _finish_create_session(self, port: str, paradigm: str | None) -> None:
+        """Create the session on the backend and make it the active one."""
         try:
             resp = await self.api.create_session(port, paradigm)
             sid = resp.get("session_id") or resp.get("id", "")
@@ -1183,6 +1238,7 @@ class ReacherCLI:
             self._set_status(f"Create session failed: {exc}", error=True)
 
     async def _connect(self) -> None:
+        """Open the session's serial connection."""
         if not self.session:
             self._set_status("No session — create one first", error=True)
             return
@@ -1196,6 +1252,7 @@ class ReacherCLI:
             self._set_status(f"Connect failed: {exc}", error=True)
 
     async def _disconnect(self) -> None:
+        """Close the session's serial connection."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1208,6 +1265,7 @@ class ReacherCLI:
             self._set_status(f"Disconnect failed: {exc}", error=True)
 
     async def _upload_firmware(self) -> None:
+        """Ask for a board, then flash firmware; refused while the session is running."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1225,6 +1283,7 @@ class ReacherCLI:
         )
 
     async def _on_board_selected(self, board: str) -> None:
+        """Ask for the paradigm to flash on the chosen board."""
         try:
             paradigms_resp = await self.api.list_paradigms(board)
             paradigms = paradigms_resp.get("paradigms", [])
@@ -1252,6 +1311,7 @@ class ReacherCLI:
             return None
 
     async def _finish_upload(self, board: str, paradigm: str) -> None:
+        """Flash the chosen paradigm and reset local device state to the new firmware's defaults."""
         if not self.session:
             return
         try:
@@ -1295,6 +1355,7 @@ class ReacherCLI:
             self._set_status(f"Failed to load commands: {exc}", error=True)
 
     async def _reset_session(self) -> None:
+        """Reset the session on the backend and clear local counters and state."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1313,6 +1374,7 @@ class ReacherCLI:
             self._set_status(f"Reset failed: {exc}", error=True)
 
     def _reset_counters(self) -> None:
+        """Zero the local event counters."""
         s = self.session
         if not s:
             return
@@ -1324,6 +1386,7 @@ class ReacherCLI:
         s.lh_counts = {"active": 0, "timeout": 0, "inactive": 0}
 
     async def _destroy_session(self) -> None:
+        """Ask for confirmation before destroying the session."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1334,6 +1397,7 @@ class ReacherCLI:
         )
 
     async def _confirm_destroy(self, choice: str) -> None:
+        """Destroy the session if the operator confirmed."""
         if choice != "yes" or not self.session:
             self._set_status("Cancelled")
             return
@@ -1360,6 +1424,7 @@ class ReacherCLI:
         self._rebuild_current_menu()
 
     async def _choose_attach(self) -> None:
+        """List the target's sessions and ask which to attach to."""
         try:
             sessions = (await self.api.list_sessions()).get("sessions", [])
         except Exception as exc:
@@ -1426,6 +1491,7 @@ class ReacherCLI:
             s.firmware_info = cfg["firmware_info"]
 
     async def _show_session_info(self) -> None:
+        """Show the session's id, port, state, paradigm and board in the status bar."""
         s = self.session
         if not s:
             self._set_status("No active session")
@@ -1439,6 +1505,7 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     async def _send_hw_command(self, code: int, value: int | None = None) -> None:
+        """Send a firmware command and record it locally so the start-time re-send carries it."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1463,6 +1530,7 @@ class ReacherCLI:
             self._set_status(f"Command failed: {exc}", error=True)
 
     async def _send_laser_mode(self, code: int) -> None:
+        """Send a laser mode command, preceded by contingent mode for trial-paired modes."""
         # Pavlovian trial-paired modes need contingent (681) first, as in
         # ConfigurationPanel.tsx.
         if code in (691, 692, 693):
@@ -1477,9 +1545,11 @@ class ReacherCLI:
         return dropped
 
     async def _test_chain(self) -> None:
+        """Run the firmware's test chain."""
         await self._send_hw_command(SYSTEM_COMMANDS["test_chain"])
 
     async def _toggle_test_mode(self) -> None:
+        """Flip test mode locally and tell the firmware."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1526,6 +1596,7 @@ class ReacherCLI:
             self._set_status(f"Preset failed: {exc}", error=True)
 
     async def _send_paradigm_setting(self, key: str, value: int) -> None:
+        """Send one paradigm setting (ratio, step or interval) to the firmware."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1591,6 +1662,7 @@ class ReacherCLI:
             return False
 
     async def _start_program(self) -> None:
+        """Apply the pre-run configuration and start the program."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1608,6 +1680,7 @@ class ReacherCLI:
             self._set_status(f"Start failed: {exc}", error=True)
 
     async def _stop_program(self) -> None:
+        """Ask for confirmation before stopping the program."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1618,6 +1691,7 @@ class ReacherCLI:
         )
 
     async def _confirm_stop(self, choice: str) -> None:
+        """Stop the program if the operator confirmed."""
         if choice != "yes" or not self.session:
             self._set_status("Cancelled")
             return
@@ -1634,6 +1708,7 @@ class ReacherCLI:
             self._set_status(f"Stop failed: {exc}", error=True)
 
     async def _pause_program(self) -> None:
+        """Pause a running program or resume a paused one."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1659,6 +1734,7 @@ class ReacherCLI:
             self._set_status(f"Pause/resume failed: {exc}", error=True)
 
     async def _split_segment(self) -> None:
+        """End the current data segment and begin a new one."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1670,6 +1746,7 @@ class ReacherCLI:
             self._set_status(f"Split failed: {exc}", error=True)
 
     async def _restart_program(self) -> None:
+        """Ask for confirmation before restarting the program."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1680,6 +1757,7 @@ class ReacherCLI:
         )
 
     async def _confirm_restart(self, choice: str) -> None:
+        """Restart the program if the operator confirmed."""
         if choice != "yes" or not self.session:
             self._set_status("Cancelled")
             return
@@ -1696,6 +1774,7 @@ class ReacherCLI:
             self._set_status(f"Restart failed: {exc}", error=True)
 
     async def _send_limits(self) -> None:
+        """Send the session's current limit settings to the backend."""
         lim = self.session.limit_settings
         body = P.limit_payload({"limitType": lim["type"], "timeLimit": lim["time_limit"],
                                 "infusionLimit": lim["infusion_limit"], "delay": lim["delay"],
@@ -1704,6 +1783,7 @@ class ReacherCLI:
         await self.api.set_limit(self.session.id, limit_type, **body)
 
     async def _set_limit_type(self, limit_type: str) -> None:
+        """Set the limit type (time, infusion or both) and send the limits."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1716,6 +1796,7 @@ class ReacherCLI:
             self._set_status(f"Set limit failed: {exc}", error=True)
 
     async def _set_limit_value(self, key: str, value: int) -> None:
+        """Set one numeric limit and send the limits."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1728,6 +1809,7 @@ class ReacherCLI:
             self._set_status(f"Set limit failed: {exc}", error=True)
 
     async def _set_counted_pumps(self, key: str) -> None:
+        """Choose which pumps count toward the infusion limit and send the limits."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -1745,6 +1827,7 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     async def _view_status(self) -> None:
+        """Show elapsed time and counters in the status bar."""
         if not self.session:
             self._set_status("No session")
             return
@@ -1755,6 +1838,7 @@ class ReacherCLI:
         )
 
     async def _enter_monitor(self) -> None:
+        """Switch to the live monitor, starting the WebSocket if needed."""
         if not self.session:
             self._set_status("No session — create one first", error=True)
             return
@@ -1763,6 +1847,7 @@ class ReacherCLI:
         self._invalidate()
 
     async def _exit_monitor(self) -> None:
+        """Leave the live monitor; the WebSocket stays open."""
         # The socket deliberately stays open: it is what keeps counters, state
         # and the host's idle watchdog current while the operator is in menus.
         self.mode = "menu"
@@ -1776,16 +1861,19 @@ class ReacherCLI:
         self._ws_task = asyncio.ensure_future(self._stream_events(self.session.id))
 
     def _stop_ws(self) -> None:
+        """Cancel the background WebSocket task."""
         if self._ws_task and not self._ws_task.done():
             self._ws_task.cancel()
         self._ws_task = None
         self.ws_connected = False
 
     def _log(self, text: str, error: bool = False) -> None:
+        """Append a line to the monitor feed, keeping the most recent 500."""
         self.monitor_lines.append(("class:status-bar-error" if error else "class:monitor-event", text))
         del self.monitor_lines[:-500]
 
     async def _stream_events(self, sid: str) -> None:
+        """Follow the session's WebSocket, reconnecting with backoff, until the session changes or disappears."""
         try:
             import websockets
         except ImportError:
@@ -1799,7 +1887,8 @@ class ReacherCLI:
         connected_once = False
         attempt = 0
 
-        async def _refresh_loop():
+        async def _refresh_loop() -> None:
+            """Redraw the screen once a second so the elapsed clock advances."""
             while True:
                 await asyncio.sleep(1)
                 self._invalidate()
@@ -1857,6 +1946,7 @@ class ReacherCLI:
             self.ws_connected = False
 
     async def _session_still_exists(self, sid: str) -> bool:
+        """Return True if the target still lists the session (or cannot be reached)."""
         try:
             sessions = (await self.api.list_sessions()).get("sessions", [])
             return any(x.get("session_id") == sid for x in sessions)
@@ -2038,6 +2128,7 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     async def _set_filename(self, value: str) -> None:
+        """Set the export file name."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -2049,6 +2140,7 @@ class ReacherCLI:
             self._set_status(f"Failed: {exc}", error=True)
 
     async def _set_destination(self, value: str) -> None:
+        """Set the folder the export is written to."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -2060,6 +2152,7 @@ class ReacherCLI:
             self._set_status(f"Failed: {exc}", error=True)
 
     async def _set_notes(self, value: str) -> None:
+        """Set the notes saved with the export."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -2071,6 +2164,7 @@ class ReacherCLI:
             self._set_status(f"Failed: {exc}", error=True)
 
     async def _export_zip(self, auto: bool = False) -> None:
+        """Export the session's data as a ZIP and, for a remote target, download it."""
         s = self.session
         if not s:
             self._set_status("No session", error=True)
@@ -2113,6 +2207,7 @@ class ReacherCLI:
             self.app.create_background_task(self._export_zip(auto=True))
 
     async def _download_last_export(self) -> None:
+        """Copy the last export from the target host to this machine."""
         s = self.session
         if not s or not s.last_export:
             self._set_status("Nothing exported yet — run Export ZIP first", error=True)
@@ -2131,12 +2226,14 @@ class ReacherCLI:
         self._rebuild_current_menu()
 
     async def _set_local_dir(self, value: str) -> None:
+        """Set the local folder for downloaded exports."""
         if self.session:
             self.session.file_config["local_dir"] = os.path.expanduser(value)
             self._set_status(f"Downloads will go to {self.session.file_config['local_dir']}")
             self._rebuild_current_menu()
 
     async def _view_data_preview(self) -> None:
+        """Show the most recent recorded events in the status bar."""
         if not self.session:
             self._set_status("No session", error=True)
             return
@@ -2160,6 +2257,7 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     async def _quit(self) -> None:
+        """Quit, asking first if a session is running or paused."""
         if self.session and self.session.state in ("running", "paused"):
             prompt = (
                 f"Session is {self.session.state} on {self.target_name}. It keeps running "
@@ -2174,12 +2272,14 @@ class ReacherCLI:
             await self._do_quit()
 
     async def _confirm_quit(self, choice: str) -> None:
+        """Quit if the operator confirmed."""
         if choice == "yes":
             await self._do_quit()
         else:
             self._set_status("Cancelled")
 
     async def _do_quit(self) -> None:
+        """Stop the WebSocket, close the HTTP client and exit the app."""
         self._stop_ws()
         try:
             await self.api.close()
@@ -2193,6 +2293,7 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     async def _refresh_machines(self) -> None:
+        """Reload the list of paired and discovered machines."""
         try:
             self.machines = (await self.api.list_machines()).get("devices", [])
         except Exception as exc:
@@ -2200,6 +2301,7 @@ class ReacherCLI:
             self._set_status(f"Machine list failed: {exc}", error=True)
 
     async def _open_machines_menu(self) -> None:
+        """Refresh the machine list and show the machines menu."""
         await self._refresh_machines()
         if self.menu.title == "Machines":
             self._rebuild_current_menu()
@@ -2208,6 +2310,7 @@ class ReacherCLI:
         self._invalidate()
 
     async def _select_target(self, device_id: str | None, name: str) -> None:
+        """Switch control to another machine, refusing while a session is running there."""
         if device_id == self.api.device_id:
             return
         if self.session and self.session.state in ("running", "paused"):
@@ -2230,7 +2333,8 @@ class ReacherCLI:
             self._set_status("Now controlling this machine")
         self._rebuild_current_menu()
 
-    async def _pair(self, coro) -> None:
+    async def _pair(self, coro: Awaitable[dict[str, object]]) -> None:
+        """Await a pairing call, then refresh the machine list."""
         try:
             m = await coro
             await self._refresh_machines()
@@ -2240,16 +2344,19 @@ class ReacherCLI:
             self._set_status(f"Pairing failed: {exc}", error=True)
 
     async def _pair_by_url_step(self, url: str) -> None:
+        """Ask for the pairing code of the machine at ``url``."""
         self._prompt_input(f"Pairing code shown on {url}:",
                            lambda code: self._pair(self.api.pair_by_url(url, _digits(code))))
 
     async def _pair_manual_step(self, url: str) -> None:
+        """Ask for the API key of the machine at ``url`` (input is masked)."""
         # The key is stored server-side in ~/.reacher/machines.json; it is
         # never echoed here (masked input) or kept in this process.
         self._prompt_input(f"API key of {url} (from ~/.reacher/api_key on that machine):",
                            lambda key: self._pair(self.api.pair_manual(url, key.strip())), mask=True)
 
     async def _unpair(self, device_id: str) -> None:
+        """Unpair a machine, switching back to this machine first if it is the target."""
         if device_id == self.api.device_id:
             await self._select_target(None, "this machine")
         try:
@@ -2265,10 +2372,15 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     def _build_keybindings(self) -> KeyBindings:
+        """Create the key bindings for every mode.
+
+        Up/down move the highlight, Enter selects or submits, Escape goes back, ``q`` quits
+        from a menu, and printable keys, Backspace edit the text in input mode.
+        """
         kb = KeyBindings()
 
         @kb.add("up")
-        def _up(event):
+        def _up(event: KeyPressEvent) -> None:
             if self.mode == "menu":
                 self.menu.move(-1)
                 self._invalidate()
@@ -2277,7 +2389,7 @@ class ReacherCLI:
                 self._invalidate()
 
         @kb.add("down")
-        def _down(event):
+        def _down(event: KeyPressEvent) -> None:
             if self.mode == "menu":
                 self.menu.move(1)
                 self._invalidate()
@@ -2286,7 +2398,7 @@ class ReacherCLI:
                 self._invalidate()
 
         @kb.add("enter")
-        def _enter(event):
+        def _enter(event: KeyPressEvent) -> None:
             if self.mode == "menu":
                 item = self.menu.items[self.menu.selected]
                 if item.action:
@@ -2297,7 +2409,7 @@ class ReacherCLI:
                 self._submit_select()
 
         @kb.add("escape")
-        def _escape(event):
+        def _escape(event: KeyPressEvent) -> None:
             if self.mode == "monitor":
                 self._run_action(self._exit_monitor)
             elif self.mode in ("input", "select"):
@@ -2307,7 +2419,7 @@ class ReacherCLI:
                     self._pop_menu()
 
         @kb.add("q")
-        def _q(event):
+        def _q(event: KeyPressEvent) -> None:
             if self.mode == "menu":
                 self._run_action(self._quit)
             elif self.mode == "input":
@@ -2315,14 +2427,14 @@ class ReacherCLI:
                 self._invalidate()
 
         @kb.add("backspace")
-        def _backspace(event):
+        def _backspace(event: KeyPressEvent) -> None:
             if self.mode == "input" and self.input_value:
                 self.input_value = self.input_value[:-1]
                 self._invalidate()
 
         # Printable character input
         @kb.add("<any>")
-        def _any_key(event):
+        def _any_key(event: KeyPressEvent) -> None:
             if self.mode == "input":
                 char = event.data
                 if char.isprintable() and len(char) == 1:
@@ -2336,6 +2448,7 @@ class ReacherCLI:
     # ───────────────────────────────────────────────────────────────────
 
     async def run_async(self) -> None:
+        """Build the prompt_toolkit app and run it until the user quits."""
         content = FormattedTextControl(self._render)
         body = Window(content=content, wrap_lines=True)
         layout = Layout(body)
@@ -2349,7 +2462,8 @@ class ReacherCLI:
             mouse_support=False,
         )
 
-        async def _startup():
+        async def _startup() -> None:
+            """Switch to the machine named by ``--machine``, if one was given."""
             if self._startup_machine:
                 await self._refresh_machines()
                 want = self._startup_machine

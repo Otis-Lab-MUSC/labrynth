@@ -52,7 +52,8 @@ console.log(JSON.stringify({
 PRESET_FIELDS = ("id", "name", "paradigm", "hardware", "paradigmSettings", "limitDefaults", "pavlovianParams")
 
 
-def load_web() -> dict:
+def load_web() -> dict[str, object]:
+    """Bundle the web preset modules with esbuild, run them in node, and return the JSON they print."""
     if not os.path.exists(ESBUILD):
         print(f"esbuild not found at {ESBUILD} — run `npm ci` in web/ first", file=sys.stderr)
         sys.exit(2)
@@ -73,12 +74,13 @@ def load_web() -> dict:
     return json.loads(out)
 
 
-def normalize(v):
+def normalize(v: object) -> object:
     """JSON round-trip so int-keyed dicts (pavlovianParams) compare as str keys."""
     return json.loads(json.dumps(v, sort_keys=True))
 
 
-def diff(path: str, web, cli, out: list[str]) -> None:
+def diff(path: str, web: object, cli: object, out: list[str]) -> None:
+    """Append a line to ``out`` for every value where the web and CLI copies differ."""
     if isinstance(web, dict) and isinstance(cli, dict):
         for k in sorted(set(web) | set(cli)):
             if k not in cli:
@@ -92,6 +94,7 @@ def diff(path: str, web, cli, out: list[str]) -> None:
 
 
 def main() -> int:
+    """Compare the CLI and web presets and return the process exit code."""
     # No .pyc: a cached cli/presets bytecode with a same-second mtime can mask
     # the edit being checked.
     sys.dont_write_bytecode = True
