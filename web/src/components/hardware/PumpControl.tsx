@@ -1,10 +1,13 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
-import { PinField } from "./PinField";
 import { ContingencySection } from "./ContingencySection";
 import { CardHeader } from "./CardHeader";
-import { firstInvalid, showInvalid } from "../../lib/cardSet";
+import { MissingSettingsNote } from "./MissingSettingsNote";
+import { showInvalid } from "../../lib/cardSet";
 import type { CardField } from "../../lib/cardSet";
+import { getDelayUpload } from "./contingencyFields";
+import { FieldUpload } from "./FieldUpload";
+import { asUpload } from "../../lib/cardSet";
 import { useRewardPump } from "../../hooks/useRewardPump";
 
 interface Props {
@@ -49,8 +52,12 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
   const update = (patch: Partial<typeof pump>) =>
     updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], ...patch } }));
 
-  const fields: CardField[] = [{ code: codes.dur, value: duration, valid: durationValid, label: "Duration (ms)" }];
-  const invalid = firstInvalid(fields);
+  const durField: CardField = { code: codes.dur, value: duration, valid: durationValid, label: "Duration (ms)", required: true };
+  const uploads = [asUpload(durField)];
+  const delayUpload = getDelayUpload(storeKey, pump.contingency.delay);
+  if (delayUpload) uploads.push(delayUpload);
+  const fields = uploads.flatMap((u) => u.fields);
+  const cardId = `pump${prefix}`;
 
   const isOperant = paradigm !== undefined && paradigm !== "pavlovian";
 
@@ -83,27 +90,22 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
     <div className="card">
       <CardHeader
         sessionId={sessionId}
-        cardId={`pump${prefix}`}
-        title={
-          <span className="flex items-center gap-2 flex-wrap">
-            <span>Pump {label}</span>
-            <PinField sessionId={sessionId} component={prefix === "2" ? "pump2" : "pump"} />
-            {isOperant && armed && !siblingPump?.armed && (
-              <span className="rounded px-1.5 py-0.5 text-xs font-mono bg-green-600/20 text-green-400 uppercase tracking-wide">
-                Active
-              </span>
-            )}
+        cardId={cardId}
+        title={`Pump ${label}`}
+        pinComponent={prefix === "2" ? "pump2" : "pump"}
+        badges={isOperant && armed && !siblingPump?.armed && (
+          <span className="rounded px-1.5 py-0.5 text-xs font-mono bg-green-600/20 text-green-400 uppercase tracking-wide">
+            Active
           </span>
-        }
-        fields={fields}
-        send={send}
+        )}
+        uploads={uploads}
+        armed={armed}
       />
+      <MissingSettingsNote armed={armed} fields={fields} />
       <div className="flex flex-wrap gap-2">
         <button
           onClick={handleArm}
-          disabled={invalid !== null}
-          title={invalid !== null ? `Fix ${invalid} first` : undefined}
-          className={`btn-sm disabled:opacity-50 ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
+          className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
           onClick={handleDisarm}
@@ -116,6 +118,7 @@ export function PumpControl({ sessionId, label, prefix, paradigm }: Props) {
         <input type="number" value={duration} min={MIN_DURATION} max={MAX_DURATION}
           onChange={(e) => update({ duration: +e.target.value })}
           className={`w-24 input-base${showInvalid(armed, durationValid) ? " border-red-500" : ""}`} />
+        <FieldUpload sessionId={sessionId} cardId={cardId} field={asUpload(durField)} send={send} armed={armed} />
       </div>
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Pump rate (µL/s):</label>

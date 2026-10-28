@@ -18,6 +18,8 @@ import type { ValidationResult } from "../../api/client";
 // registry can surface (incl. re-enabled 212/215/219), with no separate drift.
 import { LABEL_OVERRIDES as PAV_CODE_LABELS } from "../program/pavLabels";
 import { isParadigm } from "../../lib/paradigm";
+import { getDevicesNeedingSettings } from "../../lib/hardwareReadiness";
+import { describeMissingFields } from "../../lib/cardSet";
 
 export function SessionStartModal() {
   const startModalOpen = useSessionStore((s) => s.startModalOpen);
@@ -71,6 +73,7 @@ export function SessionStartModal() {
 
   const handleStart = useCallback(async () => {
     if (!activeSessionId || !session) return;
+    if (getDevicesNeedingSettings(session.hardwareUi, { isPavlovian }).length > 0) return;
 
     // Config validation — non-blocking; falls through on error
     if (!validationAcknowledged) {
@@ -228,7 +231,7 @@ export function SessionStartModal() {
     } finally {
       setStarting(false);
     }
-  }, [activeSessionId, session, limitType, timeLimit, infusionLimit, delay, name, validationAcknowledged, setValidatorUnavailable]);
+  }, [activeSessionId, session, isPavlovian, limitType, timeLimit, infusionLimit, delay, name, validationAcknowledged, setValidatorUnavailable]);
 
   if (!startModalOpen || !session) return null;
 
@@ -238,6 +241,8 @@ export function SessionStartModal() {
     .filter(([key]) => key !== "aux")
     .filter(([key]) => !isPavlovian || (key !== "rhLever" && key !== "lhLever")) as [string, { armed: boolean; [k: string]: unknown }][];
   const pavNoCuesArmed = isPavlovian && !hw.primaryCue.armed && !hw.secondaryCue.armed;
+  const devicesNeedingSettings = getDevicesNeedingSettings(hw, { isPavlovian });
+  const isBlockedByMissingSettings = devicesNeedingSettings.length > 0;
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -246,6 +251,18 @@ export function SessionStartModal() {
           <h2 className="text-xl font-semibold text-theme-text">Review Session Configuration</h2>
           {pavNoCuesArmed && (
             <p className="text-sm text-amber-400">No cues armed: the session will end immediately.</p>
+          )}
+          {isBlockedByMissingSettings && (
+            <div className="rounded border border-red-500/60 bg-red-500/10 p-3 text-sm" role="alert">
+              <p className="font-medium text-red-400">Armed devices are missing settings. Fix these before starting:</p>
+              <ul className="mt-1 list-disc pl-5 text-red-300">
+                {devicesNeedingSettings.map(({ device, fields, isUnsynced }) => (
+                  <li key={device}>
+                    {device}: {isUnsynced ? "Upload every setting on the card to arm it on the board." : describeMissingFields(fields)}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           {/* Session Info */}
@@ -463,7 +480,8 @@ export function SessionStartModal() {
             </button>
             <button
               onClick={handleStart}
-              disabled={starting || validating || session.state === "running"}
+              disabled={starting || validating || session.state === "running" || isBlockedByMissingSettings}
+              title={isBlockedByMissingSettings ? "Armed devices are missing settings" : undefined}
               className="rounded bg-green-600 px-6 py-2 text-white font-mono hover:bg-green-700 disabled:opacity-50"
             >
               {validating

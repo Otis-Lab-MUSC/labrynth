@@ -212,7 +212,7 @@ export function firstSessionTour(): TutorialStep[] {
       target: "lever-card",
       title: "Arming Devices",
       content:
-        "Each device must be armed before a session to participate. Arming sends the activation command to the Arduino — the device enters the control loop and will respond to program events. Disarming removes it cleanly. Only arm the devices your paradigm requires; unneeded hardware can stay disarmed.",
+        "Each device must be armed before a session to participate. Arming sends the activation command to the Arduino — the device enters the control loop and will respond to program events. Disarming removes it cleanly. Only arm the devices your paradigm requires; unneeded hardware can stay disarmed. Arm a device, fill in any field outlined red, then press the upload button beside each field you change.",
       placement: "bottom",
       section: "Configuration",
     },

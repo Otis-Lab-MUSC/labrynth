@@ -8,6 +8,10 @@ import { useLogStore } from "../store/useLogStore";
 import { useAppStore } from "../store/useAppStore";
 import { getClientForSession } from "../api/sessionClient";
 import { auxStateFromEvent } from "../lib/auxEvents";
+import { cardSyncKey, useCardSyncStore } from "../store/useCardSyncStore";
+
+/** The board lost the shock settings (reflash, reconnect): its upload buttons must ask again. */
+const forgetAuxUploads = (sessionId: string) => useCardSyncStore.getState().forget(`${cardSyncKey(sessionId, "aux")}:`);
 import type { LogLevel } from "../store/useLogStore";
 import type { WSMessage, BehaviorEvent, FirmwareConfig, SessionState, HardwareUiState } from "../types";
 import type { ConfigDevice } from "../generated/deviceNames";
@@ -149,6 +153,7 @@ function handleMessage(msg: WSMessage) {
         updateHardwareUi(msg.session_id, (prev) => ({
           aux: auxStateFromEvent(prev.aux, { kind: "config", data: raw }),
         }));
+        forgetAuxUploads(msg.session_id);
       } else {
         pushHardwareSetting(msg.session_id, configData);
 
@@ -192,7 +197,7 @@ function handleMessage(msg: WSMessage) {
             }
             if (raw.device === "AUX") {
               const guarded = auxStateFromEvent(prev.aux, { kind: "config", data: raw });
-              return { aux: { ...prev.aux, ...patch, armed: guarded.armed, configSent: guarded.configSent } } as Partial<typeof prev>;
+              return { aux: { ...prev.aux, ...patch, armed: guarded.armed, configSent: guarded.configSent, armPending: guarded.armPending } } as Partial<typeof prev>;
             }
             return { [uiKey]: { ...current, ...patch } } as Partial<typeof prev>;
           });
@@ -232,6 +237,7 @@ function handleMessage(msg: WSMessage) {
       const { reason, reconnecting } = msg.data as { reason: string; reconnecting?: boolean };
       updateState(msg.session_id, "disconnected");
       updateHardwareUi(msg.session_id, (prev) => ({ aux: auxStateFromEvent(prev.aux, { kind: "disconnect" }) }));
+      forgetAuxUploads(msg.session_id);
       pushLog(
         "error",
         reconnecting ? `Serial disconnected: ${reason} (reconnecting...)` : `Serial disconnected: ${reason}`,
@@ -243,6 +249,7 @@ function handleMessage(msg: WSMessage) {
     case "reconnected": {
       const { attempt } = msg.data as { attempt: number };
       updateHardwareUi(msg.session_id, (prev) => ({ aux: auxStateFromEvent(prev.aux, { kind: "reconnected" }) }));
+      forgetAuxUploads(msg.session_id);
       pushLog("info", `Serial reconnected (attempt ${attempt})`, msg.session_id);
       break;
     }

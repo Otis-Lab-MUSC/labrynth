@@ -1,6 +1,6 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
-import { PinField } from "./PinField";
+import { CardHeader } from "./CardHeader";
 
 interface Props {
   sessionId: string;
@@ -13,10 +13,12 @@ export function LickCircuitControl({ sessionId }: Props) {
 
   return (
     <div className="card">
-      <h3 className="font-medium text-theme-text">
-        Lick Circuit
-        <PinField sessionId={sessionId} component="lick" />
-      </h3>
+      <CardHeader
+        sessionId={sessionId}
+        cardId="lick"
+        title="Lick Circuit"
+        pinComponent="lick"
+      />
       <div className="flex gap-2">
         <button
           onClick={() => {

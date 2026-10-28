@@ -1,9 +1,10 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
-import { showInvalid } from "../../lib/cardSet";
+import { asUpload, showInvalid } from "../../lib/cardSet";
+import { FieldUpload } from "./FieldUpload";
 import type { CardField } from "../../lib/cardSet";
 import { CardHeader } from "./CardHeader";
-import { PinField } from "./PinField";
+import { MissingSettingsNote } from "./MissingSettingsNote";
 
 interface Props {
   sessionId: string;
@@ -18,20 +19,21 @@ export function SLMControl({ sessionId }: Props) {
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
   const freqValid = laserFrequency !== null && laserFrequency >= 1 && laserFrequency <= 65535;
   const durValid = laserDuration !== null && laserDuration >= 1 && laserDuration <= 600000;
-  const setFields: CardField[] = [
-    { code: 1102, value: laserFrequency ?? 0, valid: freqValid, label: "Laser Freq (Hz)" },
-    { code: 1103, value: laserDuration ?? 0, valid: durValid, label: "Laser Dur (ms)" },
-  ];
+  const freqField: CardField = { code: 1102, value: laserFrequency ?? 0, valid: freqValid, label: "Laser Freq (Hz)", required: true };
+  const durField: CardField = { code: 1103, value: laserDuration ?? 0, valid: durValid, label: "Laser Dur (ms)", required: true };
+  const setFields: CardField[] = [freqField, durField];
 
   return (
     <div className="card">
       <CardHeader
         sessionId={sessionId}
         cardId="slm"
-        title={<>SLM Sync <PinField sessionId={sessionId} component="slm" /></>}
-        fields={setFields}
-        send={send}
+        title="SLM Sync"
+        pinComponent="slm"
+        uploads={setFields.map(asUpload)}
+        armed={armed}
       />
+      <MissingSettingsNote armed={armed} fields={setFields} />
       <div className="flex gap-2">
         <button
           onClick={() => { send(1101); updateHardwareUi(sessionId, (prev) => ({ slm: { ...prev.slm, armed: true } })); }}
@@ -55,6 +57,7 @@ export function SLMControl({ sessionId }: Props) {
           placeholder="e.g. 40"
           className={`flex-1 input-base${showInvalid(armed, freqValid) ? " border-red-500" : ""}`}
         />
+        <FieldUpload sessionId={sessionId} cardId="slm" field={asUpload(freqField)} send={send} armed={armed} />
       </div>
       <div className="flex items-center gap-2">
         <label className="text-sm w-36 text-theme-text/60" title="Bookkeeping only — not tied to the LASER device's actual state">Laser Dur (ms):</label>
@@ -69,6 +72,7 @@ export function SLMControl({ sessionId }: Props) {
           placeholder="e.g. 5000"
           className={`flex-1 input-base${showInvalid(armed, durValid) ? " border-red-500" : ""}`}
         />
+        <FieldUpload sessionId={sessionId} cardId="slm" field={asUpload(durField)} send={send} armed={armed} />
       </div>
     </div>
   );

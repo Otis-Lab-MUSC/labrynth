@@ -10,7 +10,7 @@ export type AuxEvent =
 
 const AUX_ARM = 1401;
 
-/** Firmware snake_case echo key -> AuxUiState field, for the SET-able fields. */
+/** Firmware snake_case echo key -> AuxUiState field, for the fields sync sends. */
 const ECHO_FIELDS: Array<[string, keyof AuxUiState]> = [
   ["duration", "duration"],
   ["onset_delay", "onsetDelay"],
@@ -21,7 +21,7 @@ const ECHO_FIELDS: Array<[string, keyof AuxUiState]> = [
   ["test_fire", "testFire"],
 ];
 
-const resetBoardState = (aux: AuxUiState): AuxUiState => ({ ...aux, armed: false, configSent: false });
+const resetBoardState = (aux: AuxUiState): AuxUiState => ({ ...aux, armed: false, configSent: false, armPending: false });
 
 export function auxStateFromEvent(aux: AuxUiState, ev: AuxEvent): AuxUiState {
   switch (ev.kind) {
@@ -36,7 +36,10 @@ export function auxStateFromEvent(aux: AuxUiState, ev: AuxEvent): AuxUiState {
       }
       if (d.device !== "AUX") return aux;
       let next = aux;
-      if (typeof d.armed === "boolean" && d.armed !== aux.armed) next = { ...next, armed: d.armed };
+      // While an arm is pending the board still reports disarmed; that is expected, not a refusal.
+      const isPendingArmEcho = aux.armPending && d.armed === false;
+      if (typeof d.armed === "boolean" && d.armed !== aux.armed && !isPendingArmEcho) next = { ...next, armed: d.armed };
+      if (d.armed === true && next.armPending) next = { ...next, armPending: false };
       for (const [key, field] of ECHO_FIELDS) {
         if (d[key] !== undefined && d[key] !== aux[field] && next.configSent) {
           next = { ...next, configSent: false };
@@ -51,8 +54,9 @@ export function auxStateFromEvent(aux: AuxUiState, ev: AuxEvent): AuxUiState {
         return {
           ...aux,
           armed: d.command === AUX_ARM ? false : aux.armed,
+          armPending: d.command === AUX_ARM ? false : aux.armPending,
           configSent: false,
-          lastError: "Shock refused: board not configured. Press SET.",
+          lastError: "Shock refused: board not configured. Upload its settings on the card.",
         };
       }
       if (d.error_code === "AUX_PIN_CONFLICT") {

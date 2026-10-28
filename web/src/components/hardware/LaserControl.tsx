@@ -2,10 +2,11 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { LASER_MODE_COMMANDS } from "../program/devicePresets";
 import { FIRMWARE_GAPS, hasFirmwareGap } from "../../generated/firmwareGaps";
-import { firstInvalid, showInvalid } from "../../lib/cardSet";
+import { asUpload, showInvalid } from "../../lib/cardSet";
+import { FieldUpload } from "./FieldUpload";
 import type { CardField } from "../../lib/cardSet";
 import { CardHeader } from "./CardHeader";
-import { PinField } from "./PinField";
+import { MissingSettingsNote } from "./MissingSettingsNote";
 import { SquareWaveCanvas } from "./SquareWaveCanvas";
 
 interface Props {
@@ -40,30 +41,35 @@ export function LaserControl({ sessionId, paradigm }: Props) {
   const freqValid = frequency >= 1 && frequency <= 65535;
   const durValid = duration >= 1 && duration <= 600000;
   const delayField: CardField = { code: 673, value: onsetDelay, valid: delayValid, label: "Delay (ms)" };
+  const freqField: CardField = { code: 671, value: frequency, valid: freqValid, label: "Freq (Hz)", required: true };
+  const durField: CardField = { code: 672, value: duration, valid: durValid, label: "Dur (ms)", required: true };
   const setFields: CardField[] = [
     ...(!isPavlovian && contingency !== "independent" ? [delayField] : []),
-    { code: 671, value: frequency, valid: freqValid, label: "Freq (Hz)" },
-    { code: 672, value: duration, valid: durValid, label: "Dur (ms)" },
+    freqField,
+    durField,
     ...(isPavlovian ? [delayField] : []),
   ];
+  const uploads = setFields.map(asUpload);
+  const upload = (field: CardField) => (
+    <FieldUpload sessionId={sessionId} cardId="laser" field={asUpload(field)} send={send} armed={armed} />
+  );
 
-  const invalid = firstInvalid(setFields);
 
   return (
     <div className="card">
       <CardHeader
         sessionId={sessionId}
         cardId="laser"
-        title={<>Laser <PinField sessionId={sessionId} component="laser" /></>}
-        fields={setFields}
-        send={send}
+        title="Laser"
+        pinComponent="laser"
+        uploads={uploads}
+        armed={armed}
       />
+      <MissingSettingsNote armed={armed} fields={setFields} />
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => { send(601); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, armed: true } })); }}
-          disabled={invalid !== null}
-          title={invalid !== null ? `Fix ${invalid} first` : undefined}
-          className={`btn-sm disabled:opacity-50 ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
+          className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
           onClick={() => { send(600); updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, armed: false } })); }}
@@ -155,8 +161,9 @@ export function LaserControl({ sessionId, paradigm }: Props) {
               <label className="text-xs text-theme-text/60">Delay (ms):</label>
               <input type="number" value={onsetDelay} min={0} max={delayMax}
                 onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, onsetDelay: Math.min(Math.max(0, +e.target.value), delayMax) } }))}
-                className={`w-24 input-base${showInvalid(armed, delayValid) ? " border-red-500" : ""}`}
+                className="w-24 input-base"
                 title="Onset delay from lever press onset to laser activation" />
+              {upload(delayField)}
             </div>
           )}
         </div>
@@ -166,19 +173,22 @@ export function LaserControl({ sessionId, paradigm }: Props) {
         <input type="number" value={frequency} min={1} max={65535}
           onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, frequency: +e.target.value } }))}
           className={`w-24 input-base${showInvalid(armed, freqValid) ? " border-red-500" : ""}`} />
+        {upload(freqField)}
       </div>
       <div className="flex items-center gap-2">
         <label className="text-sm text-theme-text/60">Dur (ms):</label>
         <input type="number" value={duration} min={1} max={600000}
           onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, duration: +e.target.value } }))}
           className={`w-24 input-base${showInvalid(armed, durValid) ? " border-red-500" : ""}`} />
+        {upload(durField)}
       </div>
       {isPavlovian && (
         <div className="flex items-center gap-2">
           <label className="text-sm text-theme-text/60" title="Onset delay from trigger to laser activation">Delay (ms):</label>
           <input type="number" value={onsetDelay} min={0} max={delayMax}
             onChange={(e) => updateHardwareUi(sessionId, (prev) => ({ laser: { ...prev.laser, onsetDelay: Math.min(Math.max(0, +e.target.value), delayMax) } }))}
-            className={`w-24 input-base${showInvalid(armed, delayValid) ? " border-red-500" : ""}`} />
+            className="w-24 input-base" />
+          {upload(delayField)}
         </div>
       )}
       <SquareWaveCanvas frequency={frequency} duration={duration} />

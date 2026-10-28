@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
-import { CardSetButton } from "./CardSetButton";
-import { showInvalid } from "../../lib/cardSet";
+import { CARD_ID, getDelayUpload, type ContingencyDeviceKey } from "./contingencyFields";
+import { FieldUpload } from "./FieldUpload";
 
 interface Props {
   sessionId: string;
-  deviceKey: "primaryCue" | "secondaryCue" | "primaryPump" | "secondaryPump";
+  deviceKey: ContingencyDeviceKey;
   paradigm?: string;
 }
 
@@ -18,13 +18,6 @@ const FILTER_CMD: Record<Props["deviceKey"], number> = {
   secondaryPump: 488,
 };
 
-// Per-device onset delay commands (ms from trigger to device activation)
-const DELAY_CMD: Record<Props["deviceKey"], number> = {
-  primaryCue:    377,
-  secondaryCue:  387, // CUE2_SET_ONSET_DELAY — firmware handler unimplemented; UI suppresses input for secondaryCue
-  primaryPump:   477,
-  secondaryPump: 487,
-};
 
 export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
   const device    = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[deviceKey]);
@@ -55,7 +48,7 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
 
   const contingency = device.contingency;
   const leverFilter = contingency.leverFilter;
-  const delayValid = contingency.delay >= 0 && contingency.delay <= 600000;
+  const delayUpload = getDelayUpload(deviceKey, contingency.delay);
 
   const send = (code: number, value?: number) =>
     getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
@@ -121,15 +114,12 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
               max={600000}
               value={contingency.delay}
               onChange={(e) => setDelay(+e.target.value)}
-              className={`w-24 input-base${showInvalid(device.armed, delayValid) ? " border-red-500" : ""}`}
+              className="w-24 input-base"
               title="Onset delay from trigger to device activation"
             />
-            <CardSetButton
-              sessionId={sessionId}
-              cardId={`${deviceKey}-delay`}
-              fields={[{ code: DELAY_CMD[deviceKey], value: contingency.delay, valid: delayValid, label: "Delay (ms)" }]}
-              send={send}
-            />
+            {delayUpload && (
+              <FieldUpload sessionId={sessionId} cardId={CARD_ID[deviceKey]} field={delayUpload} send={send} armed={device.armed} />
+            )}
           </div>
         </>
       )}

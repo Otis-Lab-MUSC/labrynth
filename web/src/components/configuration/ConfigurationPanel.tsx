@@ -88,7 +88,7 @@ export function ConfigurationPanel() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Hardware section collapse state
-  const [hardwareExpanded, setHardwareExpanded] = useState(false);
+  const [hardwareExpanded, setHardwareExpanded] = useState(true);
 
   // Dirty-state baseline: factory defaults until a preset is applied
   const baselineRef = useRef<Baseline>(defaultBaseline());
