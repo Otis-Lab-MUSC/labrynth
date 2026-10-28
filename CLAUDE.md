@@ -96,7 +96,7 @@ See `RELEASING.md` for the full release workflow and the two-workflow model
 
 ### Testing
 
-There is **no test framework configured** here (no pytest, no Vitest/Jest) — don't add one without coordinating. Pure-logic modules have framework-free unit tests in `web/tests/*.test.mjs` using Node's built-in `node:test`; run them from `web/` with `node --test tests/*.test.mjs` (Node >= 22.18, which strips the TypeScript types itself). CI runs them in the `frontend-tests` job. `npm run lint` (flat `eslint.config.js`, added in `75f33e676`) and `npx tsc -b` (run by `npm run build`) both work and are CI-gated on every pull request via `ci.yml`; the tree currently carries 35 lint warnings (0 errors); two `set-state-in-effect` warnings in `LimitConfig.tsx` and `ParadigmSettings.tsx` are the intentional Full Reset re-seed effects. Verify changes by running the frontend dev server against a live backend.
+There is **no test framework configured** here (no pytest, no Vitest/Jest) — don't add one without coordinating. Pure-logic modules have framework-free unit tests in `web/tests/*.test.mjs` using Node's built-in `node:test`; run them from `web/` with `node --test tests/*.test.mjs` (Node >= 22.18, which strips the TypeScript types itself). CI runs them in the `frontend-tests` job. `npm run lint` (flat `eslint.config.js`, added in `75f33e676`) and `npx tsc -b` (run by `npm run build`) both work and are CI-gated on every pull request via `ci.yml`; the warning count is held by the style ratchet (see Code style below), and errors must stay at 0; two `set-state-in-effect` warnings in `LimitConfig.tsx` and `ParadigmSettings.tsx` are the intentional Full Reset re-seed effects. Verify changes by running the frontend dev server against a live backend.
 
 ## Architecture
 
@@ -177,6 +177,28 @@ The CLI mirrors browser-UI capabilities (sessions, hardware, program presets, li
 - **`build-installers.yml`** — stable releases only (`vX.Y.Z` tags, no prerelease suffix). Builds Windows `.exe`, macOS `.dmg`, Linux `.deb` + `.tar.gz` + `.AppImage`, and the three `labrynth-cli-*` tarballs. Bundles the reacher ref derived from the `pyproject.toml` pin. The `release` job requires all 8 assets (`scripts/verify-release-assets.sh`) before publishing. `prerelease: false` hardcoded. Use `/release` skill to cut stable.
 - **`build-prerelease.yml`** — prerelease builds (`vX.Y.Z-alpha.*`, `vX.Y.Z-beta.*`, `vX.Y.Z-rc.*` tags). Same build matrix; `prerelease: true` hardcoded. All platform builds are required (no `continue-on-error`); the `release` job blocks publishing unless all 8 assets are present. The reacher ref to bundle is derived automatically from the `reacher2p>=` pin in `pyproject.toml` via `--print-reacher-ref`. Do **not** use `/release` for prereleases — see `RELEASING.md`.
 - **`deploy-demo.yml`** — deploys `web/dist/` (built with `VITE_DEMO_SITE=true`) as a static demo site. Demo mode swaps the API client for `demoClient.ts` + `mock.ts` and disables real backend calls.
+
+## Code style
+
+Rules, enforced by a ratchet (below):
+
+- Small single-purpose files and functions: split a file past ~300 lines, a function past ~50. Early returns, at most two levels of nesting.
+- Catch narrowly. No bare or `except Exception` outside a short allowlist of top-level boundaries, each marked `# noqa: BLE001` with a reason.
+- Full type annotations, mypy `--strict` clean, no `Any`. Prefer dataclasses over loose dicts. In `web/`, no explicit `any`.
+- Verb-noun names, no abbreviations. One short plain-English docstring per Python function; few inline comments, and only for *why*.
+- No history comments ("Fix 4.9", issue/PR numbers, "legacy", "no longer", "previously"); git holds history.
+- No magic values; use named constants. No `print` or `console.*` for diagnostics (use logging). A script's result output that another program reads may stay `print` to stdout.
+- Prefer the stdlib and existing dependencies; justify any new one.
+
+Ratchet: `scripts/style-baseline.py` counts violations (ruff rule families, mypy, AST and comment scans, web file sizes, ESLint warnings) and compares them with `scripts/style-baseline.json`. CI job `style` fails if any count is above its baseline.
+
+```bash
+pip install -e ".[cli,dev]" && (cd web && npm ci)   # ruff and mypy are pinned in the dev extra
+python scripts/style-baseline.py                    # check; exit 1 if any count rose
+python scripts/style-baseline.py --update           # lower the baseline to today's counts
+```
+
+Lower counts with `--update` in the same PR that removes the violations. Never raise a baseline: `--update` refuses to unless `--allow-increase` is passed, which needs a reason in the PR. For a quick run without mypy and ESLint, pass `--skip-mypy --skip-eslint`.
 
 ## Conventions
 
