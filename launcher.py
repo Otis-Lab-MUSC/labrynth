@@ -1,13 +1,22 @@
 """Entry point for PyInstaller-bundled Labrynth application."""
+import logging
 import os
 import sys
+
+# Its own handler, not logging.basicConfig: reacher configures the root logger
+# later and basicConfig would be a no-op there (or pre-empt it here).
+logger = logging.getLogger("labrynth.launcher")
+_handler = logging.StreamHandler(sys.stderr)
+_handler.setFormatter(logging.Formatter("%(message)s"))
+logger.addHandler(_handler)
+logger.propagate = False
 
 # reacher.api.app.main() only special-cases --version. Every other argv,
 # including --help, falls through to uvicorn on REACHER_PORT (default 6229).
 # Handle help here, before that import, so the GUI binary exits without
 # binding a port.
 if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
-    print(
+    sys.stdout.write(
         "Usage: Labrynth [-h] [-V] [-i]\n"
         "\n"
         "Start the Labrynth GUI (REACHER backend and bundled web UI).\n"
@@ -15,7 +24,8 @@ if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
         "Options:\n"
         "  -h, --help        Show this help and exit\n"
         "  -V, --version     Print the reacher version and exit\n"
-        "  -i, --incognito   Open the UI in a private browser window\n",
+        "  -i, --incognito   Open the UI in a private browser window\n"
+        "\n",
     )
     raise SystemExit(0)
 
@@ -27,11 +37,10 @@ if hasattr(sys, "_MEIPASS"):
 else:
     _STATIC_DIR = os.path.join(_LABRYNTH_ROOT, "web", "dist")
     if not os.path.isdir(_STATIC_DIR) and not os.environ.get("REACHER_STATIC_DIR"):
-        print(
+        logger.warning(
             f"WARNING: web/dist not found at {_STATIC_DIR}. "
             "Run `npm run build` inside labrynth/web/ or set "
-            "REACHER_STATIC_DIR to an existing dist directory.",
-            file=sys.stderr,
+            "REACHER_STATIC_DIR to an existing dist directory."
         )
 if os.path.isdir(_STATIC_DIR) and not os.environ.get("REACHER_STATIC_DIR"):
     os.environ["REACHER_STATIC_DIR"] = _STATIC_DIR
@@ -77,10 +86,9 @@ if not hasattr(sys, "_MEIPASS"):
     except ImportError:
         _have_reacher = False
     if not _have_reacher:
-        print(
+        logger.error(
             "ERROR: The `reacher` package is not installed. "
-            "Run `pip install -e ../reacher` from the labrynth/ directory.",
-            file=sys.stderr,
+            "Run `pip install -e ../reacher` from the labrynth/ directory."
         )
         sys.exit(1)
 
@@ -90,7 +98,7 @@ if not hasattr(sys, "_MEIPASS"):
     try:
         import re
 
-        def _version_key(v):
+        def _version_key(v: str) -> tuple[int, int, int, int, int] | None:
             """Sortable key for semver/PEP 440 prereleases; stable outranks its prereleases."""
             m = re.match(r"^(\d+)\.(\d+)\.(\d+)(?:-?(alpha|beta|rc|a|b)\.?(\d+))?$", v)
             if not m:
@@ -104,12 +112,11 @@ if not hasattr(sys, "_MEIPASS"):
         import reacher
         _have, _want = _version_key(reacher.__version__), _version_key(_pin)
         if _have and _want and _have < _want:
-            print(
+            logger.warning(
                 f"WARNING: reacher {reacher.__version__} is installed but this "
                 f"Labrynth pins reacher2p>={_pin}.\n"
                 "         The frontend may fail against an older backend.\n"
-                "         Run `pip install -e ../reacher` from the labrynth/ directory.",
-                file=sys.stderr,
+                "         Run `pip install -e ../reacher` from the labrynth/ directory."
             )
     except Exception:
         pass
