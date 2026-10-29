@@ -1,5 +1,5 @@
 {
-  "mypy_strict_errors": 89,
+  "mypy_strict_errors": 87,
   "py_any_uses": 0,
   "py_except_exception_sites": 49,
   "py_files_over_300_lines": 5,
@@ -18,9 +18,9 @@
   "web_console_calls": 8,
   "web_eslint_disable": 5,
   "web_eslint_errors": 0,
-  "web_eslint_warnings": 84,
+  "web_eslint_warnings": 82,
   "web_explicit_any": 0,
   "web_files_over_300_lines": 15,
-  "web_history_comments": 47,
+  "web_history_comments": 46,
   "web_ts_ignore": 0
 }
