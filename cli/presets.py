@@ -33,6 +33,9 @@ LASER_MODE_COMMANDS: dict[str, int] = {
 }
 
 PAV_LASER_PHASE_COMMANDS: dict[str, int] = {"reward": CMD["PAV_LASER_PHASE_REWARD"], "cue": CMD["PAV_LASER_PHASE_CUE"]}
+_PAV_LASER_MODE_BY_CODE: dict[int, str] = {
+    CMD["PAV_LASER_CS_PLUS"]: "cs_plus", CMD["PAV_LASER_CS_MINUS"]: "cs_minus", CMD["PAV_LASER_CS_BOTH"]: "cs_both",
+}
 
 PRESET_COMMAND_MAP: dict[str, dict] = {
     "rhLever":       {"arm": CMD["LEVER_RH_ARM"], "disarm": CMD["LEVER_RH_DISARM"], "params": {"timeout": CMD["LEVER_RH_SET_TIMEOUT"], "timeoutMode": CMD["LEVER_RH_SET_TIMEOUT_MODE"]}},
@@ -80,6 +83,7 @@ WEB_KEY: dict[str, str] = {v: k for k, v in CLI_ID.items()}
 # ── Paradigm helpers (web/src/lib/paradigm.ts) ───────────────────────────────
 
 def base_paradigm(paradigm: str | None) -> str | None:
+    """Return the lowercase paradigm without its ``_lite`` suffix, or None."""
     if paradigm is None:
         return None
     p = paradigm.lower()
@@ -87,24 +91,29 @@ def base_paradigm(paradigm: str | None) -> str | None:
 
 
 def is_paradigm(paradigm: str | None, *bases: str) -> bool:
+    """Return True when the paradigm's base is one of *bases*."""
     base = base_paradigm(paradigm)
     return base is not None and base in bases
 
 
 def is_operant(paradigm: str | None) -> bool:
+    """Return True for the lever-press paradigms (everything except pavlovian)."""
     return is_paradigm(paradigm, "fr", "pr", "vi", "omission")
 
 
 def can_dispatch_param(param_key: str, paradigm: str | None) -> bool:
+    """Return True when the paradigm declares this parameter."""
     allowed = PARAM_PARADIGMS.get(param_key)
     return allowed is None or is_paradigm(paradigm, *allowed)
 
 
 def is_shared_lever_param(device_key: str, param_key: str) -> bool:
+    """Return True for lever settings that the RH and LH levers share."""
     return device_key in ("rhLever", "lhLever") and param_key in ("timeout", "timeoutMode")
 
 
 def active_lever_of(paradigm_settings: dict | None) -> str:
+    """Return ``"lh"`` or ``"rh"`` (the default) from the paradigm settings."""
     return "lh" if (paradigm_settings or {}).get("activeLever") == "lh" else "rh"
 
 
@@ -207,25 +216,25 @@ def record_command(hw: dict, paradigm_settings: dict, code: int, value: int | No
                 hw[key][param] = int(value)
             return
     laser = hw["laser"]
-    if code == 681:
+    if code == CMD["LASER_MODE_CONTINGENT"]:
         laser.update(mode="contingent", contingency="any")
-    elif code == 682:
+    elif code == CMD["LASER_MODE_INDEPENDENT"]:
         laser.update(mode="independent", contingency="independent")
-    elif code == 684:
+    elif code == CMD["LASER_TRIGGER_RH_ONLY"]:
         laser.update(mode="rh_lever", contingency="rh")
-    elif code == 685:
+    elif code == CMD["LASER_TRIGGER_LH_ONLY"]:
         laser.update(mode="lh_lever", contingency="lh")
-    elif code in (691, 692, 693):
-        laser["mode"] = {691: "cs_plus", 692: "cs_minus", 693: "cs_both"}[code]
-    elif code in (694, 695):
-        laser["phase"] = "reward" if code == 694 else "cue"
-    elif code in (1081, 1381):
-        paradigm_settings["activeLever"] = "rh" if code == 1081 else "lh"
-    elif code in (201, 1075, 1375) and value is not None:
+    elif code in _PAV_LASER_MODE_BY_CODE:
+        laser["mode"] = _PAV_LASER_MODE_BY_CODE[code]
+    elif code in (CMD["PAV_LASER_PHASE_REWARD"], CMD["PAV_LASER_PHASE_CUE"]):
+        laser["phase"] = "reward" if code == CMD["PAV_LASER_PHASE_REWARD"] else "cue"
+    elif code in (CMD["LEVER_RH_SET_ACTIVE"], CMD["LEVER_LH_SET_ACTIVE"]):
+        paradigm_settings["activeLever"] = "rh" if code == CMD["LEVER_RH_SET_ACTIVE"] else "lh"
+    elif code in (CMD["SET_RATIO"], CMD["LEVER_RH_SET_RATIO"], CMD["LEVER_LH_SET_RATIO"]) and value is not None:
         paradigm_settings["ratio"] = int(value)
-    elif code == 205 and value is not None:
+    elif code == CMD["SET_PR_STEP"] and value is not None:
         paradigm_settings["step"] = int(value)
-    elif code in (203, 204) and value is not None:
+    elif code in (CMD["SET_OMISSION_INTERVAL"], CMD["SET_VI_INTERVAL"]) and value is not None:
         paradigm_settings["interval"] = int(value)
 
 
@@ -236,7 +245,7 @@ def default_hardware() -> dict:
     CLI never shows an editable value before sending it, so unknown values stay
     None and are skipped by the start-time dispatch.
     """
-    def contingency():
+    def contingency() -> dict[str, str | int]:
         return {"leverFilter": "none", "delay": 0}
     return {
         # None, not the web's 0: the CLI seeds these from the firmware's config
