@@ -11,7 +11,7 @@ interface CardHeaderProps {
   cardId: string;
   /** Card title text. */
   title: ReactNode;
-  /** The card's remappable pin, if it has one. It has its own upload button beside it. */
+  /** The card's remappable pin, if it has one. Picking a pin sends it at once. */
   pinComponent?: Component;
   /** Extra inline badges after the pin (e.g. "Active"). */
   badges?: ReactNode;
@@ -21,8 +21,8 @@ interface CardHeaderProps {
 }
 
 /**
- * Card title row (title, the pin with its own upload button, badges), then an amber line naming
- * every setting whose new value is not on the board yet, the pin included.
+ * Card title row (title, the pin picker, badges; never an upload button), then an amber line
+ * naming every setting whose new value is not on the board yet.
  */
 export function CardHeader({
   sessionId, cardId, title, pinComponent, badges, uploads = [], armed = false,
@@ -35,7 +35,6 @@ export function CardHeader({
       return isUnsent(f, sigs[key] ?? null, armed, sigs[baselineKey(key)] ?? null);
     })
     .map((f) => f.label);
-  if (pin?.isDirty) unsent.push("Pin");
   const note = describeUnsent(unsent);
   return (
     <>

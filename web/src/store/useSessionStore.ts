@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { BoardType, CommandSpec, Session, SessionState, BehaviorEvent, FirmwareConfig, LeverCounts, HardwareUiState, ContingencyConfig } from "../types";
 import { useMachineStore } from "./useMachineStore";
 import { countShocks } from "../lib/shockEvents";
+import { randomUUID } from "../lib/uuid";
 import type { EventDevice } from "../generated/deviceNames";
 
 interface SessionStore {
@@ -139,7 +140,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       set({ activeSessionId: existingDraft });
       return existingDraft;
     }
-    const draftId = `draft-${crypto.randomUUID()}`;
+    const draftId = `draft-${randomUUID()}`;
     set((s) => {
       const next = new Map(s.sessions);
       next.set(draftId, newSession(draftId, "", null, machineId, true));

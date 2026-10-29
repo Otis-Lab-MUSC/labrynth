@@ -88,7 +88,7 @@ export const HELP_CONTENT: HelpSection[] = [
             id: "configuration.hardware.arming",
             title: "Arm / Disarm",
             content:
-              "Each device has an Arm/Disarm toggle. Armed devices are active during the experiment. Disarmed devices are ignored by the firmware. You can arm a device before filling in its settings: any field that still needs a value is outlined red, with a line under the card naming it. After changing a setting, press the upload button beside it (the upward-arrow icon) to put it on the board. Each field, and the pin, has its own; it turns amber while the board has an older value, and the card header counts the settings not yet uploaded. Start Session stays blocked while an armed device has a red field.",
+              "Each device has an Arm/Disarm toggle. Armed devices are active during the experiment. Disarmed devices are ignored by the firmware. You can arm a device before filling in its settings: any field that still needs a value is outlined red, with a line under the card naming it. After changing a setting, press the upload button beside it (the upward-arrow icon) to put it on the board; it turns amber while the board has an older value, and a line under the card title names the settings not yet uploaded. Menu buttons (the pin, timeout mode, shock mode, reinforced lever) apply a choice the moment you pick it, so they have no upload button. Start Session stays blocked while an armed device has a red field.",
           },
           {
             id: "configuration.hardware.levers",

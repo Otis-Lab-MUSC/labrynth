@@ -215,7 +215,9 @@ export function SessionProgress({ session, elapsed }: Props) {
   // The server stops on its own whole-session count, so the bar tracks that rather than the
   // local segment count (which can include pumps the limit does not count).
   const currentCount = isTrials ? session.trialCount : (session.serverInfusionCount ?? session.cumulativeInfusionCount + session.infusionCount);
-  const countPct = showCount ? Math.min(currentCount / limits.infusionLimit, 1) * 100 : 0;
+  // A Trials run has no on-screen trial cap (the firmware ends it), so there may be no total to show.
+  const hasTotal = limits.infusionLimit > 0;
+  const countPct = showCount && hasTotal ? Math.min(currentCount / limits.infusionLimit, 1) * 100 : 0;
   const countLabel = isTrials ? "TRIALS" : "INFUSIONS";
 
   return (
@@ -226,7 +228,7 @@ export function SessionProgress({ session, elapsed }: Props) {
       </div>
       <div className="space-y-3">
         {showTime && <ProgressBar label="TIME" pct={timePct} display={`${fmtTime(elapsed)} / ${fmtTime(limits.timeLimit)}`} running={running} shocked={shocked} />}
-        {showCount && <ProgressBar label={countLabel} pct={countPct} display={`${currentCount} / ${limits.infusionLimit}`} running={running} shocked={shocked} />}
+        {showCount && <ProgressBar label={countLabel} pct={countPct} display={hasTotal ? `${currentCount} / ${limits.infusionLimit}` : `${currentCount}`} running={running} shocked={shocked} />}
       </div>
     </div>
   );

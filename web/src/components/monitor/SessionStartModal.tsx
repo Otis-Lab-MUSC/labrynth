@@ -20,6 +20,7 @@ import { LABEL_OVERRIDES as PAV_CODE_LABELS } from "../program/pavLabels";
 import { isParadigm } from "../../lib/paradigm";
 import { getDevicesNeedingSettings } from "../../lib/hardwareReadiness";
 import { describeMissingFields } from "../../lib/cardSet";
+import { LIMIT_DEFAULTS, buildLimitPayload, getMissingLimitFields } from "../../lib/limits";
 
 export function SessionStartModal() {
   const startModalOpen = useSessionStore((s) => s.startModalOpen);
@@ -42,9 +43,9 @@ export function SessionStartModal() {
 
   // Inline-editable limit fields
   const [limitType, setLimitType] = useState("");
-  const [timeLimit, setTimeLimit] = useState(3600);
-  const [infusionLimit, setInfusionLimit] = useState(30);
-  const [delay, setDelay] = useState(10);
+  const [timeLimit, setTimeLimit] = useState(LIMIT_DEFAULTS.timeLimit);
+  const [infusionLimit, setInfusionLimit] = useState(LIMIT_DEFAULTS.infusionLimit);
+  const [delay, setDelay] = useState(LIMIT_DEFAULTS.delay);
   const [countedPumps, setCountedPumps] = useState<string[] | null>(null);
   const [name, setName] = useState("");
 
@@ -58,9 +59,9 @@ export function SessionStartModal() {
   useEffect(() => {
     if (!startModalOpen || !session) return;
     setLimitType(session.limitSettings?.limitType ?? (isPavlovian ? "Trials" : "Time"));
-    setTimeLimit(session.limitSettings?.timeLimit ?? 3600);
-    setInfusionLimit(session.limitSettings?.infusionLimit ?? 30);
-    setDelay(session.limitSettings?.delay ?? 10);
+    setTimeLimit(session.limitSettings?.timeLimit ?? LIMIT_DEFAULTS.timeLimit);
+    setInfusionLimit(session.limitSettings?.infusionLimit ?? LIMIT_DEFAULTS.infusionLimit);
+    setDelay(session.limitSettings?.delay ?? LIMIT_DEFAULTS.delay);
     setCountedPumps(session.limitSettings?.countedPumps ?? null);
     // Auto-generate name if empty
     const autoName = session.name || `${(session.paradigm ?? "Session").toUpperCase()} ${session.port}`;
@@ -74,6 +75,7 @@ export function SessionStartModal() {
   const handleStart = useCallback(async () => {
     if (!activeSessionId || !session) return;
     if (getDevicesNeedingSettings(session.hardwareUi, { isPavlovian }).length > 0) return;
+    if (getMissingLimitFields({ limitType, timeLimit, infusionLimit, delay }).length > 0) return;
 
     // Config validation — non-blocking; falls through on error
     if (!validationAcknowledged) {
@@ -100,20 +102,10 @@ export function SessionStartModal() {
 
     setStarting(true);
     try {
-      // Build limit payload with only relevant fields
-      const limitPayload: { type: string; time_limit?: number; infusion_limit?: number; delay?: number; counted_pumps?: string[] | null } = {
-        type: limitType,
-      };
-      if (limitType === "Time" || limitType === "Both") {
-        limitPayload.time_limit = timeLimit;
-      }
-      if (limitType === "Infusion" || limitType === "Both" || limitType === "Trials") {
-        limitPayload.infusion_limit = infusionLimit;
-        limitPayload.delay = delay;
-      }
-      if (limitType === "Infusion" || limitType === "Both") {
-        limitPayload.counted_pumps = countedPumps;
-      }
+      // Start always sends the saved limits: a type or counted-pumps choice is saved without being
+      // sent, and the backend's limits do not survive a server restart.
+      const limitPayload = buildLimitPayload({ limitType, timeLimit, infusionLimit, delay, countedPumps });
+      if (!limitPayload) throw new Error("The limits are incomplete");
       await getClientForSession(activeSessionId)?.setLimit(activeSessionId, limitPayload);
       setLimitSettings(activeSessionId, { limitType, timeLimit, infusionLimit, delay, countedPumps });
 
@@ -242,7 +234,8 @@ export function SessionStartModal() {
     .filter(([key]) => !isPavlovian || (key !== "rhLever" && key !== "lhLever")) as [string, { armed: boolean; [k: string]: unknown }][];
   const pavNoCuesArmed = isPavlovian && !hw.primaryCue.armed && !hw.secondaryCue.armed;
   const devicesNeedingSettings = getDevicesNeedingSettings(hw, { isPavlovian });
-  const isBlockedByMissingSettings = devicesNeedingSettings.length > 0;
+  const missingLimits = getMissingLimitFields({ limitType, timeLimit, infusionLimit, delay });
+  const isBlockedByMissingSettings = devicesNeedingSettings.length > 0 || missingLimits.length > 0;
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -254,13 +247,14 @@ export function SessionStartModal() {
           )}
           {isBlockedByMissingSettings && (
             <div className="rounded border border-red-500/60 bg-red-500/10 p-3 text-sm" role="alert">
-              <p className="font-medium text-red-400">Armed devices are missing settings. Fix these before starting:</p>
+              <p className="font-medium text-red-400">Some settings are missing. Fix these before starting:</p>
               <ul className="mt-1 list-disc pl-5 text-red-300">
                 {devicesNeedingSettings.map(({ device, fields, isUnsynced }) => (
                   <li key={device}>
                     {device}: {isUnsynced ? "Upload every setting on the card to arm it on the board." : describeMissingFields(fields)}
                   </li>
                 ))}
+                {missingLimits.length > 0 && <li>Limits: {describeMissingFields(missingLimits)}</li>}
               </ul>
             </div>
           )}
@@ -481,7 +475,7 @@ export function SessionStartModal() {
             <button
               onClick={handleStart}
               disabled={starting || validating || session.state === "running" || isBlockedByMissingSettings}
-              title={isBlockedByMissingSettings ? "Armed devices are missing settings" : undefined}
+              title={isBlockedByMissingSettings ? "Some settings are missing" : undefined}
               className="rounded bg-green-600 px-6 py-2 text-white font-mono hover:bg-green-700 disabled:opacity-50"
             >
               {validating

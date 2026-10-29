@@ -6,6 +6,8 @@ import { isParadigm } from "../../lib/paradigm";
 import { CardHeader } from "../hardware/CardHeader";
 import { asUpload, type CardField, type UploadField } from "../../lib/cardSet";
 import { FieldUpload } from "../hardware/FieldUpload";
+import { MenuButton } from "../hardware/MenuButton";
+import { canSendNow } from "../../lib/sendGate";
 import { PARADIGM_DEFAULTS as DEFAULTS } from "./presets/deviceMetadata";
 import { isOperantParadigm, activeLeverOf, leverSchedulerCommands } from "./devicePresets";
 
@@ -25,6 +27,11 @@ function isValidStep(value: number): boolean {
 function isValidInterval(value: number): boolean {
   return Number.isInteger(value) && value >= 0 && value <= 600000;
 }
+
+const LEVER_OPTIONS = [
+  { value: "rh", label: "RH" },
+  { value: "lh", label: "LH" },
+] as const;
 
 interface Props {
   sessionId: string;
@@ -93,7 +100,6 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
   };
 
   const activeLever = activeLeverOf(stored);
-  const updateActiveLever = (value: "rh" | "lh") => setParadigmSettings(sessionId, { ...stored, activeLever: value });
 
   const send = async (code: number, value?: number) => {
     try {
@@ -108,18 +114,20 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
   const stepField: CardField = { code: 205, value: step, valid: isValidStep(step), label: "PR Step", required: true };
   const viField: CardField = { code: 204, value: interval, valid: isValidInterval(interval), label: "VI Interval (ms)", required: true };
   const omissionField: CardField = { code: 203, value: interval, valid: isValidInterval(interval), label: "Omission Interval (ms)", required: true };
-  // Reinforcement pair only (valueless commands); the lever timeout goes out at Start.
-  const leverFields: CardField[] = leverSchedulerCommands(paradigm, activeLever, session?.hardwareUi ?? {})
-    .filter(([, value]) => value === undefined)
-    .map(([code]) => ({ code, valid: true, label: "Reinforced lever" }));
-  const leverUpload: UploadField = { id: "lever", label: "Reinforced lever", fields: leverFields, required: true };
+  // Picking a lever saves it and, while a board is attached, sends the reinforcement pair (the
+  // valueless commands) at once. Start sends the pair again with the lever timeout.
+  const updateActiveLever = async (value: "rh" | "lh") => {
+    setParadigmSettings(sessionId, { ...stored, activeLever: value });
+    if (!canSendNow(session?.state)) return;
+    const pair = leverSchedulerCommands(paradigm, value, session?.hardwareUi ?? {}).filter(([, v]) => v === undefined);
+    for (const [code] of pair) await send(code);
+  };
 
   const uploads: UploadField[] = [];
   if (isParadigm(paradigm, "fr", "pr")) uploads.push(asUpload(ratioField));
   if (isParadigm(paradigm, "pr")) uploads.push(asUpload(stepField));
   if (isParadigm(paradigm, "vi")) uploads.push(asUpload(viField));
   if (isParadigm(paradigm, "omission")) uploads.push(asUpload(omissionField));
-  if (leverFields.length > 0) uploads.push(leverUpload);
   const upload = (field: UploadField) => <FieldUpload sessionId={sessionId} cardId="paradigm" field={field} send={send} />;
 
   return (
@@ -150,13 +158,14 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <label className="text-sm w-40 text-theme-text/60">Reinforced lever:</label>
-            <select value={activeLever}
-              onChange={(e) => updateActiveLever(e.target.value as "rh" | "lh")}
-              className="w-24 input-base">
-              <option value="rh">RH</option>
-              <option value="lh">LH</option>
-            </select>
-            {leverFields.length > 0 && upload(leverUpload)}
+            <MenuButton
+              value={activeLever}
+              options={LEVER_OPTIONS}
+              onSelect={updateActiveLever}
+              title="Picking a lever sends it to the board"
+              logId="paradigm-active-lever"
+              className="w-24"
+            />
           </div>
           <p className="text-xs text-theme-text/50">
             Which lever's presses count toward the ratio and earn rewards (the other logs inactive presses). Also sent at session start.

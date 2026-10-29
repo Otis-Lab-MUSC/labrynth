@@ -10,6 +10,7 @@
  */
 
 import { redact } from "./redact";
+import { randomUUID } from "../lib/uuid";
 import { flush as transportFlush } from "./transport";
 
 export type LogLevel = "debug" | "info" | "warn" | "error" | "fatal";
@@ -46,11 +47,7 @@ export function setActiveSession(sessionId: string | undefined): void {
 
 /** Mint a correlation ID; the backend adopts it from the request header. */
 export function newCorrId(): string {
-  try {
-    return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
-  } catch {
-    return Math.random().toString(16).slice(2, 18);
-  }
+  return randomUUID().replace(/-/g, "").slice(0, 16);
 }
 
 export function log(

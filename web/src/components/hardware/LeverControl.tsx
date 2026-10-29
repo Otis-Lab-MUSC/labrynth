@@ -6,6 +6,8 @@ import { isParadigm } from "../../lib/paradigm";
 import { useFirmwareCommands } from "../../hooks/useFirmwareCommands";
 import { type UploadField } from "../../lib/cardSet";
 import { FieldUpload } from "./FieldUpload";
+import { MenuButton } from "./MenuButton";
+import { canSendNow } from "../../lib/sendGate";
 import type { CardField } from "../../lib/cardSet";
 
 interface Props {
@@ -30,6 +32,7 @@ const STORE_KEY = { RH: "rhLever", LH: "lhLever" } as const;
 export function LeverControl({ sessionId, side, paradigm }: Props) {
   const storeKey = STORE_KEY[side];
   const lever = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[storeKey]);
+  const sessionState = useSessionStore((s) => s.sessions.get(sessionId)?.state);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
   const { has } = useFirmwareCommands(sessionId);
 
@@ -66,12 +69,16 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
     id, label: field.label ?? id, fields: [field], scope: "levers", signature: JSON.stringify(field.value),
   });
   const timeoutUpload = shared("timeout", { code: codes.timeout, value: timeout, valid: timeout >= 0 && timeout <= 600000, label: "Timeout (ms)" });
-  const modeUpload = shared("timeoutMode", { code: codes.timeoutMode, value: timeoutMode, valid: true, label: "Timeout starts on" });
   const uploads: UploadField[] = [];
   if (showTimeout) uploads.push(timeoutUpload);
-  if (showTimeoutMode) uploads.push(modeUpload);
   const setFields = uploads.flatMap((u) => u.fields);
   const cardId = `lever${side}`;
+
+  // Picking a mode saves it and, while a board is attached, sends it. Start sends it again.
+  const handleTimeoutMode = async (value: number) => {
+    setShared({ timeoutMode: value });
+    if (canSendNow(sessionState)) await send(codes.timeoutMode, value)?.catch(() => undefined);
+  };
 
 
   return (
@@ -109,17 +116,13 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
       {showTimeoutMode && (
         <div className="flex items-center gap-2">
           <label className="text-sm text-theme-text/60">Timeout starts on:</label>
-          <select
+          <MenuButton
             value={timeoutMode}
-            data-log-id={`lever-${side}-timeout-mode`}
-            onChange={(e) => setShared({ timeoutMode: +e.target.value })}
-            className="input-base"
-          >
-            {TIMEOUT_MODE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-          <FieldUpload sessionId={sessionId} cardId={cardId} field={modeUpload} send={send} armed={armed} />
+            options={TIMEOUT_MODE_OPTIONS}
+            onSelect={handleTimeoutMode}
+            title="Picking a mode sends it to the board"
+            logId={`lever-${side}-timeout-mode`}
+          />
         </div>
       )}
       {showTimeout && (

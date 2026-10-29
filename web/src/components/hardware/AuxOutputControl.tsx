@@ -7,6 +7,7 @@ import { FieldUpload } from "./FieldUpload";
 import type { CardField } from "../../lib/cardSet";
 import { CardHeader } from "./CardHeader";
 import { MissingSettingsNote } from "./MissingSettingsNote";
+import { MenuButton } from "./MenuButton";
 import {
   AUX_ARM, AUX_DISARM, AUX_TEST, AUX_SET_DURATION, AUX_SET_ONSET_DELAY, AUX_SET_MODE,
   AUX_SET_PROBABILITY, AUX_SET_BLOCK_K, AUX_SET_BLOCK_N, AUX_SET_SEED, AUX_SET_TEST_FIRE,
@@ -18,6 +19,11 @@ import {
 interface Props {
   sessionId: string;
 }
+
+const AUX_MODE_OPTIONS = [
+  { value: 0, label: "Independent" },
+  { value: 1, label: "Block" },
+] as const;
 
 const FIELD_LABEL: Record<number, string> = {
   [AUX_SET_MODE]: "Mode",
@@ -35,6 +41,7 @@ export function AuxOutputControl({ sessionId }: Props) {
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
 
   const sigs = useCardSyncStore((s) => s.sigs);
+  const record = useCardSyncStore((s) => s.record);
   if (!aux) return null;
 
   const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
@@ -62,13 +69,20 @@ export function AuxOutputControl({ sessionId }: Props) {
     code, value, valid: isValid(code), label: FIELD_LABEL[code], required: isRequired(code),
   }));
 
-  // Test-mode pulses is a toggle that sends at once, so it gets no upload button and is not counted.
-  const uploads = setFields.filter((f) => f.code !== AUX_SET_TEST_FIRE).map(asUpload);
+  // Test-mode pulses and the mode send the moment they are picked, so they get no upload button
+  // and are not counted.
+  const uploads = setFields.filter((f) => f.code !== AUX_SET_TEST_FIRE && f.code !== AUX_SET_MODE).map(asUpload);
+  const modeKey = uploadKey(sessionId, "aux", String(AUX_SET_MODE));
+  const modeSig = (mode: number) => JSON.stringify([[AUX_SET_MODE, mode]]);
   const byCode = (code: number) => uploads.find((u) => u.fields[0].code === code);
   const requiredUploaded = (all: Record<string, string>) => uploads
     .filter((u) => u.required)
     .every((u) => uploadState(u, all[uploadKey(sessionId, "aux", u.id)] ?? null) === "synced");
   const isBoardReady = isAuxConfigured(aux) && requiredUploaded(sigs);
+  // Same check for a mode just picked, before the card re-renders with it.
+  const requiredUploadedFor = (mode: 0 | 1, all: Record<string, string>) =>
+    auxCommandsFor({ ...aux, mode }).filter(([code]) => isRequired(code)).every(([code, value]) =>
+      all[uploadKey(sessionId, "aux", String(code))] === JSON.stringify([[code, value]]));
 
   // The firmware refuses to arm an unconfigured shock, so an early Arm is held until the next sync.
   const handleArm = () => {
@@ -86,8 +100,20 @@ export function AuxOutputControl({ sessionId }: Props) {
   };
 
   // The board counts as configured once the required settings are uploaded; a held Arm then goes out.
-  const handleSent = () => {
-    if (!requiredUploaded(useCardSyncStore.getState().sigs)) return;
+  // The board forgets the mode on a reconnect (it reboots to Independent), so a mode the board
+  // does not hold is sent again here, before the shock counts as configured or a held Arm goes out.
+  const handleSent = async () => {
+    const all = useCardSyncStore.getState().sigs;
+    if (!requiredUploaded(all)) return;
+    if (all[modeKey] !== modeSig(aux.mode)) {
+      try {
+        await send(AUX_SET_MODE, aux.mode);
+        record(modeKey, modeSig(aux.mode));
+      } catch (err) {
+        update({ lastError: `Mode not sent: ${err instanceof Error ? err.message : String(err)}` });
+        return;
+      }
+    }
     update({ configSent: true, lastError: undefined, armPending: false });
     if (aux.armPending) send(AUX_ARM);
   };
@@ -108,7 +134,25 @@ export function AuxOutputControl({ sessionId }: Props) {
     update({ testFire });
   };
 
-  const handleMode = (mode: 0 | 1) => edit({ mode });
+  // Picking a mode sends it at once. Start does not re-send the shock, so it must reach the board here.
+  const handleMode = async (mode: 0 | 1) => {
+    edit({ mode });
+    const pending = send(AUX_SET_MODE, mode);
+    if (!pending) return;
+    try {
+      await pending;
+      record(modeKey, modeSig(mode));
+      // Switching back to a mode whose settings are already on the board leaves it configured.
+      const ready = isAuxConfigured({ ...aux, mode }) && requiredUploadedFor(mode, useCardSyncStore.getState().sigs);
+      update(ready ? { configSent: true, lastError: undefined } : { lastError: undefined });
+      if (ready && aux.armed && aux.armPending) {
+        send(AUX_ARM);
+        update({ armPending: false });
+      }
+    } catch (err) {
+      update({ lastError: `Mode not sent: ${err instanceof Error ? err.message : String(err)}` });
+    }
+  };
 
   const numberRow = (
     label: string,
@@ -169,15 +213,13 @@ export function AuxOutputControl({ sessionId }: Props) {
       </div>
       <div className="flex items-center gap-2">
         <label className="text-sm w-36 text-theme-text/60">Mode:</label>
-        <select
+        <MenuButton
           value={aux.mode}
-          onChange={(e) => handleMode(Number(e.target.value) === 1 ? 1 : 0)}
-          className="flex-1 input-base"
-        >
-          <option value={0}>Independent</option>
-          <option value={1}>Block</option>
-        </select>
-        {upload(AUX_SET_MODE)}
+          options={AUX_MODE_OPTIONS}
+          onSelect={handleMode}
+          title="Picking a mode sends it to the board"
+          logId="aux-mode"
+        />
       </div>
       <p className="text-xs text-theme-text/60">{AUX_MODE_HELP[aux.mode]}</p>
       {aux.mode === 0 ? (

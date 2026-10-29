@@ -92,7 +92,7 @@ export function ConfigurationPanel() {
 
   // Dirty-state baseline: factory defaults until a preset is applied
   const baselineRef = useRef<Baseline>(defaultBaseline());
-  // LimitConfig's on-screen limits, which reach the store only on "Set Limits".
+  // LimitConfig's on-screen limits, which reach the store only on the limits upload.
   const limitDraftRef = useRef<SessionPreset["limitDefaults"] | null>(null);
   const handleLimitDraft = useCallback((l: SessionPreset["limitDefaults"]) => { limitDraftRef.current = l; }, []);
 
