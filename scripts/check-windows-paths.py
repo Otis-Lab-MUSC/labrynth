@@ -27,6 +27,7 @@ FORBIDDEN = set('<>:"|?*')
 
 
 def path_reasons(path: str) -> list[str]:
+    """Return why a path is unusable on Windows; empty if it is fine."""
     reasons = []
     for part in path.split("/"):
         stem = part.split(".", 1)[0]
@@ -40,6 +41,7 @@ def path_reasons(path: str) -> list[str]:
 
 
 def tracked_paths() -> list[str]:
+    """Return every path tracked by git."""
     out = subprocess.run(
         ["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True
     ).stdout
@@ -63,6 +65,7 @@ GOOD_PATHS = [
 
 
 def self_test() -> int:
+    """Check the path rules against known-bad and known-good paths; return the exit code."""
     failures = []
     for path in BAD_PATHS:
         if not path_reasons(path):
@@ -79,6 +82,7 @@ def self_test() -> int:
 
 
 def main() -> int:
+    """Scan tracked paths (or run the self-test) and return the exit code."""
     if "--self-test" in sys.argv[1:]:
         return self_test()
 

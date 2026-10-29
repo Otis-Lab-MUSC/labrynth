@@ -36,12 +36,14 @@ def _run_backend() -> None:
 
 
 def _is_running(port: int) -> bool:
+    """Return True if something is listening on the local port."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.settimeout(1)
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 
 def _wait_for_server(port: int, timeout: float = 15.0) -> bool:
+    """Poll the port until it accepts connections; return False after ``timeout`` seconds."""
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if _is_running(port):
@@ -51,6 +53,7 @@ def _wait_for_server(port: int, timeout: float = 15.0) -> bool:
 
 
 def main() -> None:
+    """Parse arguments, start the backend if needed, and run the terminal UI."""
     # Frozen-bundle backend trampoline: when the CLI re-spawns itself as the
     # server (see below), run the backend immediately and skip the TUI.
     if os.environ.get("REACHER_RUN_BACKEND") == "1":
@@ -101,10 +104,9 @@ def main() -> None:
 
         env = os.environ.copy()
         env["REACHER_PORT"] = str(args.port)
-        # Fix: F-browser — a terminal UI must never pop a GUI browser window,
-        # regardless of whether the backend it spawns happens to resolve a
-        # static dir (in dev, from the labrynth repo root, it resolves
-        # web/dist and would). Suppress explicitly rather than rely on cwd.
+        # A terminal UI must never pop a GUI browser window, even when the
+        # backend resolves a static dir (in dev, from the labrynth repo root,
+        # it finds web/dist and would open one). Suppress it explicitly.
         env["REACHER_NO_BROWSER"] = "1"
         if getattr(sys, "frozen", False):
             # Frozen bundle: sys.executable is the LabrynthCLI binary, which has
@@ -121,7 +123,8 @@ def main() -> None:
             stderr=subprocess.DEVNULL,
         )
 
-        def _cleanup():
+        def _cleanup() -> None:
+            """Terminate the spawned backend, killing it if it ignores the request."""
             if server_proc and server_proc.poll() is None:
                 server_proc.terminate()
                 try:
