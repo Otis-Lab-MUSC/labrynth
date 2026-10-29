@@ -284,6 +284,11 @@ class CliIntPromptTests(unittest.IsolatedAsyncioTestCase):
             state="connected",
         )
         cli.session.limit_settings["type"] = case.limit_type
+        if case.kind == "limit":
+            # Limits default to 0 (not set) and none is sent until one is set, so seed the others.
+            for key in ("time_limit", "infusion_limit"):
+                if key != case.state_key:
+                    cli.session.limit_settings[key] = 1
         if case.load_pavlovian_commands:
             cli.session.pav_commands = [dict(spec) for spec in PAVLOVIAN_COMMANDS]
         return cli

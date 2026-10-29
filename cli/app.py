@@ -1778,7 +1778,7 @@ class ReacherCLI:
         except Exception as exc:
             self._set_status(f"Restart failed: {exc}", error=True)
 
-    def _web_limits(self) -> dict:
+    def _web_limits(self) -> P.LimitSettings:
         """Build the web-shaped limit payload from the session limits."""
         lim = self.session.limit_settings
         return {"limitType": lim["type"], "timeLimit": lim["time_limit"],
@@ -1790,7 +1790,7 @@ class ReacherCLI:
         body = P.limit_payload(self._web_limits())
         if body is None:
             return False
-        limit_type = body.pop("type")
+        limit_type = str(body.pop("type"))
         await self.api.set_limit(self.session.id, limit_type, **body)
         return True
 
@@ -1815,7 +1815,7 @@ class ReacherCLI:
         self.session.limit_settings[key] = value
         try:
             sent = await self._send_limits()
-            self._set_status(f"{key} set to {value}" + ("" if sent else " (saved; not sent until it is above 0)"))
+            self._set_status(f"{key} set to {value}" + ("" if sent else " (saved; sent once a limit above 0 is set)"))
             self._rebuild_current_menu()
         except Exception as exc:
             self._set_status(f"Set limit failed: {exc}", error=True)

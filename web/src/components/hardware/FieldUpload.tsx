@@ -35,10 +35,10 @@ export function FieldUpload({ sessionId, cardId, field, send, armed = false, onS
   const sig = uploadSignature(field);
 
   // The value first shown is the baseline: moving off it marks the field as changed.
+  // The store keeps only the first value per key, so re-running on a new sig is a no-op.
   useEffect(() => {
     baseline(key, sig);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, baseline]);
+  }, [key, sig, baseline]);
 
   const cmds = buildCardCommands(field.fields);
   const isPending = isUploadPending(field, lastSig, armed, baseSig);

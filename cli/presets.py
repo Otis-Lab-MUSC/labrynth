@@ -18,7 +18,7 @@ the CLI's runtime dependencies.
 from __future__ import annotations
 
 import copy
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from .reacher_tables import CMD
 
@@ -411,22 +411,31 @@ MAX_TIME_LIMIT_S = 86400
 MAX_INFUSION_LIMIT = 10000
 MAX_STOP_DELAY_S = 86400
 
+LimitSettings = Mapping[str, object]
+LimitBody = dict[str, object]
 
-def missing_limit_fields(limits: dict) -> list[str]:
+
+def read_limit_number(limits: LimitSettings, key: str) -> int:
+    """Read one numeric limit as an int; a missing or non-numeric value counts as 0 (not set)."""
+    value = limits.get(key, 0)
+    return int(value) if isinstance(value, (int, float, str)) else 0
+
+
+def missing_limit_fields(limits: LimitSettings) -> list[str]:
     """Labels of the limits that must be set before a session can start (web getMissingLimitFields)."""
     t = limits.get("limitType", "Time")
     missing: list[str] = []
-    if t in ("Time", "Both") and not 1 <= int(limits.get("timeLimit", 0)) <= MAX_TIME_LIMIT_S:
+    if t in ("Time", "Both") and not 1 <= read_limit_number(limits, "timeLimit") <= MAX_TIME_LIMIT_S:
         missing.append("Time Limit (s)")
     if t in ("Infusion", "Both"):
-        if not 1 <= int(limits.get("infusionLimit", 0)) <= MAX_INFUSION_LIMIT:
+        if not 1 <= read_limit_number(limits, "infusionLimit") <= MAX_INFUSION_LIMIT:
             missing.append("Infusion Limit")
-        if not 0 <= int(limits.get("delay", 0)) <= MAX_STOP_DELAY_S:
+        if not 0 <= read_limit_number(limits, "delay") <= MAX_STOP_DELAY_S:
             missing.append("Stop Delay (s)")
     return missing
 
 
-def limit_payload(limits: dict) -> dict | None:
+def limit_payload(limits: LimitSettings) -> LimitBody | None:
     """POST /api/program/{id}/limit body for the limits set so far, or None if none are.
 
     The backend rejects a 0 limit and a type whose limit is missing, so this
@@ -436,9 +445,9 @@ def limit_payload(limits: dict) -> dict | None:
     t = limits.get("limitType", "Time")
     if t == "Trials":
         return {"type": "Trials"}
-    time_limit = int(limits.get("timeLimit", 0))
-    infusion_limit = int(limits.get("infusionLimit", 0))
-    delay = int(limits.get("delay", 0))
+    time_limit = read_limit_number(limits, "timeLimit")
+    infusion_limit = read_limit_number(limits, "infusionLimit")
+    delay = read_limit_number(limits, "delay")
     has_time = t in ("Time", "Both") and 1 <= time_limit <= MAX_TIME_LIMIT_S
     has_infusion = t in ("Infusion", "Both") and 1 <= infusion_limit <= MAX_INFUSION_LIMIT
     if has_time and has_infusion:
@@ -449,7 +458,7 @@ def limit_payload(limits: dict) -> dict | None:
         sent_type = "Infusion"
     else:
         return None
-    body: dict = {"type": sent_type}
+    body: LimitBody = {"type": sent_type}
     if has_time:
         body["time_limit"] = time_limit
     if has_infusion:
