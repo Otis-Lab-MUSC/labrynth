@@ -82,13 +82,13 @@ export const HELP_CONTENT: HelpSection[] = [
         id: "configuration.hardware",
         title: "Hardware Controls",
         content:
-          "The collapsible Hardware Controls section provides direct control over all connected devices. Expand it to arm/disarm devices, configure parameters, and run test commands.",
+          "The Hardware Controls section (open by default; click the header to collapse it) provides direct control over all connected devices: arm/disarm devices, configure parameters, and run test commands.",
         subsections: [
           {
             id: "configuration.hardware.arming",
             title: "Arm / Disarm",
             content:
-              "Each device has an Arm/Disarm toggle. Armed devices are active during the experiment. Disarmed devices are ignored by the firmware. Always verify arm states before starting — unarmed devices won't respond during the session.",
+              "Each device has an Arm/Disarm toggle. Armed devices are active during the experiment. Disarmed devices are ignored by the firmware. You can arm a device before filling in its settings: any field that still needs a value is outlined red, with a line under the card naming it. After changing a setting, press the upload button beside it (the upward-arrow icon) to put it on the board; it turns amber while the board has an older value, and a line under the card title names the settings not yet uploaded. Menu buttons (the pin, timeout mode, shock mode, reinforced lever) apply a choice the moment you pick it, so they have no upload button. Start Session stays blocked while an armed device has a red field.",
           },
           {
             id: "configuration.hardware.levers",

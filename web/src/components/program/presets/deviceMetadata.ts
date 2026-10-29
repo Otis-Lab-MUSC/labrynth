@@ -2,6 +2,8 @@ import type { HardwareUiState } from "../../../types";
 import type { Session } from "../../../types";
 import type { SessionPreset, PresetDeviceEntry } from "./types";
 import { PRESET_VERSION } from "./types";
+import { LIMIT_DEFAULTS } from "../../../lib/limits";
+import { randomUUID } from "../../../lib/uuid";
 
 /**
  * HardwareUiState keys that are deliberately NOT part of a session preset.
@@ -58,10 +60,10 @@ export const PARADIGM_DEFAULTS: SessionPreset["paradigmSettings"] = {
 
 /** What LimitConfig shows for a session with no stored limits — Pavlovian has no Time/Both. */
 export function defaultLimitSettings(paradigm?: string | null): SessionPreset["limitDefaults"] {
-  return { limitType: paradigm === "pavlovian" ? "Trials" : "Time", timeLimit: 3600, infusionLimit: 30, delay: 10 };
+  return { limitType: paradigm === "pavlovian" ? "Trials" : "Time", ...LIMIT_DEFAULTS };
 }
 
-/** `limits` is LimitConfig's on-screen state: it only reaches the store on "Set Limits", so a
+/** `limits` is LimitConfig's on-screen state: it only reaches the store on the limits upload, so a
  *  preset saved without it would silently drop limits the user can see but has not Set. */
 export function buildPresetFromSession(
   name: string,
@@ -72,7 +74,7 @@ export function buildPresetFromSession(
   const pinOverrides = { ...session.pinOverrides };
 
   return {
-    id: "user-" + crypto.randomUUID(),
+    id: "user-" + randomUUID(),
     version: PRESET_VERSION,
     name,
     paradigm: session.paradigm ?? "fr",

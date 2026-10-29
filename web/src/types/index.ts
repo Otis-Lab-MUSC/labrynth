@@ -79,7 +79,7 @@ export interface SlmUiState extends DeviceArmState {
 }
 
 export interface AuxUiState extends DeviceArmState {
-  /** TTL shock output. `armed` is only ever set from the firmware's level-000 line or a confirmed arm. */
+  /** TTL shock output. `armed` is what the user chose; `armPending` is true until the board has it too. */
   duration: number;
   onsetDelay: number;
   mode: 0 | 1;  // 0 = independent, 1 = block
@@ -88,9 +88,14 @@ export interface AuxUiState extends DeviceArmState {
   blockN: number;
   seed: number;  // 0 = auto
   testFire: boolean;
-  /** true after a full SET of a configured card; any field edit clears it. Arm is disabled until true. */
+  /** true after a full sync of a configured card; any field edit clears it. */
   configSent: boolean;
-  /** Last firmware refusal, cleared by the next successful SET or by dismiss. */
+  /**
+   * The user pressed Arm but the board has not been told yet. The firmware refuses to arm an
+   * unconfigured shock, so the arm command goes out right after the next successful sync.
+   */
+  armPending: boolean;
+  /** Last firmware refusal, cleared by the next successful sync or by dismiss. */
   lastError?: string;
 }
 

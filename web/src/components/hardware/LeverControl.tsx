@@ -1,10 +1,13 @@
 import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
-import { PinField } from "./PinField";
 import { CardHeader } from "./CardHeader";
+import { MissingSettingsNote } from "./MissingSettingsNote";
 import { isParadigm } from "../../lib/paradigm";
 import { useFirmwareCommands } from "../../hooks/useFirmwareCommands";
-import { firstInvalid, showInvalid } from "../../lib/cardSet";
+import { type UploadField } from "../../lib/cardSet";
+import { FieldUpload } from "./FieldUpload";
+import { MenuButton } from "./MenuButton";
+import { canSendNow } from "../../lib/sendGate";
 import type { CardField } from "../../lib/cardSet";
 
 interface Props {
@@ -29,6 +32,7 @@ const STORE_KEY = { RH: "rhLever", LH: "lhLever" } as const;
 export function LeverControl({ sessionId, side, paradigm }: Props) {
   const storeKey = STORE_KEY[side];
   const lever = useSessionStore((s) => s.sessions.get(sessionId)?.hardwareUi[storeKey]);
+  const sessionState = useSessionStore((s) => s.sessions.get(sessionId)?.state);
   const updateHardwareUi = useSessionStore((s) => s.updateHardwareUi);
   const { has } = useFirmwareCommands(sessionId);
 
@@ -59,28 +63,39 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
   // Must never outlive showTimeout: a mode for a hidden timeout is meaningless.
   const showTimeoutMode = showTimeout && (has(codes.timeoutMode) ?? isParadigm(paradigm, "fr", "pr"));
 
-  const setFields: CardField[] = [];
-  if (showTimeout) setFields.push({ code: codes.timeout, value: timeout, valid: timeout >= 0 && timeout <= 600000, label: "Timeout (ms)" });
-  if (showTimeoutMode) setFields.push({ code: codes.timeoutMode, value: timeoutMode, valid: true, label: "Timeout starts on" });
+  // Both levers write one scheduler register, so the upload is remembered once for the pair
+  // (scope "levers") and compared on the value alone: uploading from RH clears LH's amber too.
+  const shared = (id: string, field: CardField): UploadField => ({
+    id, label: field.label ?? id, fields: [field], scope: "levers", signature: JSON.stringify(field.value),
+  });
+  const timeoutUpload = shared("timeout", { code: codes.timeout, value: timeout, valid: timeout >= 0 && timeout <= 600000, label: "Timeout (ms)" });
+  const uploads: UploadField[] = [];
+  if (showTimeout) uploads.push(timeoutUpload);
+  const setFields = uploads.flatMap((u) => u.fields);
+  const cardId = `lever${side}`;
 
-  const invalid = firstInvalid(setFields);
+  // Picking a mode saves it and, while a board is attached, sends it. Start sends it again.
+  const handleTimeoutMode = async (value: number) => {
+    setShared({ timeoutMode: value });
+    if (canSendNow(sessionState)) await send(codes.timeoutMode, value)?.catch(() => undefined);
+  };
+
 
   return (
     <div className="card">
       <CardHeader
         sessionId={sessionId}
-        cardId={`lever${side}`}
-        title={<>{side} Lever <PinField sessionId={sessionId} component={side === "RH" ? "lever_rh" : "lever_lh"} /></>}
-        label="SET"
-        fields={setFields}
-        send={send}
+        cardId={cardId}
+        title={`${side} Lever`}
+        pinComponent={side === "RH" ? "lever_rh" : "lever_lh"}
+        uploads={uploads}
+        armed={armed}
       />
+      <MissingSettingsNote armed={armed} fields={setFields} />
       <div className="flex flex-wrap gap-2">
         <button
           onClick={() => { send(codes.arm); updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], armed: true } })); }}
-          disabled={invalid !== null}
-          title={invalid !== null ? `Fix ${invalid} first` : undefined}
-          className={`btn-sm disabled:opacity-50 ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
+          className={`btn-sm ${armed ? "btn-toggle-green-on" : "btn-toggle-green-off"}`}
         >Arm</button>
         <button
           onClick={() => { send(codes.disarm); updateHardwareUi(sessionId, (prev) => ({ [storeKey]: { ...prev[storeKey], armed: false } })); }}
@@ -93,23 +108,21 @@ export function LeverControl({ sessionId, side, paradigm }: Props) {
           <input
             type="number" value={timeout} min={0} max={600000}
             onChange={(e) => setShared({ timeout: +e.target.value })}
-            className={`w-24 input-base ${showInvalid(armed, timeout >= 0 && timeout <= 600000) ? "border-red-500" : ""}`}
+            className="w-24 input-base"
           />
+          <FieldUpload sessionId={sessionId} cardId={cardId} field={timeoutUpload} send={send} armed={armed} />
         </div>
       )}
       {showTimeoutMode && (
         <div className="flex items-center gap-2">
           <label className="text-sm text-theme-text/60">Timeout starts on:</label>
-          <select
+          <MenuButton
             value={timeoutMode}
-            data-log-id={`lever-${side}-timeout-mode`}
-            onChange={(e) => setShared({ timeoutMode: +e.target.value })}
-            className="input-base"
-          >
-            {TIMEOUT_MODE_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            options={TIMEOUT_MODE_OPTIONS}
+            onSelect={handleTimeoutMode}
+            title="Picking a mode sends it to the board"
+            logId={`lever-${side}-timeout-mode`}
+          />
         </div>
       )}
       {showTimeout && (

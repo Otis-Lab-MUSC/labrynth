@@ -42,9 +42,9 @@ def _limits_from_preset(limit_defaults: dict) -> dict:
     """Web ``limitDefaults`` (camelCase) -> the CLI's backend-shaped limits."""
     return {
         "type": limit_defaults.get("limitType", "Time"),
-        "time_limit": int(limit_defaults.get("timeLimit", 3600)),
-        "infusion_limit": int(limit_defaults.get("infusionLimit", 30)),
-        "delay": int(limit_defaults.get("delay", 10)),
+        "time_limit": int(limit_defaults.get("timeLimit", P.LIMIT_DEFAULTS["timeLimit"])),
+        "infusion_limit": int(limit_defaults.get("infusionLimit", P.LIMIT_DEFAULTS["infusionLimit"])),
+        "delay": int(limit_defaults.get("delay", P.LIMIT_DEFAULTS["delay"])),
         "counted_pumps": _counted_pumps_from_preset(limit_defaults.get("countedPumps")),
     }
 
@@ -332,8 +332,9 @@ class SessionState:
     )
     pavlovian_params: dict = field(default_factory=dict)  # {code: value}, last-set Pavlovian params
     limit_settings: dict[str, object] = field(
-        default_factory=lambda: {"type": "Time", "time_limit": 3600, "infusion_limit": 30, "delay": 10,
-                                  "counted_pumps": None}
+        default_factory=lambda: {"type": "Time", "time_limit": P.LIMIT_DEFAULTS["timeLimit"],
+                                  "infusion_limit": P.LIMIT_DEFAULTS["infusionLimit"],
+                                  "delay": P.LIMIT_DEFAULTS["delay"], "counted_pumps": None}
     )
     file_config: dict = field(default_factory=lambda: {"filename": "", "destination": "", "notes": ""})
     backend_event_count: int = 0
@@ -1652,6 +1653,10 @@ class ReacherCLI:
         pump target) for operant paradigms.
         """
         s = self.session
+        missing = P.missing_limit_fields(self._web_limits())
+        if missing:
+            self._set_status(f"Set the limits first: {', '.join(missing)}", error=True)
+            return False
         try:
             await self._send_limits()
             await self._send_commands(P.start_commands(
@@ -1773,14 +1778,21 @@ class ReacherCLI:
         except Exception as exc:
             self._set_status(f"Restart failed: {exc}", error=True)
 
-    async def _send_limits(self) -> None:
-        """Send the session's current limit settings to the backend."""
+    def _web_limits(self) -> P.LimitSettings:
+        """Build the web-shaped limit payload from the session limits."""
         lim = self.session.limit_settings
-        body = P.limit_payload({"limitType": lim["type"], "timeLimit": lim["time_limit"],
-                                "infusionLimit": lim["infusion_limit"], "delay": lim["delay"],
-                                "countedPumps": lim.get("counted_pumps")})
-        limit_type = body.pop("type")
+        return {"limitType": lim["type"], "timeLimit": lim["time_limit"],
+                "infusionLimit": lim["infusion_limit"], "delay": lim["delay"],
+                "countedPumps": lim.get("counted_pumps")}
+
+    async def _send_limits(self) -> bool:
+        """Send the limits set so far. False when none are set yet (nothing is sent)."""
+        body = P.limit_payload(self._web_limits())
+        if body is None:
+            return False
+        limit_type = str(body.pop("type"))
         await self.api.set_limit(self.session.id, limit_type, **body)
+        return True
 
     async def _set_limit_type(self, limit_type: str) -> None:
         """Set the limit type (time, infusion or both) and send the limits."""
@@ -1789,8 +1801,8 @@ class ReacherCLI:
             return
         self.session.limit_settings["type"] = limit_type
         try:
-            await self._send_limits()
-            self._set_status(f"Limit type set to {limit_type}")
+            sent = await self._send_limits()
+            self._set_status(f"Limit type set to {limit_type}" + ("" if sent else " (sent with the first limit you set)"))
             self._rebuild_current_menu()
         except Exception as exc:
             self._set_status(f"Set limit failed: {exc}", error=True)
@@ -1802,8 +1814,8 @@ class ReacherCLI:
             return
         self.session.limit_settings[key] = value
         try:
-            await self._send_limits()
-            self._set_status(f"{key} set to {value}")
+            sent = await self._send_limits()
+            self._set_status(f"{key} set to {value}" + ("" if sent else " (saved; sent once a limit above 0 is set)"))
             self._rebuild_current_menu()
         except Exception as exc:
             self._set_status(f"Set limit failed: {exc}", error=True)

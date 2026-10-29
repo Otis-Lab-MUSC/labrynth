@@ -40,6 +40,8 @@ export class DemoMachineApiClient extends MachineApiClient {
     mock.sendCommand(id, code, value) as ReturnType<MachineApiClient["sendCommand"]>;
   getCommands = (id: string) => mock.getCommands(id) as ReturnType<MachineApiClient["getCommands"]>;
   getConfig = (id: string) => mock.getConfig(id) as ReturnType<MachineApiClient["getConfig"]>;
+  setPins = (id: string, assignments: Record<string, number>) =>
+    mock.setPins(id, assignments) as ReturnType<MachineApiClient["setPins"]>;
 
   // --- Program ---
   startProgram = (id: string) => mock.startProgram(id) as ReturnType<MachineApiClient["startProgram"]>;

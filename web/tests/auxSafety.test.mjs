@@ -5,7 +5,7 @@ import { auxStateFromEvent } from "../src/lib/auxEvents.ts";
 
 const base = {
   armed: true, duration: 500, onsetDelay: 0, mode: 0, probability: 50, blockK: 0, blockN: 0,
-  seed: 0, testFire: false, configSent: true,
+  seed: 0, testFire: false, configSent: true, armPending: false,
 };
 
 test("level-001 armed/disarmed line sets armed", () => {
@@ -25,7 +25,7 @@ test("AUX_UNCONFIGURED: 1401 disarms, 1403 leaves armed; both clear configSent",
   const arm = auxStateFromEvent(base, e(1401));
   assert.equal(arm.armed, false);
   assert.equal(arm.configSent, false);
-  assert.equal(arm.lastError, "Shock refused: board not configured. Press SET.");
+  assert.equal(arm.lastError, "Shock refused: board not configured. Upload its settings on the card.");
   const test_ = auxStateFromEvent(base, e(1403));
   assert.equal(test_.armed, true);
   assert.equal(test_.configSent, false);
@@ -56,4 +56,26 @@ test("disconnect, reconnected and identification drop armed and configSent", () 
     assert.equal(s.armed, false);
     assert.equal(s.configSent, false);
   }
+});
+
+test("a pending arm survives the board's 'disarmed' echo, then clears when the board arms", () => {
+  const pending = { ...base, armed: true, armPending: true, configSent: false };
+  const echo = auxStateFromEvent(pending, { kind: "config", data: { device: "AUX", armed: false } });
+  assert.equal(echo.armed, true);
+  assert.equal(echo.armPending, true);
+  const armed = auxStateFromEvent(echo, { kind: "config", data: { device: "AUX", armed: true } });
+  assert.equal(armed.armed, true);
+  assert.equal(armed.armPending, false);
+});
+
+test("a refused arm drops the pending arm too", () => {
+  const pending = { ...base, armed: true, armPending: true };
+  const s = auxStateFromEvent(pending, { kind: "error", data: { device: "AUX", error_code: "AUX_UNCONFIGURED", command: 1401 } });
+  assert.equal(s.armed, false);
+  assert.equal(s.armPending, false);
+});
+
+test("disconnect clears a pending arm", () => {
+  const s = auxStateFromEvent({ ...base, armPending: true }, { kind: "disconnect" });
+  assert.equal(s.armPending, false);
 });

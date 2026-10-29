@@ -1,6 +1,7 @@
 import type { BoardInfo, BoardType, Session } from "../types";
 import { useSessionStore } from "../store/useSessionStore";
 import { isParadigm } from "../lib/paradigm";
+import { randomUUID } from "../lib/uuid";
 
 let simulatorTimer: ReturnType<typeof setTimeout> | null = null;
 let frameInterval: ReturnType<typeof setInterval> | null = null;
@@ -124,7 +125,7 @@ function stopSimulator() {
 export const listSessions = async () => ({ sessions: [] });
 
 export const createSession = async (_port: string, _paradigm?: string) => ({
-  session_id: `demo-${crypto.randomUUID().slice(0, 8)}`,
+  session_id: `demo-${randomUUID().slice(0, 8)}`,
 });
 
 export const getSession = async (_id: string) => ({});

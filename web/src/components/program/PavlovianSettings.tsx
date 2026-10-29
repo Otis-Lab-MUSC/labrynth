@@ -3,6 +3,9 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import type { CommandSpec } from "../../types";
 import { ITI_CODES, PULSE_CODES, labelForCode } from "./pavLabels";
+import { CardHeader } from "../hardware/CardHeader";
+import { asUpload } from "../../lib/cardSet";
+import { FieldUpload } from "../hardware/FieldUpload";
 
 interface Props {
   sessionId: string;
@@ -118,30 +121,27 @@ export function PavlovianSettings({ sessionId }: Props) {
 
   const update = (code: number, val: number) => setValues((prev) => ({ ...prev, [code]: val }));
 
-  const send = (code: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, values[code]);
-
   const itiValid = itiMin <= itiMean && itiMean <= itiMax && itiMin >= 0 && itiMax > 0;
 
-  const sendAll = async () => {
-    const client = getClientForSession(sessionId);
-    for (const p of [...scalarParams, ...pulseParams]) {
-      await client?.sendCommand(sessionId, p.code, values[p.code]);
-    }
-    if (itiPresent) {
-      const iti = getItiValues();
-      await client?.sendCommand(sessionId, ITI_MEAN, iti[ITI_MEAN]);
-      await client?.sendCommand(sessionId, ITI_MIN, iti[ITI_MIN]);
-      await client?.sendCommand(sessionId, ITI_MAX, iti[ITI_MAX]);
-    }
-  };
+  const send = (code: number, value?: number) => getClientForSession(sessionId)?.sendCommand(sessionId, code, value);
+
+  const uploadFor = (code: number, value: number, valid = true) =>
+    asUpload({ code, value, valid, label: labelForCode(code, specs), required: true });
+  const iti = getItiValues();
+  const uploads = [...scalarParams, ...pulseParams].map((p) => uploadFor(p.code, values[p.code] ?? 0));
+  if (itiPresent) for (const code of ITI_CODES) uploads.push(uploadFor(code, iti[code], itiValid));
+  const upload = (code: number, value: number, valid = true) => (
+    <FieldUpload sessionId={sessionId} cardId="pavlovian" field={uploadFor(code, value, valid)} send={send} />
+  );
 
   return (
     <div className="card">
-      <div className="flex items-center justify-between">
-        <h3 className="font-medium text-theme-text">Pavlovian Parameters</h3>
-        <button onClick={sendAll} disabled={!itiValid}
-          className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Send All</button>
-      </div>
+      <CardHeader
+        sessionId={sessionId}
+        cardId="pavlovian"
+        title="Pavlovian Parameters"
+        uploads={uploads}
+      />
       <div className="grid gap-2 sm:grid-cols-2">
         {scalarParams.map((p) => (
           <div key={p.code} className="flex items-center gap-2">
@@ -161,7 +161,7 @@ export function PavlovianSettings({ sessionId }: Props) {
                 className="w-20 input-base"
               />
             )}
-            <button onClick={() => send(p.code)} className="btn-sm bg-accent text-accent-contrast text-xs">Set</button>
+            {upload(p.code, values[p.code] ?? 0)}
           </div>
         ))}
       </div>
@@ -182,7 +182,7 @@ export function PavlovianSettings({ sessionId }: Props) {
                   onChange={(e) => update(p.code, +e.target.value)}
                   className="w-20 input-base"
                 />
-                <button onClick={() => send(p.code)} className="btn-sm bg-accent text-accent-contrast text-xs">Set</button>
+                {upload(p.code, values[p.code] ?? 0)}
               </div>
             ))}
           </div>
@@ -205,13 +205,7 @@ export function PavlovianSettings({ sessionId }: Props) {
                 onChange={(e) => setItiMean(+e.target.value)}
                 className="w-24 input-base"
               />
-              <button
-                onClick={() => getClientForSession(sessionId)?.sendCommand(sessionId, ITI_MEAN, itiMean)}
-                disabled={!itiValid}
-                className="btn-sm bg-accent text-accent-contrast text-xs disabled:opacity-50"
-              >
-                Set
-              </button>
+              {upload(ITI_MEAN, itiMean, itiValid)}
             </div>
             <div className="flex items-center gap-2">
               <label className="text-sm flex-1 text-theme-text/60">ITI Min (ms):</label>
@@ -221,13 +215,7 @@ export function PavlovianSettings({ sessionId }: Props) {
                 onChange={(e) => setItiMin(+e.target.value)}
                 className="w-24 input-base"
               />
-              <button
-                onClick={() => getClientForSession(sessionId)?.sendCommand(sessionId, ITI_MIN, itiMin)}
-                disabled={!itiValid}
-                className="btn-sm bg-accent text-accent-contrast text-xs disabled:opacity-50"
-              >
-                Set
-              </button>
+              {upload(ITI_MIN, itiMin, itiValid)}
             </div>
             <div className="flex items-center gap-2">
               <label className="text-sm flex-1 text-theme-text/60">ITI Max (ms):</label>
@@ -237,13 +225,7 @@ export function PavlovianSettings({ sessionId }: Props) {
                 onChange={(e) => setItiMax(+e.target.value)}
                 className="w-24 input-base"
               />
-              <button
-                onClick={() => getClientForSession(sessionId)?.sendCommand(sessionId, ITI_MAX, itiMax)}
-                disabled={!itiValid}
-                className="btn-sm bg-accent text-accent-contrast text-xs disabled:opacity-50"
-              >
-                Set
-              </button>
+              {upload(ITI_MAX, itiMax, itiValid)}
             </div>
           </div>
         </div>

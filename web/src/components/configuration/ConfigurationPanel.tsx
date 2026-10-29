@@ -88,11 +88,11 @@ export function ConfigurationPanel() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Hardware section collapse state
-  const [hardwareExpanded, setHardwareExpanded] = useState(false);
+  const [hardwareExpanded, setHardwareExpanded] = useState(true);
 
   // Dirty-state baseline: factory defaults until a preset is applied
   const baselineRef = useRef<Baseline>(defaultBaseline());
-  // LimitConfig's on-screen limits, which reach the store only on "Set Limits".
+  // LimitConfig's on-screen limits, which reach the store only on the limits upload.
   const limitDraftRef = useRef<SessionPreset["limitDefaults"] | null>(null);
   const handleLimitDraft = useCallback((l: SessionPreset["limitDefaults"]) => { limitDraftRef.current = l; }, []);
 

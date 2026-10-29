@@ -3,6 +3,11 @@ import { getClientForSession } from "../../api/sessionClient";
 import { useSessionStore } from "../../store/useSessionStore";
 import { useLogStore } from "../../store/useLogStore";
 import { isParadigm } from "../../lib/paradigm";
+import { CardHeader } from "../hardware/CardHeader";
+import { asUpload, type CardField, type UploadField } from "../../lib/cardSet";
+import { FieldUpload } from "../hardware/FieldUpload";
+import { MenuButton } from "../hardware/MenuButton";
+import { canSendNow } from "../../lib/sendGate";
 import { PARADIGM_DEFAULTS as DEFAULTS } from "./presets/deviceMetadata";
 import { isOperantParadigm, activeLeverOf, leverSchedulerCommands } from "./devicePresets";
 
@@ -22,6 +27,11 @@ function isValidStep(value: number): boolean {
 function isValidInterval(value: number): boolean {
   return Number.isInteger(value) && value >= 0 && value <= 600000;
 }
+
+const LEVER_OPTIONS = [
+  { value: "rh", label: "RH" },
+  { value: "lh", label: "LH" },
+] as const;
 
 interface Props {
   sessionId: string;
@@ -90,7 +100,6 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
   };
 
   const activeLever = activeLeverOf(stored);
-  const updateActiveLever = (value: "rh" | "lh") => setParadigmSettings(sessionId, { ...stored, activeLever: value });
 
   const send = async (code: number, value?: number) => {
     try {
@@ -101,9 +110,34 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
     }
   };
 
+  const ratioField: CardField = { code: 201, value: ratio, valid: isValidRatio(ratio), label: "Reinforcement ratio", required: true };
+  const stepField: CardField = { code: 205, value: step, valid: isValidStep(step), label: "PR Step", required: true };
+  const viField: CardField = { code: 204, value: interval, valid: isValidInterval(interval), label: "VI Interval (ms)", required: true };
+  const omissionField: CardField = { code: 203, value: interval, valid: isValidInterval(interval), label: "Omission Interval (ms)", required: true };
+  // Picking a lever saves it and, while a board is attached, sends the reinforcement pair (the
+  // valueless commands) at once. Start sends the pair again with the lever timeout.
+  const updateActiveLever = async (value: "rh" | "lh") => {
+    setParadigmSettings(sessionId, { ...stored, activeLever: value });
+    if (!canSendNow(session?.state)) return;
+    const pair = leverSchedulerCommands(paradigm, value, session?.hardwareUi ?? {}).filter(([, v]) => v === undefined);
+    for (const [code] of pair) await send(code);
+  };
+
+  const uploads: UploadField[] = [];
+  if (isParadigm(paradigm, "fr", "pr")) uploads.push(asUpload(ratioField));
+  if (isParadigm(paradigm, "pr")) uploads.push(asUpload(stepField));
+  if (isParadigm(paradigm, "vi")) uploads.push(asUpload(viField));
+  if (isParadigm(paradigm, "omission")) uploads.push(asUpload(omissionField));
+  const upload = (field: UploadField) => <FieldUpload sessionId={sessionId} cardId="paradigm" field={field} send={send} />;
+
   return (
     <div className="card">
-      <h3 className="font-medium text-theme-text">Paradigm Settings — <span className="text-accent">{paradigm.toUpperCase()}</span></h3>
+      <CardHeader
+        sessionId={sessionId}
+        cardId="paradigm"
+        title={<>Paradigm Settings — <span className="text-accent">{paradigm.toUpperCase()}</span></>}
+        uploads={uploads}
+      />
 
       {isParadigm(paradigm, "fr", "pr") && (
         <div className="space-y-1">
@@ -112,9 +146,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
             <input type="number" value={ratio} min={1} max={255}
               onChange={(e) => updateRatio(+e.target.value)}
               className="w-24 input-base" />
-            <button onClick={() => send(201, ratio)}
-              disabled={!isValidRatio(ratio)}
-              className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+            {upload(asUpload(ratioField))}
           </div>
           <p className="text-xs text-theme-text/50">
             Active presses required per reward. Scheduler-wide: one value per board, counted across every reinforced lever.
@@ -126,22 +158,17 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <label className="text-sm w-40 text-theme-text/60">Reinforced lever:</label>
-            <select value={activeLever}
-              onChange={(e) => updateActiveLever(e.target.value as "rh" | "lh")}
-              className="w-24 input-base">
-              <option value="rh">RH</option>
-              <option value="lh">LH</option>
-            </select>
-            <button
-              onClick={async () => {
-                for (const [code, value] of leverSchedulerCommands(paradigm, activeLever, session?.hardwareUi ?? {})) {
-                  if (value === undefined) await send(code); // reinforcement pair only; timeout goes out at Start
-                }
-              }}
-              className="btn-sm bg-accent text-accent-contrast">Set</button>
+            <MenuButton
+              value={activeLever}
+              options={LEVER_OPTIONS}
+              onSelect={updateActiveLever}
+              title="Picking a lever sends it to the board"
+              logId="paradigm-active-lever"
+              className="w-24"
+            />
           </div>
           <p className="text-xs text-theme-text/50">
-            Which lever's presses count toward the ratio and earn rewards (the other logs inactive presses). Sent at session start.
+            Which lever's presses count toward the ratio and earn rewards (the other logs inactive presses). Also sent at session start.
           </p>
         </div>
       )}
@@ -152,9 +179,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
           <input type="number" value={step} min={1} max={255}
             onChange={(e) => updateStep(+e.target.value)}
             className="w-24 input-base" />
-          <button onClick={() => send(205, step)}
-            disabled={!isValidStep(step)}
-            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+          {upload(asUpload(stepField))}
         </div>
       )}
 
@@ -164,9 +189,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
           <input type="number" value={interval} min={0} max={600000}
             onChange={(e) => updateInterval(+e.target.value)}
             className="w-24 input-base" />
-          <button onClick={() => send(204, interval)}
-            disabled={!isValidInterval(interval)}
-            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+          {upload(asUpload(viField))}
         </div>
       )}
 
@@ -176,9 +199,7 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
           <input type="number" value={interval} min={0} max={600000}
             onChange={(e) => updateInterval(+e.target.value)}
             className="w-24 input-base" />
-          <button onClick={() => send(203, interval)}
-            disabled={!isValidInterval(interval)}
-            className="btn-sm bg-accent text-accent-contrast disabled:opacity-50">Set</button>
+          {upload(asUpload(omissionField))}
         </div>
       )}
 
