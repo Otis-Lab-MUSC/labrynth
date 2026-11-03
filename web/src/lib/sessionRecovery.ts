@@ -5,11 +5,11 @@ export interface StoredSession {
   sessionId: string;
   port: string;
   paradigm: string | null;
-  /** deviceId of the owning Machine. Absent in legacy entries — defaults to local. */
+  /** deviceId of the owning Machine. Absent in entries saved before multi-machine support — defaults to local. */
   machineId?: string;
   /** Last known paradigm ratio/step/interval, so a reload doesn't silently drop the
    *  value the user configured (and possibly already sent) back to firmware. Absent
-   *  in legacy entries or when never configured. */
+   *  in older entries or when never configured. */
   paradigmSettings?: Session["paradigmSettings"];
   /** Typed by the user and held nowhere on the backend, so a reload loses them unless
    *  they are stored here. Absent in entries written before this was persisted. */

@@ -36,7 +36,7 @@ export type ValidateConfigPayload = {
   limitSettings?: Record<string, unknown>;
 };
 
-// Fix: FE-001 — Filename validation to prevent path traversal
+// Filename validation to prevent path traversal
 // eslint-disable-next-line no-control-regex -- matching control chars is the intent
 const UNSAFE_FILENAME_RE = /[<>:"/\\|?*\x00-\x1f]/;
 const ARCHIVE_SUFFIX_RE = /\.(zip|tar\.gz|tgz|tar|gz)$/i;
@@ -125,7 +125,7 @@ export class MachineApiClient {
     return this.baseUrl.replace(/^https?:/, (m) => (m === "https:" ? "wss:" : "ws:"));
   }
 
-  /** Synchronous WS token — only valid for local or legacy remote clients. */
+  /** Synchronous WS token — only valid for local or direct-key remote clients. */
   getWsToken(): string | undefined {
     return this._apiKey;
   }
@@ -145,7 +145,7 @@ export class MachineApiClient {
    *
    * - Local machine: returns same-origin WS info using the auto-fetched token.
    * - Proxy client: fetches token from /api/proxy/{deviceId}/ws-token on the local server.
-   * - Legacy remote (apiKey supplied directly): returns stored key + derived WS URL.
+   * - Direct-key remote (apiKey supplied directly): returns stored key + derived WS URL.
    */
   async getWsTokenAsync(): Promise<{ token: string; wsUrl: string } | null> {
     if (this.deviceId) {
@@ -163,14 +163,14 @@ export class MachineApiClient {
         return null;
       }
     }
-    // Local machine or legacy remote
+    // Local machine or direct-key remote
     const token = await this.getToken();
     if (!token) return null;
     return { token, wsUrl: this.wsBaseUrl };
   }
 
   private async getToken(): Promise<string | null> {
-    // Legacy remote or direct-key client
+    // Direct-key client
     if (this._apiKey !== undefined) return this._apiKey;
 
     // Local machine (and proxy clients hitting the local server): auto-fetch token

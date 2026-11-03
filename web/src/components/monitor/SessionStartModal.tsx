@@ -167,7 +167,7 @@ export function SessionStartModal() {
           // leverFilter and delay are nested at state.contingency.* — flat lookup above skips them.
           const contingency = (state as { contingency?: { leverFilter?: "none" | "rh" | "lh"; delay?: number } }).contingency;
           // Always send filter (including 0=any) so firmware is explicitly reset at each session start,
-          // preventing stale RH/LH filters from a prior session from persisting (#91).
+          // preventing stale RH/LH filters from a prior session from persisting.
           if (pressContingent && contingency?.leverFilter !== undefined && mapping.params.leverFilter !== undefined) {
             const numVal = contingency.leverFilter === "rh" ? 1 : contingency.leverFilter === "lh" ? 2 : 0;
             await getClientForSession(activeSessionId)?.sendCommand(activeSessionId, mapping.params.leverFilter, numVal);

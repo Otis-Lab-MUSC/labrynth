@@ -12,7 +12,7 @@ window.addEventListener("unload", () => {
 const HEARTBEAT_INTERVAL = 20_000; // 20s client-side keepalive
 const RECONNECT_BASE = 1_000; // 1s initial reconnect delay
 const RECONNECT_CAP = 10_000; // 10s max reconnect delay
-const MAX_RECONNECT_ATTEMPTS = 15; // Fix: FE-002 — Stop reconnecting after N failures
+const MAX_RECONNECT_ATTEMPTS = 15; // Stop reconnecting after N failures
 
 export class ReacherWebSocket {
   private ws: WebSocket | null = null;
@@ -95,7 +95,7 @@ export class ReacherWebSocket {
 
   private scheduleReconnect() {
     if (this.closed || _pageUnloading) return;
-    // Fix: FE-002 — Give up after MAX_RECONNECT_ATTEMPTS consecutive failures
+    // Give up after MAX_RECONNECT_ATTEMPTS consecutive failures
     if (this.reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
       log("ws.gave_up", { sessionId: this.sessionId, attempts: MAX_RECONNECT_ATTEMPTS }, "error",
           { msg: `Gave up reconnecting after ${MAX_RECONNECT_ATTEMPTS} attempts`, src: "api/websocket",

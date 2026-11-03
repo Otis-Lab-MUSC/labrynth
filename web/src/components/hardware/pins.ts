@@ -2,7 +2,7 @@ import { useSessionStore } from "../../store/useSessionStore";
 import { DEFAULT_PIN, type Component } from "./pinMeta";
 
 /**
- * Default Arduino pins (legacy uppercase keys, kept for back-compat in UI
+ * Default Arduino pins (uppercase keys, kept for back-compat in UI
  * components that haven't been migrated). New code should prefer the lowercase
  * component keys defined in `pinMeta.ts`.
  */

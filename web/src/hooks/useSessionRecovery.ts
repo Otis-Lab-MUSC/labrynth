@@ -47,7 +47,7 @@ export function useSessionRecovery() {
         if (sessions.has(entry.sessionId)) continue;
 
         // Resolve which machine owns this session.
-        // Legacy entries (no machineId) fall back to the local machine.
+        // Entries without a machineId fall back to the local machine.
         const machineStoreState = useMachineStore.getState();
         const machineId = entry.machineId
           ?? (machineStoreState.machines.find((m) => m.isLocal)?.deviceId ?? LOCAL_PLACEHOLDER_ID);
@@ -119,7 +119,7 @@ export function useSessionRecovery() {
             await rehydrateData(client, entry.sessionId);
           }
         } catch {
-          // Session no longer exists on backend — skip
+          // Session is gone from the backend — skip
         }
       }
 

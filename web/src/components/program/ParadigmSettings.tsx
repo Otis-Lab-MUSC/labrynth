@@ -55,7 +55,6 @@ export function ParadigmSettings({ sessionId, paradigm }: Props) {
   // validation, blocking start behind an acknowledge dialog; separately
   // SessionStartModal.tsx:126 guards command 201 on `session.paradigmSettings` being
   // truthy, so a null value means 201 is silently never sent either.
-  //
   // Gated on the store value rather than a mount-once ref (T2b's shape): that ref could
   // only fire at mount, so a "Full Reset" — which nulls paradigmSettings under a panel
   // that stays mounted — left the inputs showing the pre-reset ratio while the store held
