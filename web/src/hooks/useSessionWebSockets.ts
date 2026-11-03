@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { log } from "../logging";
 import { useShallow } from "zustand/react/shallow";
 import { ReacherWebSocket } from "../api/websocket";
 import { useSessionStore } from "../store/useSessionStore";
@@ -115,7 +116,7 @@ function handleMessage(msg: WSMessage) {
   switch (msg.type) {
     case "event": {
       const eventData = msg.data as BehaviorEvent;
-      // : in proxy mode the session can read a pre-running state here
+      // In proxy mode the session can read a pre-running state here
       // because the Pi's earlier transitions were broadcast before the WS relay
       // connected and were lost. Events are emitted pre-run too (lick circuit,
       // lever presses), so an event proves nothing about the run: ask the
@@ -324,7 +325,8 @@ function handleMessage(msg: WSMessage) {
     }
     // Log unhandled message types so future protocol changes are visible
     default:
-      console.warn(`[ReacherWS] Unhandled message type: ${(msg as { type: string }).type}`, msg);
+      log("ws.unhandled_message", { type: (msg as { type: string }).type }, "warn",
+          { msg: "Unhandled WebSocket message type", src: "hooks/useSessionWebSockets", sessionId: msg.session_id });
       break;
   }
 }
@@ -337,12 +339,12 @@ async function recoverMissedEvents(sessionId: string) {
   const client = useMachineStore.getState().getClient(sess.machineId);
   if (!client) return;
 
-  // : pull the authoritative session state from the backend on every
+  // Pull the authoritative session state from the backend on every
   // (re)connect. In proxy mode the WS relay connects after the Pi has already
   // emitted its idle->connected->running transitions, so the local session can
   // be stranded at "idle" — which the early-return below would treat as "nothing
   // to recover", permanently dropping events. Syncing first un-stalls it. (Belt
-  // and suspenders with reacher's snapshot-on-connect; also covers older backends.)
+  // and suspenders with reacher's snapshot-on-connect; also covers backends without that snapshot.)
   try {
     const stateAtRequest = sess.state;
     const remote = await client.getSession(sessionId);
@@ -353,12 +355,14 @@ async function recoverMissedEvents(sessionId: string) {
     sess = cur;
     const remoteState = (remote as { state?: SessionState }).state;
     if (remoteState && remoteState !== sess.state && sess.state === stateAtRequest) {
-      console.debug(`[ReacherWS] #15 state sync ${sessionId}: ${sess.state} -> ${remoteState}`);
+      log("ws.state_sync", { from: sess.state, to: remoteState }, "debug",
+          { src: "hooks/useSessionWebSockets", sessionId });
       useSessionStore.getState().updateState(sessionId, remoteState);
       sess = useSessionStore.getState().sessions.get(sessionId) ?? sess;
     }
   } catch (err) {
-    console.warn("[ReacherWS] Failed to sync session state on reconnect:", err);
+    log("ws.state_sync_failed", { error: err }, "warn",
+        { msg: "Failed to sync session state on reconnect", src: "hooks/useSessionWebSockets", sessionId });
   }
 
   if (sess.state === "idle" || sess.state === "stopped") return;
@@ -379,7 +383,8 @@ async function recoverMissedEvents(sessionId: string) {
       );
     }
   } catch (err) {
-    console.warn("[ReacherWS] Failed to recover missed events:", err);
+    log("ws.recover_failed", { error: err }, "warn",
+        { msg: "Failed to recover missed events", src: "hooks/useSessionWebSockets", sessionId });
   }
 }
 
