@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { log } from "../logging";
 import { getLocalClient } from "../api/client";
 import { useTutorialStore } from "./useTutorialStore";
 
@@ -137,7 +138,7 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
             }
           }
         } catch (err) {
-          console.warn("[useUpdateStore] Status poll failed:", err);
+          log("update.poll_failed", { error: err }, "warn", { msg: "Update download status poll failed", src: "store/useUpdateStore" });
         }
       }, 1000);
     } catch (err) {
@@ -179,9 +180,7 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
           signal: AbortSignal.timeout(10_000),
         });
         if (!res.ok) {
-          if (import.meta.env.DEV) {
-            console.warn(`[useUpdateStore] GitHub API returned ${res.status} — update check skipped`);
-          }
+          log("update.check_skipped", { status: res.status }, "info", { msg: "GitHub API refused the update check", src: "store/useUpdateStore" });
           return;
         }
 
@@ -207,9 +206,7 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
           });
         }
       } catch (err) {
-        if (import.meta.env.DEV) {
-          console.warn("[useUpdateStore] update check failed:", err);
-        }
+        log("update.check_failed", { error: err }, "info", { msg: "Update check failed", src: "store/useUpdateStore" });
       }
     }
 

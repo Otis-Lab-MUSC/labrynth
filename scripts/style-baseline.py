@@ -47,9 +47,9 @@ BROAD_EXCEPTION_NAMES = {"Exception", "BaseException"}
 
 # Comments and docstrings that narrate history belong in git, not in the source.
 HISTORY_PATTERNS = (
-    r"\bfix(?:es|ed)?[\s:]+[A-Za-z]*-?\d",  # "Fix 4.9", "Fix: PY-003"
+    r"\bfix(?:es|ed)?[\s:]+[A-Za-z]*-?\d",  # the word fix followed by a ticket or step number
     r"(?<![\w&])#\d+\b",  # issue or PR number
-    r"\b(?:PR|issue)s?\s*#?\d+",  # "PR 12", "issue 7"
+    r"\b(?:PR|issue)s?\s*#?\d+",  # a pull request or issue cited by number
     r"\blegacy\b",
     r"\bno longer\b",
     r"\bpreviously\b",

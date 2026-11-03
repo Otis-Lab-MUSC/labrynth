@@ -100,7 +100,6 @@ export class ReacherWebSocket {
       log("ws.gave_up", { sessionId: this.sessionId, attempts: MAX_RECONNECT_ATTEMPTS }, "error",
           { msg: `Gave up reconnecting after ${MAX_RECONNECT_ATTEMPTS} attempts`, src: "api/websocket",
             sessionId: this.sessionId });
-      console.warn(`[ReacherWS] Gave up reconnecting after ${MAX_RECONNECT_ATTEMPTS} attempts`);
       this.onGiveUp?.();
       return;
     }
