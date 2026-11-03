@@ -1,5 +1,5 @@
 {
-  "mypy_strict_errors": 79,
+  "mypy_strict_errors": 55,
   "py_any_uses": 0,
   "py_except_exception_sites": 49,
   "py_files_over_300_lines": 5,

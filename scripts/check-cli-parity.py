@@ -114,7 +114,7 @@ def main() -> int:
 
     cli_by_id = {p["id"]: p for p in P.SESSION_PRESETS}
     for wp in web_presets:
-        cp = cli_by_id.get(wp["id"])
+        cp = cli_by_id.get(str(wp["id"]))
         if cp is None:
             continue
         for field in PRESET_FIELDS:

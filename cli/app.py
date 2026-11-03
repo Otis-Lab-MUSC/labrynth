@@ -23,6 +23,7 @@ from prompt_toolkit.layout.controls import BufferControl, FormattedTextControl
 from prompt_toolkit.styles import Style
 
 from . import presets as P
+from .preset_types import Hardware, LimitDefaults, ParadigmSettings
 from .client import ReacherClient
 
 if TYPE_CHECKING:
@@ -38,7 +39,7 @@ def _digits(code: str) -> str:
     return "".join(ch for ch in code if ch.isdigit())
 
 
-def _limits_from_preset(limit_defaults: dict) -> dict:
+def _limits_from_preset(limit_defaults: LimitDefaults) -> dict[str, object]:
     """Web ``limitDefaults`` (camelCase) -> the CLI's backend-shaped limits."""
     return {
         "type": limit_defaults.get("limitType", "Time"),
@@ -325,9 +326,9 @@ class SessionState:
     pause_start: float | None = None
     # Device state in the web's shape (camelCase keys, nested contingency), so
     # the start-time dispatch in presets.py is shared with the web definitions.
-    hw: dict = field(default_factory=P.default_hardware)
+    hw: Hardware = field(default_factory=P.default_hardware)
     test_mode: bool = False
-    paradigm_settings: dict[str, object] = field(
+    paradigm_settings: ParadigmSettings = field(
         default_factory=lambda: {"ratio": 1, "step": 1, "interval": 30000}
     )
     pavlovian_params: dict = field(default_factory=dict)  # {code: value}, last-set Pavlovian params
