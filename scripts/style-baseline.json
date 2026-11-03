@@ -18,9 +18,9 @@
   "web_console_calls": 0,
   "web_eslint_disable": 5,
   "web_eslint_errors": 0,
-  "web_eslint_warnings": 74,
+  "web_eslint_warnings": 70,
   "web_explicit_any": 0,
-  "web_files_over_300_lines": 15,
+  "web_files_over_300_lines": 14,
   "web_history_comments": 0,
   "web_ts_ignore": 0
 }

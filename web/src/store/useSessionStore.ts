@@ -1,122 +1,41 @@
 import { create } from "zustand";
-import type { BoardType, CommandSpec, Session, SessionState, BehaviorEvent, FirmwareConfig, LeverCounts, HardwareUiState, ContingencyConfig } from "../types";
+import type { Session, FirmwareConfig } from "../types";
+import type { SessionStore } from "./sessionStoreTypes";
 import { useMachineStore } from "./useMachineStore";
 import { countShocks } from "../lib/shockEvents";
 import { randomUUID } from "../lib/uuid";
-import type { EventDevice } from "../generated/deviceNames";
+import { addEventToCounts, countEvents, foldSegmentIntoCumulative, nextPauseFields } from "../lib/sessionCounters";
+import {
+  LIVE_STATES, defaultHardwareUiState, emptyExportState, newSession,
+  zeroCumulativeFields, zeroEventFields, zeroLiveFields, zeroTimingFields,
+} from "./sessionDefaults";
 
-interface SessionStore {
-  sessions: Map<string, Session>;
-  activeSessionId: string | null;
-  sessionOrder: string[];
-  uploadProgress: Map<string, { percent: number; stage: string }>;
-  startModalOpen: boolean;
+export { LIVE_STATES, defaultHardwareUiState };
 
-  setStartModalOpen: (open: boolean) => void;
-  createDraft: (machineId: string) => string;
-  createSession: (machineId: string, port: string, paradigm?: string) => Promise<string>;
-  destroySession: (id: string) => Promise<void>;
-  reorderSession: (fromId: string, toId: string) => void;
-  setActive: (id: string | null) => void;
-  updateState: (id: string, state: SessionState) => void;
-  pushEvent: (id: string, event: BehaviorEvent) => void;
-  replaceEvents: (id: string, events: BehaviorEvent[]) => void;
-  pushFrame: (id: string, timestamp: number) => void;
-  setFirmwareInfo: (id: string, info: FirmwareConfig) => void;
-  setUploadProgress: (id: string, percent: number, stage: string) => void;
-  setPavlovianParams: (id: string, params: Record<number, number>) => void;
-  setParadigmSettings: (id: string, settings: { ratio: number; step: number; interval: number; activeLever?: "rh" | "lh" }) => void;
-  setLimitSettings: (id: string, settings: { limitType: string; timeLimit: number; infusionLimit: number; delay: number; countedPumps?: string[] | null }) => void;
-  setServerInfusionCount: (id: string, counted: number, byPump: Record<string, number>) => void;
-  setParadigm: (id: string, paradigm: string) => void;
-  setBoard: (id: string, board: BoardType) => void;
-  resetSessionData: (id: string) => void;
-  softResetSessionData: (id: string) => void;
-  setSessionName: (id: string, name: string) => void;
-  setSessionNotes: (id: string, notes: string) => void;
-  pushHardwareSetting: (id: string, config: FirmwareConfig) => void;
-  updateHardwareUi: (id: string, updater: (prev: HardwareUiState) => Partial<HardwareUiState>) => void;
-  setPinOverrides: (id: string, overrides: Record<string, number>) => void;
-  setFirmwareCommands: (id: string, commands: CommandSpec[]) => void;
-  setFileConfig: (id: string, config: Partial<{ filename: string; destination: string }>) => void;
-  setExportState: (id: string, partial: Partial<{ exporting: boolean; result: string | null; error: string | null }>) => void;
-  handleSplit: (id: string, segmentNumber: number) => void;
-  handleRestart: (id: string) => void;
+/** Applies `change` to one session; an unknown id leaves the store untouched. */
+function updateSession(s: SessionStore, id: string, change: (sess: Session) => Partial<Session>): SessionStore | Pick<SessionStore, "sessions"> {
+  const sess = s.sessions.get(id);
+  if (!sess) return s;
+  const next = new Map(s.sessions);
+  next.set(id, { ...sess, ...change(sess) });
+  return { sessions: next };
 }
 
-/** States in which a board is attached and its command list stays valid ("stopped" keeps the port open). */
-export const LIVE_STATES: ReadonlySet<SessionState> = new Set<SessionState>(["connected", "running", "paused", "stopped"]);
+/** Firmware ACKs ({param, value}, no sketch) merge into the stored row; other records replace it. */
+function mergeHardwareRow(existing: FirmwareConfig | undefined, config: FirmwareConfig): FirmwareConfig {
+  if (!("param" in config && "value" in config && !("sketch" in config))) return config;
+  const { param, value, ...rest } = config as Record<string, unknown>;
+  return { ...(existing ?? {}), ...rest, [param as string]: value } as FirmwareConfig;
+}
 
-const ZERO_LEVER: LeverCounts = { active: 0, timeout: 0, inactive: 0 };
-
-const PUMP_DEVICES: ReadonlySet<string> = new Set<EventDevice>(["PUMP", "PUMP_1", "PUMP_2"]);
-
-const DEFAULT_CONTINGENCY = (): ContingencyConfig => ({
-  leverFilter: "none", delay: 0,
-});
-
-export const defaultHardwareUiState = (): HardwareUiState => ({
-  rhLever: { armed: false, timeout: 0, timeoutMode: 0 },
-  lhLever: { armed: false, timeout: 0, timeoutMode: 0 },
-  primaryCue:   { armed: false, frequency: 0, duration: 0, contingency: DEFAULT_CONTINGENCY() },
-  secondaryCue: { armed: false, frequency: 0, duration: 0, contingency: DEFAULT_CONTINGENCY() },
-  primaryPump:  { armed: false, duration: 0, contingency: DEFAULT_CONTINGENCY(), flowRateUlPerSec: null },
-  secondaryPump: { armed: false, duration: 0, contingency: DEFAULT_CONTINGENCY(), flowRateUlPerSec: null },
-  laser: { armed: false, frequency: 0, duration: 0, mode: "contingent", phase: "reward", contingency: "any", onsetDelay: 0 },
-  lickCircuit: { armed: false },
-  microscope: { armed: false, frameRate: null, frameAveraging: null },
-  slm: { armed: false, pin: 11, laserFrequency: null, laserDuration: null },
-  aux: { armed: false, duration: 0, onsetDelay: 0, mode: 0, probability: 0, blockK: 0, blockN: 0, seed: 0, testFire: false, configSent: false, armPending: false },
-  testMode: false,
-});
-
-const newSession = (id: string, port: string, paradigm: string | null, machineId: string, draft = false): Session => ({
-  id,
-  draft,
-  machineId,
-  port,
-  paradigm,
-  board: null,
-  state: "idle",
-  name: "",
-  notes: "",
-  firmwareInfo: null,
-  hardwareSettings: [],
-  behaviorData: [],
-  frameData: [],
-  slmData: [],
-  infusionCount: 0,
-  pressCount: 0,
-  programStartTime: null,
-  programEndTime: null,
-  pausedTime: 0,
-  pauseStartTime: null,
-  pavlovianParams: null,
-  paradigmSettings: null,
-  limitSettings: null,
-  serverInfusionCount: null,
-  infusionsByPump: null,
-  trialCount: 0,
-  csPlusCount: 0,
-  csMinusCount: 0,
-  rhLeverCounts: { ...ZERO_LEVER },
-  lhLeverCounts: { ...ZERO_LEVER },
-  hardwareUi: defaultHardwareUiState(),
-  pinOverrides: {},
-  firmwareCommands: null,
-  fileConfig: { filename: "", destination: "" },
-  exportState: { exporting: false, result: null, error: null },
-  segmentNumber: 0,
-  cumulativeInfusionCount: 0,
-  cumulativePressCount: 0,
-  cumulativeTrialCount: 0,
-  cumulativeCsPlusCount: 0,
-  cumulativeCsMinusCount: 0,
-  cumulativeShockCount: 0,
-  cumulativeRhLeverCounts: { ...ZERO_LEVER },
-  cumulativeLhLeverCounts: { ...ZERO_LEVER },
-  cumulativeElapsedTime: 0,
-});
+/** Swaps a draft's tab for the real session, or appends when there is no draft. */
+function replaceOrAppend(order: string[], oldId: string | null, newId: string): string[] {
+  const idx = oldId ? order.indexOf(oldId) : -1;
+  if (idx === -1) return [...order, newId];
+  const next = [...order];
+  next[idx] = newId;
+  return next;
+}
 
 export const useSessionStore = create<SessionStore>((set, get) => ({
   sessions: new Map(),
@@ -129,13 +48,10 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   createDraft: (machineId) => {
     const state = get();
-    // Reuse existing draft if it belongs to the same machine
-    const existingDraft = state.sessionOrder.find(
-      (id: string) => {
-        const s = state.sessions.get(id);
-        return s?.draft && s.machineId === machineId;
-      },
-    );
+    const existingDraft = state.sessionOrder.find((id) => {
+      const s = state.sessions.get(id);
+      return s?.draft && s.machineId === machineId;
+    });
     if (existingDraft) {
       set({ activeSessionId: existingDraft });
       return existingDraft;
@@ -158,29 +74,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     if (!client) throw new Error(`No client for machine ${machineId}`);
 
     const state = get();
-    // Replace the active draft for this machine if one exists
-    const activeDraft =
-      state.activeSessionId &&
-      state.sessions.get(state.activeSessionId)?.draft &&
-      state.sessions.get(state.activeSessionId)?.machineId === machineId
-        ? state.activeSessionId
-        : null;
+    const active = state.activeSessionId ? state.sessions.get(state.activeSessionId) : undefined;
+    const activeDraft = active?.draft && active.machineId === machineId ? active.id : null;
 
     // The backend binds a request for the generic SIMULATOR port to its own SIMn instance.
     const { session_id, port: boundPort } = await client.createSession(port, paradigm);
     set((s) => {
       const next = new Map(s.sessions);
-      const nextOrder = [...s.sessionOrder];
-      if (activeDraft) {
-        next.delete(activeDraft);
-        const idx = nextOrder.indexOf(activeDraft);
-        if (idx !== -1) nextOrder[idx] = session_id;
-        else nextOrder.push(session_id);
-      } else {
-        nextOrder.push(session_id);
-      }
+      if (activeDraft) next.delete(activeDraft);
       next.set(session_id, newSession(session_id, boundPort ?? port, paradigm ?? null, machineId));
-      return { sessions: next, activeSessionId: session_id, sessionOrder: nextOrder };
+      return {
+        sessions: next,
+        activeSessionId: session_id,
+        sessionOrder: replaceOrAppend(s.sessionOrder, activeDraft, session_id),
+      };
     });
     return session_id;
   },
@@ -219,195 +126,39 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   setActive: (id) => set({ activeSessionId: id }),
 
   updateState: (id, state) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      const isNewStart = state === "running" && sess.programStartTime === null;
-      const now = Date.now();
+    set((s) =>
+      updateSession(s, id, (sess) => {
+        const isNewStart = state === "running" && sess.programStartTime === null;
+        return {
+          state,
+          // The command list describes the board on the other end of the port; once
+          // that board is gone (upload, disconnect) it may come back as another sketch.
+          firmwareCommands: LIVE_STATES.has(state) ? sess.firmwareCommands : null,
+          ...nextPauseFields(sess, state, Date.now()),
+          ...(isNewStart && { ...zeroLiveFields(), ...zeroCumulativeFields() }),
+        };
+      }),
+    ),
 
-      const resetData = isNewStart;
-
-      // Pause tracking
-      const transitioningToPaused = state === "paused" && sess.state !== "paused";
-      const resumingFromPause = sess.state === "paused" && state !== "paused";
-      const pauseDelta =
-        resumingFromPause && sess.pauseStartTime != null
-          ? now - sess.pauseStartTime
-          : 0;
-
-      next.set(id, {
-        ...sess,
-        state,
-        // The command list describes the board on the other end of the port; once
-        // that board is gone (upload, disconnect) it may come back as another sketch.
-        firmwareCommands: LIVE_STATES.has(state) ? sess.firmwareCommands : null,
-        programStartTime: isNewStart ? now : sess.programStartTime,
-        programEndTime: resetData ? null : (state === "stopped" && sess.programEndTime === null ? now : sess.programEndTime),
-        pausedTime: resetData ? 0 : sess.pausedTime + pauseDelta,
-        pauseStartTime: resetData
-          ? null
-          : transitioningToPaused
-            ? now
-            : resumingFromPause
-              ? null
-              : sess.pauseStartTime,
-        ...(resetData && {
-          behaviorData: [],
-          frameData: [],
-          slmData: [],
-          infusionCount: 0,
-          serverInfusionCount: null,
-          infusionsByPump: null,
-          pressCount: 0,
-          trialCount: 0,
-          csPlusCount: 0,
-          csMinusCount: 0,
-          rhLeverCounts: { ...ZERO_LEVER },
-          lhLeverCounts: { ...ZERO_LEVER },
-          segmentNumber: 0,
-          cumulativeInfusionCount: 0,
-          cumulativePressCount: 0,
-          cumulativeTrialCount: 0,
-          cumulativeCsPlusCount: 0,
-          cumulativeCsMinusCount: 0,
-          cumulativeShockCount: 0,
-          cumulativeRhLeverCounts: { ...ZERO_LEVER },
-          cumulativeLhLeverCounts: { ...ZERO_LEVER },
-          cumulativeElapsedTime: 0,
-        }),
-      });
-      return { sessions: next };
-    }),
-
+  // A paused session still receives in-flight events and they count; pre-start states do not.
   pushEvent: (id, event) =>
     set((s) => {
       const sess = s.sessions.get(id);
-      // Accept events while running OR paused — a paused session can
-      // still receive in-flight events, and they should count. The gate still
-      // blocks pre-start states (idle/uploading/connected) so events before a
-      // program starts are not accumulated.
       if (!sess || (sess.state !== "running" && sess.state !== "paused")) return s;
-      const next = new Map(s.sessions);
-      const infusionCount =
-        PUMP_DEVICES.has(event.device) && event.event === "INFUSION"
-          ? sess.infusionCount + 1
-          : sess.infusionCount;
-      const pressCount =
-        (event.device === "RH_LEVER" || event.device === "LH_LEVER" || event.device === "LEVER_RH" || event.device === "LEVER_LH") && event.event.includes("PRESS")
-          ? sess.pressCount + 1
-          : sess.pressCount;
-      const trialCount =
-        event.device === "PAVLOV" && event.event === "TRIAL_START"
-          ? sess.trialCount + 1
-          : sess.trialCount;
-      const csPlusCount =
-        event.device === "PAVLOV" &&
-        event.event === "TRIAL_START" &&
-        event.trial_type === "CS_PLUS"
-          ? sess.csPlusCount + 1
-          : sess.csPlusCount;
-      const csMinusCount =
-        event.device === "PAVLOV" &&
-        event.event === "TRIAL_START" &&
-        event.trial_type === "CS_MINUS"
-          ? sess.csMinusCount + 1
-          : sess.csMinusCount;
-      const isRH = event.device === "RH_LEVER" || event.device === "LEVER_RH";
-      const isLH = event.device === "LH_LEVER" || event.device === "LEVER_LH";
-      const rhLeverCounts = isRH
-        ? {
-            active:   sess.rhLeverCounts.active   + (event.event === "ACTIVE_PRESS" ? 1 : 0),
-            timeout:  sess.rhLeverCounts.timeout  + (event.event === "TIMEOUT_PRESS" ? 1 : 0),
-            inactive: sess.rhLeverCounts.inactive + (event.event === "INACTIVE_PRESS" ? 1 : 0),
-          }
-        : sess.rhLeverCounts;
-      const lhLeverCounts = isLH
-        ? {
-            active:   sess.lhLeverCounts.active   + (event.event === "ACTIVE_PRESS" ? 1 : 0),
-            timeout:  sess.lhLeverCounts.timeout  + (event.event === "TIMEOUT_PRESS" ? 1 : 0),
-            inactive: sess.lhLeverCounts.inactive + (event.event === "INACTIVE_PRESS" ? 1 : 0),
-          }
-        : sess.lhLeverCounts;
-      next.set(id, {
-        ...sess,
+      return updateSession(s, id, () => ({
         behaviorData: [...sess.behaviorData, event],
-        infusionCount,
-        pressCount,
-        trialCount,
-        csPlusCount,
-        csMinusCount,
-        rhLeverCounts,
-        lhLeverCounts,
-      });
-      return { sessions: next };
+        ...addEventToCounts(sess, event),
+      }));
     }),
 
   replaceEvents: (id, events) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      let infusionCount = 0;
-      let pressCount = 0;
-      let trialCount = 0;
-      let csPlusCount = 0;
-      let csMinusCount = 0;
-      const rhLeverCounts = { ...ZERO_LEVER };
-      const lhLeverCounts = { ...ZERO_LEVER };
-      for (const e of events) {
-        // All pump spellings count (see PUMP_DEVICES): a recompute that missed one
-        // would zero the local count on reconnect, and a split would fold that zero
-        // into cumulativeInfusionCount permanently.
-        if (PUMP_DEVICES.has(e.device) && e.event === "INFUSION") infusionCount++;
-        if ((e.device === "RH_LEVER" || e.device === "LH_LEVER" || e.device === "LEVER_RH" || e.device === "LEVER_LH") && e.event.includes("PRESS")) pressCount++;
-        if (e.device === "PAVLOV" && e.event === "TRIAL_START") {
-          trialCount++;
-          if (e.trial_type === "CS_PLUS") csPlusCount++;
-          else if (e.trial_type === "CS_MINUS") csMinusCount++;
-        }
-        if (e.device === "RH_LEVER" || e.device === "LEVER_RH") {
-          if (e.event === "ACTIVE_PRESS") rhLeverCounts.active++;
-          if (e.event === "TIMEOUT_PRESS") rhLeverCounts.timeout++;
-          if (e.event === "INACTIVE_PRESS") rhLeverCounts.inactive++;
-        }
-        if (e.device === "LH_LEVER" || e.device === "LEVER_LH") {
-          if (e.event === "ACTIVE_PRESS") lhLeverCounts.active++;
-          if (e.event === "TIMEOUT_PRESS") lhLeverCounts.timeout++;
-          if (e.event === "INACTIVE_PRESS") lhLeverCounts.inactive++;
-        }
-      }
-      next.set(id, {
-        ...sess,
-        behaviorData: events,
-        infusionCount,
-        pressCount,
-        trialCount,
-        csPlusCount,
-        csMinusCount,
-        rhLeverCounts,
-        lhLeverCounts,
-      });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ behaviorData: events, ...countEvents(events) }))),
 
   pushFrame: (id, timestamp) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, frameData: [...sess.frameData, timestamp] });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, (sess) => ({ frameData: [...sess.frameData, timestamp] }))),
 
   setFirmwareInfo: (id, info) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, firmwareInfo: info });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ firmwareInfo: info }))),
 
   setUploadProgress: (id, percent, stage) =>
     set((s) => {
@@ -417,296 +168,111 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     }),
 
   setPavlovianParams: (id, params) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, pavlovianParams: params });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ pavlovianParams: params }))),
 
   setParadigmSettings: (id, settings) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, paradigmSettings: settings });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ paradigmSettings: settings }))),
 
   setLimitSettings: (id, settings) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, limitSettings: settings });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ limitSettings: settings }))),
 
   setServerInfusionCount: (id, counted, byPump) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, serverInfusionCount: counted, infusionsByPump: byPump });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ serverInfusionCount: counted, infusionsByPump: byPump }))),
 
   setParadigm: (id, paradigm) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, paradigm, firmwareCommands: null });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ paradigm, firmwareCommands: null }))),
 
   setBoard: (id, board) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, board });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ board }))),
 
   resetSessionData: (id) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, {
-        ...sess,
+    set((s) =>
+      updateSession(s, id, () => ({
         name: "",
-        behaviorData: [],
-        frameData: [],
-        slmData: [],
-        infusionCount: 0,
-        serverInfusionCount: null,
-        infusionsByPump: null,
-        pressCount: 0,
-        programStartTime: null,
-        programEndTime: null,
-        pausedTime: 0,
-        pauseStartTime: null,
+        ...zeroLiveFields(),
+        ...zeroTimingFields(),
         pavlovianParams: null,
         paradigmSettings: null,
         limitSettings: null,
-        trialCount: 0,
-        csPlusCount: 0,
-        csMinusCount: 0,
         hardwareSettings: [],
-        rhLeverCounts: { ...ZERO_LEVER },
-        lhLeverCounts: { ...ZERO_LEVER },
         hardwareUi: defaultHardwareUiState(),
-        exportState: { exporting: false, result: null, error: null },
-      });
-      return { sessions: next };
-    }),
+        exportState: emptyExportState(),
+      })),
+    ),
 
   softResetSessionData: (id) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, {
-        ...sess,
-        behaviorData: [],
-        frameData: [],
-        slmData: [],
-        infusionCount: 0,
-        serverInfusionCount: null,
-        infusionsByPump: null,
-        pressCount: 0,
-        programStartTime: null,
-        programEndTime: null,
-        pausedTime: 0,
-        pauseStartTime: null,
-        trialCount: 0,
-        csPlusCount: 0,
-        csMinusCount: 0,
+    set((s) =>
+      updateSession(s, id, () => ({
+        ...zeroLiveFields(),
+        ...zeroTimingFields(),
         hardwareSettings: [],
-        rhLeverCounts: { ...ZERO_LEVER },
-        lhLeverCounts: { ...ZERO_LEVER },
-        exportState: { exporting: false, result: null, error: null },
-      });
-      return { sessions: next };
-    }),
+        exportState: emptyExportState(),
+      })),
+    ),
 
   setSessionName: (id, name) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, name });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ name }))),
 
   setSessionNotes: (id, notes) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, notes });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ notes }))),
 
   pushHardwareSetting: (id, config) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      const device = (config as Record<string, unknown>).device as string | undefined;
-      const idx = device
-        ? sess.hardwareSettings.findIndex(
-            (h) => (h as Record<string, unknown>).device === device
-          )
-        : -1;
-      // Firmware logParamChange ACKs ({param, value}, no sketch) fold to {[param]: value}
-      // and merge into the row, so they don't wipe fields such as armed/ratio. Must match
-      // the reacher-side normalisation in kernel/reacher.py.
-      // Other records (backend echo, per-device dump) are whole rows and still replace.
-      let row: FirmwareConfig = config;
-      if ("param" in config && "value" in config && !("sketch" in config)) {
-        const { param, value, ...rest } = config as Record<string, unknown>;
-        row = { ...(idx >= 0 ? sess.hardwareSettings[idx] : {}), ...rest, [param as string]: value } as FirmwareConfig;
-      }
-      const updated =
-        idx >= 0
-          ? sess.hardwareSettings.map((h, i) => (i === idx ? row : h))
-          : [...sess.hardwareSettings, row];
-      next.set(id, { ...sess, hardwareSettings: updated });
-      return { sessions: next };
-    }),
+    set((s) =>
+      updateSession(s, id, (sess) => {
+        const device = (config as Record<string, unknown>).device as string | undefined;
+        const idx = device
+          ? sess.hardwareSettings.findIndex((h) => (h as Record<string, unknown>).device === device)
+          : -1;
+        const row = mergeHardwareRow(sess.hardwareSettings[idx], config);
+        return {
+          hardwareSettings: idx >= 0
+            ? sess.hardwareSettings.map((h, i) => (i === idx ? row : h))
+            : [...sess.hardwareSettings, row],
+        };
+      }),
+    ),
 
   updateHardwareUi: (id, updater) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, hardwareUi: { ...sess.hardwareUi, ...updater(sess.hardwareUi) } });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, (sess) => ({ hardwareUi: { ...sess.hardwareUi, ...updater(sess.hardwareUi) } }))),
 
   setPinOverrides: (id, overrides) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, pinOverrides: { ...sess.pinOverrides, ...overrides } });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, (sess) => ({ pinOverrides: { ...sess.pinOverrides, ...overrides } }))),
 
   setFirmwareCommands: (id, commands) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, firmwareCommands: commands });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, () => ({ firmwareCommands: commands }))),
 
   setFileConfig: (id, config) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, fileConfig: { ...sess.fileConfig, ...config } });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, (sess) => ({ fileConfig: { ...sess.fileConfig, ...config } }))),
 
   setExportState: (id, partial) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, { ...sess, exportState: { ...sess.exportState, ...partial } });
-      return { sessions: next };
-    }),
+    set((s) => updateSession(s, id, (sess) => ({ exportState: { ...sess.exportState, ...partial } }))),
 
   handleSplit: (id, segmentNumber) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const now = Date.now();
-      const segmentElapsedMs = sess.programStartTime
-        ? now - sess.programStartTime - sess.pausedTime
-          - (sess.state === "paused" && sess.pauseStartTime ? now - sess.pauseStartTime : 0)
-        : 0;
-      const next = new Map(s.sessions);
-      next.set(id, {
-        ...sess,
-        segmentNumber,
-        cumulativeInfusionCount: sess.cumulativeInfusionCount + sess.infusionCount,
-        cumulativePressCount: sess.cumulativePressCount + sess.pressCount,
-        cumulativeTrialCount: sess.cumulativeTrialCount + sess.trialCount,
-        cumulativeCsPlusCount: sess.cumulativeCsPlusCount + sess.csPlusCount,
-        cumulativeCsMinusCount: sess.cumulativeCsMinusCount + sess.csMinusCount,
-        cumulativeShockCount: sess.cumulativeShockCount + countShocks(sess.behaviorData),
-        cumulativeRhLeverCounts: {
-          active: sess.cumulativeRhLeverCounts.active + sess.rhLeverCounts.active,
-          timeout: sess.cumulativeRhLeverCounts.timeout + sess.rhLeverCounts.timeout,
-          inactive: sess.cumulativeRhLeverCounts.inactive + sess.rhLeverCounts.inactive,
-        },
-        cumulativeLhLeverCounts: {
-          active: sess.cumulativeLhLeverCounts.active + sess.lhLeverCounts.active,
-          timeout: sess.cumulativeLhLeverCounts.timeout + sess.lhLeverCounts.timeout,
-          inactive: sess.cumulativeLhLeverCounts.inactive + sess.lhLeverCounts.inactive,
-        },
-        cumulativeElapsedTime: sess.cumulativeElapsedTime + segmentElapsedMs,
-        exportState: { exporting: false, result: null, error: null },
-        programStartTime: now,
-        programEndTime: null,
-        pausedTime: 0,
-        pauseStartTime: sess.state === "paused" ? now : null,
-        behaviorData: [],
-        infusionCount: 0,
-        pressCount: 0,
-        trialCount: 0,
-        csPlusCount: 0,
-        csMinusCount: 0,
-        rhLeverCounts: { ...ZERO_LEVER },
-        lhLeverCounts: { ...ZERO_LEVER },
-      });
-      return { sessions: next };
-    }),
+    set((s) =>
+      updateSession(s, id, (sess) => {
+        const now = Date.now();
+        return {
+          segmentNumber,
+          ...foldSegmentIntoCumulative(sess, countShocks(sess.behaviorData), now),
+          exportState: emptyExportState(),
+          programStartTime: now,
+          programEndTime: null,
+          pausedTime: 0,
+          pauseStartTime: sess.state === "paused" ? now : null,
+          ...zeroEventFields(),
+        };
+      }),
+    ),
 
   handleRestart: (id) =>
-    set((s) => {
-      const sess = s.sessions.get(id);
-      if (!sess) return s;
-      const next = new Map(s.sessions);
-      next.set(id, {
-        ...sess,
+    set((s) =>
+      updateSession(s, id, () => ({
         state: "running",
-        exportState: { exporting: false, result: null, error: null },
-        behaviorData: [],
-        frameData: [],
-        slmData: [],
-        infusionCount: 0,
-        serverInfusionCount: null,
-        infusionsByPump: null,
-        pressCount: 0,
-        trialCount: 0,
-        csPlusCount: 0,
-        csMinusCount: 0,
-        rhLeverCounts: { ...ZERO_LEVER },
-        lhLeverCounts: { ...ZERO_LEVER },
-        segmentNumber: 0,
-        cumulativeInfusionCount: 0,
-        cumulativePressCount: 0,
-        cumulativeTrialCount: 0,
-        cumulativeCsPlusCount: 0,
-        cumulativeCsMinusCount: 0,
-        cumulativeShockCount: 0,
-        cumulativeRhLeverCounts: { ...ZERO_LEVER },
-        cumulativeLhLeverCounts: { ...ZERO_LEVER },
-        cumulativeElapsedTime: 0,
+        exportState: emptyExportState(),
+        ...zeroLiveFields(),
+        ...zeroCumulativeFields(),
+        ...zeroTimingFields(),
         programStartTime: Date.now(),
-        programEndTime: null,
-        pausedTime: 0,
-        pauseStartTime: null,
-      });
-      return { sessions: next };
-    }),
+      })),
+    ),
 }));
