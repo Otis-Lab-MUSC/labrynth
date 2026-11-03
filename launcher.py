@@ -108,16 +108,18 @@ if not hasattr(sys, "_MEIPASS"):
             return (int(_major), int(_minor), int(_patch), _stage, int(_num or 0))
 
         with open(os.path.join(_LABRYNTH_ROOT, "pyproject.toml")) as _f:
-            _pin = re.search(r'reacher2p>=([^"]+)"', _f.read()).group(1)
-        import reacher
-        _have, _want = _version_key(reacher.__version__), _version_key(_pin)
-        if _have and _want and _have < _want:
-            logger.warning(
-                f"WARNING: reacher {reacher.__version__} is installed but this "
-                f"Labrynth pins reacher2p>={_pin}.\n"
-                "         The frontend may fail against an older backend.\n"
-                "         Run `pip install -e ../reacher` from the labrynth/ directory."
-            )
+            _pin_match = re.search(r'reacher2p>=([^"]+)"', _f.read())
+        if _pin_match is not None:
+            _pin = _pin_match.group(1)
+            import reacher
+            _have, _want = _version_key(reacher.__version__), _version_key(_pin)
+            if _have and _want and _have < _want:
+                logger.warning(
+                    f"WARNING: reacher {reacher.__version__} is installed but this "
+                    f"Labrynth pins reacher2p>={_pin}.\n"
+                    "         The frontend may fail against an older backend.\n"
+                    "         Run `pip install -e ../reacher` from the labrynth/ directory."
+                )
     except Exception:
         pass
 

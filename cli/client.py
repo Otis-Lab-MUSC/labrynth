@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import asyncio
 import os
+from collections.abc import Mapping
+from typing import cast
 from urllib.parse import quote
 
 import httpx
@@ -82,15 +84,24 @@ class ReacherClient:
         token = f"?token={quote(self.api_key)}" if self.api_key else ""
         return f"{ws_base}{path}{token}"
 
-    async def _req(self, method: str, path: str, *, local: bool = False, **kw) -> dict[str, object]:
+    async def _req(
+        self,
+        method: str,
+        path: str,
+        *,
+        local: bool = False,
+        json: object | None = None,
+        params: Mapping[str, str | int] | None = None,
+        timeout: float | None = None,
+    ) -> dict[str, object]:
         """Send a request, retrying on rate limit, and return the decoded JSON body."""
         url = path if local else self._path(path)
-        r = await self._http.request(method, url, **kw)
+        r = await self._http.request(method, url, json=json, params=params, timeout=timeout)
         for attempt in range(_RATE_LIMIT_RETRIES):
             if r.status_code != 429:
                 break
             await asyncio.sleep(0.25 * (attempt + 1))
-            r = await self._http.request(method, url, **kw)
+            r = await self._http.request(method, url, json=json, params=params, timeout=timeout)
         if r.is_error:
             detail = ""
             try:
@@ -100,7 +111,7 @@ class ReacherClient:
             raise httpx.HTTPStatusError(
                 f"{r.status_code} {detail or r.reason_phrase}", request=r.request, response=r,
             )
-        return r.json()
+        return cast("dict[str, object]", r.json())
 
     # ── Health ─────────────────────────────────────────────
     async def health(self) -> dict[str, object]:

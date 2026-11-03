@@ -316,7 +316,8 @@ def main() -> None:
         if re.match(r"^\d+\.\d+\.\d+$", current):
             print(f"OK: {current} is a stable version")
             return
-        base = re.match(r"^(\d+\.\d+\.\d+)", current).group(1)
+        base_match = re.match(r"^(\d+\.\d+\.\d+)", current)
+        base = base_match.group(1) if base_match else current
         print(
             f"Error: Stable release requires a stable version; current is {current}. "
             f"Bump to {base} first.",
