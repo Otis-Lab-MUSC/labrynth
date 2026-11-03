@@ -1,5 +1,5 @@
-// Run (from web/): node --test tests/*.test.mjs
-import test from "node:test";
+// Run (from web/): npm test
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { LIMIT_DEFAULTS, getMissingLimitFields, buildLimitPayload } from "../src/lib/limits.ts";
 import { randomUUID } from "../src/lib/uuid.ts";
@@ -39,9 +39,9 @@ test("buildLimitPayload sends only what the server can take", () => {
   assert.deepEqual(buildLimitPayload(limits({ limitType: "Trials" })), { type: "Trials" });
 });
 
-test("randomUUID falls back when crypto.randomUUID is missing (plain-HTTP page)", (t) => {
+test("randomUUID falls back when crypto.randomUUID is missing (plain-HTTP page)", ({ onTestFinished }) => {
   const real = globalThis.crypto.randomUUID;
-  t.after(() => { globalThis.crypto.randomUUID = real; });
+  onTestFinished(() => { globalThis.crypto.randomUUID = real; });
   globalThis.crypto.randomUUID = undefined;
   const ids = new Set(Array.from({ length: 50 }, () => randomUUID()));
   assert.equal(ids.size, 50);
