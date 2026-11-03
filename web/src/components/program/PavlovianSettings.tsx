@@ -74,7 +74,6 @@ export function PavlovianSettings({ sessionId }: Props) {
   // Seed scalar + pulse values once the spec list arrives (or the session
   // changes). Keyed on (sessionId, specs) so user edits within a session aren't
   // clobbered. Values prefer stored params, then preset/local default, then 0.
-  //
   // `hasStoredParams` is in the dep list, not `pavlovianParams` itself: a "Full Reset"
   // nulls the stored params underneath a panel that never unmounts
   // (useSessionStore.resetSessionData), and keying only on (sessionId, specs) left these

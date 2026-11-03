@@ -5,7 +5,7 @@ export type SessionState =
   | "running"
   | "paused"
   | "stopped"
-  | "disconnected";  // Fix: XL-003 — Serial disconnect surfaced to frontend
+  | "disconnected";
 
 // Keep in sync with reacher/src/reacher/uploader/boards.py BOARD_PROFILES
 export type BoardType = "uno" | "mega";
@@ -32,7 +32,7 @@ export interface ContingencyConfig {
 
 export interface LeverUiState extends DeviceArmState {
   timeout: number;
-  /** Which presses start the timeout window: 0 = every active press (legacy
+  /** Which presses start the timeout window: 0 = every active press (the
    *  default), 1 = only the press that triggers the reward chain. Sent as
    *  command 1077 (RH) / 1377 (LH). Both codes write one scheduler-wide flag in
    *  firmware — exactly like the `timeout` interval above — so the two levers
@@ -60,8 +60,8 @@ export interface LaserUiState extends DeviceArmState {
   duration: number;
   mode: "contingent" | "independent" | "rh_lever" | "lh_lever" | "cs_plus" | "cs_minus" | "cs_both";
   phase?: "reward" | "cue";  // Pavlovian only — which trial phase triggers laser
-  contingency: "any" | "rh" | "lh" | "independent";  // operant lever routing (#67)
-  onsetDelay: number;  // ms from trigger to laser onset (#67/#69)
+  contingency: "any" | "rh" | "lh" | "independent";  // operant lever routing
+  onsetDelay: number;  // ms from trigger to laser onset
 }
 
 export interface MicroscopeUiState extends DeviceArmState {
@@ -233,9 +233,9 @@ export type WSMessage =
   | { type: "error"; session_id: string; data: { level: string; device: string; desc: string; timestamp: number } }
   | { type: "upload_progress"; session_id: string; data: { percent: number; stage: string } }
   | { type: "session_state"; session_id: string; data: { state: SessionState } }
-  | { type: "disconnect"; session_id: string; data: { reason: string } }  // Fix: XL-003
-  | { type: "export_failed"; session_id: string; data: { reason: string } }  // Fix: F-005
-  | { type: "kernel_error"; session_id: string; data: { reason: string; raw: string } }  // Fix: F-006
+  | { type: "disconnect"; session_id: string; data: { reason: string } }
+  | { type: "export_failed"; session_id: string; data: { reason: string } }
+  | { type: "kernel_error"; session_id: string; data: { reason: string; raw: string } }
   | { type: "split"; session_id: string; data: { segment_number: number; export_path: string } }
   | { type: "restart"; session_id: string; data: Record<string, never> }
   | { type: "server_suspended"; session_id: string; data: { reason: string; hard_kill_in: number } }

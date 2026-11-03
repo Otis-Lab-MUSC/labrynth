@@ -33,7 +33,7 @@ export function LaserControl({ sessionId, paradigm }: Props) {
   const isPavlovian = paradigm === "pavlovian";
 
   // In Pavlovian the laser fires within a single trial phase, so cap the onset delay to that
-  // phase window (cue=213, consumption=215) — firmware clamps too, this keeps the UI honest (#69).
+  // phase window (cue=213, consumption=215) — firmware clamps too, this keeps the UI honest.
   const delayMax = isPavlovian
     ? Math.max(0, (phase === "cue" ? (pavParams?.[213] ?? 2000) : (pavParams?.[215] ?? 5000)) - 1)
     : 600000;

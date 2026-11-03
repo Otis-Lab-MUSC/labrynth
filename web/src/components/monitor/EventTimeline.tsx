@@ -22,7 +22,7 @@ interface Props {
   events: BehaviorEvent[];
 }
 
-// Firmware v2.4.x+ names; legacy v2.3.x names kept as aliases so old sessions still render
+// Firmware v2.4.x+ names; v2.3.x names kept as aliases so old sessions still render
 const DEVICE_COLORS: Record<string, string> = {
   LEVER_RH:   "#00ff41",
   LEVER_LH:   "#41ff00",
@@ -35,7 +35,7 @@ const DEVICE_COLORS: Record<string, string> = {
   SLM:        "#ff00ff",
   AUX_1:      "#ff2d2d",
   CONTROLLER: "#888888",
-  // Bare CUE/PUMP are current level-007 names, not legacy: PavlovianScheduler
+  // Bare CUE/PUMP are current level-007 names, not aliases: PavlovianScheduler
   // spells the *primaries* without the _1 suffix the operant Scheduler uses
   // (it still emits CUE_2/PUMP_2), so both spellings are live and paradigm-
   // dependent. See PavlovianScheduler.cpp / Scheduler.cpp LogDeviceActivation.
@@ -54,7 +54,7 @@ const LEVER_EVENT_COLORS: Record<string, Record<string, string>> = {
     TIMEOUT_PRESS:  "#2eaa00",
     INACTIVE_PRESS: "#666666",
   },
-  // Legacy aliases
+  // Aliases for older firmware
   RH_LEVER: {
     ACTIVE_PRESS:   "#00ff41",
     TIMEOUT_PRESS:  "#00aa2e",
@@ -79,7 +79,7 @@ const DEVICE_DISPLAY_NAMES: Record<string, string> = {
   SLM: "SLM",
   AUX_1: "Shock Output",
   CONTROLLER: "Controller",
-  // See DEVICE_COLORS: bare CUE/PUMP are current, not legacy.
+  // See DEVICE_COLORS: bare CUE/PUMP are current names, not aliases.
   CUE: "Cue 1",
   PUMP: "Pump 1",
 };

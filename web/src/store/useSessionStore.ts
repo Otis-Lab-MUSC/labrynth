@@ -283,7 +283,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   pushEvent: (id, event) =>
     set((s) => {
       const sess = s.sessions.get(id);
-      // Fix #15: accept events while running OR paused — a paused session can
+      // : accept events while running OR paused — a paused session can
       // still receive in-flight events, and they should count. The gate still
       // blocks pre-start states (idle/uploading/connected) so events before a
       // program starts are not accumulated.

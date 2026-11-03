@@ -115,7 +115,7 @@ function handleMessage(msg: WSMessage) {
   switch (msg.type) {
     case "event": {
       const eventData = msg.data as BehaviorEvent;
-      // Fix #15: in proxy mode the session can read a pre-running state here
+      // : in proxy mode the session can read a pre-running state here
       // because the Pi's earlier transitions were broadcast before the WS relay
       // connected and were lost. Events are emitted pre-run too (lick circuit,
       // lever presses), so an event proves nothing about the run: ask the
@@ -232,7 +232,7 @@ function handleMessage(msg: WSMessage) {
       pushLog("info", `Session ${state}`, msg.session_id);
       break;
     }
-    // Fix: XL-003 — Handle serial disconnect event
+    // Handle serial disconnect event
     case "disconnect": {
       const { reason, reconnecting } = msg.data as { reason: string; reconnecting?: boolean };
       updateState(msg.session_id, "disconnected");
@@ -267,13 +267,13 @@ function handleMessage(msg: WSMessage) {
       pushLog("warn", text, msg.session_id);
       break;
     }
-    // Fix: F-005 — Handle export_failed event from backend
+    // Handle export_failed event from backend
     case "export_failed": {
       const { reason } = msg.data as { reason: string };
       pushLog("error", `Auto-export failed: ${reason}`, msg.session_id);
       break;
     }
-    // Fix: F-006 — Handle kernel_error event from backend
+    // Handle kernel_error event from backend
     case "kernel_error": {
       const { reason } = msg.data as { reason: string };
       pushLog("error", `Kernel error: ${reason}`, msg.session_id);
@@ -322,7 +322,7 @@ function handleMessage(msg: WSMessage) {
       }
       break;
     }
-    // Fix: F-014 — Log unhandled message types so future protocol changes are visible
+    // Log unhandled message types so future protocol changes are visible
     default:
       console.warn(`[ReacherWS] Unhandled message type: ${(msg as { type: string }).type}`, msg);
       break;
@@ -337,7 +337,7 @@ async function recoverMissedEvents(sessionId: string) {
   const client = useMachineStore.getState().getClient(sess.machineId);
   if (!client) return;
 
-  // Fix #15: pull the authoritative session state from the backend on every
+  // : pull the authoritative session state from the backend on every
   // (re)connect. In proxy mode the WS relay connects after the Pi has already
   // emitted its idle->connected->running transitions, so the local session can
   // be stranded at "idle" — which the early-return below would treat as "nothing
@@ -425,7 +425,7 @@ export function useSessionWebSockets() {
         pendingRef.current.add(id);
         const machineId = sess!.machineId!;
         const onGiveUp = () => {
-          // Fix: F-015 — Mark remote machine offline when WS exhausts reconnect attempts.
+          // Mark remote machine offline when WS exhausts reconnect attempts.
           // Buffered event data is preserved: the Pi writes event_log.jsonl regardless of
           // WS state, and the frontend React session state is not cleared on disconnect.
           useMachineStore.getState().setMachineOnline(machineId, false);
@@ -443,7 +443,7 @@ export function useSessionWebSockets() {
           }
         });
       } else {
-        // Local machine or legacy remote with synchronous token
+        // Local machine or direct-key remote with synchronous token
         const localOnGiveUp = () => {
           const sessState = useSessionStore.getState().sessions.get(id)?.state;
           if (sessState !== "running" && sessState !== "paused") {

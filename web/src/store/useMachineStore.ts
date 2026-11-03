@@ -114,10 +114,10 @@ export const useMachineStore = create<MachineStore>((set, get) => {
   }));
 
   // Pre-populate client cache for persisted machines.
-  // If a legacy entry has apiKey, use direct client (backward compat); otherwise proxy mode.
+  // If an entry has apiKey, use direct client (backward compat); otherwise proxy mode.
   for (const m of persisted) {
     if (m.apiKey) {
-      // Legacy: stored key in browser — use it directly while we still have it
+      // Stored key in browser — use it directly while we still have it
       _clients.set(m.deviceId, new MachineApiClient(m.url, m.apiKey));
     } else {
       _clients.set(m.deviceId, new MachineApiClient("", undefined, m.deviceId));
@@ -186,7 +186,7 @@ export const useMachineStore = create<MachineStore>((set, get) => {
         ready: true,
       }));
 
-      // Migrate any legacy persisted entries that still have apiKey stored in localStorage
+      // Migrate persisted entries that still have apiKey stored in localStorage
       _migrateLegacyKeys(persisted);
     },
 
@@ -488,7 +488,7 @@ async function _pollDiscovery(
 }
 
 // ---------------------------------------------------------------------------
-// Legacy migration: move apiKey from localStorage to server-side storage
+// Migration: move apiKey from localStorage to server-side storage
 // ---------------------------------------------------------------------------
 
 async function _migrateLegacyKeys(persisted: PersistedMachine[]) {
@@ -505,11 +505,11 @@ async function _migrateLegacyKeys(persisted: PersistedMachine[]) {
       // Swap to proxy client now that key is stored server-side
       _clients.set(m.deviceId, new MachineApiClient("", undefined, m.deviceId));
     } catch {
-      // Migration failed for this machine — keep legacy client in place
+      // Migration failed for this machine — keep the direct client in place
     }
   }
 
-  // Re-persist without apiKey so legacy format is cleaned up
+  // Re-persist without apiKey so the old format is cleaned up
   const current = useMachineStore.getState().machines;
   persistRemoteMachines(current);
 }

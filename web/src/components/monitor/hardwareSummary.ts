@@ -43,13 +43,13 @@ export interface SummaryContext {
 // Keying FORMATTERS by this union as a mapped type makes the summary
 // renderer exhaustive: add a device to HardwareUiState and the build fails here
 // until it gets a formatter — the guard against the summary silently drifting
-// from the configured-hardware schema (#78).
+// from the configured-hardware schema.
 type SummaryDeviceKey = Exclude<keyof HardwareUiState, "testMode">;
 
 const leverFilterLabel: Record<"rh" | "lh", string> = { rh: "RH", lh: "LH" };
 
 // Single source of truth for the two gates that the start-summary and the
-// handleStart send-path must agree on (#80). Both the display formatters here and
+// handleStart send-path must agree on. Both the display formatters here and
 // SessionStartModal's command emission derive from these, so what is sent to the
 // firmware can never diverge from what the confirmation modal shows.
 
@@ -114,7 +114,7 @@ function laserParts(s: LaserUiState, ctx: SummaryContext): string[] {
     // Pavlovian: `mode` is authoritative (independent vs. trial-paired CS filter) + phase.
     // Any non-independent mode is trial-paired; only cs_* carry a specific filter label.
     // The default/leftover modes ("contingent", "rh_lever", "lh_lever") must still read as Trial-Paired
-    // rather than silently dropping the routing token (#78).
+    // rather than silently dropping the routing token.
     if (s.mode === "independent") {
       parts.push("Independent");
     } else if (s.mode === "cs_plus" || s.mode === "cs_minus" || s.mode === "cs_both") {
@@ -128,7 +128,7 @@ function laserParts(s: LaserUiState, ctx: SummaryContext): string[] {
     }
   } else {
     // Operant: `contingency` is authoritative routing — `mode` is only touched by the
-    // Pavlovian UI and can be stale here, so it must NOT drive the summary (#78).
+    // Pavlovian UI and can be stale here, so it must NOT drive the summary.
     parts.push(`Contingent: ${laserRoutingLabel[s.contingency]}`);
   }
   return parts;

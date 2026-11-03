@@ -27,8 +27,8 @@ export function ContingencySection({ sessionId, deviceKey, paradigm }: Props) {
   // pavlovian (stimulus-driven, not operant), so the lever-routing controls are hidden.
   const showLevers = paradigm !== "pavlovian" && paradigm !== "omission";
 
-  // Clear any previously-set lever routing when switching into a non-press-contingent
-  // paradigm, so no stale RH/LH filter stays active on the device firmware (#66).
+  // Clear any lever routing when switching into a non-press-contingent
+  // paradigm, so no stale RH/LH filter stays active on the device firmware.
   useEffect(() => {
     const current = device?.contingency.leverFilter;
     if (showLevers || !current || current === "none") return;
