@@ -1,5 +1,5 @@
-// Run (from web/): node --test tests/*.test.mjs   (Node >= 22.18 strips the TypeScript types itself)
-import test from "node:test";
+// Run (from web/): npm test
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { fixedTicks, formatTickLabel } from "../src/lib/timelineScale.ts";
 

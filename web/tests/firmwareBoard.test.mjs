@@ -1,5 +1,5 @@
-// Run (from web/): node --test tests/*.test.mjs
-import test from "node:test";
+// Run (from web/): npm test
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { boardFromParadigm, resolveBoard } from "../src/lib/firmwareBoard.ts";
 
