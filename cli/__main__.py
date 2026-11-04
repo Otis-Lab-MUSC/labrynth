@@ -52,14 +52,8 @@ def _wait_for_server(port: int, timeout: float = 15.0) -> bool:
     return False
 
 
-def main() -> None:
-    """Parse arguments, start the backend if needed, and run the terminal UI."""
-    # Frozen-bundle backend trampoline: when the CLI re-spawns itself as the
-    # server (see below), run the backend immediately and skip the TUI.
-    if os.environ.get("REACHER_RUN_BACKEND") == "1":
-        _run_backend()
-        return
-
+def _parse_arguments() -> argparse.Namespace:
+    """Parse the command-line arguments."""
     parser = argparse.ArgumentParser(description="REACHER Terminal CLI")
     parser.add_argument(
         "--port",
@@ -87,7 +81,64 @@ def main() -> None:
             "does not exercise the interactive event loop."
         ),
     )
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def _spawn_backend(port: int) -> subprocess.Popen[bytes]:
+    """Start the REACHER backend as a subprocess and arrange for it to be stopped at exit."""
+    print(f"Starting REACHER backend on port {port}...")
+    env = os.environ.copy()
+    env["REACHER_PORT"] = str(port)
+    # A terminal UI must never pop a GUI browser window, even when the
+    # backend resolves a static dir (in dev, from the labrynth repo root,
+    # it finds web/dist and would open one). Suppress it explicitly.
+    env["REACHER_NO_BROWSER"] = "1"
+    if getattr(sys, "frozen", False):
+        # Frozen bundle: sys.executable is the LabrynthCLI binary, which has
+        # no `-m reacher` entry. Re-launch ourselves as the backend instead
+        # (the REACHER_RUN_BACKEND trampoline at the top of main()).
+        env["REACHER_RUN_BACKEND"] = "1"
+        cmd = [sys.executable]
+    else:
+        cmd = [sys.executable, "-m", "reacher"]
+    server_proc = subprocess.Popen(cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def _cleanup() -> None:
+        """Terminate the spawned backend, killing it if it ignores the request."""
+        if server_proc.poll() is None:
+            server_proc.terminate()
+            try:
+                server_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                server_proc.kill()
+
+    atexit.register(_cleanup)
+    return server_proc
+
+
+def _ensure_backend(args: argparse.Namespace) -> None:
+    """Start the backend unless one is running or ``--no-server`` was given."""
+    if args.no_server:
+        return
+    if _is_running(args.port):
+        print(f"Backend already running on port {args.port}.")
+        return
+    _spawn_backend(args.port)
+    if not _wait_for_server(args.port):
+        print("ERROR: Backend failed to start. Is `reacher` installed?", file=sys.stderr)
+        sys.exit(1)
+    print("Backend ready.")
+
+
+def main() -> None:
+    """Parse arguments, start the backend if needed, and run the terminal UI."""
+    # Frozen-bundle backend trampoline: when the CLI re-spawns itself as the
+    # server (see below), run the backend immediately and skip the TUI.
+    if os.environ.get("REACHER_RUN_BACKEND") == "1":
+        _run_backend()
+        return
+
+    args = _parse_arguments()
 
     if args.selftest:
         from cli.app import ReacherCLI
@@ -97,49 +148,7 @@ def main() -> None:
         print("selftest OK")
         return
 
-    server_proc = None
-
-    if not args.no_server and not _is_running(args.port):
-        print(f"Starting REACHER backend on port {args.port}...")
-
-        env = os.environ.copy()
-        env["REACHER_PORT"] = str(args.port)
-        # A terminal UI must never pop a GUI browser window, even when the
-        # backend resolves a static dir (in dev, from the labrynth repo root,
-        # it finds web/dist and would open one). Suppress it explicitly.
-        env["REACHER_NO_BROWSER"] = "1"
-        if getattr(sys, "frozen", False):
-            # Frozen bundle: sys.executable is the LabrynthCLI binary, which has
-            # no `-m reacher` entry. Re-launch ourselves as the backend instead
-            # (the REACHER_RUN_BACKEND trampoline at the top of main()).
-            env["REACHER_RUN_BACKEND"] = "1"
-            cmd = [sys.executable]
-        else:
-            cmd = [sys.executable, "-m", "reacher"]
-        server_proc = subprocess.Popen(
-            cmd,
-            env=env,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-
-        def _cleanup() -> None:
-            """Terminate the spawned backend, killing it if it ignores the request."""
-            if server_proc and server_proc.poll() is None:
-                server_proc.terminate()
-                try:
-                    server_proc.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    server_proc.kill()
-
-        atexit.register(_cleanup)
-
-        if not _wait_for_server(args.port):
-            print("ERROR: Backend failed to start. Is `reacher` installed?", file=sys.stderr)
-            sys.exit(1)
-        print("Backend ready.")
-    elif not args.no_server:
-        print(f"Backend already running on port {args.port}.")
+    _ensure_backend(args)
 
     from cli.app import ReacherCLI
 

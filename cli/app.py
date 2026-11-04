@@ -430,6 +430,12 @@ class ReacherCLI(
         from a menu, and printable keys, Backspace edit the text in input mode.
         """
         kb = KeyBindings()
+        self._bind_navigation_keys(kb)
+        self._bind_editing_keys(kb)
+        return kb
+
+    def _bind_navigation_keys(self, kb: KeyBindings) -> None:
+        """Bind arrows, Enter and Escape."""
 
         @kb.add("up")
         def _up(event: KeyPressEvent) -> None:
@@ -470,6 +476,9 @@ class ReacherCLI(
                 if self.menu.parent:
                     self._pop_menu()
 
+    def _bind_editing_keys(self, kb: KeyBindings) -> None:
+        """Bind ``q``, Backspace and printable characters."""
+
         @kb.add("q")
         def _q(event: KeyPressEvent) -> None:
             if self.mode == "menu":
@@ -492,8 +501,6 @@ class ReacherCLI(
                 if char.isprintable() and len(char) == 1:
                     self.input_value += char
                     self._invalidate()
-
-        return kb
 
     # ───────────────────────────────────────────────────────────────────
     # Application lifecycle
