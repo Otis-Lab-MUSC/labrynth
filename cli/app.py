@@ -31,10 +31,12 @@ from .constants import (  # noqa: F401 -- re-exported for callers of cli.app
     SYSTEM_COMMANDS,
 )
 from .data_actions import DataActionsMixin
+from .hardware_actions import HardwareActionsMixin
 from .machine_actions import MachineActionsMixin
 from .menus import MenuMixin
 from .monitor import MonitorMixin
 from .program_actions import ProgramActionsMixin
+from .run_actions import RunActionsMixin
 from .session_actions import SessionActionsMixin
 from .state import MenuState, SessionState
 
@@ -93,7 +95,9 @@ class ReacherCLI(
     MachineActionsMixin,
     MenuMixin,
     MonitorMixin,
+    HardwareActionsMixin,
     ProgramActionsMixin,
+    RunActionsMixin,
     SessionActionsMixin,
 ):
     """The terminal UI: menus, prompts and live monitor over the REACHER backend."""

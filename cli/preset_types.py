@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from typing import TypedDict, Union
 
-
 Contingency = dict[str, Union[str, int]]
 """Lever filter and onset delay that gate a cue or pump."""
 
