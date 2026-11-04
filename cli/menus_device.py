@@ -82,6 +82,42 @@ class DeviceMenuMixin(CliHost):
             v = dev.get(key)
         return "unknown" if v is None else str(v)
 
+    def _device_param_items(self, device_id: str, cfg: dict[str, object], allowed: set[int]) -> list[MenuItem]:
+        """Build the parameter items the running firmware declares.
+
+        Lever filter and onset delay exist only on operant builds; timeout mode
+        not on omission.
+        """
+        items = []
+        for p in cfg.get("params", []):
+            if allowed and p["code"] not in allowed:
+                continue
+            if p.get("choices"):
+                action = lambda code=p["code"], lbl=p["label"], ch=p["choices"]: self._prompt_select(
+                    f"{lbl}:", ch, lambda val, c=code: self._send_hw_command(c, int(val))
+                )
+            else:
+                action = lambda code=p["code"], lbl=p["label"]: self._prompt_int_input(
+                    f"Enter {lbl}:", lambda val, c=code: self._send_hw_command(c, val)
+                )
+            items.append(
+                MenuItem(f"Set {p['label']}", action=action, suffix=f"({self._param_value(device_id, p['key'])})")
+            )
+        return items
+
+    def _laser_mode_items(self, allowed: set[int]) -> list[MenuItem]:
+        """Build the laser mode and phase items, filtered to what this firmware accepts."""
+        s = self.session
+        laser = s.hw["laser"] if s else {}
+        items = [
+            MenuItem(f"──── Mode: {laser.get('mode', '?')}  phase: {laser.get('phase', '?')} ────", is_separator=True)
+        ]
+        for label, code in LASER_MODE_ITEMS:
+            if allowed and code not in allowed:
+                continue
+            items.append(MenuItem(label, action=lambda c=code: self._send_laser_mode(c)))
+        return items
+
     def _device_menu(self, device_id: str) -> MenuState:
         """Build the menu for one device: arm, test, parameters and role."""
         cfg = DEVICE_BY_ID[device_id]
@@ -100,40 +136,15 @@ class DeviceMenuMixin(CliHost):
         if cfg.get("test") is not None and (not allowed or cfg["test"] in allowed):
             items.append(MenuItem("Test", action=lambda: self._send_hw_command(cfg["test"])))
 
-        # Parameters the running firmware declares (lever filter and onset
-        # delay exist only on operant builds; timeout mode not on omission).
-        for p in cfg.get("params", []):
-            if allowed and p["code"] not in allowed:
-                continue
-            if p.get("choices"):
-                action = lambda code=p["code"], lbl=p["label"], ch=p["choices"]: self._prompt_select(
-                    f"{lbl}:", ch, lambda val, c=code: self._send_hw_command(c, int(val))
-                )
-            else:
-                action = lambda code=p["code"], lbl=p["label"]: self._prompt_int_input(
-                    f"Enter {lbl}:", lambda val, c=code: self._send_hw_command(c, val)
-                )
-            items.append(
-                MenuItem(f"Set {p['label']}", action=action, suffix=f"({self._param_value(device_id, p['key'])})")
-            )
+        items += self._device_param_items(device_id, cfg, allowed)
 
         # Role (levers)
         if "role" in cfg:
             items.append(MenuItem("Set Active", action=lambda: self._send_hw_command(cfg["role"]["active"])))
             items.append(MenuItem("Set Inactive", action=lambda: self._send_hw_command(cfg["role"]["inactive"])))
 
-        # Mode / phase (laser), filtered to what this firmware accepts
         if device_id == "laser":
-            laser = s.hw["laser"] if s else {}
-            items.append(
-                MenuItem(
-                    f"──── Mode: {laser.get('mode', '?')}  phase: {laser.get('phase', '?')} ────", is_separator=True
-                )
-            )
-            for label, code in LASER_MODE_ITEMS:
-                if allowed and code not in allowed:
-                    continue
-                items.append(MenuItem(label, action=lambda c=code: self._send_laser_mode(c)))
+            items += self._laser_mode_items(allowed)
 
         items.append(MenuItem("Back", action=self._pop_menu))
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from . import presets as P
 from .constants import (
     COUNTED_PUMP_CHOICES,
@@ -13,6 +15,13 @@ from .constants import (
 )
 from .host import CliHost
 from .state import MenuItem, MenuState
+
+PARADIGM_SETTING_ROWS = (
+    (("fr", "pr"), "Set Ratio", "Enter ratio:", "ratio", "ratio", 1),
+    (("pr",), "Set PR Step", "Enter PR step:", "step", "step", 1),
+    (("vi",), "Set VI Interval (ms)", "Enter VI interval (ms):", "vi_interval", "interval", 30000),
+    (("omission",), "Set Omission Interval (ms)", "Enter omission interval (ms):", "om_interval", "interval", 30000),
+)
 
 
 class ProgramMenuMixin(CliHost):
@@ -76,52 +85,36 @@ class ProgramMenuMixin(CliHost):
         ps = s.paradigm_settings if s else {}
 
         items: list[MenuItem] = []
-        if paradigm in ("fr", "pr"):
-            items.append(
-                MenuItem(
-                    "Set Ratio",
-                    action=lambda: self._prompt_int_input(
-                        "Enter ratio:", lambda v: self._send_paradigm_setting("ratio", v)
-                    ),
-                    suffix=f"({ps.get('ratio', 1)})",
+        for paradigms, title, prompt, key, ps_key, default in PARADIGM_SETTING_ROWS:
+            if paradigm in paradigms:
+                items.append(
+                    MenuItem(
+                        title,
+                        action=lambda prompt=prompt, key=key: self._prompt_int_input(
+                            prompt, lambda v: self._send_paradigm_setting(key, v)
+                        ),
+                        suffix=f"({ps.get(ps_key, default)})",
+                    )
                 )
-            )
-        if paradigm == "pr":
-            items.append(
-                MenuItem(
-                    "Set PR Step",
-                    action=lambda: self._prompt_int_input(
-                        "Enter PR step:", lambda v: self._send_paradigm_setting("step", v)
-                    ),
-                    suffix=f"({ps.get('step', 1)})",
-                )
-            )
-        if paradigm == "vi":
-            items.append(
-                MenuItem(
-                    "Set VI Interval (ms)",
-                    action=lambda: self._prompt_int_input(
-                        "Enter VI interval (ms):", lambda v: self._send_paradigm_setting("vi_interval", v)
-                    ),
-                    suffix=f"({ps.get('interval', 30000)})",
-                )
-            )
-        if paradigm == "omission":
-            items.append(
-                MenuItem(
-                    "Set Omission Interval (ms)",
-                    action=lambda: self._prompt_int_input(
-                        "Enter omission interval (ms):", lambda v: self._send_paradigm_setting("om_interval", v)
-                    ),
-                    suffix=f"({ps.get('interval', 30000)})",
-                )
-            )
         if not items:
             hint = "Pavlovian: use Pavlovian Settings" if paradigm == "pavlovian" else "No paradigm selected"
             items.append(MenuItem(f"──── {hint} ────", is_separator=True))
 
         items.append(MenuItem("Back", action=self._pop_menu))
         return MenuState(title="Program > Paradigm Settings", items=items)
+
+    def _pavlovian_scalar_action(self, code: int, label: str, spec: dict[str, object]) -> Callable[[], object]:
+        """Return the prompt action for one scalar Pavlovian command."""
+        if code in ITI_CODES:
+            # Cross-validated against the other ITI values (Min <= Mean <= Max).
+            return lambda: self._prompt_int_input(f"Enter {label}:", lambda v: self._send_pavlovian_iti(code, v))
+        if spec.get("payload_type") == "bool":
+            return lambda: self._prompt_select(
+                f"{label}:",
+                [("Off", "0"), ("On", "1")],
+                lambda v: self._set_pavlovian_param(code, int(v)),
+            )
+        return lambda: self._prompt_int_input(f"Enter {label}:", lambda v: self._set_pavlovian_param(code, v))
 
     def _pavlovian_menu(self) -> MenuState:
         """Build the Pavlovian parameter menu from the firmware's command registry."""
@@ -151,21 +144,7 @@ class ProgramMenuMixin(CliHost):
         for sp in scalar:
             code = sp["code"]
             label = _label(code, sp)
-            if code in ITI_CODES:
-                # Cross-validated against the other ITI values (Min <= Mean <= Max).
-                action = lambda c=code, lbl=label: self._prompt_int_input(
-                    f"Enter {lbl}:", lambda v, c2=c: self._send_pavlovian_iti(c2, v)
-                )
-            elif sp.get("payload_type") == "bool":
-                action = lambda c=code, lbl=label: self._prompt_select(
-                    f"{lbl}:",
-                    [("Off", "0"), ("On", "1")],
-                    lambda v, c2=c: self._set_pavlovian_param(c2, int(v)),
-                )
-            else:
-                action = lambda c=code, lbl=label: self._prompt_int_input(
-                    f"Enter {lbl}:", lambda v, c2=c: self._set_pavlovian_param(c2, v)
-                )
+            action = self._pavlovian_scalar_action(code, label, sp)
             items.append(MenuItem(f"Set {label}", action=action, suffix=_suffix(code)))
 
         # Pulse-configuration block (0 = continuous tone), also registry-sourced.
@@ -190,6 +169,21 @@ class ProgramMenuMixin(CliHost):
             items.append(MenuItem("Reload commands", action=self._load_commands))
         items.append(MenuItem("Back", action=self._pop_menu))
         return MenuState(title="Program > Pavlovian Settings", items=items)
+
+    def _counted_pumps_item(self, counted: object) -> MenuItem:
+        """Build the Counted Pumps item, labelled with the current choice."""
+        counted_label = next(
+            (label for label, pumps in COUNTED_PUMP_CHOICES.values() if pumps == counted), str(counted)
+        )
+        return MenuItem(
+            "Set Counted Pumps",
+            action=lambda: self._prompt_select(
+                "Select Counted Pumps",
+                [(label, key) for key, (label, _) in COUNTED_PUMP_CHOICES.items()],
+                self._set_counted_pumps,
+            ),
+            suffix=f"({counted_label})",
+        )
 
     def _limits_menu(self) -> MenuState:
         """Build the menu for the session's stop limits."""
@@ -230,20 +224,5 @@ class ProgramMenuMixin(CliHost):
             MenuItem("Back", action=self._pop_menu),
         ]
         if s and current_type in ("Infusion", "Both"):
-            counted = s.limit_settings.get("counted_pumps")
-            counted_label = next(
-                (label for label, pumps in COUNTED_PUMP_CHOICES.values() if pumps == counted), str(counted)
-            )
-            items.insert(
-                3,
-                MenuItem(
-                    "Set Counted Pumps",
-                    action=lambda: self._prompt_select(
-                        "Select Counted Pumps",
-                        [(label, key) for key, (label, _) in COUNTED_PUMP_CHOICES.items()],
-                        self._set_counted_pumps,
-                    ),
-                    suffix=f"({counted_label})",
-                ),
-            )
+            items.insert(3, self._counted_pumps_item(s.limit_settings.get("counted_pumps")))
         return MenuState(title="Program > Limits", items=items)
