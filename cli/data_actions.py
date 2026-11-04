@@ -3,13 +3,8 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
 
 from .host import CliHost
-
-if TYPE_CHECKING:
-
-    pass
 
 
 class DataActionsMixin(CliHost):

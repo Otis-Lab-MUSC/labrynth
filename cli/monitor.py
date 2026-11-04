@@ -5,14 +5,10 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from typing import TYPE_CHECKING
 
 from . import presets as P
 from .constants import PUMP_DEVICES
 from .host import CliHost
-
-if TYPE_CHECKING:
-    pass
 
 
 class MonitorMixin(CliHost):

@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from . import presets as P
 from .host import CliHost
 from .state import SessionState
-
-if TYPE_CHECKING:
-    pass
 
 
 class SessionActionsMixin(CliHost):

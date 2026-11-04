@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
 
 from . import presets as P
 from .constants import (
@@ -20,9 +19,6 @@ from .constants import (
 )
 from .host import CliHost
 from .state import MenuItem, MenuState
-
-if TYPE_CHECKING:
-    pass
 
 
 def _digits(code: str) -> str:

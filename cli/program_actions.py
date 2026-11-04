@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING
 
 from . import presets as P
 from .constants import (
@@ -14,11 +13,8 @@ from .constants import (
     PARADIGM_SETTING_CODES,
     SYSTEM_COMMANDS,
 )
-from .preset_types import LimitDefaults
 from .host import CliHost
-
-if TYPE_CHECKING:
-    pass
+from .preset_types import LimitDefaults
 
 
 def _limits_from_preset(limit_defaults: LimitDefaults) -> dict[str, object]:

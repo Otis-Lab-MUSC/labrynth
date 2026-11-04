@@ -20,13 +20,13 @@ from prompt_toolkit.styles import Style
 from . import presets as P
 from .client import ReacherClient
 from .constants import (  # noqa: F401 -- re-exported for callers of cli.app
-    ITI_CODES,
-    PAV_LABEL_OVERRIDES,
-    PULSE_CODES,
     COUNTED_PUMP_CHOICES,
     DEVICE_CONFIGS,
+    ITI_CODES,
     ITI_DEFAULTS,
     PARADIGM_SETTING_CODES,
+    PAV_LABEL_OVERRIDES,
+    PULSE_CODES,
     PUMP_DEVICES,
     SYSTEM_COMMANDS,
 )

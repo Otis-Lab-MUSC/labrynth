@@ -3,13 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable
-from typing import TYPE_CHECKING
 
-from .menus import _digits
 from .host import CliHost
-
-if TYPE_CHECKING:
-    pass
+from .menus import _digits
 
 
 class MachineActionsMixin(CliHost):
