@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import AsyncIterable
 
 from .host import CliHost
 
@@ -60,14 +61,7 @@ class MonitorMixin(CliHost):
         # a socket without the token (403 before any session lookup).
         connected_once = False
         attempt = 0
-
-        async def _refresh_loop() -> None:
-            """Redraw the screen once a second so the elapsed clock advances."""
-            while True:
-                await asyncio.sleep(1)
-                self._invalidate()
-
-        refresh = asyncio.ensure_future(_refresh_loop())
+        refresh = asyncio.ensure_future(self._refresh_loop())
         try:
             # Retries forever with capped backoff: for a walk-away run the
             # live link must come back on its own after a Wi-Fi blip or a
@@ -82,33 +76,12 @@ class MonitorMixin(CliHost):
                             self._log("  [info] Live link restored")
                         connected_once = True
                         self._invalidate()
-                        async for raw in ws:
-                            try:
-                                msg = json.loads(raw)
-                            except json.JSONDecodeError:
-                                continue
-                            # A handler bug must not tear down the socket.
-                            try:
-                                self._handle_ws_message(msg)
-                            except Exception as exc:
-                                self._log(f"Bad {msg.get('type', '?')} message: {exc}", error=True)
-                            self._invalidate()
+                        await self._read_socket(ws)
                 except asyncio.CancelledError:
                     raise
                 except Exception as exc:
-                    self.ws_connected = False
                     attempt += 1
-                    delay = min(2 ** min(attempt - 1, 4), 15)
-                    if attempt in (1, 5) or attempt % 20 == 0:
-                        self._log(f"Live link down ({type(exc).__name__}: {exc}); retrying every {delay}s", error=True)
-                    self._invalidate()
-                    await asyncio.sleep(delay)
-                    # A session the host destroyed (orphan cleanup, another
-                    # client) will never accept a socket again: stop retrying.
-                    if attempt % 5 == 0 and not await self._session_still_exists(sid):
-                        self._log(f"Session {sid[:8]} no longer exists on {self.target_name}", error=True)
-                        if self.session and self.session.id == sid:
-                            self.session.state = "gone"
+                    if await self._handle_link_down(exc, attempt, sid):
                         return
                 else:
                     self.ws_connected = False
@@ -117,6 +90,43 @@ class MonitorMixin(CliHost):
         finally:
             refresh.cancel()
             self.ws_connected = False
+
+    async def _refresh_loop(self) -> None:
+        """Redraw the screen once a second so the elapsed clock advances."""
+        while True:
+            await asyncio.sleep(1)
+            self._invalidate()
+
+    async def _read_socket(self, ws: AsyncIterable[str | bytes]) -> None:
+        """Route every message from the open socket into the session."""
+        async for raw in ws:
+            try:
+                msg = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            # A handler bug must not tear down the socket.
+            try:
+                self._handle_ws_message(msg)
+            except Exception as exc:
+                self._log(f"Bad {msg.get('type', '?')} message: {exc}", error=True)
+            self._invalidate()
+
+    async def _handle_link_down(self, exc: Exception, attempt: int, sid: str) -> bool:
+        """Back off after a dropped link; return True when the session is gone for good."""
+        self.ws_connected = False
+        delay = min(2 ** min(attempt - 1, 4), 15)
+        if attempt in (1, 5) or attempt % 20 == 0:
+            self._log(f"Live link down ({type(exc).__name__}: {exc}); retrying every {delay}s", error=True)
+        self._invalidate()
+        await asyncio.sleep(delay)
+        # A session the host destroyed (orphan cleanup, another client) will
+        # never accept a socket again: stop retrying.
+        if attempt % 5 == 0 and not await self._session_still_exists(sid):
+            self._log(f"Session {sid[:8]} no longer exists on {self.target_name}", error=True)
+            if self.session and self.session.id == sid:
+                self.session.state = "gone"
+            return True
+        return False
 
     async def _session_still_exists(self, sid: str) -> bool:
         """Return True if the target still lists the session (or cannot be reached)."""
