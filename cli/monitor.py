@@ -9,29 +9,14 @@ from typing import TYPE_CHECKING
 
 from . import presets as P
 from .constants import PUMP_DEVICES
-from .state import SessionState
+from .host import CliHost
 
 if TYPE_CHECKING:
-    from .client import ReacherClient
+    pass
 
 
-class MonitorMixin:
+class MonitorMixin(CliHost):
     """Live monitor actions, mixed into ``ReacherCLI``."""
-
-    if TYPE_CHECKING:
-        api: ReacherClient
-        session: SessionState | None
-        target_name: str
-        monitor_lines: list[tuple[str, str]]
-        mode: str
-        ws_connected: bool
-        _ws_task: asyncio.Task[None] | None
-
-        def _auto_export(self) -> None: ...
-        def _invalidate(self) -> None: ...
-        def _rebuild_current_menu(self) -> None: ...
-        def _reset_counters(self) -> None: ...
-        def _set_status(self, msg: str, error: bool = False) -> None: ...
 
     async def _enter_monitor(self) -> None:
         """Switch to the live monitor, starting the WebSocket if needed."""

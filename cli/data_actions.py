@@ -5,26 +5,15 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
-from .state import SessionState
+from .host import CliHost
 
 if TYPE_CHECKING:
-    from prompt_toolkit import Application
 
-    from .client import ReacherClient
+    pass
 
 
-class DataActionsMixin:
+class DataActionsMixin(CliHost):
     """Export, download and file-setting actions, mixed into ``ReacherCLI``."""
-
-    if TYPE_CHECKING:
-        api: ReacherClient
-        app: Application[None] | None
-        session: SessionState | None
-        target_name: str
-
-        def _log(self, text: str, error: bool = False) -> None: ...
-        def _rebuild_current_menu(self) -> None: ...
-        def _set_status(self, msg: str, error: bool = False) -> None: ...
 
     async def _set_filename(self, value: str) -> None:
         """Set the export file name."""

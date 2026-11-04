@@ -2,33 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from . import presets as P
+from .host import CliHost
 from .state import SessionState
 
 if TYPE_CHECKING:
-    from .client import ReacherClient
+    pass
 
 
-class SessionActionsMixin:
+class SessionActionsMixin(CliHost):
     """Create, connect, attach, upload and destroy sessions, mixed into ``ReacherCLI``."""
-
-    if TYPE_CHECKING:
-        api: ReacherClient
-        session: SessionState | None
-        target_name: str
-        monitor_lines: list[tuple[str, str]]
-
-        def _ensure_ws(self) -> None: ...
-        def _handle_ws_message(self, msg: dict[str, object], replay: bool = False) -> None: ...
-        def _prompt_select(
-            self, title: str, options: list[tuple[str, str]], callback: Callable[..., object]
-        ) -> None: ...
-        def _rebuild_current_menu(self) -> None: ...
-        def _set_status(self, msg: str, error: bool = False) -> None: ...
-        def _stop_ws(self) -> None: ...
 
     async def _create_session(self) -> None:
         """Ask for a serial port, then create a session on it."""

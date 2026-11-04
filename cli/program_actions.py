@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from . import presets as P
@@ -16,10 +15,10 @@ from .constants import (
     SYSTEM_COMMANDS,
 )
 from .preset_types import LimitDefaults
-from .state import SessionState
+from .host import CliHost
 
 if TYPE_CHECKING:
-    from .client import ReacherClient
+    pass
 
 
 def _limits_from_preset(limit_defaults: LimitDefaults) -> dict[str, object]:
@@ -41,18 +40,8 @@ def _counted_pumps_from_preset(value: object) -> list[str] | None:
     return pumps or None
 
 
-class ProgramActionsMixin:
+class ProgramActionsMixin(CliHost):
     """Hardware commands, presets, run control and limits, mixed into ``ReacherCLI``."""
-
-    if TYPE_CHECKING:
-        api: ReacherClient
-        session: SessionState | None
-
-        def _prompt_select(
-            self, title: str, options: list[tuple[str, str]], callback: Callable[..., object]
-        ) -> None: ...
-        def _rebuild_current_menu(self) -> None: ...
-        def _set_status(self, msg: str, error: bool = False) -> None: ...
 
     async def _send_hw_command(self, code: int, value: int | None = None) -> None:
         """Send a firmware command and record it locally so the start-time re-send carries it."""

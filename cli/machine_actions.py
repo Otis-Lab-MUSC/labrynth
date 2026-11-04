@@ -2,34 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable
 from typing import TYPE_CHECKING
 
 from .menus import _digits
-from .state import MenuState, SessionState
+from .host import CliHost
 
 if TYPE_CHECKING:
-    from .client import ReacherClient
+    pass
 
 
-class MachineActionsMixin:
+class MachineActionsMixin(CliHost):
     """Pairing and control-target actions, mixed into ``ReacherCLI``."""
-
-    if TYPE_CHECKING:
-        api: ReacherClient
-        machines: list[dict[str, object]]
-        menu: MenuState
-        monitor_lines: list[tuple[str, str]]
-        session: SessionState | None
-        target_name: str
-
-        def _invalidate(self) -> None: ...
-        def _machines_menu(self) -> MenuState: ...
-        def _prompt_input(self, prompt: str, callback: Callable[..., object], mask: bool = False) -> None: ...
-        def _push_menu(self, menu: MenuState) -> None: ...
-        def _rebuild_current_menu(self) -> None: ...
-        def _set_status(self, msg: str, error: bool = False) -> None: ...
-        def _stop_ws(self) -> None: ...
 
     async def _refresh_machines(self) -> None:
         """Reload the list of paired and discovered machines."""
