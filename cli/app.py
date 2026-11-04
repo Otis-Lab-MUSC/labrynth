@@ -18,6 +18,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.styles import Style
 
 from . import presets as P
+from .attach_actions import AttachActionsMixin
 from .client import ReacherClient
 from .constants import (  # noqa: F401 -- re-exported for callers of cli.app
     COUNTED_PUMP_CHOICES,
@@ -31,6 +32,7 @@ from .constants import (  # noqa: F401 -- re-exported for callers of cli.app
     SYSTEM_COMMANDS,
 )
 from .data_actions import DataActionsMixin
+from .firmware_actions import FirmwareActionsMixin
 from .hardware_actions import HardwareActionsMixin
 from .machine_actions import MachineActionsMixin
 from .menus import MenuMixin
@@ -39,6 +41,7 @@ from .program_actions import ProgramActionsMixin
 from .run_actions import RunActionsMixin
 from .session_actions import SessionActionsMixin
 from .state import MenuState, SessionState
+from .ws_messages import WsMessageMixin
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
@@ -91,7 +94,10 @@ CLI_STYLE = Style.from_dict({
 
 
 class ReacherCLI(
+    AttachActionsMixin,
     DataActionsMixin,
+    FirmwareActionsMixin,
+    WsMessageMixin,
     MachineActionsMixin,
     MenuMixin,
     MonitorMixin,
