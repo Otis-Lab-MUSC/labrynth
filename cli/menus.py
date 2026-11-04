@@ -101,6 +101,18 @@ class MenuMixin(DeviceMenuMixin, ProgramMenuMixin):
         )
         paired = [m for m in self.machines if m.get("paired")]
         unpaired = [m for m in self.machines if not m.get("paired")]
+        items += self._paired_machine_items(paired, remote)
+        items += self._unpaired_machine_items(unpaired)
+        items += self._pairing_items(paired)
+        items += [
+            MenuItem("Refresh", action=self._open_machines_menu),
+            MenuItem("Back", action=self._pop_menu),
+        ]
+        return MenuState(title="Machines", items=items)
+
+    def _paired_machine_items(self, paired: list[dict[str, object]], remote: str | None) -> list[MenuItem]:
+        """Build one control-target item per paired machine."""
+        items: list[MenuItem] = []
         for m in paired:
             tag = "[current]" if m["device_id"] == remote else ("" if m.get("discovered") else "[not seen]")
             items.append(
@@ -110,19 +122,28 @@ class MenuMixin(DeviceMenuMixin, ProgramMenuMixin):
                     suffix=tag,
                 )
             )
-        if unpaired:
-            items.append(MenuItem("──── Discovered, not paired ────", is_separator=True))
-            for m in unpaired:
-                items.append(
-                    MenuItem(
-                        f"Pair {m['hostname']}  {m.get('url', '')}",
-                        action=lambda mm=m: self._prompt_input(
-                            f"Pairing code shown on {mm['hostname']}:",
-                            lambda code, d=mm["device_id"]: self._pair(self.api.pair_device(d, _digits(code))),
-                        ),
-                    )
+        return items
+
+    def _unpaired_machine_items(self, unpaired: list[dict[str, object]]) -> list[MenuItem]:
+        """Build one pairing item per discovered, unpaired machine."""
+        if not unpaired:
+            return []
+        items = [MenuItem("──── Discovered, not paired ────", is_separator=True)]
+        for m in unpaired:
+            items.append(
+                MenuItem(
+                    f"Pair {m['hostname']}  {m.get('url', '')}",
+                    action=lambda mm=m: self._prompt_input(
+                        f"Pairing code shown on {mm['hostname']}:",
+                        lambda code, d=mm["device_id"]: self._pair(self.api.pair_device(d, _digits(code))),
+                    ),
                 )
-        items += [
+            )
+        return items
+
+    def _pairing_items(self, paired: list[dict[str, object]]) -> list[MenuItem]:
+        """Build the pairing and unpairing entries."""
+        items = [
             MenuItem("──── Pairing ────", is_separator=True),
             MenuItem(
                 "Pair by Code (any discovered device)",
@@ -154,11 +175,7 @@ class MenuMixin(DeviceMenuMixin, ProgramMenuMixin):
                     ),
                 )
             )
-        items += [
-            MenuItem("Refresh", action=self._open_machines_menu),
-            MenuItem("Back", action=self._pop_menu),
-        ]
-        return MenuState(title="Machines", items=items)
+        return items
 
     # ───────────────────────────────────────────────────────────────────
     # Menu navigation
