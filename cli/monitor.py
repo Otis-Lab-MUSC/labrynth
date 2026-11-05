@@ -72,6 +72,10 @@ class MonitorMixin(CliHost):
                         attempt = 0
                         self.ws_connected = True
                         if connected_once:
+                            # The backend accepts a socket for a session it has
+                            # destroyed, so a successful handshake proves nothing.
+                            if await self._abandon_if_session_gone(sid):
+                                return
                             await self._recover_missed_events()
                             self._log("  [info] Live link restored")
                         connected_once = True
@@ -121,12 +125,16 @@ class MonitorMixin(CliHost):
         await asyncio.sleep(delay)
         # A session the host destroyed (orphan cleanup, another client) will
         # never accept a socket again: stop retrying.
-        if attempt % 5 == 0 and not await self._session_still_exists(sid):
-            self._log(f"Session {sid[:8]} no longer exists on {self.target_name}", error=True)
-            if self.session and self.session.id == sid:
-                self.session.state = "gone"
-            return True
-        return False
+        return attempt % 5 == 0 and await self._abandon_if_session_gone(sid)
+
+    async def _abandon_if_session_gone(self, sid: str) -> bool:
+        """Mark the session gone and return True when the target does not list it."""
+        if await self._session_still_exists(sid):
+            return False
+        self._log(f"Session {sid[:8]} no longer exists on {self.target_name}", error=True)
+        if self.session and self.session.id == sid:
+            self.session.state = "gone"
+        return True
 
     async def _session_still_exists(self, sid: str) -> bool:
         """Return True if the target still lists the session (or cannot be reached)."""
