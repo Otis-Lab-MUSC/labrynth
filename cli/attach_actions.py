@@ -93,7 +93,7 @@ class AttachActionsMixin(CliHost):
         try:
             resp = await self.api.get_behavior(sid)
             for entry in read_record_list(resp.get("data")):
-                self._handle_ws_message({"type": "event", "data": entry}, replay=True)
+                self._dispatch_message({"type": "event", "data": entry}, replay=True)
             total = _opt_int(resp.get("total"))
             if total is not None:
                 s.backend_event_count = total

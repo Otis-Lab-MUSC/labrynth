@@ -308,3 +308,11 @@ def test_backoff_restarts_after_a_link_that_stayed_up(monkeypatch: pytest.Monkey
     monkeypatch.setattr(monitor, "monotonic", lambda: float(next(clock)))
     run_stream(cli)
     assert SLEPT == [1, 1, 1]
+
+
+def test_deeply_nested_frame_is_skipped_and_the_link_carries_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A frame nested past the JSON parser's recursion limit is ignored, not fatal."""
+    cli = make_cli(FakeApi())
+    attempts = script_connections(monkeypatch, [None, None], first_frames=["[" * 200000])
+    run_stream(cli)
+    assert len(attempts) == 3

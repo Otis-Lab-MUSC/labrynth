@@ -115,8 +115,9 @@ class RunActionsMixin(CliHost):
             return
         try:
             result = await self.api.split_segment(self.session.id)
-            seg = result.get("segment_number", "?")
-            next_segment = int(seg) + 1 if isinstance(seg, (int, float, str)) else seg
+            seg = result.get("segment_number")
+            current = seg if isinstance(seg, int) and not isinstance(seg, bool) else None
+            next_segment = current + 1 if current is not None else "?"
             self._set_status(f"Segment split — now on segment {next_segment}")
         except API_ERRORS as exc:
             self._set_status(f"Split failed: {exc}", error=True)

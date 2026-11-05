@@ -66,3 +66,24 @@ def test_unexpected_error_propagates_from_split() -> None:
     cli, _ = _cli(RuntimeError("bug"))
     with pytest.raises(RuntimeError):
         asyncio.run(cli._split_segment())
+
+
+class SplitApi:
+    """Fake API whose split reply carries a configurable segment number."""
+
+    def __init__(self, reply: dict[str, object]) -> None:
+        self.reply = reply
+
+    async def split_segment(self, sid: str) -> dict[str, object]:
+        return self.reply
+
+
+@pytest.mark.parametrize("reply", [{}, {"segment_number": "n/a"}, {"segment_number": None}])
+def test_split_with_an_unusable_segment_number_still_reports_the_split(reply: dict[str, object]) -> None:
+    """A missing or non-numeric segment number must not escape the split action."""
+    cli, statuses = _cli(RuntimeError("unused"))
+    cli.api = SplitApi(reply)  # type: ignore[assignment]
+    asyncio.run(cli._split_segment())
+    assert len(statuses) == 1
+    assert statuses[0][0].startswith("Segment split")
+    assert statuses[0][1] is False

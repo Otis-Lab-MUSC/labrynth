@@ -94,3 +94,35 @@ def test_hex_read_unrelated_error_propagates(monkeypatch: pytest.MonkeyPatch, tm
     _install_uploader(monkeypatch, "", exc=RuntimeError("bug"))
     with pytest.raises(RuntimeError):
         ReacherCLI()._read_local_hex("fr", "uno")
+
+
+class AttachApi:
+    """Fake API for attaching to a session that already recorded one event."""
+
+    device_id = None
+
+    async def get_session(self, sid: str) -> dict[str, object]:
+        return {"port": "SIM", "state": "running"}
+
+    async def get_behavior(self, sid: str, since: int | None = None) -> dict[str, object]:
+        return {"data": [{"device": "LEVER_RH", "event": "PRESS"}], "total": 1}
+
+
+def test_attach_survives_a_history_entry_the_handler_rejects() -> None:
+    """A handler bug on one replayed history entry must not abort the attach."""
+    cli = ReacherCLI()
+    cli.api = AttachApi()  # type: ignore[assignment]
+    cli._invalidate = lambda: None  # type: ignore[method-assign]
+    statuses: list[tuple[str, bool]] = []
+    cli._set_status = lambda msg, error=False: statuses.append((msg, error))  # type: ignore[method-assign]
+    cli._load_commands = lambda: asyncio.sleep(0)  # type: ignore[method-assign]
+    cli._hydrate_config = lambda: asyncio.sleep(0)  # type: ignore[method-assign]
+    cli._ensure_ws = lambda: None  # type: ignore[method-assign]
+    cli._rebuild_current_menu = lambda: None  # type: ignore[method-assign]
+
+    def failing_handler(msg: dict[str, object], replay: bool = False) -> None:
+        raise RuntimeError("handler bug")
+
+    cli._handle_ws_message = failing_handler  # type: ignore[method-assign]
+    asyncio.run(cli._attach("abcdef0123456789"))
+    assert statuses[-1][0].startswith("Attached to abcdef01")
