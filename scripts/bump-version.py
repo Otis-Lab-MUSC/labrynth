@@ -30,319 +30,116 @@ pip dependency and is pinned by the ``--reacher-pin`` value.
 
 from __future__ import annotations
 
-import json
 import re
 import sys
-from pathlib import Path
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
+from version_files import NOT_FOUND, check_version, read_reacher_pin, read_versions, set_reacher_pin, set_version
+from version_ladder import EXIT_FAILED, EXIT_USAGE, SEMVER_RE, fail, next_stage_version, pep440_to_semver
+from version_output import write_out
 
-ROOT = Path(__file__).resolve().parent.parent
-
-SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$")
-
-_PEP440_TAGS = {"alpha": "a", "beta": "b", "rc": "rc"}
-_REV_PEP440_TAGS = {"a": "alpha", "b": "beta", "rc": "rc"}
-_STAGE_ORDER = ["alpha", "beta", "rc"]
+STABLE_RE = re.compile(r"^\d+\.\d+\.\d+$")
+BASE_RE = re.compile(r"^(\d+\.\d+\.\d+)")
+PRIMARY_LABEL = "pyproject.toml"
 
 
-# -- version-form transforms -------------------------------------------------
+def require_argument_count(args: list[str], usage: str) -> str:
+    """Return the single value after a flag, or exit with the usage text."""
+    if len(args) != 2:
+        fail(f"Usage: bump-version.py {usage}", EXIT_USAGE)
+    return args[1]
 
 
-def identity(v: str) -> str:
-    """Return the version unchanged."""
-    return v
+def read_current_version() -> str:
+    """Return the version stored in pyproject.toml, exiting when it cannot be read."""
+    current = read_versions().get(PRIMARY_LABEL, "")
+    if not current or current == NOT_FOUND:
+        fail("Could not read current version from pyproject.toml")
+    return current
 
 
-def pep440(v: str) -> str:
-    """``3.0.0-alpha.1`` -> ``3.0.0a1`` (PEP 440 prerelease normalization)."""
-    m = re.match(r"^(\d+\.\d+\.\d+)(?:-(alpha|beta|rc)\.(\d+))?$", v)
-    if not m:
-        return v
-    base, kind, num = m.groups()
-    if not kind:
-        return base
-    return f"{base}{_PEP440_TAGS[kind]}{num}"
+def require_semver(version: str) -> str:
+    """Return the version if it is valid semver, else exit with a usage error."""
+    if not SEMVER_RE.match(version):
+        fail(f"Invalid semver: {version}", EXIT_USAGE)
+    return version
 
 
-def pep440_to_semver(p440: str) -> str:
-    """Reverse PEP 440 normalization: ``3.0.0a1`` -> ``3.0.0-alpha.1``."""
-    m = re.match(r"^(\d+\.\d+\.\d+)(a|b|rc)(\d+)$", p440)
-    if m:
-        base, tag, num = m.groups()
-        return f"{base}-{_REV_PEP440_TAGS[tag]}.{num}"
-    return p440
+def show_versions() -> None:
+    """Print the current versions and the reacher pin."""
+    write_out("Current versions:")
+    for label, version in read_versions().items():
+        write_out(f"  {label}: {version}")
+    write_out(f"  reacher pin: >={read_reacher_pin()}")
 
 
-def shields(v: str) -> str:
-    """shields.io badge escaping: ``-`` -> ``--`` (``3.0.0-alpha.1`` -> ``3.0.0--alpha.1``)."""
-    return v.replace("-", "--")
+def run_check(args: list[str]) -> None:
+    """Handle ``--check``: exit 1 when any tracked file disagrees."""
+    expected = require_argument_count(args, "--check <version>")
+    write_out(f"Checking all files match version {expected}:")
+    if not check_version(expected):
+        sys.exit(EXIT_FAILED)
+    write_out("All files consistent.")
 
 
-def next_stage_version(current: str, stage: str) -> str:
-    """Compute the next prerelease version by advancing through the alpha→beta→rc→stable ladder."""
-    m = re.match(r"^(\d+\.\d+\.\d+)(?:-(alpha|beta|rc)\.(\d+))?$", current)
-    if not m:
-        print(f"Cannot advance stage: {current!r} is not valid semver", file=sys.stderr)
-        sys.exit(1)
-    base, cur_stage, cur_num = m.groups()
-
-    if stage == "stable":
-        if cur_stage is None:
-            print(f"Already at stable: {current}", file=sys.stderr)
-            sys.exit(1)
-        return base
-
-    if stage not in _STAGE_ORDER:
-        print(f"Unknown stage {stage!r}. Must be: alpha, beta, rc, stable", file=sys.stderr)
-        sys.exit(2)
-
-    if cur_stage is None:
-        print(
-            f"Stage regression: current version {current!r} is already stable; cannot advance to {stage}",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    cur_idx = _STAGE_ORDER.index(cur_stage)
-    new_idx = _STAGE_ORDER.index(stage)
-
-    if new_idx < cur_idx:
-        print(f"Stage regression: cannot go from {cur_stage} to {stage}", file=sys.stderr)
-        sys.exit(1)
-
-    if new_idx == cur_idx:
-        return f"{base}-{stage}.{int(cur_num) + 1}"
-    else:
-        return f"{base}-{stage}.1"
+def run_reacher_pin(args: list[str]) -> None:
+    """Handle ``--reacher-pin``."""
+    semver = require_argument_count(args, "--reacher-pin <semver>")
+    set_reacher_pin(require_semver(semver))
 
 
-# -- regex-based files (each declares the form it stores) --------------------
-# (file, pattern with 3 capture groups, replacement template, transform, label)
-
-REGEX_FILES: list[tuple[Path, str, str, "Callable[[str], str]", str]] = [
-    (
-        ROOT / "pyproject.toml",
-        r'^(version\s*=\s*")([^"]+)(")',
-        r"\g<1>{version}\3",
-        identity,
-        "pyproject.toml",
-    ),
-    (
-        ROOT / "README.md",
-        r"(shields\.io/badge/version-)(.+?)(-blue)",
-        r"\g<1>{version}\3",
-        shields,
-        "README.md (badge)",
-    ),
-    (
-        ROOT / "web" / "README.md",
-        r"(shields\.io/badge/version-)(.+?)(-blue)",
-        r"\g<1>{version}\3",
-        shields,
-        "web/README.md (badge)",
-    ),
-    # Demo mode's mock health check reports a backend version string; stamp it
-    # in lockstep with the app version so the hosted demo never reports a stale
-    # build. Each file has exactly one `version:` literal.
-    (
-        ROOT / "web" / "src" / "api" / "demoClient.ts",
-        r'(version:\s*")([^"]+)(")',
-        r"\g<1>{version}\3",
-        identity,
-        "web/src/api/demoClient.ts (demo version)",
-    ),
-    (
-        ROOT / "web" / "src" / "api" / "mock.ts",
-        r'(version:\s*")([^"]+)(")',
-        r"\g<1>{version}\3",
-        identity,
-        "web/src/api/mock.ts (demo version)",
-    ),
-]
-
-# -- JSON-based files (parsed update) ----------------------------------------
-
-JSON_FILES: list[Path] = [
-    ROOT / "web" / "package.json",
-]
-
-# -- cross-repo reacher pin (managed via --reacher-pin) ----------------------
-
-REACHER_PIN_FILE = ROOT / "pyproject.toml"
-# PyPI distribution name is "reacher2p" (the "reacher" name was already taken);
-# the import package the build resolves hex from is still "reacher".
-REACHER_PIN_RE = r'(reacher2p>=)([^"]+)(")'
+def apply_version(new_version: str, heading: str) -> None:
+    """Write a version everywhere and verify it."""
+    write_out(heading)
+    set_version(new_version)
+    check_version(new_version)
+    write_out("Done.")
 
 
-def read_versions() -> dict[str, str]:
-    """Return {label: version} for each tracked file (raw stored form)."""
-    versions: dict[str, str] = {}
-
-    for path, pattern, _, _transform, label in REGEX_FILES:
-        text = path.read_text()
-        match = re.search(pattern, text, re.MULTILINE)
-        versions[label] = match.group(2) if match else "<not found>"
-
-    for path in JSON_FILES:
-        data = json.loads(path.read_text())
-        versions[str(path.relative_to(ROOT))] = data.get("version", "<not found>")
-
-    return versions
+def run_stage(args: list[str]) -> None:
+    """Handle ``--stage``: advance the prerelease ladder."""
+    stage = require_argument_count(args, "--stage alpha|beta|rc|stable")
+    current = read_current_version()
+    new_version = next_stage_version(current, stage)
+    apply_version(new_version, f"Advancing {current} \u2192 {new_version}:")
 
 
-def set_version(new_version: str) -> None:
-    """Write *new_version* (in each file's required form) into every tracked file."""
-    for path, pattern, template, transform, label in REGEX_FILES:
-        text = path.read_text()
-        replacement = template.replace("{version}", transform(new_version))
-        new_text, count = re.subn(pattern, replacement, text, count=1, flags=re.MULTILINE)
-        if count == 0:
-            print(f"  WARNING: pattern not found in {label}")
-        path.write_text(new_text)
-
-    for path in JSON_FILES:
-        data = json.loads(path.read_text())
-        data["version"] = new_version
-        path.write_text(json.dumps(data, indent=2) + "\n")
+def run_validate_stable() -> None:
+    """Handle ``--validate-stable``: exit 1 when the version has a prerelease suffix."""
+    current = read_current_version()
+    if STABLE_RE.match(current):
+        write_out(f"OK: {current} is a stable version")
+        return
+    base_match = BASE_RE.match(current)
+    base = base_match.group(1) if base_match else current
+    fail(f"Error: Stable release requires a stable version; current is {current}. Bump to {base} first.")
 
 
-def check_version(expected: str) -> bool:
-    """Return True if every tracked file contains *expected* (in its required form)."""
-    ok = True
-
-    for path, pattern, _, transform, label in REGEX_FILES:
-        text = path.read_text()
-        match = re.search(pattern, text, re.MULTILINE)
-        found = match.group(2) if match else "<not found>"
-        want = transform(expected)
-        if found != want:
-            print(f"  MISMATCH {label}: expected {want}, found {found}")
-            ok = False
-        else:
-            print(f"  OK       {label}: {found}")
-
-    for path in JSON_FILES:
-        data = json.loads(path.read_text())
-        found = data.get("version", "<not found>")
-        label = str(path.relative_to(ROOT))
-        if found != expected:
-            print(f"  MISMATCH {label}: expected {expected}, found {found}")
-            ok = False
-        else:
-            print(f"  OK       {label}: {found}")
-
-    return ok
-
-
-def read_reacher_pin() -> str:
-    """Return the semver-form reacher pin from pyproject.toml, or a placeholder if absent."""
-    text = REACHER_PIN_FILE.read_text()
-    match = re.search(REACHER_PIN_RE, text)
-    return match.group(2) if match else "<not found>"
-
-
-def set_reacher_pin(semver: str) -> None:
-    """Write ``reacher2p>=<pep440(semver)>`` into pyproject.toml."""
-    pinned = pep440(semver)
-    text = REACHER_PIN_FILE.read_text()
-    new_text, count = re.subn(REACHER_PIN_RE, rf"\g<1>{pinned}\3", text, count=1)
-    if count == 0:
-        print("  WARNING: reacher pin not found in pyproject.toml", file=sys.stderr)
-        sys.exit(1)
-    REACHER_PIN_FILE.write_text(new_text)
-    print(f"reacher pin set to >={pinned}  (from {semver})")
+def run_print_reacher_ref() -> None:
+    """Handle ``--print-reacher-ref``: print the git ref CI reads from stdout."""
+    pin = read_reacher_pin()
+    if pin == NOT_FOUND:
+        fail("Could not read reacher pin from pyproject.toml")
+    write_out(f"v{pep440_to_semver(pin)}")
 
 
 def main() -> None:
     """Dispatch the command-line flags to the matching version operation."""
     args = sys.argv[1:]
-
     if not args:
-        print("Current versions:")
-        for label, version in read_versions().items():
-            print(f"  {label}: {version}")
-        print(f"  reacher pin: >={read_reacher_pin()}")
-        return
-
-    if args[0] == "--check":
-        if len(args) != 2:
-            print("Usage: bump-version.py --check <version>", file=sys.stderr)
-            sys.exit(2)
-        expected = args[1]
-        print(f"Checking all files match version {expected}:")
-        if not check_version(expected):
-            sys.exit(1)
-        print("All files consistent.")
-        return
-
-    if args[0] == "--reacher-pin":
-        if len(args) != 2:
-            print("Usage: bump-version.py --reacher-pin <semver>", file=sys.stderr)
-            sys.exit(2)
-        semver = args[1]
-        if not SEMVER_RE.match(semver):
-            print(f"Invalid semver: {semver}", file=sys.stderr)
-            sys.exit(2)
-        set_reacher_pin(semver)
-        return
-
-    if args[0] == "--stage":
-        if len(args) != 2:
-            print("Usage: bump-version.py --stage alpha|beta|rc|stable", file=sys.stderr)
-            sys.exit(2)
-        stage = args[1]
-        current_versions = read_versions()
-        # Read from pyproject.toml (first REGEX_FILES entry)
-        current = current_versions.get("pyproject.toml", "")
-        if not current or current == "<not found>":
-            print("Could not read current version from pyproject.toml", file=sys.stderr)
-            sys.exit(1)
-        new_version = next_stage_version(current, stage)
-        print(f"Advancing {current} → {new_version}:")
-        set_version(new_version)
-        check_version(new_version)
-        print("Done.")
-        return
-
-    if args[0] == "--validate-stable":
-        current_versions = read_versions()
-        current = current_versions.get("pyproject.toml", "")
-        if not current or current == "<not found>":
-            print("Could not read current version from pyproject.toml", file=sys.stderr)
-            sys.exit(1)
-        if re.match(r"^\d+\.\d+\.\d+$", current):
-            print(f"OK: {current} is a stable version")
-            return
-        base_match = re.match(r"^(\d+\.\d+\.\d+)", current)
-        base = base_match.group(1) if base_match else current
-        print(
-            f"Error: Stable release requires a stable version; current is {current}. "
-            f"Bump to {base} first.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    if args[0] == "--print-reacher-ref":
-        pin = read_reacher_pin()
-        if pin == "<not found>":
-            print("Could not read reacher pin from pyproject.toml", file=sys.stderr)
-            sys.exit(1)
-        semver = pep440_to_semver(pin)
-        print(f"v{semver}")
-        return
-
-    new_version = args[0]
-    if not SEMVER_RE.match(new_version):
-        print(f"Invalid semver: {new_version}", file=sys.stderr)
-        sys.exit(2)
-
-    print(f"Bumping version to {new_version}:")
-    set_version(new_version)
-    check_version(new_version)
-    print("Done.")
+        show_versions()
+    elif args[0] == "--check":
+        run_check(args)
+    elif args[0] == "--reacher-pin":
+        run_reacher_pin(args)
+    elif args[0] == "--stage":
+        run_stage(args)
+    elif args[0] == "--validate-stable":
+        run_validate_stable()
+    elif args[0] == "--print-reacher-ref":
+        run_print_reacher_ref()
+    else:
+        new_version = require_semver(args[0])
+        apply_version(new_version, f"Bumping version to {new_version}:")
 
 
 if __name__ == "__main__":
