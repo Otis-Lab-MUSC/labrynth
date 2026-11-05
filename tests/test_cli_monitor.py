@@ -14,7 +14,8 @@ import pytest
 import websockets
 
 from cli.app import ReacherCLI
-from cli.monitor import CLEAN_CLOSE_DELAY_SECONDS
+from cli import monitor
+from cli.monitor import CLEAN_CLOSE_DELAY_SECONDS, STABLE_LINK_SECONDS
 from cli.state import SessionState
 
 SESSION_ID = "abcdef0123456789"
@@ -24,14 +25,17 @@ TIMEOUT_SECONDS = 5
 class FakeSocket:
     """An open socket that yields its frames, then closes cleanly."""
 
-    def __init__(self, frames: Sequence[str | bytes] = ()) -> None:
+    def __init__(self, frames: Sequence[str | bytes] = (), error: BaseException | None = None) -> None:
         self.frames = list(frames)
+        self.error = error
 
     def __aiter__(self) -> FakeSocket:
         return self
 
     async def __anext__(self) -> str | bytes:
         if not self.frames:
+            if self.error:
+                raise self.error
             raise StopAsyncIteration
         return self.frames.pop(0)
 
@@ -39,14 +43,20 @@ class FakeSocket:
 class FakeConnection:
     """Async context manager returned by the patched ``websockets.connect``."""
 
-    def __init__(self, outcome: BaseException | None, frames: Sequence[str | bytes] = ()) -> None:
+    def __init__(
+        self,
+        outcome: BaseException | None,
+        frames: Sequence[str | bytes] = (),
+        close_error: BaseException | None = None,
+    ) -> None:
         self.outcome = outcome
         self.frames = frames
+        self.close_error = close_error
 
     async def __aenter__(self) -> FakeSocket:
         if self.outcome:
             raise self.outcome
-        return FakeSocket(self.frames)
+        return FakeSocket(self.frames, self.close_error)
 
     async def __aexit__(self, *exc_info: object) -> None:
         return None
@@ -258,3 +268,43 @@ def test_send_limits_without_a_session_sends_nothing() -> None:
     cli = make_cli(FakeApi())
     cli.session = None
     assert asyncio.run(cli._send_limits()) is False
+
+
+def script_dying_links(monkeypatch: pytest.MonkeyPatch, deaths: int) -> None:
+    """Make ``deaths`` connections that handshake and then fail at once, then block forever."""
+    script_connections(monkeypatch, [])
+    remaining = [FakeConnection(None, close_error=ConnectionResetError("reset")) for _ in range(deaths)]
+
+    def connect(url: str, **kwargs: object) -> FakeConnection:
+        return remaining.pop(0) if remaining else FakeConnection(asyncio.CancelledError())
+
+    monkeypatch.setattr(websockets, "connect", connect)
+
+
+def silence_refresh_loop(cli: ReacherCLI) -> None:
+    """Stop the screen-refresh loop from adding its own sleeps to ``SLEPT``."""
+
+    async def idle() -> None:
+        await asyncio.Event().wait()
+
+    cli._refresh_loop = idle  # type: ignore[method-assign]
+
+
+def test_backoff_grows_when_the_link_dies_right_after_the_handshake(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A socket that opens and fails at once must not reset the retry delay each cycle."""
+    cli = make_cli(FakeApi())
+    silence_refresh_loop(cli)
+    script_dying_links(monkeypatch, deaths=4)
+    run_stream(cli)
+    assert SLEPT == [1, 2, 4, 8]
+
+
+def test_backoff_restarts_after_a_link_that_stayed_up(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A link that held for the stable period earns a fresh, short retry delay."""
+    cli = make_cli(FakeApi())
+    silence_refresh_loop(cli)
+    script_dying_links(monkeypatch, deaths=3)
+    clock = iter(range(0, 1000, STABLE_LINK_SECONDS))
+    monkeypatch.setattr(monitor, "monotonic", lambda: float(next(clock)))
+    run_stream(cli)
+    assert SLEPT == [1, 1, 1]

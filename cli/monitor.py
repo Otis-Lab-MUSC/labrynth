@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterable
+from time import monotonic
 
 from .errors import API_ERRORS
 from .host import CliHost
@@ -12,6 +13,8 @@ from .response_fields import read_record_list
 from .ws_messages import WsData
 
 CLEAN_CLOSE_DELAY_SECONDS = 1
+# A link that stayed up this long before failing counts as healthy: the retry delay starts over.
+STABLE_LINK_SECONDS = 30
 
 
 def _as_int(value: object, default: int = 0) -> int:
@@ -73,6 +76,7 @@ class MonitorMixin(CliHost):
         stream_errors = (OSError, WebSocketException, asyncio.TimeoutError, ValueError)
         connected_once = False
         attempt = 0
+        connected_at = monotonic()
         refresh = asyncio.ensure_future(self._refresh_loop())
         try:
             # Retries forever with capped backoff: for a walk-away run the
@@ -81,22 +85,15 @@ class MonitorMixin(CliHost):
             while self.session and self.session.id == sid:
                 try:
                     async with websockets.connect(self.api.ws_url(sid), open_timeout=15) as ws:
-                        attempt = 0
-                        self.ws_connected = True
-                        if connected_once:
-                            # The backend accepts a socket for a session it has
-                            # destroyed, so a successful handshake proves nothing.
-                            if await self._abandon_if_session_gone(sid):
-                                return
-                            await self._recover_missed_events()
-                            self._log("  [info] Live link restored")
+                        connected_at = monotonic()
+                        if await self._on_link_open(sid, reconnected=connected_once):
+                            return
                         connected_once = True
-                        self._invalidate()
                         await self._read_socket(ws)
                 except asyncio.CancelledError:
                     raise
                 except stream_errors as exc:
-                    attempt += 1
+                    attempt = 1 if monotonic() - connected_at >= STABLE_LINK_SECONDS else attempt + 1
                     if await self._handle_link_down(exc, attempt, sid):
                         return
                 else:
@@ -107,6 +104,19 @@ class MonitorMixin(CliHost):
         finally:
             refresh.cancel()
             self.ws_connected = False
+
+    async def _on_link_open(self, sid: str, reconnected: bool) -> bool:
+        """Mark the link up and catch up after a reconnect; return True when the session is gone."""
+        self.ws_connected = True
+        if reconnected:
+            # The backend accepts a socket for a session it has destroyed,
+            # so a successful handshake proves nothing.
+            if await self._abandon_if_session_gone(sid):
+                return True
+            await self._recover_missed_events()
+            self._log("  [info] Live link restored")
+        self._invalidate()
+        return False
 
     async def _refresh_loop(self) -> None:
         """Redraw the screen once a second so the elapsed clock advances."""
