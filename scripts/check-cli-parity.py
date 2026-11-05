@@ -21,6 +21,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from typing import cast
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WEB = os.path.join(ROOT, "web")
@@ -71,7 +72,8 @@ def load_web() -> dict[str, object]:
         sys.exit(2)
     finally:
         os.unlink(entry)
-    return json.loads(out)
+    parsed: dict[str, object] = json.loads(out)
+    return parsed
 
 
 def normalize(v: object) -> object:
@@ -104,14 +106,15 @@ def main() -> int:
     web = load_web()
     problems: list[str] = []
 
-    web_ids = [p["id"] for p in web["presets"]]
+    web_presets = cast("list[dict[str, object]]", web["presets"])
+    web_ids = [p["id"] for p in web_presets]
     cli_ids = [p["id"] for p in P.SESSION_PRESETS]
     if web_ids != cli_ids:
         problems.append(f"preset list: web = {web_ids}, cli = {cli_ids}")
 
     cli_by_id = {p["id"]: p for p in P.SESSION_PRESETS}
-    for wp in web["presets"]:
-        cp = cli_by_id.get(wp["id"])
+    for wp in web_presets:
+        cp = cli_by_id.get(str(wp["id"]))
         if cp is None:
             continue
         for field in PRESET_FIELDS:

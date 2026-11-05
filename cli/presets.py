@@ -20,6 +20,16 @@ from __future__ import annotations
 import copy
 from typing import Iterable, Mapping
 
+from .preset_types import (
+    CommandSpec,
+    Contingency,
+    DeviceState,
+    Hardware,
+    LeverCodes,
+    LimitDefaults,
+    ParadigmSettings,
+    Preset,
+)
 from .reacher_tables import CMD
 
 Command = tuple[int, "int | None"]
@@ -37,7 +47,7 @@ _PAV_LASER_MODE_BY_CODE: dict[int, str] = {
     CMD["PAV_LASER_CS_PLUS"]: "cs_plus", CMD["PAV_LASER_CS_MINUS"]: "cs_minus", CMD["PAV_LASER_CS_BOTH"]: "cs_both",
 }
 
-PRESET_COMMAND_MAP: dict[str, dict] = {
+PRESET_COMMAND_MAP: dict[str, CommandSpec] = {
     "rhLever":       {"arm": CMD["LEVER_RH_ARM"], "disarm": CMD["LEVER_RH_DISARM"], "params": {"timeout": CMD["LEVER_RH_SET_TIMEOUT"], "timeoutMode": CMD["LEVER_RH_SET_TIMEOUT_MODE"]}},
     "lhLever":       {"arm": CMD["LEVER_LH_ARM"], "disarm": CMD["LEVER_LH_DISARM"], "params": {"timeout": CMD["LEVER_LH_SET_TIMEOUT"], "timeoutMode": CMD["LEVER_LH_SET_TIMEOUT_MODE"]}},
     "primaryCue":    {"arm": CMD["CUE_ARM"], "disarm": CMD["CUE_DISARM"], "params": {"frequency": CMD["CUE_SET_FREQUENCY"], "duration": CMD["CUE_SET_DURATION"], "leverFilter": CMD["CUE_SET_LEVER_FILTER"], "delay": CMD["CUE_SET_ONSET_DELAY"]}},
@@ -53,7 +63,7 @@ PRESET_COMMAND_MAP: dict[str, dict] = {
 # Params the backend does not declare for every paradigm (PARAM_PARADIGMS).
 PARAM_PARADIGMS: dict[str, list[str]] = {"timeoutMode": ["fr", "pr"]}
 
-LEVER_COMMANDS = {
+LEVER_COMMANDS: dict[str, LeverCodes] = {
     "rh": {"active": CMD["LEVER_RH_SET_ACTIVE"], "inactive": CMD["LEVER_RH_SET_INACTIVE"], "timeout": CMD["LEVER_RH_SET_TIMEOUT"], "timeoutMode": CMD["LEVER_RH_SET_TIMEOUT_MODE"], "key": "rhLever"},
     "lh": {"active": CMD["LEVER_LH_SET_ACTIVE"], "inactive": CMD["LEVER_LH_SET_INACTIVE"], "timeout": CMD["LEVER_LH_SET_TIMEOUT"], "timeoutMode": CMD["LEVER_LH_SET_TIMEOUT_MODE"], "key": "lhLever"},
 }
@@ -112,24 +122,45 @@ def is_shared_lever_param(device_key: str, param_key: str) -> bool:
     return device_key in ("rhLever", "lhLever") and param_key in ("timeout", "timeoutMode")
 
 
-def active_lever_of(paradigm_settings: dict | None) -> str:
+def active_lever_of(paradigm_settings: ParadigmSettings | None) -> str:
     """Return ``"lh"`` or ``"rh"`` (the default) from the paradigm settings."""
     return "lh" if (paradigm_settings or {}).get("activeLever") == "lh" else "rh"
 
 
-def reward_pump2(hw: dict) -> bool:
+def reward_pump2(hw: Hardware) -> bool:
     """221 value: Pump 2 only when it is the sole armed pump."""
     return bool(hw.get("secondaryPump", {}).get("armed")) and not hw.get("primaryPump", {}).get("armed")
 
 
-def _filter_targets(hw: dict, lever: str) -> list[str]:
+def _as_int(value: object) -> int | None:
+    """Return the value as an int when it is numeric (or a numeric string), else None."""
+    return int(value) if isinstance(value, (int, float, str)) else None
+
+
+def _lever_filter_of(state: DeviceState) -> str | None:
+    """Return the lever filter named by a device's contingency, if it has one."""
+    contingency = state.get("contingency")
+    return str(contingency["leverFilter"]) if isinstance(contingency, dict) and "leverFilter" in contingency else None
+
+
+def _contingency_of(state: DeviceState) -> Contingency:
+    """Return the device's contingency, creating the default when it has none."""
+    contingency = state.get("contingency")
+    if isinstance(contingency, dict):
+        return contingency
+    created: Contingency = {"leverFilter": "none", "delay": 0}
+    state["contingency"] = created
+    return created
+
+
+def _filter_targets(hw: Hardware, lever: str) -> list[str]:
     keys = ("primaryCue", "secondaryCue", "primaryPump", "secondaryPump")
     return [k for k in keys
             if hw.get(k, {}).get("armed")
-            and (hw.get(k, {}).get("contingency") or {}).get("leverFilter") == lever]
+            and _lever_filter_of(hw.get(k, {})) == lever]
 
 
-def lever_scheduler_commands(paradigm: str | None, active: str, hw: dict) -> list[Command]:
+def lever_scheduler_commands(paradigm: str | None, active: str, hw: Hardware) -> list[Command]:
     """Active-lever pair, then the one scheduler-wide timeout / timeout mode."""
     if not is_operant(paradigm):
         return []
@@ -146,33 +177,35 @@ def lever_scheduler_commands(paradigm: str | None, active: str, hw: dict) -> lis
         return out
     if not hw.get("rhLever", {}).get("armed") and not hw.get("lhLever", {}).get("armed"):
         return out
-    if src.get("timeout") is not None:
-        out.append((codes["timeout"], int(src["timeout"])))
-    if src.get("timeoutMode") is not None and can_dispatch_param("timeoutMode", paradigm):
-        out.append((codes["timeoutMode"], int(src["timeoutMode"])))
+    timeout = _as_int(src.get("timeout"))
+    if timeout is not None:
+        out.append((codes["timeout"], timeout))
+    timeout_mode = _as_int(src.get("timeoutMode"))
+    if timeout_mode is not None and can_dispatch_param("timeoutMode", paradigm):
+        out.append((codes["timeoutMode"], timeout_mode))
     return out
 
 
-def _laser_commands(paradigm: str | None, laser: dict | None) -> list[Command]:
+def _laser_commands(paradigm: str | None, laser: DeviceState | None) -> list[Command]:
     laser = laser or {}
     out: list[Command] = []
     if base_paradigm(paradigm) == "pavlovian":
         mode = laser.get("mode")
-        if mode:
+        if isinstance(mode, str) and mode:
             if mode not in ("independent", "contingent", "rh_lever", "lh_lever"):
                 out.append((681, None))
             out.append((LASER_MODE_COMMANDS[mode], None))
         phase = laser.get("phase")
-        if mode != "independent" and phase is not None:
+        if mode != "independent" and isinstance(phase, str):
             out.append((PAV_LASER_PHASE_COMMANDS[phase], None))
-    elif laser.get("contingency"):
+    elif isinstance(contingency := laser.get("contingency"), str) and contingency:
         cmd = {"any": "contingent", "rh": "rh_lever", "lh": "lh_lever",
-               "independent": "independent"}[laser["contingency"]]
+               "independent": "independent"}[contingency]
         out.append((LASER_MODE_COMMANDS[cmd], None))
     return out
 
 
-def _paradigm_commands(paradigm: str | None, ps: dict, *, at_start: bool) -> list[Command]:
+def _paradigm_commands(paradigm: str | None, ps: ParadigmSettings, *, at_start: bool) -> list[Command]:
     if is_paradigm(paradigm, "fr", "pr"):
         out: list[Command] = [(201, int(ps.get("ratio", 1)))]
         if at_start and is_paradigm(paradigm, "pr"):
@@ -190,7 +223,7 @@ def _paradigm_commands(paradigm: str | None, ps: dict, *, at_start: bool) -> lis
 _FILTER_NAMES = {0: "none", 1: "rh", 2: "lh"}
 
 
-def record_command(hw: dict, paradigm_settings: dict, code: int, value: int | None) -> None:
+def record_command(hw: Hardware, paradigm_settings: ParadigmSettings, code: int, value: int | None) -> None:
     """Mirror one sent command into local state, so start-time dispatch re-sends it."""
     for key, mapping in PRESET_COMMAND_MAP.items():
         if code == mapping["arm"]:
@@ -205,13 +238,11 @@ def record_command(hw: dict, paradigm_settings: dict, code: int, value: int | No
             if param in ("timeout", "timeoutMode") and key in ("rhLever", "lhLever"):
                 hw["rhLever"][param] = hw["lhLever"][param] = int(value)
             elif param == "leverFilter":
-                hw[key].setdefault("contingency", {"leverFilter": "none", "delay": 0})
-                hw[key]["contingency"]["leverFilter"] = _FILTER_NAMES.get(int(value), "none")
+                _contingency_of(hw[key])["leverFilter"] = _FILTER_NAMES.get(int(value), "none")
             elif param == "delay" and key == "laser":
                 hw[key]["onsetDelay"] = int(value)
             elif param == "delay":
-                hw[key].setdefault("contingency", {"leverFilter": "none", "delay": 0})
-                hw[key]["contingency"]["delay"] = int(value)
+                _contingency_of(hw[key])["delay"] = int(value)
             else:
                 hw[key][param] = int(value)
             return
@@ -238,7 +269,7 @@ def record_command(hw: dict, paradigm_settings: dict, code: int, value: int | No
         paradigm_settings["interval"] = int(value)
 
 
-def default_hardware() -> dict:
+def default_hardware() -> Hardware:
     """defaultHardwareUiState() in web/src/store/useSessionStore.ts, minus guesses.
 
     Unlike the web (which seeds 0 and lets its device cards overwrite it), the
@@ -266,26 +297,29 @@ def default_hardware() -> dict:
     }
 
 
-def merge_firmware_row(hw: dict, row: dict) -> str | None:
+def merge_firmware_row(hw: Hardware, row: Mapping[str, object]) -> str | None:
     """Fold one firmware config record into ``hw`` like the web's config handler.
 
     Returns the web device key that changed, or None.
     """
     device = str(row.get("device", ""))
     if device in ("LEVER_RH", "LEVER_LH", "CONTROLLER"):
-        shared = {}
-        if isinstance(row.get("timeout"), (int, float)) and not isinstance(row.get("timeout"), bool):
-            shared["timeout"] = int(row["timeout"])
-        if isinstance(row.get("timeout_mode"), (int, float)) and not isinstance(row.get("timeout_mode"), bool):
-            shared["timeoutMode"] = int(row["timeout_mode"])
+        shared: DeviceState = {}
+        timeout = row.get("timeout")
+        if isinstance(timeout, (int, float)) and not isinstance(timeout, bool):
+            shared["timeout"] = int(timeout)
+        timeout_mode = row.get("timeout_mode")
+        if isinstance(timeout_mode, (int, float)) and not isinstance(timeout_mode, bool):
+            shared["timeoutMode"] = int(timeout_mode)
         for k in ("rhLever", "lhLever"):
             hw.setdefault(k, {}).update(shared)
     key = DEVICE_TO_UI_KEY.get(device)
     if not key or key not in hw:
         return None
     cur = hw[key]
-    if isinstance(row.get("armed"), bool):
-        cur["armed"] = row["armed"]
+    armed = row.get("armed")
+    if isinstance(armed, bool):
+        cur["armed"] = armed
     for f in ("frequency", "duration", "timeout"):
         v = row.get(f)
         if isinstance(v, (int, float)) and not isinstance(v, bool):
@@ -293,18 +327,19 @@ def merge_firmware_row(hw: dict, row: dict) -> str | None:
     return key
 
 
-def merge_controller_row(paradigm_settings: dict, row: dict) -> None:
+def merge_controller_row(paradigm_settings: ParadigmSettings, row: Mapping[str, object]) -> None:
     """Pick scheduler-wide values (ratio, active lever) out of a CONTROLLER record."""
     if row.get("device") != "CONTROLLER":
         return
-    if isinstance(row.get("ratio"), int) and not isinstance(row.get("ratio"), bool):
-        paradigm_settings["ratio"] = row["ratio"]
+    ratio = row.get("ratio")
+    if isinstance(ratio, int) and not isinstance(ratio, bool):
+        paradigm_settings["ratio"] = ratio
     lever = str(row.get("active_lever", "")).lower()
     if lever in ("rh", "lh"):
         paradigm_settings["activeLever"] = lever
 
 
-def merge_preset_hardware(hw: dict, preset: dict) -> dict:
+def merge_preset_hardware(hw: Hardware, preset: Preset) -> Hardware:
     """applySessionPreset step 1: full-takeover merge of preset hardware."""
     out = copy.deepcopy(hw)
     for key, value in preset["hardware"].items():
@@ -326,7 +361,7 @@ def merge_preset_hardware(hw: dict, preset: dict) -> dict:
 
 # ── Command builders ─────────────────────────────────────────────────────────
 
-def preset_commands(preset: dict, paradigm: str | None, merged_hw: dict) -> list[Command]:
+def preset_commands(preset: Preset, paradigm: str | None, merged_hw: Hardware) -> list[Command]:
     """Commands applySessionPreset sends in the connected/stopped states."""
     is_pav = base_paradigm(paradigm) == "pavlovian"
     out: list[Command] = []
@@ -345,7 +380,7 @@ def preset_commands(preset: dict, paradigm: str | None, merged_hw: dict) -> list
             if is_shared_lever_param(key, param_key):
                 continue
             v = state.get(param_key)
-            if v is not None and not isinstance(v, (dict, str)):
+            if isinstance(v, (int, float)):
                 out.append((code, int(v)))
     for key, mapping in PRESET_COMMAND_MAP.items():
         if key not in preset["hardware"]:
@@ -362,8 +397,8 @@ def preset_commands(preset: dict, paradigm: str | None, merged_hw: dict) -> list
     return out
 
 
-def start_commands(paradigm: str | None, hw: dict, paradigm_settings: dict,
-                   pavlovian_params: dict | None) -> list[Command]:
+def start_commands(paradigm: str | None, hw: Hardware, paradigm_settings: ParadigmSettings,
+                   pavlovian_params: Mapping[int, int] | None) -> list[Command]:
     """Commands SessionStartModal.handleStart sends before start/arm.
 
     Re-sends the whole configuration so a stale or replayed firmware state
@@ -390,14 +425,16 @@ def start_commands(paradigm: str | None, hw: dict, paradigm_settings: dict,
             if not can_dispatch_param(param_key, paradigm) or is_shared_lever_param(key, param_key):
                 continue
             v = state.get(param_key)
-            if v is not None and not isinstance(v, (dict, str)):
+            if isinstance(v, (int, float)):
                 out.append((code, int(v)))
         cont = state.get("contingency")
         if isinstance(cont, dict):
-            if press_contingent and cont.get("leverFilter") is not None and "leverFilter" in params:
-                out.append((params["leverFilter"], LEVER_FILTER_VALUES.get(cont["leverFilter"], 0)))
-            if cont.get("delay") and cont["delay"] > 0 and "delay" in params:
-                out.append((params["delay"], int(cont["delay"])))
+            lever_filter = cont.get("leverFilter")
+            if press_contingent and lever_filter is not None and "leverFilter" in params:
+                out.append((params["leverFilter"], LEVER_FILTER_VALUES.get(str(lever_filter), 0)))
+            delay = cont.get("delay")
+            if isinstance(delay, int) and delay > 0 and "delay" in params:
+                out.append((params["delay"], delay))
     out += _laser_commands(paradigm, hw.get("laser"))
     if is_operant(paradigm):
         out += lever_scheduler_commands(paradigm, active_lever_of(paradigm_settings), hw)
@@ -487,19 +524,19 @@ def filter_allowed(cmds: Iterable[Command], allowed: set[int] | None) -> tuple[l
 
 # ── Preset data ──────────────────────────────────────────────────────────────
 
-def _cont(lever_filter: str, delay: int) -> dict:
+def _cont(lever_filter: str, delay: int) -> Contingency:
     return {"leverFilter": lever_filter, "delay": delay}
 
 
-_FR_CORE = {
+_FR_CORE: Hardware = {
     "rhLever": {"armed": True, "timeout": 20000, "timeoutMode": 0},
     "lhLever": {"armed": True, "timeout": 20000, "timeoutMode": 0},
     "primaryCue": {"armed": True, "frequency": 8000, "duration": 1600, "contingency": _cont("rh", 0)},
 }
-_FR_PUMP = {
+_FR_PUMP: Hardware = {
     "primaryPump": {"armed": True, "duration": 2000, "contingency": _cont("rh", 1600), "flowRateUlPerSec": None},
 }
-_FR_OPTIONAL = {
+_FR_OPTIONAL: Hardware = {
     "laser": {"armed": False, "frequency": 40, "duration": 5000, "mode": "contingent",
               "contingency": "any", "onsetDelay": 0},
     "lickCircuit": {"armed": False},
@@ -508,15 +545,15 @@ _FR_OPTIONAL = {
     "secondaryCue": {"armed": False, "frequency": 2900, "duration": 1000, "contingency": _cont("none", 0)},
     "secondaryPump": {"armed": False, "duration": 3000, "contingency": _cont("none", 0), "flowRateUlPerSec": None},
 }
-_FR_LITE_OPTIONAL = {k: v for k, v in _FR_OPTIONAL.items() if k not in ("microscope", "slm")}
-_FR_SETTINGS = {"ratio": 1, "step": 1, "interval": 30000}
+_FR_LITE_OPTIONAL: Hardware = {k: v for k, v in _FR_OPTIONAL.items() if k not in ("microscope", "slm")}
+_FR_SETTINGS: ParadigmSettings = {"ratio": 1, "step": 1, "interval": 30000}
 
 
-def _limits(limit_type: str, time_limit: int, infusion_limit: int, delay: int = 10) -> dict:
+def _limits(limit_type: str, time_limit: int, infusion_limit: int, delay: int = 10) -> LimitDefaults:
     return {"limitType": limit_type, "timeLimit": time_limit, "infusionLimit": infusion_limit, "delay": delay}
 
 
-def _sa(pid: str, name: str, label: str, paradigm: str, optional: dict, infusions: int) -> dict:
+def _sa(pid: str, name: str, label: str, paradigm: str, optional: Hardware, infusions: int) -> Preset:
     return {
         "id": pid, "name": name, "menuLabel": label, "paradigm": paradigm,
         "hardware": {**_FR_CORE, **_FR_PUMP, **optional},
@@ -525,8 +562,8 @@ def _sa(pid: str, name: str, label: str, paradigm: str, optional: dict, infusion
     }
 
 
-def _extinction(pid: str, name: str, paradigm: str, optional: dict, pump_flow: bool) -> dict:
-    pump = {"armed": False, "duration": 2000, "contingency": _cont("none", 1600)}
+def _extinction(pid: str, name: str, paradigm: str, optional: Hardware, pump_flow: bool) -> Preset:
+    pump: DeviceState = {"armed": False, "duration": 2000, "contingency": _cont("none", 1600)}
     if pump_flow:
         pump["flowRateUlPerSec"] = None
     return {
@@ -543,26 +580,26 @@ def _extinction(pid: str, name: str, paradigm: str, optional: dict, pump_flow: b
     }
 
 
-_PAV_CORE = {
+_PAV_CORE: Hardware = {
     "primaryCue": {"armed": True, "frequency": 12000, "duration": 2000, "contingency": _cont("none", 0)},
     "secondaryCue": {"armed": True, "frequency": 3000, "duration": 2000, "contingency": _cont("none", 0)},
     "primaryPump": {"armed": True, "duration": 2000, "contingency": _cont("none", 0), "flowRateUlPerSec": None},
 }
-_PAV_LASER = {"armed": True, "frequency": 40, "duration": 5000, "mode": "cs_plus", "phase": "reward",
+_PAV_LASER: DeviceState = {"armed": True, "frequency": 40, "duration": 5000, "mode": "cs_plus", "phase": "reward",
               "contingency": "any", "onsetDelay": 0}
-_PAV_OPTIONAL = {
+_PAV_OPTIONAL: Hardware = {
     "laser": {**_PAV_LASER, "armed": False},
     "lickCircuit": {"armed": True},
     "microscope": {"armed": False, "frameRate": None, "frameAveraging": None},
     "slm": {"armed": False, "pin": 11, "laserFrequency": None, "laserDuration": None},
 }
-_PAV_PARAMS_COMMON = {
+_PAV_PARAMS_COMMON: dict[int, int] = {
     208: 50, 209: 50, 210: 12000, 211: 3000, 212: 0, 213: 2000, 214: 1000, 215: 5000,
     216: 30000, 217: 20000, 218: 50000, 219: 0, 374: 0, 375: 0, 384: 200, 385: 200,
 }
 
 
-def _pav(pid: str, name: str, label: str, cs_plus_prob: int, cs_minus_prob: int) -> dict:
+def _pav(pid: str, name: str, label: str, cs_plus_prob: int, cs_minus_prob: int) -> Preset:
     return {
         "id": pid, "name": name, "menuLabel": label, "paradigm": "pavlovian",
         "hardware": {**_PAV_CORE, **_PAV_OPTIONAL, "laser": dict(_PAV_LASER), "lickCircuit": {"armed": True}},
@@ -572,7 +609,7 @@ def _pav(pid: str, name: str, label: str, cs_plus_prob: int, cs_minus_prob: int)
     }
 
 
-SESSION_PRESETS: list[dict] = [
+SESSION_PRESETS: list[Preset] = [
     _sa("sa-high", "Self-Administration - High Day", "SA High", "fr", _FR_OPTIONAL, 10),
     _sa("sa-mid", "Self-Administration - Mid Day", "SA Mid", "fr", _FR_OPTIONAL, 20),
     _sa("sa-low", "Self-Administration - Low Day", "SA Low", "fr", _FR_OPTIONAL, 40),
@@ -585,10 +622,10 @@ SESSION_PRESETS: list[dict] = [
     _pav("pav-reversal", "Pavlovian - Reversal", "Reversal", 0, 100),
 ]
 
-PRESET_BY_ID: dict[str, dict] = {p["id"]: p for p in SESSION_PRESETS}
+PRESET_BY_ID: dict[str, Preset] = {p["id"]: p for p in SESSION_PRESETS}
 
 
-def presets_for(paradigm: str | None) -> list[dict]:
+def presets_for(paradigm: str | None) -> list[Preset]:
     """Built-in presets offered for a session (exact paradigm match, as the web does)."""
     p = (paradigm or "").lower()
     return [preset for preset in SESSION_PRESETS if preset["paradigm"] == p]

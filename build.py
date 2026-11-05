@@ -71,7 +71,7 @@ def resolve_reacher_hex_dir() -> str | None:
         from importlib import resources
 
         hex_dir = resources.files("reacher") / "hex"
-        path = os.fspath(hex_dir)
+        path = str(hex_dir)
     except (ImportError, ModuleNotFoundError, AttributeError):
         return None
     return path if os.path.isdir(path) else None

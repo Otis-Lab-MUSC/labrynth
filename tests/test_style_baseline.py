@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "style-baseline.py"
 COMMITTED_BASELINE = ROOT / "scripts" / "style-baseline.json"
 FAST_FLAGS = ["--skip-mypy", "--skip-eslint"]
-LOWERED_METRIC = "ruff_ANN"
+LOWERED_METRIC = "ruff_T20"
 
 
 def run_ratchet(*arguments: str) -> subprocess.CompletedProcess[str]:
