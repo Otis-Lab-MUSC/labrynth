@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 from . import presets as P
 from .constants import (
@@ -15,6 +15,27 @@ from .constants import (
 )
 from .host import CliHost
 from .state import MenuItem, MenuState
+
+SCALAR_CODE_MIN = 206
+SCALAR_CODE_MAX = 219
+
+
+def _spec_code(spec: Mapping[str, object]) -> int | None:
+    """Return a command spec's integer code, or None when it has none."""
+    code = spec.get("code")
+    return code if isinstance(code, int) and not isinstance(code, bool) else None
+
+
+def _pavlovian_label(code: int, spec: Mapping[str, object]) -> str:
+    """Return the menu label for a Pavlovian command."""
+    description = spec.get("description")
+    return PAV_LABEL_OVERRIDES.get(code) or (str(description) if description else "") or f"Code {code}"
+
+
+def _pavlovian_suffix(code: int, tracked: Mapping[int, object]) -> str:
+    """Return the last value set for a Pavlovian command, formatted for the menu."""
+    return f"({tracked[code]})" if code in tracked else ""
+
 
 PARADIGM_SETTING_ROWS = (
     (("fr", "pr"), "Set Ratio", "Enter ratio:", "ratio", "ratio", 1),
@@ -120,55 +141,43 @@ class ProgramMenuMixin(CliHost):
         """Build the Pavlovian parameter menu from the firmware's command registry."""
         s = self.session
         tracked = s.pavlovian_params if s else {}
-        items = []
         # The param *list* is sourced dynamically from reacher's registry
         # (paradigm-filtered + deprecation-stripped server-side), so re-enabled
-        # params surface automatically. Rendered in three blocks mirroring
-        # PavlovianSettings.tsx: scalar (206-219 sans ITI), ITI (cross-validated),
-        # and pulse config. Each path records the value so the suffix reflects the
-        # last value set this session.
+        # params surface automatically. Rendered in two blocks mirroring
+        # PavlovianSettings.tsx: scalar (206-219 sans ITI) and pulse config. Each
+        # path records the value so the suffix reflects the last value set this session.
         specs = s.pav_commands if s else []
-
-        def _label(code: int, spec: dict) -> str:
-            """Return the menu label for a Pavlovian command."""
-            return PAV_LABEL_OVERRIDES.get(code) or spec.get("description") or f"Code {code}"
-
-        def _suffix(code: int) -> str:
-            """Return the last value set for a Pavlovian command, formatted for the menu."""
-            return f"({tracked[code]})" if code in tracked else ""
-
+        coded = [(code, sp) for sp in specs if (code := _spec_code(sp)) is not None]
         scalar = sorted(
-            (sp for sp in specs if sp.get("payload_key") and 206 <= sp.get("code", 0) <= 219),
-            key=lambda sp: sp["code"],
+            ((code, sp) for code, sp in coded if sp.get("payload_key") and SCALAR_CODE_MIN <= code <= SCALAR_CODE_MAX),
+            key=lambda pair: pair[0],
         )
-        for sp in scalar:
-            code = sp["code"]
-            label = _label(code, sp)
-            action = self._pavlovian_scalar_action(code, label, sp)
-            items.append(MenuItem(f"Set {label}", action=action, suffix=_suffix(code)))
-
         # Pulse-configuration block (0 = continuous tone), also registry-sourced.
         pulse = sorted(
-            (sp for sp in specs if sp.get("code") in PULSE_CODES),
-            key=lambda sp: sp["code"],
+            ((code, sp) for code, sp in coded if code in PULSE_CODES),
+            key=lambda pair: pair[0],
         )
-        for sp in pulse:
-            code = sp["code"]
-            label = _label(code, sp)
-            items.append(
-                MenuItem(
-                    f"Set {label}",
-                    action=lambda c=code, lbl=label: self._prompt_int_input(
-                        f"Enter {lbl}:", lambda v, c2=c: self._set_pavlovian_param(c2, v)
-                    ),
-                    suffix=_suffix(code),
-                )
-            )
-
+        items = [self._pavlovian_scalar_item(code, sp, tracked) for code, sp in scalar]
+        items.extend(self._pavlovian_pulse_item(code, sp, tracked) for code, sp in pulse)
         if not scalar and not pulse:
             items.append(MenuItem("Reload commands", action=self._load_commands))
         items.append(MenuItem("Back", action=self._pop_menu))
         return MenuState(title="Program > Pavlovian Settings", items=items)
+
+    def _pavlovian_scalar_item(self, code: int, spec: dict[str, object], tracked: Mapping[int, object]) -> MenuItem:
+        """Build the menu item for one scalar Pavlovian command."""
+        label = _pavlovian_label(code, spec)
+        action = self._pavlovian_scalar_action(code, label, spec)
+        return MenuItem(f"Set {label}", action=action, suffix=_pavlovian_suffix(code, tracked))
+
+    def _pavlovian_pulse_item(self, code: int, spec: Mapping[str, object], tracked: Mapping[int, object]) -> MenuItem:
+        """Build the menu item for one pulse-configuration command."""
+        label = _pavlovian_label(code, spec)
+        return MenuItem(
+            f"Set {label}",
+            action=lambda: self._prompt_int_input(f"Enter {label}:", lambda v: self._set_pavlovian_param(code, v)),
+            suffix=_pavlovian_suffix(code, tracked),
+        )
 
     def _counted_pumps_item(self, counted: object) -> MenuItem:
         """Build the Counted Pumps item, labelled with the current choice."""

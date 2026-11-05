@@ -5,8 +5,21 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterable
+from time import monotonic
 
+from .errors import API_ERRORS
 from .host import CliHost
+from .response_fields import read_record_list
+from .ws_messages import WsData
+
+CLEAN_CLOSE_DELAY_SECONDS = 1
+# A link that stayed up this long before failing counts as healthy: the retry delay starts over.
+STABLE_LINK_SECONDS = 30
+
+
+def _as_int(value: object, default: int = 0) -> int:
+    """Return ``value`` when it is an int, else ``default``."""
+    return value if isinstance(value, int) else default
 
 
 class MonitorMixin(CliHost):
@@ -51,6 +64,7 @@ class MonitorMixin(CliHost):
         """Follow the session's WebSocket, reconnecting with backoff, until the session changes or disappears."""
         try:
             import websockets
+            from websockets.exceptions import WebSocketException
         except ImportError:
             self._log("websockets not installed — cannot stream", error=True)
             self._invalidate()
@@ -59,8 +73,10 @@ class MonitorMixin(CliHost):
         # Local: /ws/{sid}?token=<key>. Remote: the local backend's relay,
         # /api/proxy/{device}/ws/{sid}?token=<LOCAL key>. The backend rejects
         # a socket without the token (403 before any session lookup).
+        stream_errors = (OSError, WebSocketException, asyncio.TimeoutError, ValueError)
         connected_once = False
         attempt = 0
+        connected_at = monotonic()
         refresh = asyncio.ensure_future(self._refresh_loop())
         try:
             # Retries forever with capped backoff: for a walk-away run the
@@ -69,27 +85,38 @@ class MonitorMixin(CliHost):
             while self.session and self.session.id == sid:
                 try:
                     async with websockets.connect(self.api.ws_url(sid), open_timeout=15) as ws:
-                        attempt = 0
-                        self.ws_connected = True
-                        if connected_once:
-                            await self._recover_missed_events()
-                            self._log("  [info] Live link restored")
+                        connected_at = monotonic()
+                        if await self._on_link_open(sid, reconnected=connected_once):
+                            return
                         connected_once = True
-                        self._invalidate()
                         await self._read_socket(ws)
                 except asyncio.CancelledError:
                     raise
-                except Exception as exc:
-                    attempt += 1
+                except stream_errors as exc:
+                    attempt = 1 if monotonic() - connected_at >= STABLE_LINK_SECONDS else attempt + 1
                     if await self._handle_link_down(exc, attempt, sid):
                         return
                 else:
                     self.ws_connected = False
+                    await asyncio.sleep(CLEAN_CLOSE_DELAY_SECONDS)
         except asyncio.CancelledError:
             pass
         finally:
             refresh.cancel()
             self.ws_connected = False
+
+    async def _on_link_open(self, sid: str, reconnected: bool) -> bool:
+        """Mark the link up and catch up after a reconnect; return True when the session is gone."""
+        self.ws_connected = True
+        if reconnected:
+            # The backend accepts a socket for a session it has destroyed,
+            # so a successful handshake proves nothing.
+            if await self._abandon_if_session_gone(sid):
+                return True
+            await self._recover_missed_events()
+            self._log("  [info] Live link restored")
+        self._invalidate()
+        return False
 
     async def _refresh_loop(self) -> None:
         """Redraw the screen once a second so the elapsed clock advances."""
@@ -102,14 +129,18 @@ class MonitorMixin(CliHost):
         async for raw in ws:
             try:
                 msg = json.loads(raw)
-            except json.JSONDecodeError:
+            except (ValueError, RecursionError):
                 continue
-            # A handler bug must not tear down the socket.
-            try:
-                self._handle_ws_message(msg)
-            except Exception as exc:
-                self._log(f"Bad {msg.get('type', '?')} message: {exc}", error=True)
+            if isinstance(msg, dict):
+                self._dispatch_message(msg)
             self._invalidate()
+
+    def _dispatch_message(self, msg: WsData, replay: bool = False) -> None:
+        """Route one message, logging a handler bug instead of tearing down the stream."""
+        try:
+            self._handle_ws_message(msg, replay=replay)
+        except Exception as exc:  # noqa: BLE001 -- handler guard: a handler bug must not tear down the socket
+            self._log(f"Bad {msg.get('type', '?')} message: {exc}", error=True)
 
     async def _handle_link_down(self, exc: Exception, attempt: int, sid: str) -> bool:
         """Back off after a dropped link; return True when the session is gone for good."""
@@ -121,19 +152,23 @@ class MonitorMixin(CliHost):
         await asyncio.sleep(delay)
         # A session the host destroyed (orphan cleanup, another client) will
         # never accept a socket again: stop retrying.
-        if attempt % 5 == 0 and not await self._session_still_exists(sid):
-            self._log(f"Session {sid[:8]} no longer exists on {self.target_name}", error=True)
-            if self.session and self.session.id == sid:
-                self.session.state = "gone"
-            return True
-        return False
+        return attempt % 5 == 0 and await self._abandon_if_session_gone(sid)
+
+    async def _abandon_if_session_gone(self, sid: str) -> bool:
+        """Mark the session gone and return True when the target does not list it."""
+        if await self._session_still_exists(sid):
+            return False
+        self._log(f"Session {sid[:8]} no longer exists on {self.target_name}", error=True)
+        if self.session and self.session.id == sid:
+            self.session.state = "gone"
+        return True
 
     async def _session_still_exists(self, sid: str) -> bool:
         """Return True if the target still lists the session (or cannot be reached)."""
         try:
-            sessions = (await self.api.list_sessions()).get("sessions", [])
+            sessions = read_record_list((await self.api.list_sessions()).get("sessions"))
             return any(x.get("session_id") == sid for x in sessions)
-        except Exception:
+        except API_ERRORS:
             return True  # can't tell (host unreachable) — keep trying
 
     async def _recover_missed_events(self) -> None:
@@ -143,23 +178,23 @@ class MonitorMixin(CliHost):
         try:
             info = await self.api.get_session(self.session.id)
             if info.get("state"):
-                self._handle_ws_message({"type": "session_state", "data": {"state": info["state"]}})
-        except Exception:
-            pass
+                self._dispatch_message({"type": "session_state", "data": {"state": info["state"]}})
+        except API_ERRORS as exc:
+            self._log(f"State refresh failed: {exc}", error=True)
         try:
             since = self.session.backend_event_count
             resp = await self.api.get_behavior(self.session.id, since=since)
-            data = resp.get("data", [])
-            total = resp.get("total", 0)
+            data = read_record_list(resp.get("data"))
+            total = _as_int(resp.get("total"))
             if total < since:
                 # Buffers were reset (restart/new run): replay from zero.
                 self._reset_counters()
                 resp = await self.api.get_behavior(self.session.id)
-                data, total = resp.get("data", []), resp.get("total", 0)
+                data, total = read_record_list(resp.get("data")), _as_int(resp.get("total"))
             for entry in data:
-                self._handle_ws_message({"type": "event", "data": entry}, replay=True)
+                self._dispatch_message({"type": "event", "data": entry}, replay=True)
             self.session.backend_event_count = total
             if data:
                 self._log(f"  [info] Recovered {len(data)} missed events")
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._log(f"Event recovery failed: {exc}", error=True)

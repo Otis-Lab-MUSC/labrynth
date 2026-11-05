@@ -16,11 +16,15 @@ from __future__ import annotations
 import argparse
 import asyncio
 import atexit
+import logging
 import os
 import socket
 import subprocess
 import sys
 import time
+
+LOGGER = logging.getLogger(__name__)
+DEFAULT_PORT = 6229
 
 
 def _run_backend() -> None:
@@ -58,7 +62,7 @@ def _parse_arguments() -> argparse.Namespace:
     parser.add_argument(
         "--port",
         type=int,
-        default=6229,
+        default=DEFAULT_PORT,
         help="Backend server port (default: 6229)",
     )
     parser.add_argument(
@@ -86,7 +90,7 @@ def _parse_arguments() -> argparse.Namespace:
 
 def _spawn_backend(port: int) -> subprocess.Popen[bytes]:
     """Start the REACHER backend as a subprocess and arrange for it to be stopped at exit."""
-    print(f"Starting REACHER backend on port {port}...")
+    LOGGER.info("Starting REACHER backend on port %s...", port)
     env = os.environ.copy()
     env["REACHER_PORT"] = str(port)
     # A terminal UI must never pop a GUI browser window, even when the
@@ -121,13 +125,13 @@ def _ensure_backend(args: argparse.Namespace) -> None:
     if args.no_server:
         return
     if _is_running(args.port):
-        print(f"Backend already running on port {args.port}.")
+        LOGGER.info("Backend already running on port %s.", args.port)
         return
     _spawn_backend(args.port)
     if not _wait_for_server(args.port):
-        print("ERROR: Backend failed to start. Is `reacher` installed?", file=sys.stderr)
+        LOGGER.error("Backend failed to start. Is `reacher` installed?")
         sys.exit(1)
-    print("Backend ready.")
+    LOGGER.info("Backend ready.")
 
 
 def main() -> None:
@@ -138,6 +142,8 @@ def main() -> None:
         _run_backend()
         return
 
+    logging.basicConfig(level=logging.WARNING, format="%(message)s", stream=sys.stderr)
+    LOGGER.setLevel(logging.INFO)
     args = _parse_arguments()
 
     if args.selftest:
@@ -145,6 +151,7 @@ def main() -> None:
 
         app = ReacherCLI(port=args.port)
         app._render()
+        # Result line read by the release workflows; stays on stdout.
         print("selftest OK")
         return
 

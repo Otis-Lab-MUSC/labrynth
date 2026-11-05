@@ -54,7 +54,7 @@ class SessionState:
     file_config: dict[str, str] = field(default_factory=lambda: {"filename": "", "destination": "", "notes": ""})
     backend_event_count: int = 0
     # Pavlovian command specs sourced from reacher's registry (get_commands_for_paradigm)
-    pav_commands: list[dict] = field(default_factory=list)
+    pav_commands: list[dict[str, object]] = field(default_factory=list)
     frame_count: int = 0
     cs_plus_count: int = 0
     cs_minus_count: int = 0
@@ -76,7 +76,8 @@ class SessionState:
     @property
     def allowed_codes(self) -> set[int]:
         """Return the command codes the running firmware declares."""
-        return {int(c["code"]) for c in self.pav_commands if "code" in c}
+        codes = (c.get("code") for c in self.pav_commands)
+        return {code for code in codes if isinstance(code, int)}
 
     @property
     def elapsed(self) -> float:

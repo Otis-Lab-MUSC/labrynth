@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import os
 
+from .errors import API_ERRORS, FILE_ERRORS
 from .host import CliHost
+from .response_fields import read_optional_str, read_record_list
 
 
 class DataActionsMixin(CliHost):
@@ -19,7 +21,7 @@ class DataActionsMixin(CliHost):
         try:
             await self.api.set_file_config(self.session.id, filename=value)
             self._set_status(f"Filename set: {value}")
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Failed: {exc}", error=True)
 
     async def _set_destination(self, value: str) -> None:
@@ -31,7 +33,7 @@ class DataActionsMixin(CliHost):
         try:
             await self.api.set_file_config(self.session.id, destination=value)
             self._set_status(f"Destination set: {value}")
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Failed: {exc}", error=True)
 
     async def _set_notes(self, value: str) -> None:
@@ -43,7 +45,7 @@ class DataActionsMixin(CliHost):
         try:
             await self.api.set_file_config(self.session.id, notes=value)
             self._set_status("Notes set")
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Failed: {exc}", error=True)
 
     async def _export_zip(self, auto: bool = False) -> None:
@@ -67,14 +69,14 @@ class DataActionsMixin(CliHost):
                 "program_start_time": s.program_start * 1000 if s.program_start else None,
             }
             resp = await self.api.export_zip(s.id, **{k: v for k, v in payload.items() if v is not None})
-            path = resp.get("file_path")
+            path = read_optional_str(resp.get("file_path"))
             s.last_export = path
             where = f" on {self.target_name}" if self.api.is_remote else ""
             self._log(f"  [export] Saved{where}: {path}")
             self._set_status(f"{'Auto-e' if auto else 'E'}xported{where}: {path}")
             if path and self.api.is_remote:
                 await self._download_last_export()
-        except Exception as exc:
+        except (*API_ERRORS, *FILE_ERRORS) as exc:
             self._log(f"  [error] Export failed: {exc}", error=True)
             self._set_status(f"Export failed: {exc}", error=True)
         finally:
@@ -101,7 +103,7 @@ class DataActionsMixin(CliHost):
             s.last_download = local
             self._log(f"  [export] Copied to this machine: {local}")
             self._set_status(f"Downloaded: {local}")
-        except Exception as exc:
+        except (*API_ERRORS, *FILE_ERRORS) as exc:
             self._log(f"  [error] Download failed: {exc}", error=True)
             self._set_status(f"Download failed (the ZIP is still on {self.target_name}): {exc}", error=True)
         self._rebuild_current_menu()
@@ -120,7 +122,7 @@ class DataActionsMixin(CliHost):
             return
         try:
             resp = await self.api.get_behavior(self.session.id)
-            events = resp.get("data", [])
+            events = read_record_list(resp.get("data"))
             if not events:
                 self._set_status("No data recorded yet")
                 return
@@ -130,5 +132,5 @@ class DataActionsMixin(CliHost):
                 ts = f"{ts / 1000:.1f}s" if isinstance(ts, (int, float)) else ts
                 lines.append(f"[{ts}] {e.get('device', '')}: {e.get('event', '')}")
             self._set_status(f"{resp.get('total', len(events))} events. Last: " + " | ".join(lines))
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Data fetch failed: {exc}", error=True)

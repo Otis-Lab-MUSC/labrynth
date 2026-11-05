@@ -135,28 +135,32 @@ class CliPauseRegressionTest(unittest.TestCase):
                 f"{paradigm}: pause must hit the backend once for this session",
             )
 
-            header = _header_line(cli)
-            labels = [item.label for item in cli.menu.items]
-            shows_paused = (
-                cli.session.state == "paused"
-                and "[paused]" in header
-                and "[running]" not in header
-                and cli.status_message == "Session paused"
-                and "Play (Resume)" in labels
-                and "Pause Session" not in labels
-            )
-            self.assertTrue(
-                shows_paused,
-                "pausing a running session left the CLI showing the inverted state:\n"
-                f"  paradigm: {paradigm}\n"
-                f"  state: {cli.session.state!r} (expected 'paused')\n"
-                f"  header: {header!r} (expected to contain '[paused]')\n"
-                f"  status: {cli.status_message!r} (expected 'Session paused')\n"
-                f"  program menu: {labels}",
-            )
+            self._assert_shows_paused(cli, paradigm)
         finally:
             await backend.stop()
             await real_api.close()
+
+    def _assert_shows_paused(self, cli: ReacherCLI, paradigm: str) -> None:
+        """Assert the CLI header, status and menu all show the paused state."""
+        header = _header_line(cli)
+        labels = [item.label for item in cli.menu.items]
+        shows_paused = (
+            cli.session.state == "paused"
+            and "[paused]" in header
+            and "[running]" not in header
+            and cli.status_message == "Session paused"
+            and "Play (Resume)" in labels
+            and "Pause Session" not in labels
+        )
+        self.assertTrue(
+            shows_paused,
+            "pausing a running session left the CLI showing the inverted state:\n"
+            f"  paradigm: {paradigm}\n"
+            f"  state: {cli.session.state!r} (expected 'paused')\n"
+            f"  header: {header!r} (expected to contain '[paused]')\n"
+            f"  status: {cli.status_message!r} (expected 'Session paused')\n"
+            f"  program menu: {labels}",
+        )
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 
 from . import presets as P
+from .errors import API_ERRORS
 from .host import CliHost
 
 
@@ -20,6 +21,9 @@ class RunActionsMixin(CliHost):
         pump target) for operant paradigms.
         """
         s = self.session
+        if s is None:
+            self._set_status("No session", error=True)
+            return False
         missing = P.missing_limit_fields(self._web_limits())
         if missing:
             self._set_status(f"Set the limits first: {', '.join(missing)}", error=True)
@@ -28,7 +32,7 @@ class RunActionsMixin(CliHost):
             await self._send_limits()
             await self._send_commands(P.start_commands(s.paradigm, s.hw, s.paradigm_settings, s.pavlovian_params))
             return True
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Start aborted — config not applied: {exc}", error=True)
             return False
 
@@ -47,7 +51,7 @@ class RunActionsMixin(CliHost):
             self.session.last_export = self.session.last_download = None
             self._set_status("Session started")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Start failed: {exc}", error=True)
 
     async def _stop_program(self) -> None:
@@ -75,7 +79,7 @@ class RunActionsMixin(CliHost):
             self.session.program_end = time.time()
             self._set_status("Session stopped")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Stop failed: {exc}", error=True)
 
     async def _pause_program(self) -> None:
@@ -101,7 +105,7 @@ class RunActionsMixin(CliHost):
                 self.session.pause_start = time.time()
                 self._set_status("Session paused")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Pause/resume failed: {exc}", error=True)
 
     async def _split_segment(self) -> None:
@@ -111,9 +115,11 @@ class RunActionsMixin(CliHost):
             return
         try:
             result = await self.api.split_segment(self.session.id)
-            seg = result.get("segment_number", "?")
-            self._set_status(f"Segment split — now on segment {int(seg) + 1}")
-        except Exception as exc:
+            seg = result.get("segment_number")
+            current = seg if isinstance(seg, int) and not isinstance(seg, bool) else None
+            next_segment = current + 1 if current is not None else "?"
+            self._set_status(f"Segment split — now on segment {next_segment}")
+        except API_ERRORS as exc:
             self._set_status(f"Split failed: {exc}", error=True)
 
     async def _restart_program(self) -> None:
@@ -141,5 +147,5 @@ class RunActionsMixin(CliHost):
             self.session.pause_start = None
             self._set_status("Program restarted")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Restart failed: {exc}", error=True)

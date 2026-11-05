@@ -3,8 +3,25 @@
 from __future__ import annotations
 
 from . import presets as P
+from .errors import API_ERRORS
 from .host import CliHost
+from .response_fields import read_record_list
 from .state import SessionState
+
+
+def _opt_dict(value: object) -> dict[str, object] | None:
+    """Return the value when it is a JSON object, else None."""
+    return value if isinstance(value, dict) else None
+
+
+def _opt_str(value: object) -> str | None:
+    """Return the value when it is a string, else None."""
+    return value if isinstance(value, str) else None
+
+
+def _opt_int(value: object) -> int | None:
+    """Return the value when it is an integer, else None."""
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
 
 
 class AttachActionsMixin(CliHost):
@@ -26,8 +43,8 @@ class AttachActionsMixin(CliHost):
     async def _choose_attach(self) -> None:
         """List the target's sessions and ask which to attach to."""
         try:
-            sessions = (await self.api.list_sessions()).get("sessions", [])
-        except Exception as exc:
+            sessions = read_record_list((await self.api.list_sessions()).get("sessions"))
+        except API_ERRORS as exc:
             self._set_status(f"List sessions failed: {exc}", error=True)
             return
         if not sessions:
@@ -35,8 +52,8 @@ class AttachActionsMixin(CliHost):
             return
         opts = [
             (
-                f"{x['session_id'][:8]}  {x.get('paradigm') or '-':<10} {x.get('port', '')}  [{x.get('state')}]",
-                x["session_id"],
+                f"{str(x['session_id'])[:8]}  {x.get('paradigm') or '-':<10} {x.get('port', '')}  [{x.get('state')}]",
+                str(x["session_id"]),
             )
             for x in sessions
         ]
@@ -46,26 +63,26 @@ class AttachActionsMixin(CliHost):
         """Rebuild local state for a session this process did not create."""
         try:
             info = await self.api.get_session(sid)
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Attach failed: {exc}", error=True)
             return
         self._stop_ws()
         self.monitor_lines.clear()
         s = SessionState(
             id=sid,
-            port=info.get("port", ""),
-            paradigm=info.get("paradigm"),
-            board=info.get("board"),
-            state=info.get("state", "idle"),
+            port=_opt_str(info.get("port")) or "",
+            paradigm=_opt_str(info.get("paradigm")),
+            board=_opt_str(info.get("board")),
+            state=_opt_str(info.get("state")) or "idle",
         )
-        s.firmware_info = info.get("firmware_info")
+        s.firmware_info = _opt_dict(info.get("firmware_info"))
         s.attached = True
         # The server reports a list even in Auto mode, so only an explicit choice is kept;
         # otherwise the next limit edit would pin Auto to whichever pump is active now.
         if info.get("follows_reward_pump") is False:
             s.limit_settings["counted_pumps"] = info.get("counted_pumps")
-        s.server_infusion_count = info.get("infusion_count")
-        s.infusions_by_pump = info.get("infusions_by_pump")
+        s.server_infusion_count = _opt_int(info.get("infusion_count"))
+        s.infusions_by_pump = _opt_dict(info.get("infusions_by_pump"))
         if s.paradigm:
             s.name = f"{s.paradigm.upper()} {s.port}"
         self.session = s
@@ -75,10 +92,12 @@ class AttachActionsMixin(CliHost):
         # follow live from that point (the WS reconnect path uses ``since``).
         try:
             resp = await self.api.get_behavior(sid)
-            for entry in resp.get("data", []):
-                self._handle_ws_message({"type": "event", "data": entry}, replay=True)
-            s.backend_event_count = resp.get("total", s.backend_event_count)
-        except Exception as exc:
+            for entry in read_record_list(resp.get("data")):
+                self._dispatch_message({"type": "event", "data": entry}, replay=True)
+            total = _opt_int(resp.get("total"))
+            if total is not None:
+                s.backend_event_count = total
+        except API_ERRORS as exc:
             self._set_status(f"Attached, but event history failed: {exc}", error=True)
         self._ensure_ws()
         self._set_status(
@@ -93,13 +112,14 @@ class AttachActionsMixin(CliHost):
             return
         try:
             cfg = await self.api.get_config(s.id)
-        except Exception:
+        except API_ERRORS:
             return
-        for row in cfg.get("hardware_settings", []) or []:
+        for row in read_record_list(cfg.get("hardware_settings")):
             P.merge_firmware_row(s.hw, row)
             P.merge_controller_row(s.paradigm_settings, row)
-        if cfg.get("firmware_info"):
-            s.firmware_info = cfg["firmware_info"]
+        firmware_info = _opt_dict(cfg.get("firmware_info"))
+        if firmware_info:
+            s.firmware_info = firmware_info
 
     async def _show_session_info(self) -> None:
         """Show the session's id, port, state, paradigm and board in the status bar."""

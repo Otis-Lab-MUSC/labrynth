@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Awaitable
 
+from .errors import API_ERRORS
 from .host import CliHost
 from .menus import _digits
+from .response_fields import read_record_list
 
 
 class MachineActionsMixin(CliHost):
@@ -14,8 +16,8 @@ class MachineActionsMixin(CliHost):
     async def _refresh_machines(self) -> None:
         """Reload the list of paired and discovered machines."""
         try:
-            self.machines = (await self.api.list_machines()).get("devices", [])
-        except Exception as exc:
+            self.machines = read_record_list((await self.api.list_machines()).get("devices"))
+        except API_ERRORS as exc:
             self.machines = []
             self._set_status(f"Machine list failed: {exc}", error=True)
 
@@ -51,7 +53,7 @@ class MachineActionsMixin(CliHost):
                     f"Now controlling {name} (reacher {h.get('version', '?')}, "
                     f"{h.get('active_sessions', 0)} active sessions)"
                 )
-            except Exception as exc:
+            except API_ERRORS as exc:
                 self._set_status(f"Selected {name}, but it is not reachable: {exc}", error=True)
         else:
             self._set_status("Now controlling this machine")
@@ -64,7 +66,7 @@ class MachineActionsMixin(CliHost):
             await self._refresh_machines()
             self._set_status(f"Paired {m.get('name') or m.get('hostname')} at {m.get('url')}")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Pairing failed: {exc}", error=True)
 
     async def _pair_by_url_step(self, url: str) -> None:
@@ -92,5 +94,5 @@ class MachineActionsMixin(CliHost):
             await self._refresh_machines()
             self._set_status("Machine unpaired")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Unpair failed: {exc}", error=True)

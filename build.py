@@ -29,17 +29,32 @@ Building the CLI also requires the ``[cli]`` extras: pip install -e ".[cli]".
 from __future__ import annotations
 
 import argparse
-import hashlib
 import logging
 import os
 import platform
-import re
 import shutil
 import subprocess
 import sys
-import tarfile
-import urllib.request
-import zipfile
+
+from build_args import parse_arguments
+from build_assets import (
+    check_avrdude_conf,
+    check_frontend_dist,
+    check_hex_files,
+    locate_avrdude,
+    resolve_reacher_hex_dir,
+)
+from build_avrdude import resolve_avrdude_conf
+from build_llm import ensure_llm, is_shared_lib, llama_binaries
+
+# Names the PyInstaller specs and CI import from ``build``.
+__all__ = [
+    "ensure_llm",
+    "is_shared_lib",
+    "llama_binaries",
+    "resolve_avrdude_conf",
+    "resolve_reacher_hex_dir",
+]
 
 logger = logging.getLogger(__name__)
 
@@ -55,26 +70,9 @@ FRONTEND_DIST = os.path.join(FRONTEND_DIR, "dist")
 SPEC_FILE = os.path.join(SCRIPT_DIR, "labrynth.spec")
 SPEC_FILE_CLI = os.path.join(SCRIPT_DIR, "labrynth-cli.spec")
 
-PARADIGMS = ("fr", "pr", "vi", "omission", "pavlovian")
-BOARDS = ("uno", "mega")
-
-
-def resolve_reacher_hex_dir() -> str | None:
-    """Return the firmware hex directory shipped inside the installed reacher package.
-
-    Firmware hex is package data at ``reacher/hex/<board>/<paradigm>.hex``.
-    Returns the absolute path to that ``hex`` directory, or None if reacher is
-    not importable or ships no hex tree. Shared by build.py (asset validation)
-    and labrynth.spec (bundling) so both agree on the source of truth.
-    """
-    try:
-        from importlib import resources
-
-        hex_dir = resources.files("reacher") / "hex"
-        path = str(hex_dir)
-    except (ImportError, ModuleNotFoundError, AttributeError):
-        return None
-    return path if os.path.isdir(path) else None
+CLI_MODULES = ("prompt_toolkit", "httpx", "websockets")
+GUI_BUNDLE_NAME = "Labrynth"
+CLI_BUNDLE_NAME = "LabrynthCLI"
 
 
 def _run(
@@ -92,35 +90,36 @@ def _run(
 # Build stages
 # ---------------------------------------------------------------------------
 
-def validate_environment() -> None:
-    """Verify reacher is installed and ships firmware hex as package data."""
-    logger.info("\n=== Stage 0: Validate environment ===")
-
-    # Check reacher package
+def validate_reacher_package() -> None:
+    """Exit unless the reacher package is importable."""
     try:
         import reacher
-        version = getattr(reacher, "__version__", "unknown")
-        logger.info(f"  [OK] reacher package (v{version})")
     except ImportError:
         logger.error("ERROR: reacher package not installed.")
         logger.error("       Run: pip install -e ../reacher   (or: pip install reacher2p)")
         sys.exit(1)
+    version = getattr(reacher, "__version__", "unknown")
+    logger.info(f"  [OK] reacher package (v{version})")
 
-    # Check the reacher package actually carries firmware hex
+
+def validate_environment() -> None:
+    """Verify reacher is installed and ships firmware hex as package data."""
+    logger.info("\n=== Stage 0: Validate environment ===")
+    validate_reacher_package()
+
     hex_dir = resolve_reacher_hex_dir()
-    if hex_dir:
-        logger.info(f"  [OK] Firmware hex (from reacher package): {hex_dir}")
-    else:
+    if not hex_dir:
         logger.error("ERROR: reacher package ships no firmware hex (reacher/hex/).")
         logger.error("       Reinstall reacher: pip install -e ../reacher")
         sys.exit(1)
+    logger.info(f"  [OK] Firmware hex (from reacher package): {hex_dir}")
 
 
 def validate_cli_deps() -> None:
     """Verify the [cli] extras are importable so PyInstaller can bundle them."""
     logger.info("\n=== Stage 0b: Validate CLI dependencies ===")
     missing = []
-    for mod in ("prompt_toolkit", "httpx", "websockets"):
+    for mod in CLI_MODULES:
         try:
             __import__(mod)
             logger.info(f"  [OK] {mod}")
@@ -144,507 +143,16 @@ def build_frontend() -> None:
     _run([npm, "run", "build"], cwd=FRONTEND_DIR)
 
 
-_AVRDUDE_VERSION = "8.1"
-_AVRDUDE_MIN_SIZE = 100_000  # bytes — Chocolatey shims are ~24 KB, real binary is ~7 MB
-
-# SHA-256 of avrdude-v<ver>-windows-x64.zip from the official GitHub release.
-# Pinned in-repo because upstream publishes no per-asset checksum for this zip.
-# Update together with _AVRDUDE_VERSION (and the matching CI pins in
-# .github/workflows/build-installers.yml + build-prerelease.yml).
-# Compute: sha256sum avrdude-v<ver>-windows-x64.zip
-_AVRDUDE_SHA256 = {
-    "8.1": "e4d571d81fee3387d51bfdedd0b6565e4c201e974101cac2caec7adfd6201da3",
-}
-
-# SHA-256 of the avrdude.exe extracted from that zip. Verified before the binary
-# is returned — covers both a fresh download and reuse of the .avrdude-dist cache
-# (which a prior run populated). Update alongside _AVRDUDE_SHA256.
-# Compute: unzip -p avrdude-v<ver>-windows-x64.zip avrdude.exe | sha256sum
-_AVRDUDE_EXE_SHA256 = {
-    "8.1": "b08186071b0877ceed6ec3e86dd42ee6d2b7556859659b34d4e326069cafbf45",
-}
-
-
-def resolve_avrdude_conf(avrdude_path: str | None) -> str | None:
-    """Return the avrdude.conf belonging to *avrdude_path*, or None.
-
-    The conf and the binary MUST come from the same avrdude install. ``-C``
-    replaces the system-wide config outright rather than adding to it, and
-    avrdude rejects a conf written for a different release outright:
-    avrdude 7.1 handed Arch's 8.2 conf prints "unable to process system wide
-    configuration file <path>" and exits 1 — a hard failure, not a warning.
-    This helper exists so a bundle never ships a mismatched conf.
-
-    Candidates, first hit wins:
-      1. ``<dir>/avrdude.conf``                  — Windows release zip
-      2. ``<dir>/../etc/avrdude.conf``           — Homebrew, ``--prefix`` builds
-      3. ``<dir>/../share/avrdude/avrdude.conf``
-      4. ``/etc/avrdude.conf``                   — distro packages, POSIX only
-
-    The three binary-relative candidates are tried first so Windows and macOS
-    resolve exactly the file they always have. Candidate 4 exists because the
-    Debian/Ubuntu package splits the conf to ``/etc`` while the binary lands in
-    ``/usr/bin`` — neither relative candidate can reach it — and it is safe
-    there precisely because the binary being bundled is that same package's.
-    """
-    if not avrdude_path:
-        return None
-    avrdude_dir = os.path.dirname(os.path.abspath(avrdude_path))
-    candidates = [
-        os.path.join(avrdude_dir, "avrdude.conf"),
-        os.path.join(avrdude_dir, "..", "etc", "avrdude.conf"),
-        os.path.join(avrdude_dir, "..", "share", "avrdude", "avrdude.conf"),
-    ]
-    if os.name == "posix":
-        candidates.append(os.path.join(os.sep, "etc", "avrdude.conf"))
-    for conf in candidates:
-        if os.path.isfile(conf):
-            return os.path.abspath(conf)
-    return None
-
-
-def _sha256_file(path: str) -> str:
-    """Return the lowercase hex SHA-256 of a file, read in chunks."""
-    h = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def _safe_extract(zf: zipfile.ZipFile, dest: str) -> None:
-    """Extract a ZipFile to dest, rejecting members that escape dest (zip-slip).
-
-    Validates every member path first; any single unsafe member (``..`` or an
-    absolute path) aborts the whole extraction with RuntimeError.
-    """
-    dest_abs = os.path.abspath(dest)
-    for member in zf.namelist():
-        target = os.path.abspath(os.path.join(dest_abs, member))
-        if target != dest_abs and not target.startswith(dest_abs + os.sep):
-            raise RuntimeError(f"unsafe path in archive: {member!r}")
-    zf.extractall(dest)
-
-
-def _avrdude_exe_verified(path: str) -> bool:
-    """Return True if path is a real avrdude.exe matching the pinned SHA-256.
-
-    Used for both a freshly extracted binary and a cached one from a prior
-    run, so nothing is bundled without an integrity check.
-    """
-    if os.path.getsize(path) < _AVRDUDE_MIN_SIZE:
-        return False
-    expected = _AVRDUDE_EXE_SHA256.get(_AVRDUDE_VERSION)
-    return bool(expected) and _sha256_file(path) == expected
-
-
-def _ensure_real_avrdude(avrdude_path: str | None) -> str | None:
-    """Return a path to a real avrdude binary, downloading one if necessary.
-
-    On Windows, Chocolatey installs a small shim (~24 KB) instead of the
-    real binary.  The shim breaks when relocated into a PyInstaller bundle.
-    This function detects shims by file size and downloads the real avrdude
-    from GitHub releases automatically.
-    """
-    # Happy path: the provided binary is real
-    if avrdude_path and os.path.isfile(avrdude_path):
-        if os.path.getsize(avrdude_path) >= _AVRDUDE_MIN_SIZE:
-            return avrdude_path
-        logger.info(f"  [WARN] avrdude at {avrdude_path} is only "
-                    f"{os.path.getsize(avrdude_path):,} bytes (likely a shim)")
-
-    # Only auto-download on Windows — Linux/macOS package managers install real binaries
-    if platform.system() != "Windows":
-        return avrdude_path
-
-    # Check cache from a previous download — re-verify against the pinned hash so a
-    # stale or tampered .avrdude-dist is never trusted on size alone.
-    dist_dir = os.path.join(PROJECT_ROOT, ".avrdude-dist")
-    if os.path.isdir(dist_dir):
-        for root, _dirs, files in os.walk(dist_dir):
-            for f in files:
-                if f.lower() == "avrdude.exe":
-                    cached = os.path.join(root, f)
-                    if _avrdude_exe_verified(cached):
-                        logger.info(f"  [OK] Using cached avrdude: {cached}")
-                        return cached
-
-    # Download avrdude from GitHub releases (MSVC build, statically linked, no DLLs)
-    import zipfile
-
-    asset = f"avrdude-v{_AVRDUDE_VERSION}-windows-x64.zip"
-    url = f"https://github.com/avrdudes/avrdude/releases/download/v{_AVRDUDE_VERSION}/{asset}"
-    zip_path = os.path.join(PROJECT_ROOT, asset)
-    logger.info(f"  [INFO] Downloading avrdude v{_AVRDUDE_VERSION} from {url}")
-    try:
-        urllib.request.urlretrieve(url, zip_path)
-    except Exception as exc:
-        logger.error(f"  [ERROR] Failed to download avrdude: {exc}")
-        return avrdude_path
-
-    # Verify integrity against the pinned checksum before trusting the archive.
-    expected = _AVRDUDE_SHA256.get(_AVRDUDE_VERSION)
-    if not expected:
-        logger.error(f"  [ERROR] No pinned SHA-256 for avrdude v{_AVRDUDE_VERSION} — "
-                     f"add it to _AVRDUDE_SHA256. Refusing to bundle.")
-        os.remove(zip_path)
-        return avrdude_path
-    actual = _sha256_file(zip_path)
-    if actual != expected:
-        logger.error(f"  [ERROR] avrdude checksum mismatch — refusing to bundle. "
-                     f"expected={expected} actual={actual}")
-        os.remove(zip_path)
-        return avrdude_path
-    logger.info(f"  [OK] Verified avrdude SHA-256: {actual}")
-
-    os.makedirs(dist_dir, exist_ok=True)
-    try:
-        with zipfile.ZipFile(zip_path) as zf:
-            _safe_extract(zf, dist_dir)
-    finally:
-        # Always drop the archive, even if extraction rejected an unsafe member.
-        if os.path.exists(zip_path):
-            os.remove(zip_path)
-
-    for root, _dirs, files in os.walk(dist_dir):
-        for f in files:
-            if f.lower() == "avrdude.exe":
-                real = os.path.join(root, f)
-                if _avrdude_exe_verified(real):
-                    logger.info(f"  [OK] Downloaded avrdude: {real} "
-                                f"({os.path.getsize(real):,} bytes)")
-                    return real
-
-    logger.error("  [ERROR] verified avrdude.exe not found in downloaded archive")
-    return avrdude_path
-
-
-# ---------------------------------------------------------------------------
-# Bundled local LLM (llama.cpp + Qwen2.5-1.5B-Instruct Q4_K_M)
-# ---------------------------------------------------------------------------
-
-_LLAMA_CPP_TAG = "b10622"
-_GGUF_NAME = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
-_GGUF_URL = (
-    "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/"
-    + _GGUF_NAME
-)
-_GGUF_SHA256 = "6a1a2eb6d15622bf3c96857206351ba97e1af16c30d7a74ee38970e434e9407e"
-
-# SHA-256 of the official llama.cpp CPU archives for this tag.
-_LLAMA_ARCHIVE_SHA256 = {
-    "llama-b10622-bin-ubuntu-x64.tar.gz": "6cc895c67bfa868faccda8aca06ec136e489609fc20f068550214f149d94fb4c",
-    "llama-b10622-bin-ubuntu-arm64.tar.gz": "6730946e555d57cdd29ad28f9d445a9195fa3d72d5ed076fa6dcfe25a4f4c266",
-    "llama-b10622-bin-macos-arm64.tar.gz": "c0116ec9957477a9c77e68d3cf31e79f9aede1a9210861c7c09d74acc3e9c3cf",
-    "llama-b10622-bin-macos-x64.tar.gz": "b772320b22bc5cf845930088c985012b94e284242c2ad05fad174297eb5e373e",
-    "llama-b10622-bin-win-cpu-x64.zip": "0f016b001d00a0cc25b955a5ae5eb3ce57a0b16adaa9142f8a3c3269e83fce0a",
-    "llama-b10622-bin-win-cpu-arm64.zip": "fba77e5b089bf6ac669a06559c48863c84eda77c4f8678d39861b77407648850",
-}
-
-
-def _llm_platform_archive() -> tuple[str, bool]:
-    """Return (archive_name, is_zip) for the current OS/arch, or None."""
-    system = platform.system()
-    machine = platform.machine().lower()
-    arm = machine in ("arm64", "aarch64")
-    tag = _LLAMA_CPP_TAG
-    if system == "Windows":
-        name = f"llama-{tag}-bin-win-cpu-{'arm64' if arm else 'x64'}.zip"
-        return name, True
-    if system == "Darwin":
-        name = f"llama-{tag}-bin-macos-{'arm64' if arm else 'x64'}.tar.gz"
-        return name, False
-    # Linux (and other Unix) — official builds are Ubuntu glibc.
-    name = f"llama-{tag}-bin-ubuntu-{'arm64' if arm else 'x64'}.tar.gz"
-    return name, False
-
-
-def _download(url: str, dest: str) -> None:
-    """Download *url* to *dest* with a UA HuggingFace will accept."""
-    req = urllib.request.Request(url, headers={"User-Agent": "labrynth-build"})
-    with urllib.request.urlopen(req, timeout=600) as src, open(dest, "wb") as out:
-        shutil.copyfileobj(src, out)
-
-
-def _safe_extract_tar(tf: tarfile.TarFile, dest: str) -> None:
-    """Extract a TarFile to dest, rejecting members that escape dest."""
-    dest_abs = os.path.abspath(dest)
-    for member in tf.getmembers():
-        target = os.path.abspath(os.path.join(dest_abs, member.name))
-        if target != dest_abs and not target.startswith(dest_abs + os.sep):
-            raise RuntimeError(f"unsafe path in archive: {member.name!r}")
-    tf.extractall(dest)
-
-
-# From llama.cpp b10622, raw prompt completion lives in ``llama-completion``;
-# ``llama-cli`` is chat-only and rejects ``--no-conversation``, which is the
-# flag reacher's summarizer sends.
-# Bundle both and let the launcher point REACHER_LLM_BIN at the right one.
-_LLAMA_BINARIES = ("llama-cli", "llama-completion")
-
-
-def llama_binaries(root: str) -> list[str]:
-    """Return paths to the llama.cpp executables to bundle, found under *root*."""
-    wanted = {n for b in _LLAMA_BINARIES for n in (b, b + ".exe")}
-    found = []
-    for dirpath, _dirnames, filenames in os.walk(root):
-        for name in filenames:
-            if name.lower() in wanted:
-                path = os.path.join(dirpath, name)
-                if os.path.isfile(path) and os.path.getsize(path) > 0:
-                    found.append(path)
-    return sorted(found)
-
-
-def _find_llama_cli(root: str) -> str | None:
-    """Return the path to llama-cli / llama-cli.exe under *root*, or None.
-
-    Any non-empty match is accepted: Windows CPU archives ship
-    ``llama-cli.exe`` as a ~9 KB loader stub whose implementation lives in
-    ``llama-cli-impl.dll`` beside it, so a size floor would reject the real
-    Windows binary.
-    """
-    wanted = {"llama-cli", "llama-cli.exe"}
-    for dirpath, _dirnames, filenames in os.walk(root):
-        for name in filenames:
-            if name.lower() not in wanted:
-                continue
-            path = os.path.join(dirpath, name)
-            if os.path.isfile(path) and os.path.getsize(path) > 0:
-                return path
-    return None
-
-
-def _list_llama_cli_candidates(root: str) -> list[tuple[int, str]]:
-    """Return ``[(size, path), ...]`` for names containing llama-cli (debug)."""
-    found = []
-    for dirpath, _dirnames, filenames in os.walk(root):
-        for name in filenames:
-            if "llama-cli" not in name.lower():
-                continue
-            path = os.path.join(dirpath, name)
-            if os.path.isfile(path):
-                found.append((os.path.getsize(path), path))
-    found.sort()
-    return found
-
-
-# ELF sonames carry the version *after* the extension (libllama.so.0), so an
-# ``endswith(".so")`` test silently drops exactly the files DT_NEEDED asks for.
-# Mach-O and PE put the version before it (libllama.0.dylib, ggml.dll).
-_SHARED_LIB_RE = re.compile(r"\.(?:dll|dylib)$|\.so(?:\.\d+)*$", re.IGNORECASE)
-
-
-def is_shared_lib(name: str) -> bool:
-    """Return True when *name* is a shared library, including versioned ELF sonames."""
-    return bool(_SHARED_LIB_RE.search(name))
-
-
-def _copy_llama_runtime(cli_path: str, dest_dir: str) -> str:
-    """Copy the llama.cpp executables and sibling shared libraries into dest_dir."""
-    os.makedirs(dest_dir, exist_ok=True)
-    src_dir = os.path.dirname(cli_path)
-    dest_cli = os.path.join(dest_dir, os.path.basename(cli_path))
-    for src in llama_binaries(src_dir):
-        dest = os.path.join(dest_dir, os.path.basename(src))
-        shutil.copy2(src, dest)
-        os.chmod(dest, 0o755)
-    for name in os.listdir(src_dir):
-        if is_shared_lib(name):
-            shutil.copy2(os.path.join(src_dir, name), os.path.join(dest_dir, name))
-    return dest_cli
-
-
-def _smoke_test_llama(cli_path: str) -> tuple[bool, str]:
-    """Return (ok, detail) for ``<binary> --version``.
-
-    ``--version`` does not touch the GGUF, so this stays fast and runs before
-    the model is required.  It catches a bundle whose companion libraries are
-    missing or unloadable, which otherwise ships fine and only fails at report
-    time inside reacher's summarizer.
-    """
-    runtime_dir = os.path.dirname(cli_path)
-    env = os.environ.copy()
-    for var in ("LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"):
-        env[var] = runtime_dir + os.pathsep + env.get(var, "")
-    try:
-        result = subprocess.run(
-            [cli_path, "--version"],
-            capture_output=True,
-            text=True,
-            timeout=60,
-            env=env,
-            check=False,
-        )
-    except OSError as exc:
-        return False, str(exc)
-    if result.returncode != 0:
-        detail = ((result.stderr or "") + (result.stdout or "")).strip()
-        return False, f"exit {result.returncode}: {detail[-500:]}"
-    return True, ""
-
-
-def ensure_llm(skip: bool = False) -> tuple[str | None, str | None]:
-    """Return (llama-cli path, GGUF path), downloading pinned artifacts if needed.
-
-    Returns (None, None) when *skip* is True.  Exits the process if a required
-    download or checksum fails — the GUI bundle is supposed to ship the model.
-    """
-    if skip:
-        return None, None
-
-    dist_dir = os.path.join(PROJECT_ROOT, ".llm-dist")
-    os.makedirs(dist_dir, exist_ok=True)
-
-    gguf_path = os.path.join(dist_dir, _GGUF_NAME)
-    if os.path.isfile(gguf_path) and _sha256_file(gguf_path) == _GGUF_SHA256:
-        logger.info(f"  [OK] Cached GGUF: {gguf_path}")
-    else:
-        logger.info(f"  [INFO] Downloading {_GGUF_NAME} (~1.1 GB)")
-        tmp = gguf_path + ".part"
-        try:
-            _download(_GGUF_URL, tmp)
-        except Exception as exc:
-            logger.error(f"  [ERROR] Failed to download GGUF: {exc}")
-            sys.exit(1)
-        actual = _sha256_file(tmp)
-        if actual != _GGUF_SHA256:
-            os.remove(tmp)
-            logger.error(f"  [ERROR] GGUF checksum mismatch — refusing to bundle. expected={_GGUF_SHA256} actual={actual}")
-            sys.exit(1)
-        os.replace(tmp, gguf_path)
-        logger.info(f"  [OK] Verified GGUF SHA-256: {actual}")
-
-    archive_name, is_zip = _llm_platform_archive()
-    expected = _LLAMA_ARCHIVE_SHA256.get(archive_name)
-    if not expected:
-        logger.error(f"  [ERROR] No pinned SHA-256 for {archive_name}")
-        sys.exit(1)
-
-    plat_key = archive_name.replace(f"llama-{_LLAMA_CPP_TAG}-bin-", "").rsplit(".", 1)[0]
-    runtime_dir = os.path.join(dist_dir, plat_key)
-    cached_cli = _find_llama_cli(runtime_dir) if os.path.isdir(runtime_dir) else None
-    if cached_cli:
-        cached = llama_binaries(runtime_dir)
-        checks = [_smoke_test_llama(b) for b in cached]
-        complete = len(cached) == len(_LLAMA_BINARIES)
-        ok = complete and all(c[0] for c in checks)
-        detail = next((c[1] for c in checks if not c[0]), "incomplete binary set")
-        if ok:
-            logger.info(f"  [OK] Cached llama-cli: {cached_cli}")
-            return cached_cli, gguf_path
-        logger.info(f"  [WARN] Cached llama-cli is not runnable ({detail}); re-extracting")
-        shutil.rmtree(runtime_dir, ignore_errors=True)
-
-    archive_path = os.path.join(dist_dir, archive_name)
-    url = f"https://github.com/ggml-org/llama.cpp/releases/download/{_LLAMA_CPP_TAG}/{archive_name}"
-    logger.info(f"  [INFO] Downloading llama.cpp {_LLAMA_CPP_TAG}: {archive_name}")
-    try:
-        _download(url, archive_path)
-    except Exception as exc:
-        logger.error(f"  [ERROR] Failed to download llama.cpp: {exc}")
-        sys.exit(1)
-    actual = _sha256_file(archive_path)
-    if actual != expected:
-        os.remove(archive_path)
-        logger.error(f"  [ERROR] llama.cpp checksum mismatch — refusing to bundle. expected={expected} actual={actual}")
-        sys.exit(1)
-    logger.info(f"  [OK] Verified llama.cpp SHA-256: {actual}")
-
-    extract_dir = os.path.join(dist_dir, f"_extract-{plat_key}")
-    if os.path.isdir(extract_dir):
-        shutil.rmtree(extract_dir)
-    os.makedirs(extract_dir)
-    try:
-        if is_zip:
-            with zipfile.ZipFile(archive_path) as zf:
-                _safe_extract(zf, extract_dir)
-        else:
-            with tarfile.open(archive_path, "r:gz") as tf:
-                _safe_extract_tar(tf, extract_dir)
-    except Exception as exc:
-        logger.error(f"  [ERROR] Failed to extract llama.cpp archive: {exc}")
-        sys.exit(1)
-
-    found = _find_llama_cli(extract_dir)
-    if not found:
-        logger.error("  [ERROR] llama-cli not found in downloaded archive")
-        for size, path in _list_llama_cli_candidates(extract_dir):
-            logger.info(f"           {size:>10}  {path}")
-        sys.exit(1)
-    cli_path = _copy_llama_runtime(found, runtime_dir)
-    for _bin in llama_binaries(runtime_dir):
-        ok, detail = _smoke_test_llama(_bin)
-        if not ok:
-            logger.error(f"  [ERROR] Bundled {os.path.basename(_bin)} is not runnable — "
-                         f"refusing to bundle. {detail}")
-            sys.exit(1)
-        logger.info(f"  [OK] {os.path.basename(_bin)} smoke test passed")
-    logger.info(f"  [OK] llama-cli: {cli_path} ({os.path.getsize(found)} bytes)")
-    return cli_path, gguf_path
-
-
 def validate_assets(avrdude_path: str | None, require_frontend: bool = True) -> str | None:
     """Validate that all required assets exist before packaging."""
     logger.info("\n=== Stage 2: Validate assets ===")
-    ok = True
+    # The CLI-only build ships no static/, so it skips the frontend check.
+    frontend_ok = check_frontend_dist() if require_frontend else True
+    hex_ok = check_hex_files()
+    avrdude_path, avrdude_ok = locate_avrdude(avrdude_path)
+    conf_ok = check_avrdude_conf(avrdude_path)
 
-    # Frontend dist (not needed for the CLI-only build, which ships no static/)
-    if require_frontend:
-        index_html = os.path.join(FRONTEND_DIST, "index.html")
-        if os.path.isfile(index_html):
-            logger.info(f"  [OK] Frontend dist: {FRONTEND_DIST}")
-        else:
-            logger.info(f"  [MISSING] Frontend dist: {index_html}")
-            ok = False
-
-    # Hex files come from the installed reacher package (board-aware layout).
-    hex_dir = resolve_reacher_hex_dir()
-    if not hex_dir:
-        logger.info("  [MISSING] reacher package firmware hex (reacher/hex/)")
-        ok = False
-    else:
-        for board in BOARDS:
-            board_dir = os.path.join(hex_dir, board)
-            board_hex = [p for p in PARADIGMS
-                         if os.path.isfile(os.path.join(board_dir, f"{p}.hex"))]
-            if board_hex:
-                logger.info(f"  [OK] Hex files ({board}): {', '.join(board_hex)}")
-            else:
-                logger.info(f"  [WARN] No hex files found for {board} in {board_dir}")
-
-    # avrdude — ensure we have a real binary, not a Chocolatey shim
-    if avrdude_path and os.path.isfile(avrdude_path):
-        avrdude_path = _ensure_real_avrdude(avrdude_path)
-        logger.info(f"  [OK] avrdude: {avrdude_path}")
-    elif shutil.which("avrdude"):
-        avrdude_path = _ensure_real_avrdude(shutil.which("avrdude"))
-        logger.info(f"  [OK] avrdude: {avrdude_path}")
-    else:
-        # No avrdude found — try downloading on Windows
-        avrdude_path = _ensure_real_avrdude(None)
-        if avrdude_path and os.path.isfile(avrdude_path):
-            logger.info(f"  [OK] avrdude (downloaded): {avrdude_path}")
-        else:
-            logger.info("  [MISSING] avrdude — firmware upload won't work without it.")
-            logger.info("            Install avrdude or run on Windows to auto-download.")
-            ok = False
-
-    # A bundle with no conf would reach for the host's /etc/avrdude.conf and
-    # die on any version skew, and the spec's miss is silent. Fail the build
-    # here instead — loud in CI beats broken in a lab.
-    if avrdude_path and os.path.isfile(avrdude_path):
-        avrdude_conf = resolve_avrdude_conf(avrdude_path)
-        if avrdude_conf:
-            logger.info(f"  [OK] avrdude.conf: {avrdude_conf}")
-        else:
-            logger.info(f"  [MISSING] avrdude.conf for {avrdude_path}")
-            logger.info("            The conf must ship with the binary — avrdude rejects a conf")
-            logger.info("            from a different release ('unable to process system wide")
-            logger.info("            configuration file') and exits 1.")
-            ok = False
-
-    if not ok:
+    if not (frontend_ok and hex_ok and avrdude_ok and conf_ok):
         logger.error("\nERROR: Required assets missing. Fix the issues above or use --skip-* flags.")
         sys.exit(1)
 
@@ -678,33 +186,27 @@ def run_pyinstaller(
     )
 
 
-def report_output(name: str = "Labrynth") -> None:
+def report_output(name: str = GUI_BUNDLE_NAME) -> None:
     """Report the location of a built artifact (GUI ``Labrynth`` or ``LabrynthCLI``)."""
     logger.info(f"\n=== Stage 4: Build complete ({name}) ===")
+    dist_root = os.path.join(SCRIPT_DIR, "dist")
     system = platform.system()
 
     if system == "Darwin":
-        app_path = os.path.join(SCRIPT_DIR, "dist", f"{name}.app")
+        app_path = os.path.join(dist_root, f"{name}.app")
         if os.path.isdir(app_path):
             logger.info(f"  Output: {app_path}")
             logger.info(f"  Run:    open {app_path}")
             return
-    elif system == "Windows":
-        exe_path = os.path.join(SCRIPT_DIR, "dist", name, f"{name}.exe")
-        if os.path.isfile(exe_path):
-            logger.info(f"  Output: {os.path.dirname(exe_path)}")
-            logger.info(f"  Run:    {exe_path}")
-            return
     else:
-        exe_path = os.path.join(SCRIPT_DIR, "dist", name, name)
+        exe_name = f"{name}.exe" if system == "Windows" else name
+        exe_path = os.path.join(dist_root, name, exe_name)
         if os.path.isfile(exe_path):
             logger.info(f"  Output: {os.path.dirname(exe_path)}")
             logger.info(f"  Run:    {exe_path}")
             return
 
-    # Fallback: just point to dist/
-    dist_dir = os.path.join(SCRIPT_DIR, "dist")
-    logger.info(f"  Output: {dist_dir}")
+    logger.info(f"  Output: {dist_root}")
     logger.info("  Check the dist/ directory for built artifacts.")
 
 
@@ -712,87 +214,65 @@ def report_output(name: str = "Labrynth") -> None:
 # CLI
 # ---------------------------------------------------------------------------
 
-def main() -> None:
-    """Parse arguments and run the build stages in order."""
-    parser = argparse.ArgumentParser(
-        description="Build Labrynth standalone executable",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Example: python build.py --skip-frontend --avrdude /usr/bin/avrdude",
-    )
-    parser.add_argument(
-        "--skip-frontend",
-        action="store_true",
-        help="Skip npm build (use existing web/dist/)",
-    )
-    parser.add_argument(
-        "--avrdude",
-        metavar="PATH",
-        default="",
-        help="Explicit path to avrdude binary to bundle",
-    )
-    parser.add_argument(
-        "--cli",
-        action="store_true",
-        help="Also build the standalone LabrynthCLI console app",
-    )
-    parser.add_argument(
-        "--cli-only",
-        action="store_true",
-        help="Build only LabrynthCLI (no frontend, no GUI bundle)",
-    )
-    parser.add_argument(
-        "--skip-llm",
-        action="store_true",
-        help="Skip downloading/bundling llama.cpp + GGUF (GUI builds only; issue reporting will be unavailable)",
-    )
-    args = parser.parse_args()
-
-    logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
-
+def log_build_header() -> None:
+    """Log the platform, interpreter and project path."""
     logger.info("Labrynth Build Orchestrator")
     logger.info(f"  Platform: {platform.system()} {platform.machine()}")
     logger.info(f"  Python:   {sys.version.split()[0]}")
     logger.info(f"  Project:  {PROJECT_ROOT}")
 
-    # Stage 0: Validate (reacher package + its bundled firmware hex)
-    validate_environment()
-    if args.cli or args.cli_only:
-        validate_cli_deps()
 
-    # CLI-only: skip frontend entirely; the CLI bundle ships no static/ and no LLM.
-    if args.cli_only:
-        avrdude_path = validate_assets(args.avrdude, require_frontend=False)
-        run_pyinstaller(avrdude_path, SPEC_FILE_CLI)
-        report_output("LabrynthCLI")
-        return
+def build_cli_only(avrdude: str) -> None:
+    """Build only the CLI bundle; it ships no static/ and no LLM."""
+    avrdude_path = validate_assets(avrdude, require_frontend=False)
+    run_pyinstaller(avrdude_path, SPEC_FILE_CLI)
+    report_output(CLI_BUNDLE_NAME)
 
-    # Stage 1: Frontend
+
+def prepare_llm(skip: bool) -> tuple[str | None, str | None]:
+    """Run Stage 2b and return the (llama-cli, GGUF) paths to bundle."""
+    logger.info("\n=== Stage 2b: Local LLM (llama.cpp + GGUF) ===")
+    llm_bin, llm_model = ensure_llm(skip=skip)
+    if skip:
+        logger.info("  [SKIP] llama.cpp / GGUF not bundled (--skip-llm)")
+    elif llm_bin:
+        logger.info(f"  [OK] llama-cli: {llm_bin}")
+        logger.info(f"  [OK] GGUF:      {llm_model}")
+    return llm_bin, llm_model
+
+
+def build_gui(args: argparse.Namespace) -> None:
+    """Build the GUI bundle, then the CLI bundle too when --cli is set."""
     if args.skip_frontend:
         logger.info("\n=== Stage 1: Build frontend [SKIPPED] ===")
     else:
         build_frontend()
 
-    # Stage 2: Validate
     avrdude_path = validate_assets(args.avrdude)
+    llm_bin, llm_model = prepare_llm(args.skip_llm)
 
-    logger.info("\n=== Stage 2b: Local LLM (llama.cpp + GGUF) ===")
-    llm_bin, llm_model = ensure_llm(skip=args.skip_llm)
-    if args.skip_llm:
-        logger.info("  [SKIP] llama.cpp / GGUF not bundled (--skip-llm)")
-    elif llm_bin:
-        logger.info(f"  [OK] llama-cli: {llm_bin}")
-        logger.info(f"  [OK] GGUF:      {llm_model}")
-
-    # Stage 3: PyInstaller (GUI)
     run_pyinstaller(avrdude_path, llm_bin=llm_bin, llm_model=llm_model)
-
-    # Stage 4: Report (GUI)
     report_output()
 
-    # Optional: also build the standalone CLI bundle (no LLM)
     if args.cli:
         run_pyinstaller(avrdude_path, SPEC_FILE_CLI)
-        report_output("LabrynthCLI")
+        report_output(CLI_BUNDLE_NAME)
+
+
+def main() -> None:
+    """Parse arguments and run the build stages in order."""
+    args = parse_arguments()
+    logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stdout)
+    log_build_header()
+
+    validate_environment()
+    if args.cli or args.cli_only:
+        validate_cli_deps()
+
+    if args.cli_only:
+        build_cli_only(args.avrdude)
+        return
+    build_gui(args)
 
 
 if __name__ == "__main__":

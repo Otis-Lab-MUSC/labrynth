@@ -7,6 +7,7 @@ from .constants import (
     DEVICE_CONFIGS,
     SYSTEM_COMMANDS,
 )
+from .errors import API_ERRORS
 from .host import CliHost
 
 
@@ -35,7 +36,7 @@ class HardwareActionsMixin(CliHost):
                 else:
                     self._set_status(f"Command {code} sent")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Command failed: {exc}", error=True)
 
     async def _send_laser_mode(self, code: int) -> None:
@@ -48,9 +49,12 @@ class HardwareActionsMixin(CliHost):
 
     async def _send_commands(self, cmds: list[tuple[int, int | None]]) -> list[int]:
         """Send a batch, skipping codes the firmware does not declare. Returns skipped codes."""
-        kept, dropped = P.filter_allowed(cmds, self.session.allowed_codes)
+        session = self.session
+        if session is None:
+            return []
+        kept, dropped = P.filter_allowed(cmds, session.allowed_codes)
         for code, value in kept:
-            await self.api.send_command(self.session.id, code, value)
+            await self.api.send_command(session.id, code, value)
         return dropped
 
     async def _test_chain(self) -> None:
