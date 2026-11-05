@@ -107,7 +107,7 @@ if not hasattr(sys, "_MEIPASS"):
             _stage = {"a": 0, "alpha": 0, "b": 1, "beta": 1, "rc": 2}.get(_kind, 3)
             return (int(_major), int(_minor), int(_patch), _stage, int(_num or 0))
 
-        with open(os.path.join(_LABRYNTH_ROOT, "pyproject.toml")) as _f:
+        with open(os.path.join(_LABRYNTH_ROOT, "pyproject.toml"), encoding="utf-8") as _f:
             _pin_match = re.search(r'reacher2p>=([^"]+)"', _f.read())
         if _pin_match is not None:
             _pin = _pin_match.group(1)
@@ -120,7 +120,7 @@ if not hasattr(sys, "_MEIPASS"):
                     "         The frontend may fail against an older backend.\n"
                     "         Run `pip install -e ../reacher` from the labrynth/ directory."
                 )
-    except (OSError, ImportError, AttributeError) as exc:
+    except (OSError, ValueError, ImportError, AttributeError) as exc:
         logger.debug("Skipped reacher version check: %s", exc)
 
 from reacher.api.app import main
