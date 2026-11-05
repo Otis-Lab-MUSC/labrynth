@@ -5,14 +5,8 @@ from __future__ import annotations
 from . import presets as P
 from .errors import API_ERRORS
 from .host import CliHost
+from .response_fields import read_record_list
 from .state import SessionState
-
-
-def _dict_rows(value: object) -> list[dict[str, object]]:
-    """Return the dict entries of a JSON list, or an empty list for anything else."""
-    if not isinstance(value, list):
-        return []
-    return [row for row in value if isinstance(row, dict)]
 
 
 def _opt_dict(value: object) -> dict[str, object] | None:
@@ -49,7 +43,7 @@ class AttachActionsMixin(CliHost):
     async def _choose_attach(self) -> None:
         """List the target's sessions and ask which to attach to."""
         try:
-            sessions = _dict_rows((await self.api.list_sessions()).get("sessions"))
+            sessions = read_record_list((await self.api.list_sessions()).get("sessions"))
         except API_ERRORS as exc:
             self._set_status(f"List sessions failed: {exc}", error=True)
             return
@@ -98,7 +92,7 @@ class AttachActionsMixin(CliHost):
         # follow live from that point (the WS reconnect path uses ``since``).
         try:
             resp = await self.api.get_behavior(sid)
-            for entry in _dict_rows(resp.get("data")):
+            for entry in read_record_list(resp.get("data")):
                 self._handle_ws_message({"type": "event", "data": entry}, replay=True)
             total = _opt_int(resp.get("total"))
             if total is not None:
@@ -120,7 +114,7 @@ class AttachActionsMixin(CliHost):
             cfg = await self.api.get_config(s.id)
         except API_ERRORS:
             return
-        for row in _dict_rows(cfg.get("hardware_settings")):
+        for row in read_record_list(cfg.get("hardware_settings")):
             P.merge_firmware_row(s.hw, row)
             P.merge_controller_row(s.paradigm_settings, row)
         firmware_info = _opt_dict(cfg.get("firmware_info"))

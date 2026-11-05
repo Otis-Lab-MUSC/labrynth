@@ -180,8 +180,9 @@ class ReacherCLI(
             await self.api.close()
         except API_ERRORS as exc:
             LOGGER.debug("Closing the API client failed: %s", exc)
-        if self.app:
-            self.app.exit()
+        finally:
+            if self.app:
+                self.app.exit()
 
     # ───────────────────────────────────────────────────────────────────
     # Key bindings

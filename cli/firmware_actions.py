@@ -82,5 +82,7 @@ class FirmwareActionsMixin(CliHost):
             await self._hydrate_config()
             self._rebuild_current_menu()
         except API_ERRORS as exc:
-            self.session.state = "idle"
             self._set_status(f"Upload failed: {exc}", error=True)
+        finally:
+            if self.session and self.session.state == "uploading":
+                self.session.state = "idle"
