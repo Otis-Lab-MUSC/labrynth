@@ -52,7 +52,7 @@ def test_quit_exits_the_app_even_when_close_raises() -> None:
 def test_failed_upload_does_not_leave_the_session_uploading() -> None:
     """An unexpected error mid-upload resets the state before it propagates."""
     cli = make_cli()
-    cli._read_local_hex = lambda paradigm, board: b""  # type: ignore[method-assign]
+    cli._read_local_hex = lambda paradigm, board: ""  # type: ignore[method-assign]
     with pytest.raises(RuntimeError):
         asyncio.run(cli._finish_upload("fr", "uno"))
     assert cli.session is not None
