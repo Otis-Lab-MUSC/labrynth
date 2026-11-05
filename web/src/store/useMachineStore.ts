@@ -2,66 +2,30 @@ import { create } from "zustand";
 import type { DiscoveredDevice, Machine } from "../types";
 import { MachineApiClient } from "../api/client";
 import { DemoMachineApiClient } from "../api/demoClient";
+import {
+  LOCAL_PLACEHOLDER_ID,
+  createProxyClient,
+  deleteCachedClient,
+  ensureClient,
+  getCachedClient,
+  getLocalClient,
+  setCachedClient,
+  setLocalClient,
+} from "../lib/machineClients";
+import {
+  loadPersistedMachines,
+  persistRemoteMachines,
+  toPairedMachine,
+  toPersistedRemoteMachine,
+  type PairResult,
+} from "../lib/machineStorage";
+import { migrateLegacyKeys, pollDiscovery, seedPersistedClients } from "./machineDiscovery";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+export { LOCAL_PLACEHOLDER_ID };
 
-const STORAGE_KEY = "reacher-machines";
-
-/** Sentinel used before the local machine's real device_id is known. */
-export const LOCAL_PLACEHOLDER_ID = "__local__";
-
-/**
- * Persisted shape for remote machines.
- * apiKey is kept optional for backward-compat migration of old localStorage entries.
- */
-interface PersistedMachine {
-  deviceId: string;
-  name: string;
-  url: string;
-  hostname: string;
-  apiKey?: string;
-}
-
-function persistRemoteMachines(machines: Machine[]) {
-  const remote = machines
-    .filter((m) => !m.isLocal)
-    .map(({ deviceId, name, url, hostname }) => ({ deviceId, name, url, hostname }));
-  if (remote.length > 0) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(remote));
-  } else {
-    localStorage.removeItem(STORAGE_KEY);
-  }
-}
-
-function loadPersistedMachines(): PersistedMachine[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-// Per-machine client cache — lives outside Zustand state so store updates
-// don't re-create clients on every render.
-const _clients = new Map<string, MachineApiClient>();
-
-function ensureClient(machine: Machine): MachineApiClient {
-  const existing = _clients.get(machine.deviceId);
-  if (existing) return existing;
-  // Proxy mode: route all calls through local server using deviceId
-  const client = machine.isLocal
-    ? new MachineApiClient("")
-    : new MachineApiClient("", undefined, machine.deviceId);
-  _clients.set(machine.deviceId, client);
-  return client;
-}
-
-// ---------------------------------------------------------------------------
-// Store
-// ---------------------------------------------------------------------------
+const HEALTH_POLL_INTERVAL_MS = 30_000;
+const DISCOVERY_POLL_INTERVAL_MS = 10_000;
+const REACHER_SERVICE_NAME = "reacher";
 
 interface MachineStore {
   machines: Machine[];
@@ -90,60 +54,82 @@ interface MachineStore {
   refreshDiscovery: () => Promise<void>;
 }
 
-let _pollInterval: ReturnType<typeof setInterval> | null = null;
-let _discoveryInterval: ReturnType<typeof setInterval> | null = null;
+let pollInterval: ReturnType<typeof setInterval> | null = null;
+let discoveryInterval: ReturnType<typeof setInterval> | null = null;
 
-// Local client singleton used for discovery/pairing calls (always same-origin)
-let _localClient: MachineApiClient | null = null;
-function getLocalClient(): MachineApiClient {
-  return (_localClient ??= new MachineApiClient(""));
-}
-
-export const useMachineStore = create<MachineStore>((set, get) => {
-  // Hydrate persisted remote machines immediately (start as offline)
-  const persisted = loadPersistedMachines();
-  const initialMachines: Machine[] = persisted.map((m) => ({
-    deviceId: m.deviceId,
-    name: m.name,
-    url: m.url,
-    hostname: m.hostname,
-    isLocal: false,
+function buildLocalMachine(overrides: Partial<Machine>): Machine {
+  return {
+    deviceId: LOCAL_PLACEHOLDER_ID,
+    name: "Local",
+    hostname: "localhost",
+    url: "",
+    isLocal: true,
     paired: true,
     online: false,
     lastSeen: null,
-  }));
+    ...overrides,
+  };
+}
 
-  // Pre-populate client cache for persisted machines.
-  // If an entry has apiKey, use direct client (backward compat); otherwise proxy mode.
-  for (const m of persisted) {
-    if (m.apiKey) {
-      // Stored key in browser — use it directly while we still have it
-      _clients.set(m.deviceId, new MachineApiClient(m.url, m.apiKey));
-    } else {
-      _clients.set(m.deviceId, new MachineApiClient("", undefined, m.deviceId));
+async function probeLocalMachine(client: MachineApiClient): Promise<Machine> {
+  const health = await client.probeHealth();
+  if (!health || health.service !== REACHER_SERVICE_NAME) return buildLocalMachine({});
+  return buildLocalMachine({
+    deviceId: health.device_id,
+    name: health.hostname,
+    hostname: health.hostname,
+    online: true,
+    lastSeen: new Date().toISOString(),
+  });
+}
+
+function trimmedName(name?: string): string | undefined {
+  return name?.trim() || undefined;
+}
+
+function stripTrailingSlash(url: string): string {
+  return url.replace(/\/$/, "");
+}
+
+async function postPairing(path: string, body: Record<string, unknown>): Promise<PairResult> {
+  return getLocalClient().request<PairResult>(path, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export const useMachineStore = create<MachineStore>((set, get) => {
+  const persisted = loadPersistedMachines();
+  seedPersistedClients(persisted);
+
+  function registerPaired(result: PairResult, options: { rejectDuplicate: boolean }): Machine {
+    if (options.rejectDuplicate && get().machines.some((m) => m.deviceId === result.device_id)) {
+      throw new Error("This machine is already connected");
     }
+    const machine = toPairedMachine(result);
+    setCachedClient(machine.deviceId, createProxyClient(machine.deviceId));
+    set((s) => {
+      const next = [...s.machines, machine];
+      persistRemoteMachines(next);
+      return {
+        machines: next,
+        discoveredDevices: s.discoveredDevices.filter((d) => d.deviceId !== machine.deviceId),
+      };
+    });
+    return machine;
   }
 
   return {
-    machines: initialMachines,
+    machines: persisted.map(toPersistedRemoteMachine),
     discoveredDevices: [],
     activeMachineId: null,
     ready: false,
 
     initLocalMachine: async () => {
-      // Demo site has no backend — synthesise an offline local placeholder
+      // The demo site has no backend, so it gets an online local placeholder.
       if (import.meta.env.VITE_DEMO_SITE === "true") {
-        const placeholder: Machine = {
-          deviceId: LOCAL_PLACEHOLDER_ID,
-          name: "Local",
-          hostname: "localhost",
-          url: "",
-          isLocal: true,
-          paired: true,
-          online: true,
-          lastSeen: null,
-        };
-        _clients.set(LOCAL_PLACEHOLDER_ID, new DemoMachineApiClient());
+        const placeholder = buildLocalMachine({ online: true });
+        setCachedClient(LOCAL_PLACEHOLDER_ID, new DemoMachineApiClient());
         set((s) => ({
           machines: [placeholder, ...s.machines.filter((m) => !m.isLocal)],
           activeMachineId: LOCAL_PLACEHOLDER_ID,
@@ -153,194 +139,52 @@ export const useMachineStore = create<MachineStore>((set, get) => {
       }
 
       const client = new MachineApiClient("");
-      const health = await client.probeHealth();
-
-      const local: Machine = health && health.service === "reacher"
-        ? {
-            deviceId: health.device_id,
-            name: health.hostname,
-            hostname: health.hostname,
-            url: "",
-            isLocal: true,
-            paired: true,
-            online: true,
-            lastSeen: new Date().toISOString(),
-          }
-        : {
-            deviceId: LOCAL_PLACEHOLDER_ID,
-            name: "Local",
-            hostname: "localhost",
-            url: "",
-            isLocal: true,
-            paired: true,
-            online: false,
-            lastSeen: null,
-          };
-
-      _localClient = client;
-      _clients.set(local.deviceId, client);
-
+      const local = await probeLocalMachine(client);
+      setLocalClient(client);
+      setCachedClient(local.deviceId, client);
       set((s) => ({
         machines: [local, ...s.machines.filter((m) => !m.isLocal)],
         activeMachineId: local.deviceId,
         ready: true,
       }));
-
-      // Migrate persisted entries that still have apiKey stored in localStorage
-      _migrateLegacyKeys(persisted);
+      void migrateLegacyKeys(persisted, () => get().machines);
     },
 
-    addMachine: async (url: string, apiKey: string, name?: string) => {
-      // Manual fallback: store the key server-side via POST /api/discovery/manual
-      const lc = getLocalClient();
-      const result = await lc.request<{ device_id: string; hostname: string; url: string; name: string }>(
-        "/discovery/manual",
-        {
-          method: "POST",
-          body: JSON.stringify({ url: url.replace(/\/$/, ""), api_key: apiKey, name: name?.trim() || undefined }),
-        },
-      );
-
-      const { machines } = get();
-      if (machines.some((m) => m.deviceId === result.device_id)) {
-        throw new Error("This machine is already connected");
-      }
-
-      const machine: Machine = {
-        deviceId: result.device_id,
-        name: result.name,
-        hostname: result.hostname,
-        url: result.url,
-        isLocal: false,
-        paired: true,
-        online: true,
-        lastSeen: new Date().toISOString(),
-      };
-
-      _clients.set(machine.deviceId, new MachineApiClient("", undefined, machine.deviceId));
-
-      set((s) => {
-        const next = [...s.machines, machine];
-        persistRemoteMachines(next);
-        return { machines: next };
+    addMachine: async (url, apiKey, name) => {
+      const result = await postPairing("/discovery/manual", {
+        url: stripTrailingSlash(url),
+        api_key: apiKey,
+        name: trimmedName(name),
       });
-
-      return machine;
+      return registerPaired(result, { rejectDuplicate: true });
     },
 
-    pairMachine: async (deviceId: string, code: string, name?: string) => {
-      const lc = getLocalClient();
-      const result = await lc.request<{ device_id: string; hostname: string; url: string; name: string }>(
-        `/discovery/${deviceId}/pair`,
-        {
-          method: "POST",
-          body: JSON.stringify({ code, name: name?.trim() || undefined }),
-        },
-      );
+    pairMachine: async (deviceId, code, name) => {
+      const result = await postPairing(`/discovery/${deviceId}/pair`, { code, name: trimmedName(name) });
+      return registerPaired(result, { rejectDuplicate: false });
+    },
 
-      const machine: Machine = {
-        deviceId: result.device_id,
-        name: result.name,
-        hostname: result.hostname,
-        url: result.url,
-        isLocal: false,
-        paired: true,
-        online: true,
-        lastSeen: new Date().toISOString(),
-      };
+    pairByCode: async (code, name) => {
+      const result = await postPairing("/discovery/pair-by-code", { code, name: trimmedName(name) });
+      return registerPaired(result, { rejectDuplicate: false });
+    },
 
-      _clients.set(machine.deviceId, new MachineApiClient("", undefined, machine.deviceId));
-
-      set((s) => {
-        const next = [...s.machines, machine];
-        persistRemoteMachines(next);
-        // Remove from discovered list now that it's paired
-        const nextDiscovered = s.discoveredDevices.filter((d) => d.deviceId !== deviceId);
-        return { machines: next, discoveredDevices: nextDiscovered };
+    pairMachineByUrl: async (url, code, name) => {
+      const result = await postPairing("/discovery/pair-by-url", {
+        url: stripTrailingSlash(url),
+        code,
+        name: trimmedName(name),
       });
-
-      return machine;
+      return registerPaired(result, { rejectDuplicate: true });
     },
 
-    pairByCode: async (code: string, name?: string) => {
-      const lc = getLocalClient();
-      const result = await lc.request<{ device_id: string; hostname: string; url: string; name: string }>(
-        "/discovery/pair-by-code",
-        {
-          method: "POST",
-          body: JSON.stringify({ code, name: name?.trim() || undefined }),
-        },
-      );
-
-      const machine: Machine = {
-        deviceId: result.device_id,
-        name: result.name,
-        hostname: result.hostname,
-        url: result.url,
-        isLocal: false,
-        paired: true,
-        online: true,
-        lastSeen: new Date().toISOString(),
-      };
-
-      _clients.set(machine.deviceId, new MachineApiClient("", undefined, machine.deviceId));
-
-      set((s) => {
-        const next = [...s.machines, machine];
-        persistRemoteMachines(next);
-        const nextDiscovered = s.discoveredDevices.filter((d) => d.deviceId !== result.device_id);
-        return { machines: next, discoveredDevices: nextDiscovered };
-      });
-
-      return machine;
-    },
-
-    pairMachineByUrl: async (url: string, code: string, name?: string) => {
-      const lc = getLocalClient();
-      const result = await lc.request<{ device_id: string; hostname: string; url: string; name: string }>(
-        "/discovery/pair-by-url",
-        {
-          method: "POST",
-          body: JSON.stringify({ url: url.replace(/\/$/, ""), code, name: name?.trim() || undefined }),
-        },
-      );
-
-      const { machines } = get();
-      if (machines.some((m) => m.deviceId === result.device_id)) {
-        throw new Error("This machine is already connected");
-      }
-
-      const machine: Machine = {
-        deviceId: result.device_id,
-        name: result.name,
-        hostname: result.hostname,
-        url: result.url,
-        isLocal: false,
-        paired: true,
-        online: true,
-        lastSeen: new Date().toISOString(),
-      };
-
-      _clients.set(machine.deviceId, new MachineApiClient("", undefined, machine.deviceId));
-
-      set((s) => {
-        const next = [...s.machines, machine];
-        persistRemoteMachines(next);
-        return { machines: next };
-      });
-
-      return machine;
-    },
-
-    removeMachine: async (deviceId: string) => {
-      // Notify backend to unpair the remote device (best-effort)
+    removeMachine: async (deviceId) => {
       try {
-        const lc = getLocalClient();
-        await lc.request(`/discovery/${deviceId}`, { method: "DELETE" });
+        await getLocalClient().request(`/discovery/${deviceId}`, { method: "DELETE" });
       } catch {
-        // Machine may already be removed server-side or offline; proceed with local cleanup
+        // The machine may already be removed server-side or offline; local cleanup still proceeds.
       }
-      _clients.delete(deviceId);
+      deleteCachedClient(deviceId);
       set((s) => {
         const next = s.machines.filter((m) => m.deviceId !== deviceId);
         persistRemoteMachines(next);
@@ -351,7 +195,7 @@ export const useMachineStore = create<MachineStore>((set, get) => {
       });
     },
 
-    renameMachine: (deviceId: string, name: string) => {
+    renameMachine: (deviceId, name) => {
       set((s) => {
         const next = s.machines.map((m) => (m.deviceId === deviceId ? { ...m, name } : m));
         persistRemoteMachines(next);
@@ -359,7 +203,7 @@ export const useMachineStore = create<MachineStore>((set, get) => {
       });
     },
 
-    setMachineOnline: (deviceId: string, online: boolean) => {
+    setMachineOnline: (deviceId, online) => {
       set((s) => ({
         machines: s.machines.map((m) =>
           m.deviceId === deviceId
@@ -369,147 +213,48 @@ export const useMachineStore = create<MachineStore>((set, get) => {
       }));
     },
 
-    setActiveMachine: (deviceId: string) => {
+    setActiveMachine: (deviceId) => {
       set({ activeMachineId: deviceId });
     },
 
-    getClient: (deviceId: string) => {
-      if (_clients.has(deviceId)) return _clients.get(deviceId)!;
+    getClient: (deviceId) => {
+      const cached = getCachedClient(deviceId);
+      if (cached) return cached;
       const machine = get().machines.find((m) => m.deviceId === deviceId);
-      if (!machine) return null;
-      return ensureClient(machine);
+      return machine ? ensureClient(machine) : null;
     },
 
     startPolling: () => {
-      if (_pollInterval) return;
-      _pollInterval = setInterval(async () => {
+      if (pollInterval) return;
+      pollInterval = setInterval(async () => {
         const { machines, setMachineOnline, getClient } = get();
         for (const machine of machines) {
           const client = getClient(machine.deviceId);
           if (!client) continue;
           const health = await client.probeHealth();
-          setMachineOnline(machine.deviceId, health?.service === "reacher");
+          setMachineOnline(machine.deviceId, health?.service === REACHER_SERVICE_NAME);
         }
-      }, 30_000);
+      }, HEALTH_POLL_INTERVAL_MS);
     },
 
     stopPolling: () => {
-      if (_pollInterval) {
-        clearInterval(_pollInterval);
-        _pollInterval = null;
-      }
+      if (!pollInterval) return;
+      clearInterval(pollInterval);
+      pollInterval = null;
     },
 
     startDiscoveryPolling: () => {
-      if (_discoveryInterval) return;
-      // Poll immediately then on interval
-      _pollDiscovery(set, get);
-      _discoveryInterval = setInterval(() => _pollDiscovery(set, get), 10_000);
+      if (discoveryInterval) return;
+      void pollDiscovery(set, get);
+      discoveryInterval = setInterval(() => void pollDiscovery(set, get), DISCOVERY_POLL_INTERVAL_MS);
     },
 
     stopDiscoveryPolling: () => {
-      if (_discoveryInterval) {
-        clearInterval(_discoveryInterval);
-        _discoveryInterval = null;
-      }
+      if (!discoveryInterval) return;
+      clearInterval(discoveryInterval);
+      discoveryInterval = null;
     },
 
-    refreshDiscovery: () => _pollDiscovery(set, get),
+    refreshDiscovery: () => pollDiscovery(set, get),
   };
 });
-
-// ---------------------------------------------------------------------------
-// Discovery polling helper
-// ---------------------------------------------------------------------------
-
-async function _pollDiscovery(
-  set: (fn: (s: { discoveredDevices: DiscoveredDevice[]; machines: Machine[] }) => Partial<{ discoveredDevices: DiscoveredDevice[]; machines: Machine[] }>) => void,
-  get: () => { machines: Machine[] },
-) {
-  try {
-    const lc = getLocalClient();
-    // Backend returns snake_case `device_id`; map to camelCase `deviceId` here.
-    const data = await lc.request<{
-      devices: Array<{
-        device_id: string;
-        hostname: string;
-        url: string;
-        paired: boolean;
-        discovered: boolean;
-        active_sessions: number | null;
-        name?: string;
-      }>;
-    }>("/discovery");
-    const { machines } = get();
-    const pairedIds = new Set(machines.map((m) => m.deviceId));
-
-    // Reconcile: restore machines the server knows are paired but the frontend lost
-    // (e.g. localStorage was cleared, different browser, app restart).
-    const toRestore = data.devices.filter(
-      (d) => d.paired && !pairedIds.has(d.device_id),
-    );
-    if (toRestore.length > 0) {
-      const restored: Machine[] = toRestore.map((d) => ({
-        deviceId: d.device_id,
-        name: d.name || d.hostname,
-        hostname: d.hostname,
-        url: d.url,
-        isLocal: false,
-        paired: true,
-        online: d.discovered,
-        lastSeen: d.discovered ? new Date().toISOString() : null,
-      }));
-      for (const m of restored) {
-        _clients.set(m.deviceId, new MachineApiClient("", undefined, m.deviceId));
-        pairedIds.add(m.deviceId);
-      }
-      set((s) => {
-        const next = [...s.machines, ...restored];
-        persistRemoteMachines(next);
-        return { machines: next };
-      });
-    }
-
-    // Only surface devices that are truly unpaired (not known to server either)
-    const unpaired: DiscoveredDevice[] = data.devices
-      .filter((d) => !d.paired && !pairedIds.has(d.device_id))
-      .map((d) => ({
-        deviceId: d.device_id,
-        hostname: d.hostname,
-        url: d.url,
-        paired: d.paired,
-        discovered: d.discovered,
-        active_sessions: d.active_sessions,
-      }));
-    set(() => ({ discoveredDevices: unpaired }));
-  } catch {
-    // Discovery endpoint may not yet be reachable — silently ignore
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Migration: move apiKey from localStorage to server-side storage
-// ---------------------------------------------------------------------------
-
-async function _migrateLegacyKeys(persisted: PersistedMachine[]) {
-  const legacy = persisted.filter((m) => m.apiKey);
-  if (legacy.length === 0) return;
-
-  const lc = getLocalClient();
-  for (const m of legacy) {
-    try {
-      await lc.request("/discovery/manual", {
-        method: "POST",
-        body: JSON.stringify({ url: m.url, api_key: m.apiKey, name: m.name }),
-      });
-      // Swap to proxy client now that key is stored server-side
-      _clients.set(m.deviceId, new MachineApiClient("", undefined, m.deviceId));
-    } catch {
-      // Migration failed for this machine — keep the direct client in place
-    }
-  }
-
-  // Re-persist without apiKey so the old format is cleaned up
-  const current = useMachineStore.getState().machines;
-  persistRemoteMachines(current);
-}
