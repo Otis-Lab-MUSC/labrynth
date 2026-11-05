@@ -7,6 +7,7 @@ from collections.abc import Awaitable
 from .errors import API_ERRORS
 from .host import CliHost
 from .menus import _digits
+from .response_fields import read_record_list
 
 
 class MachineActionsMixin(CliHost):
@@ -15,7 +16,7 @@ class MachineActionsMixin(CliHost):
     async def _refresh_machines(self) -> None:
         """Reload the list of paired and discovered machines."""
         try:
-            self.machines = (await self.api.list_machines()).get("devices", [])
+            self.machines = read_record_list((await self.api.list_machines()).get("devices"))
         except API_ERRORS as exc:
             self.machines = []
             self._set_status(f"Machine list failed: {exc}", error=True)

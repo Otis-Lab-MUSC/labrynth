@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 # Which presses start the lever timeout window (1077 RH / 1377 LH). Mirrors
 # TIMEOUT_MODE_OPTIONS in web/src/components/hardware/LeverControl.tsx. Both codes
 # write one scheduler-wide flag in firmware, exactly like the timeout interval —
@@ -17,7 +19,38 @@ LEVER_FILTER_CHOICES: list[tuple[str, str]] = [
     ("LH lever only", "2"),
 ]
 
-DEVICE_CONFIGS: list[dict] = [
+
+
+class _ParamRequired(TypedDict):
+    key: str
+    label: str
+    code: int
+    default: str
+
+
+class ParamSpec(_ParamRequired, total=False):
+    """One settable device parameter; ``choices`` is present for menu-picked values."""
+
+    choices: list[tuple[str, str]]
+
+
+class _DeviceRequired(TypedDict):
+    id: str
+    label: str
+    arm: int
+    disarm: int
+    test: int | None
+    params: list[ParamSpec]
+
+
+class DeviceConfig(_DeviceRequired, total=False):
+    """One hardware device: its command codes and parameters; levers add ``role``, the laser ``mode``."""
+
+    role: dict[str, int]
+    mode: dict[str, int]
+
+
+DEVICE_CONFIGS: list[DeviceConfig] = [
     {
         "id": "rh-lever",
         "label": "RH Lever",
@@ -253,4 +286,4 @@ COUNTED_PUMP_CHOICES = {
     "both": ("Pump 1 + Pump 2", ["PUMP_1", "PUMP_2"]),
 }
 
-DEVICE_BY_ID = {d["id"]: d for d in DEVICE_CONFIGS}
+DEVICE_BY_ID: dict[str, DeviceConfig] = {d["id"]: d for d in DEVICE_CONFIGS}

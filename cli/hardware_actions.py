@@ -49,9 +49,12 @@ class HardwareActionsMixin(CliHost):
 
     async def _send_commands(self, cmds: list[tuple[int, int | None]]) -> list[int]:
         """Send a batch, skipping codes the firmware does not declare. Returns skipped codes."""
-        kept, dropped = P.filter_allowed(cmds, self.session.allowed_codes)
+        session = self.session
+        if session is None:
+            return []
+        kept, dropped = P.filter_allowed(cmds, session.allowed_codes)
         for code, value in kept:
-            await self.api.send_command(self.session.id, code, value)
+            await self.api.send_command(session.id, code, value)
         return dropped
 
     async def _test_chain(self) -> None:

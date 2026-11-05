@@ -8,6 +8,12 @@ from collections.abc import AsyncIterable
 
 from .errors import API_ERRORS
 from .host import CliHost
+from .response_fields import read_record_list
+
+
+def _as_int(value: object, default: int = 0) -> int:
+    """Return ``value`` when it is an int, else ``default``."""
+    return value if isinstance(value, int) else default
 
 
 class MonitorMixin(CliHost):
@@ -141,7 +147,7 @@ class MonitorMixin(CliHost):
     async def _session_still_exists(self, sid: str) -> bool:
         """Return True if the target still lists the session (or cannot be reached)."""
         try:
-            sessions = (await self.api.list_sessions()).get("sessions", [])
+            sessions = read_record_list((await self.api.list_sessions()).get("sessions"))
             return any(x.get("session_id") == sid for x in sessions)
         except API_ERRORS:
             return True  # can't tell (host unreachable) — keep trying
@@ -159,13 +165,13 @@ class MonitorMixin(CliHost):
         try:
             since = self.session.backend_event_count
             resp = await self.api.get_behavior(self.session.id, since=since)
-            data = resp.get("data", [])
-            total = resp.get("total", 0)
+            data = read_record_list(resp.get("data"))
+            total = _as_int(resp.get("total"))
             if total < since:
                 # Buffers were reset (restart/new run): replay from zero.
                 self._reset_counters()
                 resp = await self.api.get_behavior(self.session.id)
-                data, total = resp.get("data", []), resp.get("total", 0)
+                data, total = read_record_list(resp.get("data")), _as_int(resp.get("total"))
             for entry in data:
                 self._handle_ws_message({"type": "event", "data": entry}, replay=True)
             self.session.backend_event_count = total

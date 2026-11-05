@@ -21,6 +21,9 @@ class RunActionsMixin(CliHost):
         pump target) for operant paradigms.
         """
         s = self.session
+        if s is None:
+            self._set_status("No session", error=True)
+            return False
         missing = P.missing_limit_fields(self._web_limits())
         if missing:
             self._set_status(f"Set the limits first: {', '.join(missing)}", error=True)
@@ -113,7 +116,8 @@ class RunActionsMixin(CliHost):
         try:
             result = await self.api.split_segment(self.session.id)
             seg = result.get("segment_number", "?")
-            self._set_status(f"Segment split — now on segment {int(seg) + 1}")
+            next_segment = int(seg) + 1 if isinstance(seg, (int, float, str)) else seg
+            self._set_status(f"Segment split — now on segment {next_segment}")
         except API_ERRORS as exc:
             self._set_status(f"Split failed: {exc}", error=True)
 

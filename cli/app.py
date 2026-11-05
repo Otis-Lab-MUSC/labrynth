@@ -40,6 +40,7 @@ from .machine_actions import MachineActionsMixin
 from .menus import MenuMixin
 from .monitor import MonitorMixin
 from .program_actions import ProgramActionsMixin
+from .response_fields import read_str
 from .run_actions import RunActionsMixin
 from .session_actions import SessionActionsMixin
 from .state import MenuState, SessionState
@@ -53,6 +54,14 @@ LOGGER = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════
 # Helpers
 # ═══════════════════════════════════════════════════════════════════════════
+
+
+def _matches_machine(machine: dict[str, object], want: str) -> bool:
+    """Return True if ``want`` is the machine's device-id prefix, name, or hostname."""
+    return read_str(machine.get("device_id")).startswith(want) or want in (
+        machine.get("name"),
+        machine.get("hostname"),
+    )
 
 
 def _safe_int(val: str, label: str = "value") -> int | None:
@@ -120,7 +129,7 @@ class ReacherCLI(
         self.port = port
         self.target_name: str = "this machine"
         self._startup_machine = machine
-        self.machines: list[dict] = []
+        self.machines: list[dict[str, object]] = []
         self.session: SessionState | None = None
         self.mode: str = "menu"  # "menu" | "input" | "monitor" | "select"
         self.status_message: str = ""
@@ -312,7 +321,7 @@ class ReacherCLI(
             n = _safe_int(val, prompt)
             if n is None:
                 self._set_status(f"Invalid number: {val!r}", error=True)
-                return
+                return None
             return callback(n)
         self._prompt_input(prompt, _validate)
 
@@ -530,10 +539,10 @@ class ReacherCLI(
             if self._startup_machine:
                 await self._refresh_machines()
                 want = self._startup_machine
-                m = next((x for x in self.machines if x.get("paired") and (
-                    x["device_id"].startswith(want) or want in (x.get("name"), x.get("hostname")))), None)
+                m = next((x for x in self.machines if x.get("paired") and _matches_machine(x, want)), None)
                 if m:
-                    await self._select_target(m["device_id"], m.get("name") or m["hostname"])
+                    device_id = read_str(m.get("device_id"))
+                    await self._select_target(device_id, read_str(m.get("name")) or read_str(m.get("hostname")))
                 else:
                     self._set_status(f"--machine {want!r} is not a paired machine; see Machines",
                                      error=True)

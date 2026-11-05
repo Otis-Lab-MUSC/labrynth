@@ -5,6 +5,7 @@ from __future__ import annotations
 from . import presets as P
 from .errors import API_ERRORS
 from .host import CliHost
+from .response_fields import read_record_list, read_str, read_str_list
 from .state import SessionState
 
 
@@ -15,7 +16,7 @@ class SessionActionsMixin(CliHost):
         """Ask for a serial port, then create a session on it."""
         try:
             ports_resp = await self.api.list_ports()
-            ports = ports_resp.get("ports", [])
+            ports = read_str_list(ports_resp.get("ports"))
         except API_ERRORS:
             ports = []
 
@@ -34,7 +35,7 @@ class SessionActionsMixin(CliHost):
         # Optionally select paradigm
         try:
             paradigms_resp = await self.api.list_paradigms()
-            paradigms = paradigms_resp.get("paradigms", [])
+            paradigms = read_str_list(paradigms_resp.get("paradigms"))
         except API_ERRORS:
             paradigms = []
 
@@ -51,7 +52,7 @@ class SessionActionsMixin(CliHost):
         """Create the session on the backend and make it the active one."""
         try:
             resp = await self.api.create_session(port, paradigm)
-            sid = resp.get("session_id") or resp.get("id", "")
+            sid = read_str(resp.get("session_id")) or read_str(resp.get("id"))
             self._stop_ws()
             self.monitor_lines.clear()
             self.session = SessionState(id=sid, port=port, paradigm=paradigm)
@@ -99,7 +100,7 @@ class SessionActionsMixin(CliHost):
             return
         try:
             resp = await self.api.get_commands(self.session.id)
-            commands = resp.get("commands", [])
+            commands = read_record_list(resp.get("commands"))
             self.session.pav_commands = commands
             self._rebuild_current_menu()
         except API_ERRORS as exc:

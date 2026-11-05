@@ -121,7 +121,10 @@ class ProgramActionsMixin(CliHost):
 
     def _web_limits(self) -> P.LimitSettings:
         """Build the web-shaped limit payload from the session limits."""
-        lim = self.session.limit_settings
+        session = self.session
+        if session is None:
+            raise RuntimeError("limits requested without a session")
+        lim = session.limit_settings
         return {
             "limitType": lim["type"],
             "timeLimit": lim["time_limit"],
@@ -135,8 +138,11 @@ class ProgramActionsMixin(CliHost):
         body = P.limit_payload(self._web_limits())
         if body is None:
             return False
+        session = self.session
+        if session is None:
+            return False
         limit_type = str(body.pop("type"))
-        await self.api.set_limit(self.session.id, limit_type, **body)
+        await self.api.set_limit(session.id, limit_type, **body)
         return True
 
     async def _set_limit_type(self, limit_type: str) -> None:

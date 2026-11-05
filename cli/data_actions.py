@@ -6,6 +6,7 @@ import os
 
 from .errors import API_ERRORS, FILE_ERRORS
 from .host import CliHost
+from .response_fields import read_optional_str, read_record_list
 
 
 class DataActionsMixin(CliHost):
@@ -68,7 +69,7 @@ class DataActionsMixin(CliHost):
                 "program_start_time": s.program_start * 1000 if s.program_start else None,
             }
             resp = await self.api.export_zip(s.id, **{k: v for k, v in payload.items() if v is not None})
-            path = resp.get("file_path")
+            path = read_optional_str(resp.get("file_path"))
             s.last_export = path
             where = f" on {self.target_name}" if self.api.is_remote else ""
             self._log(f"  [export] Saved{where}: {path}")
@@ -121,7 +122,7 @@ class DataActionsMixin(CliHost):
             return
         try:
             resp = await self.api.get_behavior(self.session.id)
-            events = resp.get("data", [])
+            events = read_record_list(resp.get("data"))
             if not events:
                 self._set_status("No data recorded yet")
                 return

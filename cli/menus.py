@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import os
 
 from .constants import (
@@ -170,7 +171,7 @@ class MenuMixin(DeviceMenuMixin, ProgramMenuMixin):
                     "Unpair a Machine",
                     action=lambda: self._prompt_select(
                         "Unpair which machine?",
-                        [(m.get("name") or m["hostname"], m["device_id"]) for m in paired],
+                        [(str(m.get("name") or m["hostname"]), str(m["device_id"])) for m in paired],
                         self._unpair,
                     ),
                 )
@@ -219,7 +220,7 @@ class MenuMixin(DeviceMenuMixin, ProgramMenuMixin):
             label = title[len("Hardware > ") :]
             dev = next((d for d in DEVICE_CONFIGS if d["label"] == label), None)
             if dev:
-                builders[title] = lambda d=dev["id"]: self._device_menu(d)
+                builders[title] = functools.partial(self._device_menu, dev["id"])
 
         builder = builders.get(title)
         if builder:

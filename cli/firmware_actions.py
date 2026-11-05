@@ -5,6 +5,7 @@ from __future__ import annotations
 from . import presets as P
 from .errors import API_ERRORS
 from .host import CliHost
+from .response_fields import read_str_list
 
 
 class FirmwareActionsMixin(CliHost):
@@ -32,7 +33,7 @@ class FirmwareActionsMixin(CliHost):
         """Ask for the paradigm to flash on the chosen board."""
         try:
             paradigms_resp = await self.api.list_paradigms(board)
-            paradigms = paradigms_resp.get("paradigms", [])
+            paradigms = read_str_list(paradigms_resp.get("paradigms"))
         except API_ERRORS:
             paradigms = ["fr", "pr", "vi", "omission", "pavlovian"]
 

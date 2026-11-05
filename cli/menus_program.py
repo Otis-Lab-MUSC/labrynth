@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 from . import presets as P
 from .constants import (
@@ -15,6 +15,16 @@ from .constants import (
 )
 from .host import CliHost
 from .state import MenuItem, MenuState
+
+SCALAR_CODE_MIN = 206
+SCALAR_CODE_MAX = 219
+
+
+def _spec_code(spec: Mapping[str, object]) -> int | None:
+    """Return a command spec's integer code, or None when it has none."""
+    code = spec.get("code")
+    return code if isinstance(code, int) and not isinstance(code, bool) else None
+
 
 PARADIGM_SETTING_ROWS = (
     (("fr", "pr"), "Set Ratio", "Enter ratio:", "ratio", "ratio", 1),
@@ -129,31 +139,31 @@ class ProgramMenuMixin(CliHost):
         # last value set this session.
         specs = s.pav_commands if s else []
 
-        def _label(code: int, spec: dict) -> str:
+        def _label(code: int, spec: Mapping[str, object]) -> str:
             """Return the menu label for a Pavlovian command."""
-            return PAV_LABEL_OVERRIDES.get(code) or spec.get("description") or f"Code {code}"
+            description = spec.get("description")
+            return PAV_LABEL_OVERRIDES.get(code) or (str(description) if description else "") or f"Code {code}"
 
         def _suffix(code: int) -> str:
             """Return the last value set for a Pavlovian command, formatted for the menu."""
             return f"({tracked[code]})" if code in tracked else ""
 
+        coded = [(code, sp) for sp in specs if (code := _spec_code(sp)) is not None]
         scalar = sorted(
-            (sp for sp in specs if sp.get("payload_key") and 206 <= sp.get("code", 0) <= 219),
-            key=lambda sp: sp["code"],
+            ((code, sp) for code, sp in coded if sp.get("payload_key") and SCALAR_CODE_MIN <= code <= SCALAR_CODE_MAX),
+            key=lambda pair: pair[0],
         )
-        for sp in scalar:
-            code = sp["code"]
+        for code, sp in scalar:
             label = _label(code, sp)
             action = self._pavlovian_scalar_action(code, label, sp)
             items.append(MenuItem(f"Set {label}", action=action, suffix=_suffix(code)))
 
         # Pulse-configuration block (0 = continuous tone), also registry-sourced.
         pulse = sorted(
-            (sp for sp in specs if sp.get("code") in PULSE_CODES),
-            key=lambda sp: sp["code"],
+            ((code, sp) for code, sp in coded if code in PULSE_CODES),
+            key=lambda pair: pair[0],
         )
-        for sp in pulse:
-            code = sp["code"]
+        for code, sp in pulse:
             label = _label(code, sp)
             items.append(
                 MenuItem(

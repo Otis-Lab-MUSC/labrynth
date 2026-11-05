@@ -2,15 +2,26 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from . import presets as P
 from .constants import (
     DEVICE_BY_ID,
     DEVICE_CONFIGS,
     LASER_MODE_ITEMS,
     LEVER_FILTER_LABELS,
+    DeviceConfig,
+    ParamSpec,
 )
 from .host import CliHost
+from .preset_types import Contingency, DeviceState, DeviceValue
 from .state import MenuItem, MenuState
+
+
+def _contingency_of(dev: DeviceState) -> Contingency:
+    """Return the device's contingency record, or an empty one when it has none."""
+    contingency = dev.get("contingency")
+    return contingency if isinstance(contingency, dict) else {}
 
 
 class DeviceMenuMixin(CliHost):
@@ -72,38 +83,56 @@ class DeviceMenuMixin(CliHost):
             return ""
         dev = self.session.hw.get(P.WEB_KEY.get(device_id, ""), {})
         if key == "leverFilter":
-            return LEVER_FILTER_LABELS.get((dev.get("contingency") or {}).get("leverFilter", "none"), "?")
+            return LEVER_FILTER_LABELS.get(str(_contingency_of(dev).get("leverFilter", "none")), "?")
+        v: DeviceValue
         if key == "delay":
-            v = (dev.get("contingency") or {}).get("delay")
+            v = _contingency_of(dev).get("delay")
         elif key == "timeoutMode":
             v = dev.get("timeoutMode")
-            return {0: "Every press", 1: "Reward press"}.get(v, "unknown") if v is not None else "unknown"
+            if isinstance(v, int):
+                return {0: "Every press", 1: "Reward press"}.get(v, "unknown")
+            return "unknown"
         else:
             v = dev.get(key)
         return "unknown" if v is None else str(v)
 
-    def _device_param_items(self, device_id: str, cfg: dict[str, object], allowed: set[int]) -> list[MenuItem]:
+    def _device_param_items(self, device_id: str, cfg: DeviceConfig, allowed: set[int]) -> list[MenuItem]:
         """Build the parameter items the running firmware declares.
 
         Lever filter and onset delay exist only on operant builds; timeout mode
         not on omission.
         """
         items = []
-        for p in cfg.get("params", []):
+        for p in cfg["params"]:
             if allowed and p["code"] not in allowed:
                 continue
-            if p.get("choices"):
-                action = lambda code=p["code"], lbl=p["label"], ch=p["choices"]: self._prompt_select(
-                    f"{lbl}:", ch, lambda val, c=code: self._send_hw_command(c, int(val))
-                )
-            else:
-                action = lambda code=p["code"], lbl=p["label"]: self._prompt_int_input(
-                    f"Enter {lbl}:", lambda val, c=code: self._send_hw_command(c, val)
-                )
             items.append(
-                MenuItem(f"Set {p['label']}", action=action, suffix=f"({self._param_value(device_id, p['key'])})")
+                MenuItem(
+                    f"Set {p['label']}",
+                    action=self._param_action(p),
+                    suffix=f"({self._param_value(device_id, p['key'])})",
+                )
             )
         return items
+
+    def _param_action(self, spec: ParamSpec) -> Callable[[], object]:
+        """Return the prompt that sets one device parameter, a pick list or a number."""
+        code = spec["code"]
+        label = spec["label"]
+        choices = spec.get("choices")
+        if choices:
+
+            def send_choice(value: str) -> object:
+                """Send the picked choice's value for this parameter."""
+                return self._send_hw_command(code, int(value))
+
+            return lambda: self._prompt_select(f"{label}:", choices, send_choice)
+
+        def send_number(value: int) -> object:
+            """Send the entered number for this parameter."""
+            return self._send_hw_command(code, value)
+
+        return lambda: self._prompt_int_input(f"Enter {label}:", send_number)
 
     def _laser_mode_items(self, allowed: set[int]) -> list[MenuItem]:
         """Build the laser mode and phase items, filtered to what this firmware accepts."""
@@ -133,8 +162,9 @@ class DeviceMenuMixin(CliHost):
             items.append(MenuItem("Arm", action=lambda: self._send_hw_command(cfg["arm"])))
 
         # Test button
-        if cfg.get("test") is not None and (not allowed or cfg["test"] in allowed):
-            items.append(MenuItem("Test", action=lambda: self._send_hw_command(cfg["test"])))
+        test_code = cfg["test"]
+        if test_code is not None and (not allowed or test_code in allowed):
+            items.append(MenuItem("Test", action=lambda: self._send_hw_command(test_code)))
 
         items += self._device_param_items(device_id, cfg, allowed)
 
