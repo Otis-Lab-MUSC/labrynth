@@ -75,3 +75,18 @@ def test_backend_trampoline_emits_nothing_on_stdout(
     entry.main()
     assert called == [True]
     assert capsys.readouterr().out == ""
+
+
+def test_third_party_info_logs_stay_off_the_terminal(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The root logger stays at WARNING so library INFO lines do not scribble over the TUI."""
+    monkeypatch.setattr(logging.getLogger(), "handlers", [])
+    monkeypatch.setattr(entry, "_run_backend", lambda: None)
+    monkeypatch.setattr("sys.argv", ["cli", "--selftest"])
+    root_level = logging.getLogger().level
+    try:
+        entry.main()
+    except SystemExit:
+        pass
+    assert logging.getLogger().level == logging.WARNING
+    assert entry.LOGGER.level == logging.INFO
+    logging.getLogger().setLevel(root_level)

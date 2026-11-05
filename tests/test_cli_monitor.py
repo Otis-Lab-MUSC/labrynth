@@ -13,32 +13,40 @@ import httpx
 import pytest
 import websockets
 
-from cli.app import ReacherCLI, SessionState
+from cli.app import ReacherCLI
+from cli.monitor import CLEAN_CLOSE_DELAY_SECONDS
+from cli.state import SessionState
 
 SESSION_ID = "abcdef0123456789"
 TIMEOUT_SECONDS = 5
 
 
 class FakeSocket:
-    """An open socket that yields no messages and closes at once."""
+    """An open socket that yields its frames, then closes cleanly."""
+
+    def __init__(self, frames: Sequence[str] = ()) -> None:
+        self.frames = list(frames)
 
     def __aiter__(self) -> FakeSocket:
         return self
 
     async def __anext__(self) -> str:
-        raise StopAsyncIteration
+        if not self.frames:
+            raise StopAsyncIteration
+        return self.frames.pop(0)
 
 
 class FakeConnection:
     """Async context manager returned by the patched ``websockets.connect``."""
 
-    def __init__(self, outcome: BaseException | None) -> None:
+    def __init__(self, outcome: BaseException | None, frames: Sequence[str] = ()) -> None:
         self.outcome = outcome
+        self.frames = frames
 
     async def __aenter__(self) -> FakeSocket:
         if self.outcome:
             raise self.outcome
-        return FakeSocket()
+        return FakeSocket(self.frames)
 
     async def __aexit__(self, *exc_info: object) -> None:
         return None
@@ -76,15 +84,27 @@ def make_cli(api: FakeApi) -> ReacherCLI:
     return cli
 
 
-def script_connections(monkeypatch: pytest.MonkeyPatch, outcomes: Sequence[BaseException | None]) -> list[int]:
-    """Serve ``outcomes`` to successive connects, then block forever; return the connect counter."""
+SLEPT: list[float] = []
+
+
+def script_connections(
+    monkeypatch: pytest.MonkeyPatch,
+    outcomes: Sequence[BaseException | None],
+    first_frames: Sequence[str] = (),
+) -> list[int]:
+    """Serve ``outcomes`` to successive connects, then block forever; return the connect counter.
+
+    ``first_frames`` are delivered on the first connection. Requested sleep delays land in ``SLEPT``.
+    """
     remaining = list(outcomes)
     attempts: list[int] = []
+    SLEPT.clear()
 
     def connect(url: str, **kwargs: object) -> FakeConnection:
         attempts.append(1)
+        frames = first_frames if len(attempts) == 1 else ()
         if remaining:
-            return FakeConnection(remaining.pop(0))
+            return FakeConnection(remaining.pop(0), frames)
         return FakeConnection(asyncio.CancelledError())
 
     monkeypatch.setattr(websockets, "connect", connect)
@@ -92,6 +112,7 @@ def script_connections(monkeypatch: pytest.MonkeyPatch, outcomes: Sequence[BaseE
     real_sleep = asyncio.sleep
 
     async def fast_sleep(delay: float, result: object = None) -> object:
+        SLEPT.append(delay)
         return await real_sleep(0, result)
 
     monkeypatch.setattr(asyncio, "sleep", fast_sleep)
@@ -180,3 +201,43 @@ def test_stream_works_when_websockets_submodules_are_not_preloaded(monkeypatch: 
     run_stream(cli)
     assert cli.session is not None
     assert cli.session.state == "gone"
+
+
+def test_non_object_frame_does_not_kill_the_stream(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A JSON frame that is not an object is ignored and the link carries on."""
+    api = FakeApi()
+    cli = make_cli(api)
+    attempts = script_connections(monkeypatch, [None, None], first_frames=["[1, 2]", '"text"', "7"])
+    run_stream(cli)
+    assert len(attempts) == 3
+
+
+def test_replay_handler_bug_is_logged_and_the_link_is_restored(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A handler bug while replaying missed events must not end the stream task."""
+    api = FakeApi()
+    cli = make_cli(api)
+
+    async def one_missed_event(sid: str, since: int | None = None) -> dict[str, object]:
+        return {"data": [{"device": "LEVER_RH"}], "total": 1}
+
+    api.get_behavior = one_missed_event  # type: ignore[method-assign]
+
+    def failing_handler(msg: dict[str, object], replay: bool = False) -> None:
+        if replay:
+            raise RuntimeError("handler bug")
+
+    cli._handle_ws_message = failing_handler  # type: ignore[method-assign]
+    attempts = script_connections(monkeypatch, [None, None])
+    run_stream(cli)
+    assert len(attempts) == 3
+    assert any("Bad event message" in text for _style, text in cli.monitor_lines)
+    assert any("Live link restored" in text for _style, text in cli.monitor_lines)
+
+
+def test_clean_close_waits_before_reconnecting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A socket that closes cleanly is retried after a delay, not in a tight loop."""
+    api = FakeApi()
+    cli = make_cli(api)
+    script_connections(monkeypatch, [None, None])
+    run_stream(cli)
+    assert CLEAN_CLOSE_DELAY_SECONDS in SLEPT

@@ -9,6 +9,9 @@ from collections.abc import AsyncIterable
 from .errors import API_ERRORS
 from .host import CliHost
 from .response_fields import read_record_list
+from .ws_messages import WsData
+
+CLEAN_CLOSE_DELAY_SECONDS = 1
 
 
 def _as_int(value: object, default: int = 0) -> int:
@@ -98,6 +101,7 @@ class MonitorMixin(CliHost):
                         return
                 else:
                     self.ws_connected = False
+                    await asyncio.sleep(CLEAN_CLOSE_DELAY_SECONDS)
         except asyncio.CancelledError:
             pass
         finally:
@@ -117,12 +121,16 @@ class MonitorMixin(CliHost):
                 msg = json.loads(raw)
             except json.JSONDecodeError:
                 continue
-            # A handler bug must not tear down the socket.
-            try:
-                self._handle_ws_message(msg)
-            except Exception as exc:  # noqa: BLE001 -- handler guard: a handler bug must not tear down the socket
-                self._log(f"Bad {msg.get('type', '?')} message: {exc}", error=True)
+            if isinstance(msg, dict):
+                self._dispatch_message(msg)
             self._invalidate()
+
+    def _dispatch_message(self, msg: WsData, replay: bool = False) -> None:
+        """Route one message, logging a handler bug instead of tearing down the stream."""
+        try:
+            self._handle_ws_message(msg, replay=replay)
+        except Exception as exc:  # noqa: BLE001 -- handler guard: a handler bug must not tear down the socket
+            self._log(f"Bad {msg.get('type', '?')} message: {exc}", error=True)
 
     async def _handle_link_down(self, exc: Exception, attempt: int, sid: str) -> bool:
         """Back off after a dropped link; return True when the session is gone for good."""
@@ -160,7 +168,7 @@ class MonitorMixin(CliHost):
         try:
             info = await self.api.get_session(self.session.id)
             if info.get("state"):
-                self._handle_ws_message({"type": "session_state", "data": {"state": info["state"]}})
+                self._dispatch_message({"type": "session_state", "data": {"state": info["state"]}})
         except API_ERRORS as exc:
             self._log(f"State refresh failed: {exc}", error=True)
         try:
@@ -174,7 +182,7 @@ class MonitorMixin(CliHost):
                 resp = await self.api.get_behavior(self.session.id)
                 data, total = read_record_list(resp.get("data")), _as_int(resp.get("total"))
             for entry in data:
-                self._handle_ws_message({"type": "event", "data": entry}, replay=True)
+                self._dispatch_message({"type": "event", "data": entry}, replay=True)
             self.session.backend_event_count = total
             if data:
                 self._log(f"  [info] Recovered {len(data)} missed events")

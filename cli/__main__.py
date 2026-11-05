@@ -142,7 +142,8 @@ def main() -> None:
         _run_backend()
         return
 
-    logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stderr)
+    logging.basicConfig(level=logging.WARNING, format="%(message)s", stream=sys.stderr)
+    LOGGER.setLevel(logging.INFO)
     args = _parse_arguments()
 
     if args.selftest:
