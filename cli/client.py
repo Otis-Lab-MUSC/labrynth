@@ -12,7 +12,6 @@ from __future__ import annotations
 import asyncio
 import os
 from collections.abc import Mapping
-from typing import cast
 from urllib.parse import quote
 
 import httpx
@@ -111,7 +110,10 @@ class ReacherClient:
             raise httpx.HTTPStatusError(
                 f"{r.status_code} {detail or r.reason_phrase}", request=r.request, response=r,
             )
-        return cast("dict[str, object]", r.json())
+        body = r.json()
+        if not isinstance(body, dict):
+            raise ValueError(f"{method} {url}: expected a JSON object, got {type(body).__name__}")
+        return body
 
     # ── Health ─────────────────────────────────────────────
     async def health(self) -> dict[str, object]:
@@ -218,9 +220,7 @@ class ReacherClient:
 
     async def set_limit(self, sid: str, limit_type: str, **kw: object) -> dict[str, object]:
         """Set the session's stop limit (time or infusions)."""
-        return await self._req(
-            "POST", f"/api/program/{sid}/limit", json={"type": limit_type, **kw}
-        )
+        return await self._req("POST", f"/api/program/{sid}/limit", json={"type": limit_type, **kw})
 
     # ── Data ───────────────────────────────────────────────
     async def get_behavior(self, sid: str, since: int | None = None) -> dict[str, object]:
