@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Sequence
 
+import httpx
 import pytest
 import websockets
 
@@ -158,7 +159,7 @@ def test_unreachable_host_keeps_retrying(monkeypatch: pytest.MonkeyPatch) -> Non
     cli = make_cli(api)
 
     async def unreachable() -> dict[str, object]:
-        raise ConnectionError("host down")
+        raise httpx.ConnectError("host down")
 
     api.list_sessions = unreachable  # type: ignore[method-assign]
     refused = [ConnectionRefusedError("refused")] * 6

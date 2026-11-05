@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import http.client
 import logging
 import os
 import platform
@@ -278,7 +279,7 @@ def _ensure_real_avrdude(avrdude_path: str | None) -> str | None:
     logger.info(f"  [INFO] Downloading avrdude v{_AVRDUDE_VERSION} from {url}")
     try:
         urllib.request.urlretrieve(url, zip_path)
-    except Exception as exc:
+    except _DOWNLOAD_ERRORS as exc:
         logger.error(f"  [ERROR] Failed to download avrdude: {exc}")
         return avrdude_path
 
@@ -357,6 +358,10 @@ def _llm_platform_archive() -> tuple[str, bool]:
     # Linux (and other Unix) — official builds are Ubuntu glibc.
     name = f"llama-{tag}-bin-ubuntu-{'arm64' if arm else 'x64'}.tar.gz"
     return name, False
+
+
+# A download failed: network/HTTP trouble (URLError is an OSError) or a truncated body.
+_DOWNLOAD_ERRORS: tuple[type[Exception], ...] = (OSError, http.client.HTTPException)
 
 
 def _download(url: str, dest: str) -> None:
@@ -504,7 +509,7 @@ def ensure_llm(skip: bool = False) -> tuple[str | None, str | None]:
         tmp = gguf_path + ".part"
         try:
             _download(_GGUF_URL, tmp)
-        except Exception as exc:
+        except _DOWNLOAD_ERRORS as exc:
             logger.error(f"  [ERROR] Failed to download GGUF: {exc}")
             sys.exit(1)
         actual = _sha256_file(tmp)
@@ -541,7 +546,7 @@ def ensure_llm(skip: bool = False) -> tuple[str | None, str | None]:
     logger.info(f"  [INFO] Downloading llama.cpp {_LLAMA_CPP_TAG}: {archive_name}")
     try:
         _download(url, archive_path)
-    except Exception as exc:
+    except _DOWNLOAD_ERRORS as exc:
         logger.error(f"  [ERROR] Failed to download llama.cpp: {exc}")
         sys.exit(1)
     actual = _sha256_file(archive_path)
@@ -562,7 +567,7 @@ def ensure_llm(skip: bool = False) -> tuple[str | None, str | None]:
         else:
             with tarfile.open(archive_path, "r:gz") as tf:
                 _safe_extract_tar(tf, extract_dir)
-    except Exception as exc:
+    except (OSError, tarfile.TarError, zipfile.BadZipFile, RuntimeError) as exc:
         logger.error(f"  [ERROR] Failed to extract llama.cpp archive: {exc}")
         sys.exit(1)
 

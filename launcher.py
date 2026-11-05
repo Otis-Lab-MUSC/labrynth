@@ -120,8 +120,8 @@ if not hasattr(sys, "_MEIPASS"):
                     "         The frontend may fail against an older backend.\n"
                     "         Run `pip install -e ../reacher` from the labrynth/ directory."
                 )
-    except Exception:
-        pass
+    except (OSError, ImportError, AttributeError) as exc:
+        logger.debug("Skipped reacher version check: %s", exc)
 
 from reacher.api.app import main
 

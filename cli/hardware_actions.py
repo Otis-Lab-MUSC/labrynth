@@ -7,6 +7,7 @@ from .constants import (
     DEVICE_CONFIGS,
     SYSTEM_COMMANDS,
 )
+from .errors import API_ERRORS
 from .host import CliHost
 
 
@@ -35,7 +36,7 @@ class HardwareActionsMixin(CliHost):
                 else:
                     self._set_status(f"Command {code} sent")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Command failed: {exc}", error=True)
 
     async def _send_laser_mode(self, code: int) -> None:

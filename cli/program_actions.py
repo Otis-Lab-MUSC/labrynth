@@ -9,6 +9,7 @@ from .constants import (
     ITI_DEFAULTS,
     PARADIGM_SETTING_CODES,
 )
+from .errors import API_ERRORS
 from .host import CliHost
 from .preset_types import LimitDefaults
 
@@ -68,7 +69,7 @@ class ProgramActionsMixin(CliHost):
             staged = "" if s.state in ("connected", "stopped") else " — staged, sent at start"
             self._set_status(f"Preset '{preset['name']}' applied{staged}{note}")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Preset failed: {exc}", error=True)
 
     async def _send_paradigm_setting(self, key: str, value: int) -> None:
@@ -150,7 +151,7 @@ class ProgramActionsMixin(CliHost):
                 f"Limit type set to {limit_type}" + ("" if sent else " (sent with the first limit you set)")
             )
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Set limit failed: {exc}", error=True)
 
     async def _set_limit_value(self, key: str, value: int) -> None:
@@ -163,7 +164,7 @@ class ProgramActionsMixin(CliHost):
             sent = await self._send_limits()
             self._set_status(f"{key} set to {value}" + ("" if sent else " (saved; sent once a limit above 0 is set)"))
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Set limit failed: {exc}", error=True)
 
     async def _set_counted_pumps(self, key: str) -> None:
@@ -177,5 +178,5 @@ class ProgramActionsMixin(CliHost):
             await self._send_limits()
             self._set_status(f"Counted pumps set to {label}")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Set limit failed: {exc}", error=True)

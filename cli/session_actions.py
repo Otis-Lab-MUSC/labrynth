@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from . import presets as P
+from .errors import API_ERRORS
 from .host import CliHost
 from .state import SessionState
 
@@ -15,7 +16,7 @@ class SessionActionsMixin(CliHost):
         try:
             ports_resp = await self.api.list_ports()
             ports = ports_resp.get("ports", [])
-        except Exception:
+        except API_ERRORS:
             ports = []
 
         if not ports:
@@ -34,7 +35,7 @@ class SessionActionsMixin(CliHost):
         try:
             paradigms_resp = await self.api.list_paradigms()
             paradigms = paradigms_resp.get("paradigms", [])
-        except Exception:
+        except API_ERRORS:
             paradigms = []
 
         if paradigms:
@@ -58,7 +59,7 @@ class SessionActionsMixin(CliHost):
             self._set_status(f"Session created on {self.target_name}: {sid[:8]}...")
             await self._load_commands()
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Create session failed: {exc}", error=True)
 
     async def _connect(self) -> None:
@@ -72,7 +73,7 @@ class SessionActionsMixin(CliHost):
             self._set_status("Serial connected")
             await self._hydrate_config()
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Connect failed: {exc}", error=True)
 
     async def _disconnect(self) -> None:
@@ -85,7 +86,7 @@ class SessionActionsMixin(CliHost):
             self.session.state = "disconnected"
             self._set_status("Serial disconnected")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Disconnect failed: {exc}", error=True)
 
     async def _load_commands(self) -> None:
@@ -101,7 +102,7 @@ class SessionActionsMixin(CliHost):
             commands = resp.get("commands", [])
             self.session.pav_commands = commands
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Failed to load commands: {exc}", error=True)
 
     async def _reset_session(self) -> None:
@@ -120,7 +121,7 @@ class SessionActionsMixin(CliHost):
             s.last_export = s.last_download = None
             self._set_status("Session reset")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Reset failed: {exc}", error=True)
 
     def _reset_counters(self) -> None:
@@ -157,5 +158,5 @@ class SessionActionsMixin(CliHost):
             self.session = None
             self._set_status("Session destroyed")
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Destroy failed: {exc}", error=True)

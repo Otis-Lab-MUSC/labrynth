@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from . import presets as P
+from .errors import API_ERRORS
 from .host import CliHost
 from .state import SessionState
 
@@ -27,7 +28,7 @@ class AttachActionsMixin(CliHost):
         """List the target's sessions and ask which to attach to."""
         try:
             sessions = (await self.api.list_sessions()).get("sessions", [])
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"List sessions failed: {exc}", error=True)
             return
         if not sessions:
@@ -46,7 +47,7 @@ class AttachActionsMixin(CliHost):
         """Rebuild local state for a session this process did not create."""
         try:
             info = await self.api.get_session(sid)
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Attach failed: {exc}", error=True)
             return
         self._stop_ws()
@@ -78,7 +79,7 @@ class AttachActionsMixin(CliHost):
             for entry in resp.get("data", []):
                 self._handle_ws_message({"type": "event", "data": entry}, replay=True)
             s.backend_event_count = resp.get("total", s.backend_event_count)
-        except Exception as exc:
+        except API_ERRORS as exc:
             self._set_status(f"Attached, but event history failed: {exc}", error=True)
         self._ensure_ws()
         self._set_status(
@@ -93,7 +94,7 @@ class AttachActionsMixin(CliHost):
             return
         try:
             cfg = await self.api.get_config(s.id)
-        except Exception:
+        except API_ERRORS:
             return
         for row in cfg.get("hardware_settings", []) or []:
             P.merge_firmware_row(s.hw, row)

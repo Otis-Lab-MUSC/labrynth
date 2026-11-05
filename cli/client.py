@@ -106,7 +106,7 @@ class ReacherClient:
             detail = ""
             try:
                 detail = r.json().get("detail", "")
-            except Exception:
+            except (ValueError, AttributeError):
                 detail = r.text[:200]
             raise httpx.HTTPStatusError(
                 f"{r.status_code} {detail or r.reason_phrase}", request=r.request, response=r,

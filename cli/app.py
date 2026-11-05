@@ -7,6 +7,7 @@ streaming.  Communicates with the REACHER backend over REST + WebSocket.
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
@@ -32,6 +33,7 @@ from .constants import (  # noqa: F401 -- re-exported for callers of cli.app
     SYSTEM_COMMANDS,
 )
 from .data_actions import DataActionsMixin
+from .errors import API_ERRORS
 from .firmware_actions import FirmwareActionsMixin
 from .hardware_actions import HardwareActionsMixin
 from .machine_actions import MachineActionsMixin
@@ -45,6 +47,8 @@ from .ws_messages import WsMessageMixin
 
 if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+
+LOGGER = logging.getLogger(__name__)
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Helpers
@@ -363,7 +367,7 @@ class ReacherCLI(
                 result = coro_fn()
                 if asyncio.iscoroutine(result):
                     await result
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 -- main-loop boundary: reports whatever the narrowed handlers let escape
                 self._set_status(f"Error: {exc}", error=True)
         if self.app:
             self.app.create_background_task(_wrapper())
@@ -414,8 +418,8 @@ class ReacherCLI(
         self._stop_ws()
         try:
             await self.api.close()
-        except Exception:
-            pass
+        except API_ERRORS as exc:
+            LOGGER.debug("Closing the API client failed: %s", exc)
         if self.app:
             self.app.exit()
 

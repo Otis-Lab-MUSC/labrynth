@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from . import presets as P
+from .errors import API_ERRORS
 from .host import CliHost
 
 
@@ -32,7 +33,7 @@ class FirmwareActionsMixin(CliHost):
         try:
             paradigms_resp = await self.api.list_paradigms(board)
             paradigms = paradigms_resp.get("paradigms", [])
-        except Exception:
+        except API_ERRORS:
             paradigms = ["fr", "pr", "vi", "omission", "pavlovian"]
 
         self._prompt_select(
@@ -52,7 +53,7 @@ class FirmwareActionsMixin(CliHost):
             path = uploader.get_hex_path(paradigm, board)
             with open(path, "rb") as f:
                 return base64.b64encode(f.read()).decode("ascii")
-        except Exception:
+        except (ImportError, OSError, ValueError):
             return None
 
     async def _finish_upload(self, board: str, paradigm: str) -> None:
@@ -79,6 +80,6 @@ class FirmwareActionsMixin(CliHost):
             await self._load_commands()
             await self._hydrate_config()
             self._rebuild_current_menu()
-        except Exception as exc:
+        except API_ERRORS as exc:
             self.session.state = "idle"
             self._set_status(f"Upload failed: {exc}", error=True)
