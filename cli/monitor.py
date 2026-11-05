@@ -58,6 +58,7 @@ class MonitorMixin(CliHost):
         """Follow the session's WebSocket, reconnecting with backoff, until the session changes or disappears."""
         try:
             import websockets
+            from websockets.exceptions import WebSocketException
         except ImportError:
             self._log("websockets not installed — cannot stream", error=True)
             self._invalidate()
@@ -66,7 +67,7 @@ class MonitorMixin(CliHost):
         # Local: /ws/{sid}?token=<key>. Remote: the local backend's relay,
         # /api/proxy/{device}/ws/{sid}?token=<LOCAL key>. The backend rejects
         # a socket without the token (403 before any session lookup).
-        stream_errors = (OSError, websockets.exceptions.WebSocketException, asyncio.TimeoutError, ValueError)
+        stream_errors = (OSError, WebSocketException, asyncio.TimeoutError, ValueError)
         connected_once = False
         attempt = 0
         refresh = asyncio.ensure_future(self._refresh_loop())

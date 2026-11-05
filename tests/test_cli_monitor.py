@@ -168,3 +168,15 @@ def test_unreachable_host_keeps_retrying(monkeypatch: pytest.MonkeyPatch) -> Non
     assert cli.session is not None
     assert cli.session.state != "gone"
     assert len(attempts) == 7
+
+
+def test_stream_works_when_websockets_submodules_are_not_preloaded(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The monitor must not rely on ``websockets.exceptions`` having been imported elsewhere."""
+    monkeypatch.delattr(websockets, "exceptions", raising=False)
+    api = FakeApi()
+    api.listed_sessions = []
+    cli = make_cli(api)
+    script_connections(monkeypatch, [ConnectionRefusedError("refused")] * 5)
+    run_stream(cli)
+    assert cli.session is not None
+    assert cli.session.state == "gone"
