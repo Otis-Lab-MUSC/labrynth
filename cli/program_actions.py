@@ -135,11 +135,11 @@ class ProgramActionsMixin(CliHost):
 
     async def _send_limits(self) -> bool:
         """Send the limits set so far. False when none are set yet (nothing is sent)."""
-        body = P.limit_payload(self._web_limits())
-        if body is None:
-            return False
         session = self.session
         if session is None:
+            return False
+        body = P.limit_payload(self._web_limits())
+        if body is None:
             return False
         limit_type = str(body.pop("type"))
         await self.api.set_limit(session.id, limit_type, **body)

@@ -24,13 +24,13 @@ TIMEOUT_SECONDS = 5
 class FakeSocket:
     """An open socket that yields its frames, then closes cleanly."""
 
-    def __init__(self, frames: Sequence[str] = ()) -> None:
+    def __init__(self, frames: Sequence[str | bytes] = ()) -> None:
         self.frames = list(frames)
 
     def __aiter__(self) -> FakeSocket:
         return self
 
-    async def __anext__(self) -> str:
+    async def __anext__(self) -> str | bytes:
         if not self.frames:
             raise StopAsyncIteration
         return self.frames.pop(0)
@@ -39,7 +39,7 @@ class FakeSocket:
 class FakeConnection:
     """Async context manager returned by the patched ``websockets.connect``."""
 
-    def __init__(self, outcome: BaseException | None, frames: Sequence[str] = ()) -> None:
+    def __init__(self, outcome: BaseException | None, frames: Sequence[str | bytes] = ()) -> None:
         self.outcome = outcome
         self.frames = frames
 
@@ -90,7 +90,7 @@ SLEPT: list[float] = []
 def script_connections(
     monkeypatch: pytest.MonkeyPatch,
     outcomes: Sequence[BaseException | None],
-    first_frames: Sequence[str] = (),
+    first_frames: Sequence[str | bytes] = (),
 ) -> list[int]:
     """Serve ``outcomes`` to successive connects, then block forever; return the connect counter.
 
@@ -212,6 +212,16 @@ def test_non_object_frame_does_not_kill_the_stream(monkeypatch: pytest.MonkeyPat
     assert len(attempts) == 3
 
 
+def test_non_utf8_binary_frame_is_skipped_and_the_link_carries_on(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A binary frame that is not valid UTF-8 is ignored instead of dropping the link."""
+    api = FakeApi()
+    cli = make_cli(api)
+    attempts = script_connections(monkeypatch, [None, None], first_frames=[b"\x80\x81abc", '{"type": "x"}'])
+    run_stream(cli)
+    assert len(attempts) == 3
+    assert not any("Live link down" in text for _, text in cli.monitor_lines)
+
+
 def test_replay_handler_bug_is_logged_and_the_link_is_restored(monkeypatch: pytest.MonkeyPatch) -> None:
     """A handler bug while replaying missed events must not end the stream task."""
     api = FakeApi()
@@ -241,3 +251,10 @@ def test_clean_close_waits_before_reconnecting(monkeypatch: pytest.MonkeyPatch) 
     script_connections(monkeypatch, [None, None])
     run_stream(cli)
     assert CLEAN_CLOSE_DELAY_SECONDS in SLEPT
+
+
+def test_send_limits_without_a_session_sends_nothing() -> None:
+    """With no session there is nothing to send: report False instead of raising."""
+    cli = make_cli(FakeApi())
+    cli.session = None
+    assert asyncio.run(cli._send_limits()) is False

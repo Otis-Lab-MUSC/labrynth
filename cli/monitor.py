@@ -119,7 +119,7 @@ class MonitorMixin(CliHost):
         async for raw in ws:
             try:
                 msg = json.loads(raw)
-            except json.JSONDecodeError:
+            except ValueError:
                 continue
             if isinstance(msg, dict):
                 self._dispatch_message(msg)
