@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Checks that a release artifacts directory holds all 8 assets a complete
+# Checks that a release artifacts directory holds all 12 assets a complete
 # Labrynth release ships. Usage:
 #   verify-release-assets.sh <artifacts-dir>
 #   verify-release-assets.sh --self-test
@@ -16,6 +16,10 @@ ASSETS=(
   "CLI Linux tarball|labrynth-cli-*-linux-x64.tar.gz|0"
   "CLI macOS tarball|labrynth-cli-*-macos-arm64.tar.gz|0"
   "CLI Windows tarball|labrynth-cli-*-windows-x64.tar.gz|0"
+  "GUI macOS archive|labrynth-*-macos-arm64.tar.gz|1"
+  "GUI Windows archive|labrynth-*-windows-x64.zip|1"
+  "Update checksums|SHA256SUMS|0"
+  "Update signature|SHA256SUMS.sig|0"
 )
 
 has_match() {
@@ -85,7 +89,7 @@ self_test() {
 
   make_fixture "$tmp/full" -1
   run_verify "$tmp/full"
-  check "all 8 present passes" $(( status == 0 ))
+  check "all 12 present passes" $(( status == 0 ))
 
   for i in "${!ASSETS[@]}"; do
     IFS='|' read -r label glob gui <<<"${ASSETS[$i]}"
@@ -99,6 +103,18 @@ self_test() {
   run_verify "$tmp/cli-only"
   check "CLI linux tarball alone does not satisfy GUI linux tarball" \
     $(( status == 1 && $(grep -c '^MISSING  GUI Linux tarball ' <<<"$out") == 1 ))
+
+  mkdir -p "$tmp/cli-mac-only"
+  touch "$tmp/cli-mac-only/labrynth-cli-3.0.1-beta.9-macos-arm64.tar.gz"
+  run_verify "$tmp/cli-mac-only"
+  check "CLI macOS tarball alone does not satisfy GUI macOS archive" \
+    $(( status == 1 && $(grep -c '^MISSING  GUI macOS archive ' <<<"$out") == 1 ))
+
+  make_fixture "$tmp/unsigned" -1
+  rm "$tmp/unsigned/SHA256SUMS.sig"
+  run_verify "$tmp/unsigned"
+  check "a release without SHA256SUMS.sig fails" \
+    $(( status == 1 && $(grep -c '^MISSING  Update signature ' <<<"$out") == 1 ))
 
   if (( fails > 0 )); then
     echo "self-test: $fails check(s) failed" >&2

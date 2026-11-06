@@ -62,6 +62,12 @@ jobs:
         working-directory: .
         run: python3 -I scripts/check-windows-paths.py && python3 -I scripts/check-windows-paths.py --self-test
 
+      # The release job signs and then verifies the asset set. Run both
+      # scripts' self-tests here so a break shows up before a tag is pushed.
+      - name: Release script self-tests
+        working-directory: .
+        run: bash scripts/verify-release-assets.sh --self-test && bash scripts/sign-release-assets.sh --self-test
+
   # Tables mirrored from reacher (pin metadata, device names, command codes,
   # firmware gaps) are generated from its schema dump. Regenerate them from the
   # reacher2p release pinned in pyproject.toml and fail on any difference, so a
