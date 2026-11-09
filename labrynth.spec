@@ -31,6 +31,7 @@ FRONTEND_DIST = os.path.join(PROJECT_ROOT, "web", "dist")
 # archived). Resolve it via build.py's shared helper so spec and orchestrator
 # agree on the source of truth.
 sys.path.insert(0, SPEC_DIR)
+from pathlib import Path  # noqa: E402
 from app_version import write_version_file  # noqa: E402
 from build import (  # noqa: E402
     is_shared_lib,
@@ -61,7 +62,7 @@ else:
     print(f"WARNING: Frontend dist not found at {FRONTEND_DIST}")
 
 # VERSION → bundle root; the launcher reads it to tell the update check which release is running
-datas.append((str(write_version_file(PROJECT_ROOT, os.path.join(PROJECT_ROOT, "build", "version"))), "."))
+datas.append((str(write_version_file(Path(PROJECT_ROOT), Path(PROJECT_ROOT) / "build" / "version")), "."))
 
 # Firmware hex files (from the reacher package) → hex/
 if HEX_DIR and os.path.isdir(HEX_DIR):
