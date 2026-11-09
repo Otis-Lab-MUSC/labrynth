@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
+import subprocess
+import sys
+import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +20,10 @@ OLD_SUFFIX = ".old"
 EXIT_WAIT_TIMEOUT_SECONDS = 60.0
 POLL_INTERVAL_SECONDS = 0.25
 START_WINDOW_SECONDS = 8.0
+WINDOWS_QUERY_LIMITED = 0x1000
+WINDOWS_STILL_ACTIVE = 259
+DETACHED_PROCESS = 0x00000008
+CREATE_NEW_PROCESS_GROUP = 0x00000200
 
 
 class SwapError(Exception):
@@ -141,3 +149,58 @@ def run_apply_update(args: ApplyArgs, executable: Path, deps: Dependencies) -> i
     restore_folders(args.install, old)
     deps.spawn([str(launcher)])
     return EXIT_ROLLED_BACK
+
+
+def is_windows_process_alive(pid: int) -> bool:
+    """Windows process check: open the process and read its exit code."""
+    import ctypes
+
+    kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined,unused-ignore]
+    handle = kernel32.OpenProcess(WINDOWS_QUERY_LIMITED, False, pid)
+    if not handle:
+        return False
+    try:
+        code = ctypes.c_ulong()
+        if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
+            return False
+        return code.value == WINDOWS_STILL_ACTIVE
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+def is_process_alive(pid: int) -> bool:
+    """Return True while a process with this pid is running."""
+    if sys.platform == "win32":
+        return is_windows_process_alive(pid)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def spawn_detached(command: Sequence[str]) -> Launched:
+    """Start command so it outlives this helper."""
+    options: dict[str, object] = {
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+    }
+    if sys.platform == "win32":
+        options["creationflags"] = DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP
+    else:
+        options["start_new_session"] = True
+    return subprocess.Popen(list(command), **options)  # type: ignore[call-overload,no-any-return]
+
+
+def main(argv: Sequence[str], executable: Path) -> int:
+    """Entry point for `Labrynth --apply-update`; return the exit status."""
+    args = parse_args(argv)
+    try:
+        executable.relative_to(args.staged)
+    except ValueError:
+        return EXIT_FAILED
+    deps = Dependencies(is_alive=is_process_alive, sleep=time.sleep, clock=time.monotonic, spawn=spawn_detached)
+    return run_apply_update(args, executable, deps)
