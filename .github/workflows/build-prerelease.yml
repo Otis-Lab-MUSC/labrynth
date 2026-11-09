@@ -192,6 +192,18 @@ jobs:
           name: windows-installer
           path: dist/labrynth-${{ needs.version-check.outputs.version }}-windows-x64.exe
 
+      - name: Package update archive
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.version-check.outputs.version }}
+        run: Compress-Archive -Path dist/Labrynth -DestinationPath "dist/labrynth-$env:VERSION-windows-x64.zip"
+
+      - name: Upload update archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-update-archive
+          path: dist/labrynth-${{ needs.version-check.outputs.version }}-windows-x64.zip
+
       - name: Package CLI bundle
         shell: bash
         env:
@@ -277,6 +289,17 @@ jobs:
         with:
           name: macos-arm64-dmg
           path: dist/labrynth-${{ needs.version-check.outputs.version }}-macos-arm64.dmg
+
+      - name: Package update archive
+        env:
+          VERSION: ${{ needs.version-check.outputs.version }}
+        run: tar -czf "dist/labrynth-${VERSION}-macos-arm64.tar.gz" -C dist Labrynth.app
+
+      - name: Upload update archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-arm64-update-archive
+          path: dist/labrynth-${{ needs.version-check.outputs.version }}-macos-arm64.tar.gz
 
       - name: Package CLI bundle
         env:
@@ -471,6 +494,11 @@ jobs:
       - name: List artifacts
         run: ls -lhR artifacts/
 
+      - name: Sign release assets
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: bash scripts/sign-release-assets.sh artifacts
+
       - name: Verify all release assets were produced
         run: bash scripts/verify-release-assets.sh artifacts
 
@@ -526,3 +554,6 @@ jobs:
             artifacts/*.deb
             artifacts/*.tar.gz
             artifacts/*.AppImage
+            artifacts/*.zip
+            artifacts/SHA256SUMS
+            artifacts/SHA256SUMS.sig

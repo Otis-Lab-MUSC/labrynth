@@ -23,9 +23,26 @@ The build installs `reacher` from source, so a Labrynth release does **not**
 depend on `reacher` being on PyPI.
 
 Both release workflows call `ci.yml` before any build, so a red CI blocks the tag.
-A complete release has all 8 assets above (3 GUI installers are not enough without
-the CLI tarballs). The `release` job runs `scripts/verify-release-assets.sh` and
+A complete release has all 12 assets: the 8 above, the macOS and Windows update
+archives (`labrynth-*-macos-arm64.tar.gz`, `labrynth-*-windows-x64.zip`), and the
+signed checksum pair `SHA256SUMS` and `SHA256SUMS.sig` (3 GUI installers are not
+enough without the CLI tarballs). The `release` job signs the assets with
+`scripts/sign-release-assets.sh`, then runs `scripts/verify-release-assets.sh`, and
 publishes nothing if any is missing. Every job has a timeout.
+
+## Update signing
+
+The in-app updater trusts only a release whose `SHA256SUMS` carries a valid Ed25519
+signature (`SHA256SUMS.sig`). The private key is the repository secret
+`UPDATE_SIGNING_KEY` (PEM text). Its public half is
+`installer/update-public-key.txt`, which the app also embeds; the signing script
+refuses to run with any other key, so a wrong secret fails the release instead of
+publishing updates no installed app can verify.
+
+The secret is read only by the `Sign release assets` step of the `release` job, which
+runs on tag pushes. If the key is lost or replaced, installed apps cannot verify the
+next update: ship the new public key in a build signed with the old key first, and
+keep an offline copy of the key.
 
 ## Versioning semantics
 
