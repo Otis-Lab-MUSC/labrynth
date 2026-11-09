@@ -1,6 +1,7 @@
 import { useShallow } from "zustand/react/shallow";
 import { useUpdateCheck } from "../../hooks/useUpdateCheck";
 import { useUpdateStore } from "../../store/useUpdateStore";
+import { canInstallInPlace } from "../../lib/updateOffer";
 
 export function UpdateBanner() {
   const { update, dismiss } = useUpdateCheck();
@@ -29,7 +30,7 @@ export function UpdateBanner() {
               onClick={startDownload}
               className="rounded border border-accent/40 px-2 py-0.5 font-medium hover:bg-accent/20 transition-colors"
             >
-              Download v{update.latestVersion}
+              {canInstallInPlace(update) ? `Download v${update.latestVersion}` : "View release"}
             </button>
           </>
         );
@@ -68,7 +69,7 @@ export function UpdateBanner() {
       case "launching":
         return (
           <span>
-            Launching installer… Please wait.
+            Installing and restarting… Please wait.
           </span>
         );
 
