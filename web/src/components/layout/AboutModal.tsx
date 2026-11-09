@@ -4,6 +4,7 @@ import { Bug, Download, ExternalLink, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { useUpdateCheck } from "../../hooks/useUpdateCheck";
 import { useUpdateStore } from "../../store/useUpdateStore";
+import { canInstallInPlace } from "../../lib/updateOffer";
 import { getLocalClient } from "../../api/client";
 import { downloadDiagnostics } from "../../logging";
 import { useReportStore } from "../../store/useReportStore";
@@ -148,7 +149,7 @@ export function AboutModal({ open, onClose }: AboutModalProps) {
                 disabled={downloadStatus !== "idle"}
                 className="text-xs text-accent hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Download
+                {canInstallInPlace(update) ? "Download" : "Open releases"}
               </button>
               <button
                 onClick={dismiss}

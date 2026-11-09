@@ -2,6 +2,7 @@ import type { BoardInfo, BoardType } from "../types";
 import { log, newCorrId } from "../logging";
 import * as mock from "./mock";
 import { useTutorialStore } from "../store/useTutorialStore";
+import type { UpdateStatusPayload } from "../lib/updateOffer";
 
 // ---------------------------------------------------------------------------
 // Session config validation types (rule-based pre-start check)
@@ -374,17 +375,10 @@ export class MachineApiClient {
     this.request("/lifecycle/shutdown", { method: "POST" });
 
   // --- Update ---
-  getUpdateInfo = () =>
-    this.request<{ currentVersion: string; latestVersion: string; assetUrl: string | null; assetName: string | null }>("/update/info");
-  startUpdateDownload = (body: { assetUrl: string; assetName: string }) =>
-    this.request<{ status: string }>("/update/download", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-  getUpdateStatus = () =>
-    this.request<{ status: string; percent: number; local_path: string | null; error: string | null }>("/update/status");
-  launchUpdate = () =>
-    this.request<{ status: string }>("/update/launch", { method: "POST" });
+  getUpdateInfo = () => this.request<unknown>("/update/info");
+  startUpdateDownload = () => this.request<{ status: string }>("/update/download", { method: "POST" });
+  getUpdateStatus = () => this.request<UpdateStatusPayload>("/update/status");
+  launchUpdate = () => this.request<{ status: string }>("/update/launch", { method: "POST" });
 
   // --- File ---
   browseFolder = () =>

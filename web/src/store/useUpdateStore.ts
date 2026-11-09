@@ -1,57 +1,19 @@
 import { create } from "zustand";
 import { log } from "../logging";
 import { getLocalClient } from "../api/client";
+import {
+  canInstallInPlace, describeStatus, encodeDismissal, isOfferDismissed, parseUpdateInfo,
+  type UpdateOffer, type UpdateState,
+} from "../lib/updateOffer";
 import { useTutorialStore } from "./useTutorialStore";
 
-const GITHUB_RELEASE_URL = "https://api.github.com/repos/Otis-Lab-MUSC/labrynth/releases?per_page=10";
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
+const STATUS_POLL_MS = 1000;
 const DISMISSED_KEY = "labrynth-update-dismissed";
+const RELEASES_PAGE_URL = "https://github.com/Otis-Lab-MUSC/labrynth/releases";
 
-export interface UpdateInfo {
-  currentVersion: string;
-  latestVersion: string;
+export interface UpdateInfo extends UpdateOffer {
   downloadUrl: string;
-}
-
-interface UpdateInfoResponse {
-  currentVersion: string;
-  latestVersion: string;
-  assetUrl: string | null;
-  assetName: string | null;
-}
-
-interface DownloadStatusResponse {
-  status: string;
-  percent: number;
-  local_path: string | null;
-  error: string | null;
-}
-
-function isDismissed(latestVersion: string): boolean {
-  try {
-    const raw = localStorage.getItem(DISMISSED_KEY);
-    if (!raw) return false;
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return false; // old plain-string format — treat as not dismissed
-    }
-    if (typeof parsed !== "object" || parsed === null) return false;
-    const { dismissed, asOf } = parsed as { dismissed?: string; asOf?: string };
-    return dismissed === latestVersion && asOf === __APP_VERSION__;
-  } catch {
-    return false;
-  }
-}
-
-function compareVersions(current: string, latest: string): boolean {
-  const parse = (v: string) => v.replace(/^v/, "").split("-")[0].split(".").map(Number);
-  const [cMaj, cMin = 0, cPat = 0] = parse(current);
-  const [lMaj, lMin = 0, lPat = 0] = parse(latest);
-  if (lMaj !== cMaj) return lMaj > cMaj;
-  if (lMin !== cMin) return lMin > cMin;
-  return lPat > cPat;
 }
 
 interface UpdateStore {
@@ -59,7 +21,7 @@ interface UpdateStore {
   dismiss: () => void;
   startPolling: () => void;
   stopPolling: () => void;
-  downloadStatus: "idle" | "downloading" | "ready" | "error" | "launching";
+  downloadStatus: UpdateState;
   downloadPercent: number;
   downloadError: string | null;
   startDownload: () => Promise<void>;
@@ -69,6 +31,20 @@ interface UpdateStore {
 let _intervalId: ReturnType<typeof setInterval> | null = null;
 let _pollIntervalId: ReturnType<typeof setInterval> | null = null;
 
+function readDismissal(): string | null {
+  try {
+    return localStorage.getItem(DISMISSED_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function stopStatusPolling(): void {
+  if (_pollIntervalId === null) return;
+  clearInterval(_pollIntervalId);
+  _pollIntervalId = null;
+}
+
 export const useUpdateStore = create<UpdateStore>((set, get) => ({
   update: null,
   downloadStatus: "idle",
@@ -77,96 +53,47 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
 
   dismiss: () => {
     const { update } = get();
-    if (update) {
-      try {
-        localStorage.setItem(
-          DISMISSED_KEY,
-          JSON.stringify({ dismissed: update.latestVersion, asOf: update.currentVersion }),
-        );
-      } catch { /* localStorage unavailable */ }
-      set({ update: null });
-    }
+    if (!update) return;
+    try {
+      localStorage.setItem(DISMISSED_KEY, encodeDismissal(update));
+    } catch { /* localStorage unavailable */ }
+    set({ update: null });
   },
 
   startDownload: async () => {
-    // Guard: no-op in demo mode
-    if (useTutorialStore.getState().demoMode) {
+    const { update } = get();
+    if (useTutorialStore.getState().demoMode || !update) return;
+    if (!canInstallInPlace(update)) {
+      window.open(update.downloadUrl, "_blank", "noopener,noreferrer");
       return;
     }
-
     set({ downloadStatus: "downloading", downloadPercent: 0, downloadError: null });
-
     try {
       const client = getLocalClient();
-
-      // Fetch update info to get asset URL and name
-      const updateInfo = await client.request<UpdateInfoResponse>("/update/info");
-      if (!updateInfo.assetUrl || !updateInfo.assetName) {
-        throw new Error("No download link available for this platform");
-      }
-
-      // Start download
-      await client.request("/update/download", {
-        method: "POST",
-        body: JSON.stringify({
-          assetUrl: updateInfo.assetUrl,
-          assetName: updateInfo.assetName,
-        }),
-      });
-
-      // Poll status every 1s
-      if (_pollIntervalId !== null) {
-        clearInterval(_pollIntervalId);
-      }
-
+      await client.startUpdateDownload();
+      stopStatusPolling();
       _pollIntervalId = setInterval(async () => {
         try {
-          const status = await client.request<DownloadStatusResponse>("/update/status");
-          set({ downloadPercent: status.percent });
-
-          if (status.status === "ready") {
-            set({ downloadStatus: "ready" });
-            if (_pollIntervalId !== null) {
-              clearInterval(_pollIntervalId);
-              _pollIntervalId = null;
-            }
-          } else if (status.status === "error") {
-            set({ downloadStatus: "error", downloadError: status.error || "Download failed" });
-            if (_pollIntervalId !== null) {
-              clearInterval(_pollIntervalId);
-              _pollIntervalId = null;
-            }
-          }
+          const progress = describeStatus(await client.getUpdateStatus());
+          set({ downloadStatus: progress.state, downloadPercent: progress.percent, downloadError: progress.error });
+          if (progress.state === "ready" || progress.state === "error") stopStatusPolling();
         } catch (err) {
           log("update.poll_failed", { error: err }, "warn", { msg: "Update download status poll failed", src: "store/useUpdateStore" });
         }
-      }, 1000);
+      }, STATUS_POLL_MS);
     } catch (err) {
-      set({
-        downloadStatus: "error",
-        downloadError: err instanceof Error ? err.message : "Download failed",
-      });
-      if (_pollIntervalId !== null) {
-        clearInterval(_pollIntervalId);
-        _pollIntervalId = null;
-      }
+      stopStatusPolling();
+      set({ downloadStatus: "error", downloadError: err instanceof Error ? err.message : "Download failed" });
     }
   },
 
   launchInstaller: async () => {
-    if (useTutorialStore.getState().demoMode) {
-      return;
-    }
-
+    if (useTutorialStore.getState().demoMode) return;
     set({ downloadStatus: "launching" });
-
     try {
-      const client = getLocalClient();
-      await client.request("/update/launch", { method: "POST" });
-      // Backend will self-shutdown after 2 seconds; frontend stays in launching state
+      await getLocalClient().launchUpdate();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Launch failed";
-      set({ downloadStatus: "error", downloadError: message });
+      set({ downloadStatus: "error", downloadError: err instanceof Error ? err.message : "Launch failed" });
     }
   },
 
@@ -175,36 +102,9 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
 
     async function check() {
       try {
-        const currentVersion = __APP_VERSION__;
-        const res = await fetch(GITHUB_RELEASE_URL, {
-          signal: AbortSignal.timeout(10_000),
-        });
-        if (!res.ok) {
-          log("update.check_skipped", { status: res.status }, "info", { msg: "GitHub API refused the update check", src: "store/useUpdateStore" });
-          return;
-        }
-
-        const releases = (await res.json()) as Array<{ tag_name: string; html_url: string; prerelease: boolean }>;
-        if (releases.length === 0) return;
-
-        // Filter out prerelease releases; find highest semantic version among the rest
-        const nonPrerelease = releases.filter((r) => !r.prerelease);
-        if (nonPrerelease.length === 0) return;
-
-        const latestRelease = nonPrerelease.reduce((best, current) => {
-          const bestVersion = best.tag_name.replace(/^v/, "");
-          const currentVersion = current.tag_name.replace(/^v/, "");
-          return compareVersions(bestVersion, currentVersion) ? current : best;
-        });
-
-        const latestTag: string = latestRelease.tag_name ?? "";
-        const latestVersion = latestTag.replace(/^v/, "");
-
-        if (compareVersions(currentVersion, latestVersion) && !isDismissed(latestVersion)) {
-          set({
-            update: { currentVersion, latestVersion, downloadUrl: latestRelease.html_url ?? "" },
-          });
-        }
+        const offer = parseUpdateInfo(await getLocalClient().getUpdateInfo());
+        if (offer === null || isOfferDismissed(offer, readDismissal())) return;
+        set({ update: { ...offer, downloadUrl: RELEASES_PAGE_URL } });
       } catch (err) {
         log("update.check_failed", { error: err }, "info", { msg: "Update check failed", src: "store/useUpdateStore" });
       }
@@ -219,6 +119,7 @@ export const useUpdateStore = create<UpdateStore>((set, get) => ({
       clearInterval(_intervalId);
       _intervalId = null;
     }
+    stopStatusPolling();
   },
 }));
 

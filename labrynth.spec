@@ -4,6 +4,7 @@
 Bundles:
   - Python backend (FastAPI + kernel + all deps)
   - Built React frontend  → _MEIPASS/static/
+  - VERSION file          → _MEIPASS/VERSION
   - Pre-compiled firmware  → _MEIPASS/hex/
   - Platform avrdude       → _MEIPASS/avrdude/
   - llama.cpp + GGUF       → _MEIPASS/llm/  (GUI only)
@@ -30,6 +31,7 @@ FRONTEND_DIST = os.path.join(PROJECT_ROOT, "web", "dist")
 # archived). Resolve it via build.py's shared helper so spec and orchestrator
 # agree on the source of truth.
 sys.path.insert(0, SPEC_DIR)
+from app_version import write_version_file  # noqa: E402
 from build import (  # noqa: E402
     is_shared_lib,
     llama_binaries,
@@ -57,6 +59,9 @@ if os.path.isdir(FRONTEND_DIST):
     datas.append((FRONTEND_DIST, "static"))
 else:
     print(f"WARNING: Frontend dist not found at {FRONTEND_DIST}")
+
+# VERSION → bundle root; the launcher reads it to tell the update check which release is running
+datas.append((str(write_version_file(PROJECT_ROOT, os.path.join(PROJECT_ROOT, "build", "version"))), "."))
 
 # Firmware hex files (from the reacher package) → hex/
 if HEX_DIR and os.path.isdir(HEX_DIR):

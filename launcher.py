@@ -1,7 +1,9 @@
 """Entry point for PyInstaller-bundled Labrynth application."""
+
 import logging
 import os
 import sys
+from pathlib import Path
 
 # Its own handler, not logging.basicConfig: reacher configures the root logger
 # later and basicConfig would be a no-op there (or pre-empt it here).
@@ -10,6 +12,15 @@ _handler = logging.StreamHandler(sys.stderr)
 _handler.setFormatter(logging.Formatter("%(message)s"))
 logger.addHandler(_handler)
 logger.propagate = False
+
+# The update helper runs from the staged copy, before any backend setup: it
+# swaps folders and relaunches, and must not bind a port or open a browser.
+if "--apply-update" in sys.argv[1:]:
+    from apply_update import main as apply_update_main
+
+    _helper_argv = [arg for arg in sys.argv[1:] if arg != "--apply-update"]
+    _helper_exe = sys.executable if hasattr(sys, "_MEIPASS") else os.path.abspath(__file__)
+    raise SystemExit(apply_update_main(_helper_argv, Path(_helper_exe)))
 
 # reacher.api.app.main() only special-cases --version. Every other argv,
 # including --help, falls through to uvicorn on REACHER_PORT (default 6229).
@@ -45,6 +56,13 @@ else:
 if os.path.isdir(_STATIC_DIR) and not os.environ.get("REACHER_STATIC_DIR"):
     os.environ["REACHER_STATIC_DIR"] = _STATIC_DIR
 
+# The update check compares releases with this bundle's version, not the
+# backend package's: they are separate version axes. A frozen build reads the
+# VERSION file the spec ships; a checkout reads pyproject.toml.
+from app_version import export_app_version
+
+export_app_version(Path(getattr(sys, "_MEIPASS", _LABRYNTH_ROOT)), os.environ)
+
 # Frozen GUI builds ship llama-cli + GGUF under _MEIPASS/llm/.  Point the
 # reacher report endpoint at them unless the operator overrode the env.
 if hasattr(sys, "_MEIPASS"):
@@ -79,6 +97,7 @@ if "--incognito" in sys.argv or "-i" in sys.argv:
 
 if not hasattr(sys, "_MEIPASS"):
     import importlib.util
+
     # find_spec raises rather than returning None when the *parent* package is
     # missing, which is exactly the "reacher not installed" case handled here.
     try:
@@ -112,6 +131,7 @@ if not hasattr(sys, "_MEIPASS"):
         if _pin_match is not None:
             _pin = _pin_match.group(1)
             import reacher
+
             _have, _want = _version_key(reacher.__version__), _version_key(_pin)
             if _have and _want and _have < _want:
                 logger.warning(

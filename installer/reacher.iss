@@ -22,6 +22,7 @@ AppVersion={#VERSION_NUM}
 AppVerName=Labrynth {#VERSION_NUM}
 AppPublisher=Otis Lab, MUSC
 DefaultDirName={autopf}\Labrynth
+PrivilegesRequired=lowest
 DefaultGroupName=Labrynth
 OutputDir=..\dist
 OutputBaseFilename=labrynth-{#VERSION_NUM}-windows-x64
