@@ -11,6 +11,7 @@ from app_version import (
     VERSION_FILE_NAME,
     export_app_version,
     read_app_version,
+    write_version_file,
 )
 
 PYPROJECT_TEXT = '[project]\nname = "labrynth"\nversion = "3.0.1-beta.16"\n'
@@ -86,3 +87,18 @@ def test_export_treats_a_blank_override_as_unset(tmp_path: Path, text: str) -> N
     environ = {APP_VERSION_ENV: text}
 
     assert export_app_version(tmp_path, environ) == "3.1.0"
+
+
+def test_write_version_file_copies_the_pyproject_version(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text(PYPROJECT_TEXT, encoding="utf-8")
+    destination = tmp_path / "build"
+
+    written = write_version_file(tmp_path, destination)
+
+    assert written == destination / VERSION_FILE_NAME
+    assert written.read_text(encoding="utf-8") == "3.0.1-beta.16\n"
+
+
+def test_write_version_file_refuses_without_a_version(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="version"):
+        write_version_file(tmp_path, tmp_path / "build")

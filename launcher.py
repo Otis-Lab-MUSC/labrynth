@@ -56,6 +56,13 @@ else:
 if os.path.isdir(_STATIC_DIR) and not os.environ.get("REACHER_STATIC_DIR"):
     os.environ["REACHER_STATIC_DIR"] = _STATIC_DIR
 
+# The update check compares releases with this bundle's version, not the
+# backend package's: they are separate version axes. A frozen build reads the
+# VERSION file the spec ships; a checkout reads pyproject.toml.
+from app_version import export_app_version
+
+export_app_version(Path(getattr(sys, "_MEIPASS", _LABRYNTH_ROOT)), os.environ)
+
 # Frozen GUI builds ship llama-cli + GGUF under _MEIPASS/llm/.  Point the
 # reacher report endpoint at them unless the operator overrode the env.
 if hasattr(sys, "_MEIPASS"):

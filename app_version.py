@@ -44,3 +44,14 @@ def export_app_version(root: Path, environ: MutableMapping[str, str]) -> str | N
     if version is not None:
         environ[APP_VERSION_ENV] = version
     return version
+
+
+def write_version_file(root: Path, destination: Path) -> Path:
+    """Write root's pyproject version to destination/VERSION for the bundle; raise ValueError if none."""
+    version = read_pyproject_version(root)
+    if version is None:
+        raise ValueError(f"no version found in {root / PYPROJECT_FILE_NAME}")
+    destination.mkdir(parents=True, exist_ok=True)
+    target = destination / VERSION_FILE_NAME
+    target.write_text(version + "\n", encoding="utf-8")
+    return target
