@@ -31,7 +31,7 @@ dev = [
 reacher-cli = "cli.__main__:main"
 
 [tool.setuptools]
-py-modules = ["app_version", "build", "build_archive", "build_args", "build_assets", "build_avrdude", "build_llm", "launcher"]
+py-modules = ["app_version", "apply_update", "build", "build_archive", "build_args", "build_assets", "build_avrdude", "build_llm", "launcher"]
 packages = ["cli"]
 
 [tool.ruff]
