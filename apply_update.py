@@ -8,10 +8,12 @@ import shutil
 import subprocess
 import sys
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+
+from app_version import APP_VERSION_ENV
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -181,9 +183,15 @@ def is_process_alive(pid: int) -> bool:
     return True
 
 
+def relaunch_environment(environ: Mapping[str, str]) -> dict[str, str]:
+    """Return environ without the old app's version, so the new app reads its own."""
+    return {key: value for key, value in environ.items() if key != APP_VERSION_ENV}
+
+
 def spawn_detached(command: Sequence[str]) -> Launched:
     """Start command so it outlives this helper."""
     options: dict[str, object] = {
+        "env": relaunch_environment(os.environ),
         "stdin": subprocess.DEVNULL,
         "stdout": subprocess.DEVNULL,
         "stderr": subprocess.DEVNULL,

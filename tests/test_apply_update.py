@@ -17,8 +17,10 @@ from apply_update import (
     Dependencies,
     SwapError,
     parse_args,
+    relaunch_environment,
     restore_folders,
     run_apply_update,
+    spawn_detached,
     swap_folders,
     wait_for_exit,
 )
@@ -254,3 +256,24 @@ def test_a_failed_swap_without_relaunch_starts_nothing(harness: Harness) -> None
 
     assert status == EXIT_FAILED
     assert harness.launched == []
+
+
+def test_relaunch_environment_drops_only_the_old_app_version() -> None:
+    environ = {"LABRYNTH_APP_VERSION": "3.0.1-beta.17", "PATH": "/bin", "HOME": "/h"}
+    assert relaunch_environment(environ) == {"PATH": "/bin", "HOME": "/h"}
+
+
+def test_spawn_detached_starts_the_app_without_the_old_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_popen(command: list[str], **options: object) -> object:
+        seen.update(options)
+        return object()
+
+    monkeypatch.setenv("LABRYNTH_APP_VERSION", "3.0.1-beta.17")
+    monkeypatch.setattr("apply_update.subprocess.Popen", fake_popen)
+    spawn_detached(["/x/Labrynth"])
+    env = seen["env"]
+    assert isinstance(env, dict)
+    assert "LABRYNTH_APP_VERSION" not in env
+    assert "PATH" in env
