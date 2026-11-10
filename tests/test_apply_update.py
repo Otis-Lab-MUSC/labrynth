@@ -97,6 +97,19 @@ def harness(tmp_path: Path) -> Harness:
     )
 
 
+@pytest.fixture
+def staging(tmp_path: Path) -> Harness:
+    """A harness laid out as the backend stages it: root/unpacked/<bundle>."""
+    root = tmp_path / ".labrynth-update_abc"
+    (root / "download").mkdir(parents=True)
+    (root / "download" / "archive.tar.gz").write_text("big", encoding="utf-8")
+    (root / "unpacked").mkdir()
+    return Harness(
+        install=make_folder(tmp_path, "Labrynth-dir", "old"),
+        staged=make_folder(root / "unpacked", "Labrynth", "new"),
+    )
+
+
 def run(harness: Harness, relaunch: bool = True) -> int:
     executable = harness.staged / LAUNCHER_NAME
     return run_apply_update(harness.args(relaunch), executable, harness.dependencies())
@@ -258,9 +271,77 @@ def test_a_failed_swap_without_relaunch_starts_nothing(harness: Harness) -> None
     assert harness.launched == []
 
 
+def test_success_removes_the_whole_staging_folder(staging: Harness) -> None:
+    status = run(staging)
+
+    assert status == EXIT_OK
+    assert marker_of(staging.install) == "new"
+    assert not (staging.install.parent / ".labrynth-update_abc").exists()
+
+
+def test_success_without_relaunch_removes_the_staging_folder(staging: Harness) -> None:
+    run(staging, relaunch=False)
+
+    assert not (staging.install.parent / ".labrynth-update_abc").exists()
+
+
+def test_rollback_removes_the_staging_folder(staging: Harness) -> None:
+    staging.processes = [FakeProcess(exit_code=1, survived_polls=1)]
+
+    status = run(staging)
+
+    assert status == EXIT_ROLLED_BACK
+    assert not (staging.install.parent / ".labrynth-update_abc").exists()
+
+
+def test_a_folder_not_made_by_the_backend_is_never_removed(harness: Harness) -> None:
+    keep = harness.staged.parent / "unrelated"
+    keep.mkdir()
+    (keep / "file").write_text("mine", encoding="utf-8")
+    harness.staged = make_folder(keep, "Labrynth", "new")
+
+    run(harness)
+
+    assert (keep / "file").read_text(encoding="utf-8") == "mine"
+
+
+def test_an_unpacked_folder_outside_a_backend_staging_root_is_never_removed(harness: Harness) -> None:
+    mine = harness.staged.parent / "projects"
+    (mine / "unpacked").mkdir(parents=True)
+    (mine / "keep").write_text("mine", encoding="utf-8")
+    harness.staged = make_folder(mine / "unpacked", "Labrynth", "new")
+
+    run(harness)
+
+    assert (mine / "keep").read_text(encoding="utf-8") == "mine"
+
+
+def test_relaunch_environment_drops_variables_that_point_into_the_staging_folder() -> None:
+    staged = "/apps/.labrynth-update_abc/unpacked/Labrynth"
+    environ = {
+        "TCL_LIBRARY": staged + "/_internal/tcl8.6",
+        "TK_LIBRARY": staged + "/_internal/tk8.6",
+        "LD_LIBRARY_PATH": staged + "/_internal",
+        "LD_LIBRARY_PATH_ORIG": "/usr/local/lib",
+        "PATH": "/bin",
+    }
+    assert relaunch_environment(environ, Path(staged)) == {"LD_LIBRARY_PATH": "/usr/local/lib", "PATH": "/bin"}
+
+
+def test_relaunch_environment_drops_library_path_when_the_user_had_none() -> None:
+    staged = "/apps/.labrynth-update_abc/unpacked/Labrynth"
+    environ = {"LD_LIBRARY_PATH": staged + "/_internal", "PATH": "/bin"}
+    assert relaunch_environment(environ, Path(staged)) == {"PATH": "/bin"}
+
+
+def test_relaunch_environment_keeps_the_users_own_tcl_library() -> None:
+    environ = {"TCL_LIBRARY": "/usr/share/tcl8.6"}
+    assert relaunch_environment(environ, Path("/apps/.labrynth-update_abc/unpacked/Labrynth")) == environ
+
+
 def test_relaunch_environment_drops_only_the_old_app_version() -> None:
     environ = {"LABRYNTH_APP_VERSION": "3.0.1-beta.17", "PATH": "/bin", "HOME": "/h"}
-    assert relaunch_environment(environ) == {"PATH": "/bin", "HOME": "/h"}
+    assert relaunch_environment(environ, Path("/s")) == {"PATH": "/bin", "HOME": "/h"}
 
 
 def test_spawn_detached_starts_the_app_without_the_old_version(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -272,7 +353,7 @@ def test_spawn_detached_starts_the_app_without_the_old_version(monkeypatch: pyte
 
     monkeypatch.setenv("LABRYNTH_APP_VERSION", "3.0.1-beta.17")
     monkeypatch.setattr("apply_update.subprocess.Popen", fake_popen)
-    spawn_detached(["/x/Labrynth"])
+    spawn_detached(["/x/Labrynth"], Path("/s"))
     env = seen["env"]
     assert isinstance(env, dict)
     assert "LABRYNTH_APP_VERSION" not in env
