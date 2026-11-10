@@ -4,6 +4,7 @@ import type { SessionStore } from "./sessionStoreTypes";
 import { useMachineStore } from "./useMachineStore";
 import { countShocks } from "../lib/shockEvents";
 import { randomUUID } from "../lib/uuid";
+import { setActiveSession } from "../logging";
 import { addEventToCounts, countEvents, foldSegmentIntoCumulative, nextPauseFields } from "../lib/sessionCounters";
 import {
   LIVE_STATES, defaultHardwareUiState, emptyExportState, newSession,
@@ -276,3 +277,12 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       })),
     ),
 }));
+
+/** The backend session the user is looking at, or undefined for none or a draft tab. */
+function loggedSessionId(s: SessionStore): string | undefined {
+  const active = s.activeSessionId ? s.sessions.get(s.activeSessionId) : undefined;
+  return active && !active.draft ? active.id : undefined;
+}
+
+// UI log records are stamped with this id, so a click can be joined to its session in the run log.
+useSessionStore.subscribe((s) => setActiveSession(loggedSessionId(s)));
