@@ -19,6 +19,10 @@ EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_ROLLED_BACK = 2
 OLD_SUFFIX = ".old"
+STAGING_PREFIX = ".labrynth-update_"
+UNPACK_DIR_NAME = "unpacked"
+LIBRARY_PATH_VAR = "LD_LIBRARY_PATH"
+ORIGINAL_SUFFIX = "_ORIG"
 EXIT_WAIT_TIMEOUT_SECONDS = 60.0
 POLL_INTERVAL_SECONDS = 0.25
 START_WINDOW_SECONDS = 8.0
@@ -128,6 +132,21 @@ def survives_start_window(process: Launched, deps: Dependencies) -> bool:
     return True
 
 
+def staging_root_of(staged: Path) -> Path | None:
+    """Return the backend's staging folder holding staged, or None for any other layout."""
+    root = staged.parent.parent
+    if staged.parent.name != UNPACK_DIR_NAME or not root.name.startswith(STAGING_PREFIX):
+        return None
+    return root
+
+
+def remove_staging(staged: Path) -> None:
+    """Delete the download and unpack leftovers once the update has been applied or abandoned."""
+    root = staging_root_of(staged)
+    if root is not None:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 def run_apply_update(args: ApplyArgs, executable: Path, deps: Dependencies) -> int:
     """Run the whole update and return the process exit status."""
     relative = executable.relative_to(args.staged)
@@ -141,15 +160,19 @@ def run_apply_update(args: ApplyArgs, executable: Path, deps: Dependencies) -> i
     except SwapError:
         if args.relaunch:
             deps.spawn([str(launcher)])
+        remove_staging(args.staged)
         return EXIT_FAILED
     if not args.relaunch:
         shutil.rmtree(old, ignore_errors=True)
+        remove_staging(args.staged)
         return EXIT_OK
     if survives_start_window(deps.spawn([str(launcher)]), deps):
         shutil.rmtree(old, ignore_errors=True)
+        remove_staging(args.staged)
         return EXIT_OK
     restore_folders(args.install, old)
     deps.spawn([str(launcher)])
+    remove_staging(args.staged)
     return EXIT_ROLLED_BACK
 
 
@@ -183,15 +206,36 @@ def is_process_alive(pid: int) -> bool:
     return True
 
 
-def relaunch_environment(environ: Mapping[str, str]) -> dict[str, str]:
-    """Return environ without the old app's version, so the new app reads its own."""
-    return {key: value for key, value in environ.items() if key != APP_VERSION_ENV}
+def points_into(value: str, folder: Path) -> bool:
+    """Return True if any os.pathsep-separated entry of value is folder or lies under it."""
+    for entry in value.split(os.pathsep):
+        path = Path(entry)
+        if path == folder or folder in path.parents:
+            return True
+    return False
 
 
-def spawn_detached(command: Sequence[str]) -> Launched:
+def relaunch_environment(environ: Mapping[str, str], staged: Path) -> dict[str, str]:
+    """Return environ for the relaunched app.
+
+    The old app's version is dropped so the new app reads its own. This helper runs from
+    the staged copy, so its bootloader pointed library variables into a folder that is
+    gone after the swap; those are dropped, and the library path is restored to the
+    value the user started with.
+    """
+    env = {key: value for key, value in environ.items() if key != APP_VERSION_ENV}
+    original = env.pop(LIBRARY_PATH_VAR + ORIGINAL_SUFFIX, None)
+    for key in [key for key, value in env.items() if points_into(value, staged)]:
+        del env[key]
+        if key == LIBRARY_PATH_VAR and original:
+            env[key] = original
+    return env
+
+
+def spawn_detached(command: Sequence[str], staged: Path) -> Launched:
     """Start command so it outlives this helper."""
     options: dict[str, object] = {
-        "env": relaunch_environment(os.environ),
+        "env": relaunch_environment(os.environ, staged),
         "stdin": subprocess.DEVNULL,
         "stdout": subprocess.DEVNULL,
         "stderr": subprocess.DEVNULL,
@@ -210,5 +254,9 @@ def main(argv: Sequence[str], executable: Path) -> int:
         executable.relative_to(args.staged)
     except ValueError:
         return EXIT_FAILED
-    deps = Dependencies(is_alive=is_process_alive, sleep=time.sleep, clock=time.monotonic, spawn=spawn_detached)
+
+    def spawn(command: Sequence[str]) -> Launched:
+        return spawn_detached(command, args.staged)
+
+    deps = Dependencies(is_alive=is_process_alive, sleep=time.sleep, clock=time.monotonic, spawn=spawn)
     return run_apply_update(args, executable, deps)
