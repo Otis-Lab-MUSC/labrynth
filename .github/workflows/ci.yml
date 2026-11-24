@@ -134,6 +134,28 @@ jobs:
       - name: Unit tests
         run: npm test
 
+  # Compiles the Windows installer script against a stub bundle, so a broken
+  # [Setup] or [Code] section fails on the PR rather than on a release tag.
+  installer-script:
+    name: installer-script
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Compile the installer script
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist\Labrynth | Out-Null
+          Set-Content -Path dist\Labrynth\Labrynth.exe -Value 'stub'
+          iscc /DVERSION_NUM=0.0.0 installer\reacher.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path dist\labrynth-0.0.0-windows-x64.exe)) { throw 'installer not written' }
+
   # Version gate — pyproject.toml is the source of truth; verify web/package.json
   # and the README badge agree with it. Catches a hand-edited version, which
   # `scripts/bump-version.py` exists to prevent.

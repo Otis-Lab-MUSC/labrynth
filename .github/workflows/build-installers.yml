@@ -483,18 +483,11 @@ jobs:
       - name: List artifacts
         run: ls -lhR artifacts/
 
-      - name: Sign release assets
-        env:
-          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
-        run: bash scripts/sign-release-assets.sh artifacts
-
-      - name: Verify release assets
-        run: bash scripts/verify-release-assets.sh artifacts
-
       # Stable-named copies so phoxel-workbench can link directly to
       # releases/latest/download/labrynth-<os>.<ext> (versioned names embed the
       # release version and would 404 as a "latest" link). The existing *.exe /
-      # *.dmg / *.deb / *.AppImage globs below attach these automatically.
+      # *.dmg / *.deb / *.AppImage globs below attach these automatically. They are made before
+      # signing so SHA256SUMS covers them.
       - name: Create stable-named aliases for latest downloads
         run: |
           cd artifacts
@@ -502,6 +495,14 @@ jobs:
           cp labrynth-*-macos-arm64.dmg    labrynth-macos-arm64.dmg
           cp labrynth-*-linux-x64.AppImage labrynth-linux-x64.AppImage
           cp labrynth_*_amd64.deb          labrynth-linux-x64.deb
+
+      - name: Sign release assets
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: bash scripts/sign-release-assets.sh artifacts
+
+      - name: Verify release assets
+        run: bash scripts/verify-release-assets.sh --stable artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -519,6 +520,13 @@ jobs:
             | Linux (portable) | `labrynth-*-linux-x64.AppImage` | Any distro |
             | Linux (tarball) | `labrynth-*-linux-x64.tar.gz` | Extract and run |
             | Terminal CLI (all platforms) | `labrynth-cli-*-<os>.tar.gz` | Headless TUI — extract and run `LabrynthCLI` |
+
+            **macOS is untested.** The macOS build is published as built and has not been
+            tested on a Mac for this release. Windows and Linux are the tested platforms.
+
+            **Upgrading from 3.0.0 on Windows:** 3.0.0 installed for all users; this version
+            installs for the current user. The installer removes the old all-users copy first,
+            so Windows asks once for administrator permission. Settings and the API key are kept.
 
             <details>
             <summary>Platform-specific notes</summary>
