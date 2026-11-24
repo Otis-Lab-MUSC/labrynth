@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- CI compiles the Windows installer script (`installer-script` job) on every PR.
+- Stable release notes say macOS is built but untested, and describe the 3.0.0 upgrade on Windows.
 - Frontend: each hardware card's **Set** button now sits in the card header beside a sync chip
   (*Not sent* / *Unsent changes* / *Synced*). Red input outlines show only on an armed device, and
   Arm stays disabled while a card's values are invalid; a disarmed card can be configured freely.
@@ -23,6 +25,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   pose and a cartoon flash (still off under reduced motion).
 
 ### Fixed
+- Windows installer: installing over Labrynth 3.0.0 (an all-users install) now removes that copy
+  first instead of installing a second, per-user copy beside it. Windows asks once for
+  administrator permission; if the removal fails, setup stops and says how to remove it by hand.
+- Stable releases: the fixed-name `labrynth-<os>` download aliases are made before signing, so
+  `SHA256SUMS` lists them. `verify-release-assets.sh` now fails on any file `SHA256SUMS` does not
+  list, and `--stable` requires the four aliases.
 - Frontend: the Firmware Upload card no longer lists the UNO `_lite` firmware for a Mega. It starts
   on the resolved board and discards stale firmware-list replies.
 
